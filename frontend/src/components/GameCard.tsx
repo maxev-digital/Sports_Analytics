@@ -1,0 +1,2385 @@
+import { useState } from 'react';
+import { LiveGame } from '../types';
+
+interface GameCardProps {
+  game: LiveGame;
+}
+
+// Sportsbook logo URLs and fallback badges
+const getBookmakerInfo = (bookmaker: string) => {
+  const bookmakers: Record<string, { logo: string; short: string; bg: string; text: string }> = {
+    'DraftKings': {
+      logo: 'https://sportsbook-brands.draftkings.com/images/dk-sportsbook-logo.svg',
+      short: 'DK',
+      bg: 'bg-green-900',
+      text: 'text-green-200'
+    },
+    'FanDuel': {
+      logo: 'https://www.fanduel.com/favicon.svg',
+      short: 'FD',
+      bg: 'bg-blue-900',
+      text: 'text-blue-200'
+    },
+    'BetMGM': {
+      logo: 'https://sports.betmgm.com/assets/img/logos/betmgm-logo.svg',
+      short: 'MGM',
+      bg: 'bg-yellow-900',
+      text: 'text-yellow-200'
+    },
+    'Caesars': {
+      logo: 'https://www.caesars.com/sportsbook-and-casino/assets/images/logo.svg',
+      short: 'CZR',
+      bg: 'bg-purple-900',
+      text: 'text-purple-200'
+    },
+    'BetRivers': {
+      logo: 'https://www.betrivers.com/etc.clientlibs/betrivers/clientlibs/clientlib-base/resources/images/betrivers-logo.svg',
+      short: 'BR',
+      bg: 'bg-cyan-900',
+      text: 'text-cyan-200'
+    },
+    'Bovada': {
+      logo: 'https://www.bovada.lv/favicon.ico',
+      short: 'BOV',
+      bg: 'bg-red-900',
+      text: 'text-red-200'
+    },
+    'BetOnline.ag': {
+      logo: 'https://www.betonline.ag/images/betonline-logo.svg',
+      short: 'BOL',
+      bg: 'bg-orange-900',
+      text: 'text-orange-200'
+    },
+    'MyBookie.ag': {
+      logo: 'https://www.mybookie.ag/favicon.ico',
+      short: 'MB',
+      bg: 'bg-pink-900',
+      text: 'text-pink-200'
+    },
+    'BetUS': {
+      logo: 'https://www.betus.com.pa/favicon.ico',
+      short: 'BUS',
+      bg: 'bg-indigo-900',
+      text: 'text-indigo-200'
+    },
+    'LowVig.ag': {
+      logo: 'https://lowvig.ag/favicon.ico',
+      short: 'LV',
+      bg: 'bg-teal-900',
+      text: 'text-teal-200'
+    },
+    'Fanatics': {
+      logo: 'https://www.fanaticssportsbook.com/favicon.ico',
+      short: 'FAN',
+      bg: 'bg-slate-800',
+      text: 'text-slate-200'
+    },
+  };
+  return bookmakers[bookmaker] || {
+    logo: '',
+    short: bookmaker.substring(0, 3).toUpperCase(),
+    bg: 'bg-slate-800',
+    text: 'text-slate-300'
+  };
+};
+
+export function GameCard({ game }: GameCardProps) {
+  const { state, odds, projection, home_team_stats, away_team_stats, home_nfl_live_stats, away_nfl_live_stats, home_nfl_stats, away_nfl_stats, home_nhl_momentum, away_nhl_momentum, home_nhl_stats, away_nhl_stats } = game;
+
+  // Stats view toggle: 'stats' (raw stats), 'rankings' (ranks only), 'combined' (stats + ranks)
+  const [statsView, setStatsView] = useState<'stats' | 'rankings' | 'combined'>('stats');
+
+  // Helper function to get rank color (green for top 10, yellow for 11-20, white for 21+)
+  const getRankColor = (rank: number) => {
+    if (rank <= 10) return 'text-green-400';
+    if (rank <= 20) return 'text-yellow-400';
+    return 'text-slate-300';
+  };
+
+  // Determine sport type from sport_key
+  const sportBadge = state.sport_key?.includes('icehockey') ? 'NHL' :
+                     state.sport_key?.includes('americanfootball_ncaaf') ? 'NCAAF' :
+                     state.sport_key?.includes('americanfootball_nfl') ? 'NFL' :
+                     state.sport_key?.includes('baseball_mlb') ? 'MLB' :
+                     state.sport_key?.includes('basketball_nba') ? 'NBA' : 'NBA';
+
+  // Get team logo URLs using a logo service
+  const getTeamLogo = (teamName: string, sport: string) => {
+    // Clean team name for logo lookup - normalize to lowercase with spaces
+    const cleanName = teamName.toLowerCase();
+
+    if (sport === 'NHL') {
+      // Use ESPN's NHL team logos
+      const nhlTeams: Record<string, string> = {
+        'anaheim ducks': 'ana', 'arizona coyotes': 'ari', 'boston bruins': 'bos',
+        'buffalo sabres': 'buf', 'calgary flames': 'cgy', 'carolina hurricanes': 'car',
+        'chicago blackhawks': 'chi', 'colorado avalanche': 'col', 'columbus blue jackets': 'cbj',
+        'dallas stars': 'dal', 'detroit red wings': 'det', 'edmonton oilers': 'edm',
+        'florida panthers': 'fla', 'los angeles kings': 'la', 'minnesota wild': 'min',
+        'montréal canadiens': 'mtl', 'montreal canadiens': 'mtl', 'nashville predators': 'nsh',
+        'new jersey devils': 'njd', 'new york islanders': 'nyi', 'new york rangers': 'nyr',
+        'ottawa senators': 'ott', 'philadelphia flyers': 'phi', 'pittsburgh penguins': 'pit',
+        'san jose sharks': 'sj', 'seattle kraken': 'sea', 'st louis blues': 'stl',
+        'st. louis blues': 'stl', 'tampa bay lightning': 'tb', 'toronto maple leafs': 'tor',
+        'vancouver canucks': 'van', 'vegas golden knights': 'vgk', 'washington capitals': 'wsh',
+        'winnipeg jets': 'wpg', 'utah mammoth': 'utah', 'utah hockey club': 'utah'
+      };
+      const abbr = nhlTeams[cleanName];
+      return abbr ? `https://a.espncdn.com/i/teamlogos/nhl/500/${abbr}.png` : '';
+    } else if (sport === 'NCAAF') {
+      // Use ESPN's NCAAF team logos
+      const ncaafTeams: Record<string, string> = {
+        'alabama crimson tide': 'ala', 'arizona wildcats': 'ariz', 'arizona state sun devils': 'asu',
+        'arkansas razorbacks': 'ark', 'auburn tigers': 'aub', 'baylor bears': 'bay',
+        'boise state broncos': 'bsu', 'boston college eagles': 'bc', 'bowling green falcons': 'bgsu',
+        'buffalo bulls': 'buf', 'california golden bears': 'cal', 'central michigan chippewas': 'cmu',
+        'cincinnati bearcats': 'cin', 'clemson tigers': 'clem', 'colorado buffaloes': 'col',
+        'duke blue devils': 'duke', 'east carolina pirates': 'ecu', 'florida gators': 'fla',
+        'florida state seminoles': 'fsu', 'fresno state bulldogs': 'fres', 'georgia bulldogs': 'uga',
+        'georgia tech yellow jackets': 'gt', 'houston cougars': 'hou', 'illinois fighting illini': 'ill',
+        'indiana hoosiers': 'ind', 'iowa hawkeyes': 'iowa', 'iowa state cyclones': 'isu',
+        'kansas jayhawks': 'kan', 'kansas state wildcats': 'ksu', 'kentucky wildcats': 'uk',
+        'louisiana ragin cajuns': 'ul', 'louisville cardinals': 'lou', 'lsu tigers': 'lsu',
+        'marshall thundering herd': 'mar', 'maryland terrapins': 'md', 'memphis tigers': 'mem',
+        'miami hurricanes': 'mia', 'michigan wolverines': 'mich', 'michigan state spartans': 'msu',
+        'minnesota golden gophers': 'minn', 'mississippi state bulldogs': 'miss', 'missouri tigers': 'miz',
+        'nc state wolfpack': 'ncst', 'nebraska cornhuskers': 'neb', 'nevada wolf pack': 'nev',
+        'north carolina tar heels': 'unc', 'northwestern wildcats': 'nw', 'notre dame fighting irish': 'nd',
+        'ohio state buckeyes': 'osu', 'oklahoma sooners': 'okla', 'oklahoma state cowboys': 'okst',
+        'ole miss rebels': 'miss', 'oregon ducks': 'ore', 'oregon state beavers': 'orst',
+        'penn state nittany lions': 'psu', 'pittsburgh panthers': 'pitt', 'purdue boilermakers': 'pur',
+        'rutgers scarlet knights': 'rutg', 'san diego state aztecs': 'sdsu', 'south carolina gamecocks': 'sc',
+        'smu mustangs': 'smu', 'stanford cardinal': 'stan', 'syracuse orange': 'syr',
+        'tcu horned frogs': 'tcu', 'temple owls': 'tem', 'tennessee volunteers': 'tenn',
+        'texas longhorns': 'tex', 'texas a&m aggies': 'tamu', 'texas tech red raiders': 'tt',
+        'toledo rockets': 'tol', 'troy trojans': 'troy', 'tulane green wave': 'tul',
+        'ucla bruins': 'ucla', 'usc trojans': 'usc', 'utah utes': 'utah',
+        'vanderbilt commodores': 'van', 'virginia cavaliers': 'uva', 'virginia tech hokies': 'vt',
+        'wake forest demon deacons': 'wake', 'washington huskies': 'wash', 'washington state cougars': 'wsu',
+        'west virginia mountaineers': 'wvu', 'wisconsin badgers': 'wisc', 'wyoming cowboys': 'wyo',
+        'james madison dukes': 'jmu', 'liberty flames': 'lib', 'georgia state panthers': 'gast',
+        // Additional FBS teams
+        'umass minutemen': 'umass', 'kent state golden flashes': 'kent', 'air force falcons': 'afa',
+        'unlv rebels': 'unlv', 'old dominion monarchs': 'odu', 'ball state cardinals': 'ball',
+        'western michigan broncos': 'wmu', 'appalachian state mountaineers': 'app', 'navy midshipmen': 'navy',
+        'uab blazers': 'uab', 'florida atlantic owls': 'fau', 'ul monroe warhawks': 'ulm',
+        'coastal carolina chanticleers': 'ccu', 'san jose state spartans': 'sjsu', 'rice owls': 'rice',
+        'utsa roadrunners': 'utsa', 'byu cougars': 'byu', 'texas state bobcats': 'txst',
+        'new mexico lobos': 'unm', 'utah state aggies': 'usu', 'hawaii rainbow warriors': 'haw',
+        'new mexico state aggies': 'nmsu', 'arkansas state red wolves': 'arst', 'south alabama jaguars': 'usa',
+        'florida international panthers': 'fiu', 'western kentucky hilltoppers': 'wku',
+        'jacksonville state gamecocks': 'jvst', 'utep miners': 'utep', 'sam houston state bearkats': 'shsu',
+        'tulsa golden hurricane': 'tulsa', 'delaware blue hens': 'del'
+      };
+      const abbr = ncaafTeams[cleanName];
+      return abbr ? `https://a.espncdn.com/i/teamlogos/ncaa/500/${abbr}.png` : '';
+    } else if (sport === 'NFL') {
+      // Use ESPN's NFL team logos
+      const nflTeams: Record<string, string> = {
+        'arizona cardinals': 'ari', 'atlanta falcons': 'atl', 'baltimore ravens': 'bal',
+        'buffalo bills': 'buf', 'carolina panthers': 'car', 'chicago bears': 'chi',
+        'cincinnati bengals': 'cin', 'cleveland browns': 'cle', 'dallas cowboys': 'dal',
+        'denver broncos': 'den', 'detroit lions': 'det', 'green bay packers': 'gb',
+        'houston texans': 'hou', 'indianapolis colts': 'ind', 'jacksonville jaguars': 'jax',
+        'kansas city chiefs': 'kc', 'las vegas raiders': 'lv', 'los angeles chargers': 'lac',
+        'los angeles rams': 'lar', 'miami dolphins': 'mia', 'minnesota vikings': 'min',
+        'new england patriots': 'ne', 'new orleans saints': 'no', 'new york giants': 'nyg',
+        'new york jets': 'nyj', 'philadelphia eagles': 'phi', 'pittsburgh steelers': 'pit',
+        'san francisco 49ers': 'sf', 'seattle seahawks': 'sea', 'tampa bay buccaneers': 'tb',
+        'tennessee titans': 'ten', 'washington commanders': 'wsh'
+      };
+      const abbr = nflTeams[cleanName];
+      return abbr ? `https://a.espncdn.com/i/teamlogos/nfl/500/${abbr}.png` : '';
+    } else if (sport === 'MLB') {
+      // Use ESPN's MLB team logos
+      const mlbTeams: Record<string, string> = {
+        'arizona diamondbacks': 'ari', 'atlanta braves': 'atl', 'baltimore orioles': 'bal',
+        'boston red sox': 'bos', 'chicago cubs': 'chc', 'chicago white sox': 'chw',
+        'cincinnati reds': 'cin', 'cleveland guardians': 'cle', 'colorado rockies': 'col',
+        'detroit tigers': 'det', 'houston astros': 'hou', 'kansas city royals': 'kc',
+        'los angeles angels': 'laa', 'los angeles dodgers': 'lad', 'miami marlins': 'mia',
+        'milwaukee brewers': 'mil', 'minnesota twins': 'min', 'new york mets': 'nym',
+        'new york yankees': 'nyy', 'oakland athletics': 'oak', 'philadelphia phillies': 'phi',
+        'pittsburgh pirates': 'pit', 'san diego padres': 'sd', 'san francisco giants': 'sf',
+        'seattle mariners': 'sea', 'st louis cardinals': 'stl', 'st. louis cardinals': 'stl',
+        'tampa bay rays': 'tb', 'texas rangers': 'tex', 'toronto blue jays': 'tor',
+        'washington nationals': 'wsh'
+      };
+      const abbr = mlbTeams[cleanName];
+      return abbr ? `https://a.espncdn.com/i/teamlogos/mlb/500/${abbr}.png` : '';
+    } else {
+      // Use ESPN's NBA team logos
+      const nbaTeams: Record<string, string> = {
+        'atlanta hawks': 'atl', 'boston celtics': 'bos', 'brooklyn nets': 'bkn',
+        'charlotte hornets': 'cha', 'chicago bulls': 'chi', 'cleveland cavaliers': 'cle',
+        'dallas mavericks': 'dal', 'denver nuggets': 'den', 'detroit pistons': 'det',
+        'golden state warriors': 'gs', 'houston rockets': 'hou', 'indiana pacers': 'ind',
+        'los angeles clippers': 'lac', 'los angeles lakers': 'lal', 'memphis grizzlies': 'mem',
+        'miami heat': 'mia', 'milwaukee bucks': 'mil', 'minnesota timberwolves': 'min',
+        'new orleans pelicans': 'no', 'new york knicks': 'ny', 'oklahoma city thunder': 'okc',
+        'orlando magic': 'orl', 'philadelphia 76ers': 'phi', 'phoenix suns': 'phx',
+        'portland trail blazers': 'por', 'sacramento kings': 'sac', 'san antonio spurs': 'sa',
+        'toronto raptors': 'tor', 'utah jazz': 'utah', 'washington wizards': 'wsh'
+      };
+      const abbr = nbaTeams[cleanName];
+      return abbr ? `https://a.espncdn.com/i/teamlogos/nba/500/${abbr}.png` : '';
+    }
+  };
+
+  const awayLogo = getTeamLogo(state.away_team.name, sportBadge);
+  const homeLogo = getTeamLogo(state.home_team.name, sportBadge);
+
+  // Debug: Log teams without logos
+  if (!awayLogo) {
+    console.log(`Missing logo for ${sportBadge} team: ${state.away_team.name}`);
+  }
+  if (!homeLogo) {
+    console.log(`Missing logo for ${sportBadge} team: ${state.home_team.name}`);
+  }
+
+  // Get team colors for NFL teams
+  const getTeamColors = (teamName: string): { primary: string, secondary: string } => {
+    const cleanName = teamName.toLowerCase();
+    const nflColors: Record<string, { primary: string, secondary: string }> = {
+      'arizona cardinals': { primary: '#97233F', secondary: '#000000' },
+      'atlanta falcons': { primary: '#A71930', secondary: '#000000' },
+      'baltimore ravens': { primary: '#241773', secondary: '#000000' },
+      'buffalo bills': { primary: '#00338D', secondary: '#C60C30' },
+      'carolina panthers': { primary: '#0085CA', secondary: '#101820' },
+      'chicago bears': { primary: '#C83803', secondary: '#0B162A' },
+      'cincinnati bengals': { primary: '#FB4F14', secondary: '#000000' },
+      'cleveland browns': { primary: '#311D00', secondary: '#FF3C00' },
+      'dallas cowboys': { primary: '#003594', secondary: '#041E42' },
+      'denver broncos': { primary: '#FB4F14', secondary: '#002244' },
+      'detroit lions': { primary: '#0076B6', secondary: '#B0B7BC' },
+      'green bay packers': { primary: '#203731', secondary: '#FFB612' },
+      'houston texans': { primary: '#03202F', secondary: '#A71930' },
+      'indianapolis colts': { primary: '#002C5F', secondary: '#A2AAAD' },
+      'jacksonville jaguars': { primary: '#006778', secondary: '#9F792C' },
+      'kansas city chiefs': { primary: '#E31837', secondary: '#FFB81C' },
+      'las vegas raiders': { primary: '#000000', secondary: '#A5ACAF' },
+      'los angeles chargers': { primary: '#0080C6', secondary: '#FFC20E' },
+      'los angeles rams': { primary: '#003594', secondary: '#FFA300' },
+      'miami dolphins': { primary: '#008E97', secondary: '#FC4C02' },
+      'minnesota vikings': { primary: '#4F2683', secondary: '#FFC62F' },
+      'new england patriots': { primary: '#002244', secondary: '#C60C30' },
+      'new orleans saints': { primary: '#D3BC8D', secondary: '#101820' },
+      'new york giants': { primary: '#0B2265', secondary: '#A71930' },
+      'new york jets': { primary: '#125740', secondary: '#000000' },
+      'philadelphia eagles': { primary: '#004C54', secondary: '#A5ACAF' },
+      'pittsburgh steelers': { primary: '#FFB612', secondary: '#101820' },
+      'san francisco 49ers': { primary: '#AA0000', secondary: '#B3995D' },
+      'seattle seahawks': { primary: '#002244', secondary: '#69BE28' },
+      'tampa bay buccaneers': { primary: '#D50A0A', secondary: '#FF7900' },
+      'tennessee titans': { primary: '#0C2340', secondary: '#4B92DB' },
+      'washington commanders': { primary: '#5A1414', secondary: '#FFB612' },
+    };
+    return nflColors[cleanName] || { primary: '#3B82F6', secondary: '#EF4444' }; // Default blue/red
+  };
+
+  const awayTeamColors = getTeamColors(state.away_team.name);
+  const homeTeamColors = getTeamColors(state.home_team.name);
+
+  // Format time
+  const gameTime = new Date(state.commence_time).toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZone: 'America/Chicago'
+  });
+
+  const gameDate = new Date(state.commence_time).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'America/Chicago'
+  });
+
+  // Get average total from odds
+  const avgTotal = odds.length > 0
+    ? (odds.reduce((sum, o) => sum + o.total, 0) / odds.length).toFixed(1)
+    : '---';
+
+  // Determine card styling based on edge
+  const hasEdge = projection.edge !== null && Math.abs(projection.edge) >= 5;
+  const edgeClass = hasEdge
+    ? projection.recommendation === 'OVER'
+      ? 'border-green-500'
+      : 'border-red-500'
+    : 'border-slate-700';
+
+  // All sports use the same background color
+  const bgColor = 'bg-slate-800';
+
+  return (
+    <div className={`${bgColor} rounded-lg p-4 border-2 ${edgeClass} hover:shadow-lg transition-shadow`}>
+      {/* Header */}
+      <div className="flex justify-between items-start mb-3">
+        <div>
+          <div className="text-xs text-slate-400">{gameDate}</div>
+          <div className="text-sm font-semibold text-slate-300">{gameTime} CST</div>
+        </div>
+        <div className={`px-2 py-1 rounded text-xs font-semibold ${
+          state.status === 'live'
+            ? 'bg-red-600 text-white'
+            : 'bg-slate-700 text-slate-300'
+        }`}>
+          {state.status === 'live' ? 'LIVE' : 'UPCOMING'}
+        </div>
+      </div>
+
+      {/* Teams */}
+      <div className="space-y-3 mb-3">
+        {/* Away Team */}
+        <div>
+          <div className="flex justify-between items-center mb-1">
+            <div className="flex items-center gap-2">
+              {sportBadge !== 'NCAAF' && awayLogo && <img src={awayLogo} alt={state.away_team.name} className="w-8 h-8 object-contain" />}
+              <span className="font-medium text-white">{state.away_team.name}</span>
+            </div>
+            {state.away_team.score !== null && (
+              <span className="text-xl font-bold text-white">{state.away_team.score}</span>
+            )}
+          </div>
+          <div className={`flex gap-4 text-xs ${sportBadge !== 'NCAAF' ? 'ml-10' : ''}`}>
+            {state.away_team.spread !== null && state.away_team.spread !== undefined && (
+              <div className="text-slate-300">
+                <span className="text-slate-400">Spread: </span>
+                <span className="font-bold">{state.away_team.spread > 0 ? '+' : ''}{state.away_team.spread}</span>
+                {state.away_team.spread_price && <span className="font-bold"> ({state.away_team.spread_price > 0 ? '+' : ''}{state.away_team.spread_price})</span>}
+              </div>
+            )}
+            {state.away_team.money_line !== null && state.away_team.money_line !== undefined && (
+              <div className="text-slate-300">
+                <span className="text-slate-400">ML: </span>
+                <span className="font-bold">{state.away_team.money_line > 0 ? '+' : ''}{state.away_team.money_line}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Home Team */}
+        <div>
+          <div className="flex justify-between items-center mb-1">
+            <div className="flex items-center gap-2">
+              {sportBadge !== 'NCAAF' && homeLogo && <img src={homeLogo} alt={state.home_team.name} className="w-8 h-8 object-contain" />}
+              <span className="font-medium text-white">{state.home_team.name}</span>
+            </div>
+            {state.home_team.score !== null && (
+              <span className="text-xl font-bold text-white">{state.home_team.score}</span>
+            )}
+          </div>
+          <div className={`flex gap-4 text-xs ${sportBadge !== 'NCAAF' ? 'ml-10' : ''}`}>
+            {state.home_team.spread !== null && state.home_team.spread !== undefined && (
+              <div className="text-slate-300">
+                <span className="text-slate-400">Spread: </span>
+                <span className="font-bold">{state.home_team.spread > 0 ? '+' : ''}{state.home_team.spread}</span>
+                {state.home_team.spread_price && <span className="font-bold"> ({state.home_team.spread_price > 0 ? '+' : ''}${state.home_team.spread_price})</span>}
+              </div>
+            )}
+            {state.home_team.money_line !== null && state.home_team.money_line !== undefined && (
+              <div className="text-slate-300">
+                <span className="text-slate-400">ML: </span>
+                <span className="font-bold">{state.home_team.money_line > 0 ? '+' : ''}{state.home_team.money_line}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Game Status */}
+      {state.status === 'live' && state.quarter && state.time_remaining && (
+        <div className="text-xs text-slate-400 mb-3">
+          Q{state.quarter} - {state.time_remaining}
+        </div>
+      )}
+
+      {/* Team Momentum Bar (NFL only, live games) */}
+      {sportBadge === 'NFL' && state.status === 'live' && (state.home_team.momentum !== null || state.away_team.momentum !== null) && (
+        <div className="mb-3">
+          <div className="text-xs text-slate-400 mb-1">Game Momentum</div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-slate-400 w-12">{state.away_team.name.split(' ').pop()}</span>
+            <div className="flex-1 h-3 bg-slate-700 rounded-full overflow-hidden relative">
+              {/* Calculate momentum percentage (-100 to 100 scale) */}
+              {(() => {
+                const awayMomentum = state.away_team.momentum || 0;
+                const homeMomentum = state.home_team.momentum || 0;
+                const totalMomentum = awayMomentum + homeMomentum;
+                const awayPercent = totalMomentum !== 0 ? (awayMomentum / (Math.abs(awayMomentum) + Math.abs(homeMomentum))) * 100 : 50;
+                const homePercent = 100 - awayPercent;
+
+                return (
+                  <>
+                    <div
+                      className="absolute left-0 top-0 h-full transition-all"
+                      style={{ width: `${awayPercent}%`, backgroundColor: awayTeamColors.primary }}
+                    />
+                    <div
+                      className="absolute right-0 top-0 h-full transition-all"
+                      style={{ width: `${homePercent}%`, backgroundColor: homeTeamColors.primary }}
+                    />
+                    {/* Center line */}
+                    <div className="absolute left-1/2 top-0 h-full w-0.5 bg-white/30" style={{ transform: 'translateX(-50%)' }} />
+                  </>
+                );
+              })()}
+            </div>
+            <span className="text-xs text-slate-400 w-12 text-right">{state.home_team.name.split(' ').pop()}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Live Betting Lines (All Sports, Live Games) */}
+      {state.status === 'live' && (state.away_team.money_line || state.home_team.money_line || state.away_team.spread || state.home_team.spread) && (
+        <div className="mb-3 border border-yellow-600/30 bg-yellow-900/10 rounded p-3">
+          <div className="text-sm text-yellow-400 font-bold mb-2">Live Betting Lines</div>
+
+          {/* Live Spreads */}
+          {(state.away_team.spread !== null || state.home_team.spread !== null) && (
+            <div className="mb-2">
+              <div className="text-xs text-slate-400 font-semibold mb-1">Spreads</div>
+              <div className="flex justify-between text-sm">
+                <div className="text-slate-300">
+                  <span className="text-slate-400">{state.away_team.name.split(' ').pop()}: </span>
+                  <span className="font-bold text-green-400">
+                    {state.away_team.spread !== null ? `${state.away_team.spread > 0 ? '+' : ''}${state.away_team.spread}` : 'N/A'}
+                    {state.away_team.spread_price && <span className="text-xs"> ({state.away_team.spread_price > 0 ? '+' : ''}{state.away_team.spread_price})</span>}
+                  </span>
+                </div>
+                <div className="text-slate-300">
+                  <span className="text-slate-400">{state.home_team.name.split(' ').pop()}: </span>
+                  <span className="font-bold text-green-400">
+                    {state.home_team.spread !== null ? `${state.home_team.spread > 0 ? '+' : ''}${state.home_team.spread}` : 'N/A'}
+                    {state.home_team.spread_price && <span className="text-xs"> ({state.home_team.spread_price > 0 ? '+' : ''}{state.home_team.spread_price})</span>}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Live Money Lines */}
+          {(state.away_team.money_line !== null || state.home_team.money_line !== null) && (
+            <div>
+              <div className="text-xs text-slate-400 font-semibold mb-1">Money Lines</div>
+              <div className="flex justify-between text-sm">
+                <div className="text-slate-300">
+                  <span className="text-slate-400">{state.away_team.name.split(' ').pop()}: </span>
+                  <span className={`font-bold ${(state.away_team.money_line || 0) > 0 ? 'text-blue-400' : 'text-white'}`}>
+                    {state.away_team.money_line !== null ? `${state.away_team.money_line > 0 ? '+' : ''}${state.away_team.money_line}` : 'N/A'}
+                  </span>
+                </div>
+                <div className="text-slate-300">
+                  <span className="text-slate-400">{state.home_team.name.split(' ').pop()}: </span>
+                  <span className={`font-bold ${(state.home_team.money_line || 0) > 0 ? 'text-blue-400' : 'text-white'}`}>
+                    {state.home_team.money_line !== null ? `${state.home_team.money_line > 0 ? '+' : ''}${state.home_team.money_line}` : 'N/A'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* First Half Lines (All Sports, 1st half only) */}
+      {state.status === 'live' && state.quarter && state.quarter <= 2 && (
+        <div className="mb-3 border border-purple-600/30 bg-purple-900/10 rounded p-3">
+          <div className="text-sm text-purple-400 font-bold mb-2">1st Half Lines</div>
+
+          {/* First Half Total */}
+          {projection.first_half_total && (
+            <div className="mb-2">
+              <div className="text-xs text-slate-400 font-semibold mb-1">Total</div>
+              <div className="flex justify-between text-sm">
+                <div className="text-slate-300">
+                  <span className="text-slate-400">Current: </span>
+                  <span className="font-bold text-white">{projection.first_half_current || 0}</span>
+                </div>
+                <div className="text-slate-300">
+                  <span className="text-slate-400">Projected: </span>
+                  <span className="font-bold text-purple-300">{projection.first_half_total.toFixed(1)}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* First Half Spreads */}
+          {(state.away_team.spread !== null || state.home_team.spread !== null) && (
+            <div className="mb-2">
+              <div className="text-xs text-slate-400 font-semibold mb-1">Spreads</div>
+              <div className="flex justify-between text-sm">
+                <div className="text-slate-300">
+                  <span className="text-slate-400">{state.away_team.name.split(' ').pop()}: </span>
+                  <span className="font-bold text-green-400">
+                    {state.away_team.spread !== null ? `${state.away_team.spread > 0 ? '+' : ''}${(state.away_team.spread / 2).toFixed(1)}` : 'N/A'}
+                    {state.away_team.spread_price && <span className="text-xs"> ({state.away_team.spread_price > 0 ? '+' : ''}{state.away_team.spread_price})</span>}
+                  </span>
+                </div>
+                <div className="text-slate-300">
+                  <span className="text-slate-400">{state.home_team.name.split(' ').pop()}: </span>
+                  <span className="font-bold text-green-400">
+                    {state.home_team.spread !== null ? `${state.home_team.spread > 0 ? '+' : ''}${(state.home_team.spread / 2).toFixed(1)}` : 'N/A'}
+                    {state.home_team.spread_price && <span className="text-xs"> ({state.home_team.spread_price > 0 ? '+' : ''}{state.home_team.spread_price})</span>}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* First Half Money Lines */}
+          {(state.away_team.money_line !== null || state.home_team.money_line !== null) && (
+            <div>
+              <div className="text-xs text-slate-400 font-semibold mb-1">Money Lines</div>
+              <div className="flex justify-between text-sm">
+                <div className="text-slate-300">
+                  <span className="text-slate-400">{state.away_team.name.split(' ').pop()}: </span>
+                  <span className={`font-bold ${(state.away_team.money_line || 0) > 0 ? 'text-blue-400' : 'text-white'}`}>
+                    {state.away_team.money_line !== null ? `${state.away_team.money_line > 0 ? '+' : ''}${state.away_team.money_line}` : 'N/A'}
+                  </span>
+                </div>
+                <div className="text-slate-300">
+                  <span className="text-slate-400">{state.home_team.name.split(' ').pop()}: </span>
+                  <span className={`font-bold ${(state.home_team.money_line || 0) > 0 ? 'text-blue-400' : 'text-white'}`}>
+                    {state.home_team.money_line !== null ? `${state.home_team.money_line > 0 ? '+' : ''}${state.home_team.money_line}` : 'N/A'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* NHL Momentum Bar (NHL only, live games) */}
+      {sportBadge === 'NHL' && state.status === 'live' && (away_nhl_momentum || home_nhl_momentum) && (
+        <div className="mb-3">
+          <div className="text-xs text-slate-400 mb-1">Game Momentum</div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-slate-400 w-12">{state.away_team.name.split(' ').pop()}</span>
+            <div className="flex-1 h-3 bg-slate-700 rounded-full overflow-hidden relative">
+              {/* Calculate momentum percentage (0-100 scale for each team) */}
+              {(() => {
+                const awayMomentum = away_nhl_momentum?.momentum_score || 50;
+                const homeMomentum = home_nhl_momentum?.momentum_score || 50;
+                const totalMomentum = awayMomentum + homeMomentum;
+                const awayPercent = totalMomentum !== 0 ? (awayMomentum / totalMomentum) * 100 : 50;
+                const homePercent = 100 - awayPercent;
+
+                return (
+                  <>
+                    <div
+                      className="absolute left-0 top-0 h-full transition-all bg-cyan-500"
+                      style={{ width: `${awayPercent}%` }}
+                    />
+                    <div
+                      className="absolute right-0 top-0 h-full transition-all bg-orange-500"
+                      style={{ width: `${homePercent}%` }}
+                    />
+                    {/* Center line */}
+                    <div className="absolute left-1/2 top-0 h-full w-0.5 bg-white/30" style={{ transform: 'translateX(-50%)' }} />
+                  </>
+                );
+              })()}
+            </div>
+            <span className="text-xs text-slate-400 w-12 text-right">{state.home_team.name.split(' ').pop()}</span>
+          </div>
+        </div>
+      )}
+
+      {/* NHL Momentum Stats (NHL only, live games) */}
+      {sportBadge === 'NHL' && state.status === 'live' && (away_nhl_momentum || home_nhl_momentum) && (
+        <div className="mb-3 border border-cyan-600/30 bg-cyan-900/10 rounded p-2">
+          <div className="text-xs text-cyan-400 font-semibold mb-2">Recent Momentum (Last 5 Min)</div>
+          <div className="grid grid-cols-2 gap-3 text-xs">
+            {/* Away Team Momentum */}
+            <div>
+              <div className="text-slate-400 font-semibold mb-1">{state.away_team.name.split(' ').pop()}</div>
+              {away_nhl_momentum && (
+                <>
+                  <div className="flex justify-between mb-0.5">
+                    <span className="text-slate-400">Momentum:</span>
+                    <span className={`font-semibold ${
+                      away_nhl_momentum.momentum_score > 60 ? 'text-green-400' :
+                      away_nhl_momentum.momentum_score < 40 ? 'text-red-400' :
+                      'text-slate-300'
+                    }`}>{away_nhl_momentum.momentum_score.toFixed(1)}</span>
+                  </div>
+                  <div className="flex justify-between mb-0.5">
+                    <span className="text-slate-400">Shots:</span>
+                    <span className={
+                      home_nhl_momentum && away_nhl_momentum.recent_shots > home_nhl_momentum.recent_shots
+                        ? 'text-green-400'
+                        : 'text-slate-300'
+                    }>{away_nhl_momentum.recent_shots}</span>
+                  </div>
+                  <div className="flex justify-between mb-0.5">
+                    <span className="text-slate-400">Chances:</span>
+                    <span className={
+                      home_nhl_momentum && away_nhl_momentum.scoring_chances > home_nhl_momentum.scoring_chances
+                        ? 'text-green-400'
+                        : 'text-slate-300'
+                    }>{away_nhl_momentum.scoring_chances}</span>
+                  </div>
+                  <div className="flex justify-between mb-0.5">
+                    <span className="text-slate-400">Faceoffs:</span>
+                    <span className={
+                      home_nhl_momentum && away_nhl_momentum.faceoff_wins > home_nhl_momentum.faceoff_wins
+                        ? 'text-green-400'
+                        : 'text-slate-300'
+                    }>{away_nhl_momentum.faceoff_wins}</span>
+                  </div>
+                  <div className="flex justify-between mb-0.5">
+                    <span className="text-slate-400">Zone Events:</span>
+                    <span className={
+                      home_nhl_momentum && away_nhl_momentum.offensive_zone_events > home_nhl_momentum.offensive_zone_events
+                        ? 'text-green-400'
+                        : 'text-slate-300'
+                    }>{away_nhl_momentum.offensive_zone_events}</span>
+                  </div>
+                  <div className="flex justify-between mb-0.5">
+                    <span className="text-slate-400">PP Opps:</span>
+                    <span className="text-slate-300">{away_nhl_momentum.power_play_opps || '0/0'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">PIM:</span>
+                    <span className={
+                      home_nhl_momentum && (away_nhl_momentum.penalty_minutes || 0) < (home_nhl_momentum.penalty_minutes || 0)
+                        ? 'text-green-400'
+                        : 'text-slate-300'
+                    }>{away_nhl_momentum.penalty_minutes || 0}</span>
+                  </div>
+                  {away_nhl_momentum.possession_indicator && (
+                    <div className="mt-1">
+                      <span className={`text-[10px] px-2 py-0.5 rounded ${
+                        away_nhl_momentum.possession_indicator === 'ATTACKING' ? 'bg-green-900 text-green-200' :
+                        away_nhl_momentum.possession_indicator === 'DEFENDING' ? 'bg-red-900 text-red-200' :
+                        'bg-slate-700 text-slate-300'
+                      }`}>
+                        {away_nhl_momentum.possession_indicator}
+                      </span>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Home Team Momentum */}
+            <div>
+              <div className="text-slate-400 font-semibold mb-1">{state.home_team.name.split(' ').pop()}</div>
+              {home_nhl_momentum && (
+                <>
+                  <div className="flex justify-between mb-0.5">
+                    <span className="text-slate-400">Momentum:</span>
+                    <span className={`font-semibold ${
+                      home_nhl_momentum.momentum_score > 60 ? 'text-green-400' :
+                      home_nhl_momentum.momentum_score < 40 ? 'text-red-400' :
+                      'text-slate-300'
+                    }`}>{home_nhl_momentum.momentum_score.toFixed(1)}</span>
+                  </div>
+                  <div className="flex justify-between mb-0.5">
+                    <span className="text-slate-400">Shots:</span>
+                    <span className={
+                      away_nhl_momentum && home_nhl_momentum.recent_shots > away_nhl_momentum.recent_shots
+                        ? 'text-green-400'
+                        : 'text-slate-300'
+                    }>{home_nhl_momentum.recent_shots}</span>
+                  </div>
+                  <div className="flex justify-between mb-0.5">
+                    <span className="text-slate-400">Chances:</span>
+                    <span className={
+                      away_nhl_momentum && home_nhl_momentum.scoring_chances > away_nhl_momentum.scoring_chances
+                        ? 'text-green-400'
+                        : 'text-slate-300'
+                    }>{home_nhl_momentum.scoring_chances}</span>
+                  </div>
+                  <div className="flex justify-between mb-0.5">
+                    <span className="text-slate-400">Faceoffs:</span>
+                    <span className={
+                      away_nhl_momentum && home_nhl_momentum.faceoff_wins > away_nhl_momentum.faceoff_wins
+                        ? 'text-green-400'
+                        : 'text-slate-300'
+                    }>{home_nhl_momentum.faceoff_wins}</span>
+                  </div>
+                  <div className="flex justify-between mb-0.5">
+                    <span className="text-slate-400">Zone Events:</span>
+                    <span className={
+                      away_nhl_momentum && home_nhl_momentum.offensive_zone_events > away_nhl_momentum.offensive_zone_events
+                        ? 'text-green-400'
+                        : 'text-slate-300'
+                    }>{home_nhl_momentum.offensive_zone_events}</span>
+                  </div>
+                  <div className="flex justify-between mb-0.5">
+                    <span className="text-slate-400">PP Opps:</span>
+                    <span className="text-slate-300">{home_nhl_momentum.power_play_opps || '0/0'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">PIM:</span>
+                    <span className={
+                      away_nhl_momentum && (home_nhl_momentum.penalty_minutes || 0) < (away_nhl_momentum.penalty_minutes || 0)
+                        ? 'text-green-400'
+                        : 'text-slate-300'
+                    }>{home_nhl_momentum.penalty_minutes || 0}</span>
+                  </div>
+                  {home_nhl_momentum.possession_indicator && (
+                    <div className="mt-1">
+                      <span className={`text-[10px] px-2 py-0.5 rounded ${
+                        home_nhl_momentum.possession_indicator === 'ATTACKING' ? 'bg-green-900 text-green-200' :
+                        home_nhl_momentum.possession_indicator === 'DEFENDING' ? 'bg-red-900 text-red-200' :
+                        'bg-slate-700 text-slate-300'
+                      }`}>
+                        {home_nhl_momentum.possession_indicator}
+                      </span>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* NHL Season Stats Section */}
+      {sportBadge === 'NHL' && (away_nhl_stats || home_nhl_stats) && (
+        <div className="mb-3 border-t border-slate-700 pt-3">
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-xs text-slate-400">NHL Season Stats</div>
+            <div className="flex gap-1">
+              <button
+                onClick={() => setStatsView('stats')}
+                className={`px-2 py-0.5 text-[10px] rounded transition-colors ${
+                  statsView === 'stats'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                }`}
+              >
+                Stats
+              </button>
+              <button
+                onClick={() => setStatsView('rankings')}
+                className={`px-2 py-0.5 text-[10px] rounded transition-colors ${
+                  statsView === 'rankings'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                }`}
+              >
+                Ranks
+              </button>
+              <button
+                onClick={() => setStatsView('combined')}
+                className={`px-2 py-0.5 text-[10px] rounded transition-colors ${
+                  statsView === 'combined'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                }`}
+              >
+                Both
+              </button>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4 text-xs">
+            {/* Away Team Stats */}
+            <div className="space-y-1">
+              <div className="text-slate-100 font-bold mb-2 text-center text-sm">{state.away_team.name}</div>
+              {away_nhl_stats && (
+                <>
+                  {(statsView === 'stats' || statsView === 'combined') && (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Record:</span>
+                        <span className={`font-semibold ${
+                          home_nhl_stats && away_nhl_stats.win_pct > home_nhl_stats.win_pct
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }`}>{away_nhl_stats.wins}-{away_nhl_stats.losses}-{away_nhl_stats.ot_losses}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Points:</span>
+                        <span className={
+                          home_nhl_stats && away_nhl_stats.points > home_nhl_stats.points
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }>{away_nhl_stats.points}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">GF/G:</span>
+                        <span className={
+                          home_nhl_stats && away_nhl_stats.goals_per_game > home_nhl_stats.goals_per_game
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }>{away_nhl_stats.goals_per_game.toFixed(2)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">GA/G:</span>
+                        <span className={
+                          home_nhl_stats && away_nhl_stats.goals_against_per_game < home_nhl_stats.goals_against_per_game
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }>{away_nhl_stats.goals_against_per_game.toFixed(2)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">PP%:</span>
+                        <span className={
+                          home_nhl_stats && away_nhl_stats.power_play_pct > home_nhl_stats.power_play_pct
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }>{(away_nhl_stats.power_play_pct * 100).toFixed(1)}%</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">PK%:</span>
+                        <span className={
+                          home_nhl_stats && away_nhl_stats.penalty_kill_pct > home_nhl_stats.penalty_kill_pct
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }>{(away_nhl_stats.penalty_kill_pct * 100).toFixed(1)}%</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">SV%:</span>
+                        <span className={
+                          home_nhl_stats && away_nhl_stats.save_pct > home_nhl_stats.save_pct
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }>{(away_nhl_stats.save_pct * 100).toFixed(1)}%</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Shots/G:</span>
+                        <span className={
+                          home_nhl_stats && away_nhl_stats.shots_per_game > home_nhl_stats.shots_per_game
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }>{away_nhl_stats.shots_per_game.toFixed(1)}</span>
+                      </div>
+                      {away_nhl_stats.form_trend && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-400">Form:</span>
+                          <span className={`px-1 py-0.5 rounded text-[10px] ${
+                            away_nhl_stats.form_trend === 'HOT' ? 'bg-green-900 text-green-200' :
+                            away_nhl_stats.form_trend === 'COLD' ? 'bg-red-900 text-red-200' :
+                            'bg-slate-700 text-slate-300'
+                          }`}>{away_nhl_stats.form_trend}</span>
+                        </div>
+                      )}
+                    </>
+                  )}
+                  {(statsView === 'rankings' || statsView === 'combined') && (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">GF/G Rank:</span>
+                        <span className={`font-bold ${getRankColor(away_nhl_stats.goals_per_game_rank || 32)}`}>#{away_nhl_stats.goals_per_game_rank || 'N/A'}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">GA/G Rank:</span>
+                        <span className={`font-bold ${getRankColor(away_nhl_stats.goals_against_per_game_rank || 32)}`}>#{away_nhl_stats.goals_against_per_game_rank || 'N/A'}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Shots/G Rank:</span>
+                        <span className={`font-bold ${getRankColor(away_nhl_stats.shots_per_game_rank || 32)}`}>#{away_nhl_stats.shots_per_game_rank || 'N/A'}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">SA/G Rank:</span>
+                        <span className={`font-bold ${getRankColor(away_nhl_stats.shots_against_per_game_rank || 32)}`}>#{away_nhl_stats.shots_against_per_game_rank || 'N/A'}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">PP% Rank:</span>
+                        <span className={`font-bold ${getRankColor(away_nhl_stats.power_play_pct_rank || 32)}`}>#{away_nhl_stats.power_play_pct_rank || 'N/A'}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">PK% Rank:</span>
+                        <span className={`font-bold ${getRankColor(away_nhl_stats.penalty_kill_pct_rank || 32)}`}>#{away_nhl_stats.penalty_kill_pct_rank || 'N/A'}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">SV% Rank:</span>
+                        <span className={`font-bold ${getRankColor(away_nhl_stats.save_pct_rank || 32)}`}>#{away_nhl_stats.save_pct_rank || 'N/A'}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">PDO Rank:</span>
+                        <span className={`font-bold ${getRankColor(away_nhl_stats.pdo_rank || 32)}`}>#{away_nhl_stats.pdo_rank || 'N/A'}</span>
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Home Team Stats */}
+            <div className="space-y-1">
+              <div className="text-slate-100 font-bold mb-2 text-center text-sm">{state.home_team.name}</div>
+              {home_nhl_stats && (
+                <>
+                  {(statsView === 'stats' || statsView === 'combined') && (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Record:</span>
+                        <span className={`font-semibold ${
+                          away_nhl_stats && home_nhl_stats.win_pct > away_nhl_stats.win_pct
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }`}>{home_nhl_stats.wins}-{home_nhl_stats.losses}-{home_nhl_stats.ot_losses}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Points:</span>
+                        <span className={
+                          away_nhl_stats && home_nhl_stats.points > away_nhl_stats.points
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }>{home_nhl_stats.points}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">GF/G:</span>
+                        <span className={
+                          away_nhl_stats && home_nhl_stats.goals_per_game > away_nhl_stats.goals_per_game
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }>{home_nhl_stats.goals_per_game.toFixed(2)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">GA/G:</span>
+                        <span className={
+                          away_nhl_stats && home_nhl_stats.goals_against_per_game < away_nhl_stats.goals_against_per_game
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }>{home_nhl_stats.goals_against_per_game.toFixed(2)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">PP%:</span>
+                        <span className={
+                          away_nhl_stats && home_nhl_stats.power_play_pct > away_nhl_stats.power_play_pct
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }>{(home_nhl_stats.power_play_pct * 100).toFixed(1)}%</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">PK%:</span>
+                        <span className={
+                          away_nhl_stats && home_nhl_stats.penalty_kill_pct > away_nhl_stats.penalty_kill_pct
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }>{(home_nhl_stats.penalty_kill_pct * 100).toFixed(1)}%</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">SV%:</span>
+                        <span className={
+                          away_nhl_stats && home_nhl_stats.save_pct > away_nhl_stats.save_pct
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }>{(home_nhl_stats.save_pct * 100).toFixed(1)}%</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Shots/G:</span>
+                        <span className={
+                          away_nhl_stats && home_nhl_stats.shots_per_game > away_nhl_stats.shots_per_game
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }>{home_nhl_stats.shots_per_game.toFixed(1)}</span>
+                      </div>
+                      {home_nhl_stats.form_trend && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-400">Form:</span>
+                          <span className={`px-1 py-0.5 rounded text-[10px] ${
+                            home_nhl_stats.form_trend === 'HOT' ? 'bg-green-900 text-green-200' :
+                            home_nhl_stats.form_trend === 'COLD' ? 'bg-red-900 text-red-200' :
+                            'bg-slate-700 text-slate-300'
+                          }`}>{home_nhl_stats.form_trend}</span>
+                        </div>
+                      )}
+                    </>
+                  )}
+                  {(statsView === 'rankings' || statsView === 'combined') && (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">GF/G Rank:</span>
+                        <span className={`font-bold ${getRankColor(home_nhl_stats.goals_per_game_rank || 32)}`}>#{home_nhl_stats.goals_per_game_rank || 'N/A'}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">GA/G Rank:</span>
+                        <span className={`font-bold ${getRankColor(home_nhl_stats.goals_against_per_game_rank || 32)}`}>#{home_nhl_stats.goals_against_per_game_rank || 'N/A'}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Shots/G Rank:</span>
+                        <span className={`font-bold ${getRankColor(home_nhl_stats.shots_per_game_rank || 32)}`}>#{home_nhl_stats.shots_per_game_rank || 'N/A'}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">SA/G Rank:</span>
+                        <span className={`font-bold ${getRankColor(home_nhl_stats.shots_against_per_game_rank || 32)}`}>#{home_nhl_stats.shots_against_per_game_rank || 'N/A'}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">PP% Rank:</span>
+                        <span className={`font-bold ${getRankColor(home_nhl_stats.power_play_pct_rank || 32)}`}>#{home_nhl_stats.power_play_pct_rank || 'N/A'}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">PK% Rank:</span>
+                        <span className={`font-bold ${getRankColor(home_nhl_stats.penalty_kill_pct_rank || 32)}`}>#{home_nhl_stats.penalty_kill_pct_rank || 'N/A'}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">SV% Rank:</span>
+                        <span className={`font-bold ${getRankColor(home_nhl_stats.save_pct_rank || 32)}`}>#{home_nhl_stats.save_pct_rank || 'N/A'}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">PDO Rank:</span>
+                        <span className={`font-bold ${getRankColor(home_nhl_stats.pdo_rank || 32)}`}>#{home_nhl_stats.pdo_rank || 'N/A'}</span>
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* NFL Season Stats Section */}
+      {(sportBadge === 'NFL' || sportBadge === 'NCAAF') && (away_nfl_stats || home_nfl_stats) && (
+        <div className="mb-3 border-t border-slate-700 pt-3">
+          {/* Stats View Toggle */}
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-xs text-slate-400">Season Stats</div>
+            <div className="flex gap-1">
+              <button
+                onClick={() => setStatsView('stats')}
+                className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-all ${
+                  statsView === 'stats'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-700 text-slate-400 hover:bg-slate-600'
+                }`}
+              >
+                Stats
+              </button>
+              <button
+                onClick={() => setStatsView('rankings')}
+                className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-all ${
+                  statsView === 'rankings'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-700 text-slate-400 hover:bg-slate-600'
+                }`}
+              >
+                Ranks
+              </button>
+              <button
+                onClick={() => setStatsView('combined')}
+                className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-all ${
+                  statsView === 'combined'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-700 text-slate-400 hover:bg-slate-600'
+                }`}
+              >
+                Both
+              </button>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4 text-xs">
+            {/* Away Team Stats */}
+            <div className="space-y-1">
+              <div className="text-slate-100 font-bold mb-2 text-center text-sm">{state.away_team.name}</div>
+              {away_nfl_stats && (
+                <>
+                  {/* RANKINGS VIEW - Show only rankings */}
+                  {statsView === 'rankings' && (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Off Rank:</span>
+                        <span className={`font-bold ${getRankColor(away_nfl_stats.points_per_game_rank || 32)}`}>
+                          #{away_nfl_stats.points_per_game_rank || 'N/A'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Def Rank:</span>
+                        <span className={`font-bold ${getRankColor(away_nfl_stats.points_allowed_per_game_rank || 32)}`}>
+                          #{away_nfl_stats.points_allowed_per_game_rank || 'N/A'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Pass Off:</span>
+                        <span className={`font-bold ${getRankColor(away_nfl_stats.passing_yards_per_game_rank || 32)}`}>
+                          #{away_nfl_stats.passing_yards_per_game_rank || 'N/A'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Rush Off:</span>
+                        <span className={`font-bold ${getRankColor(away_nfl_stats.rushing_yards_per_game_rank || 32)}`}>
+                          #{away_nfl_stats.rushing_yards_per_game_rank || 'N/A'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">TO Margin:</span>
+                        <span className={`font-bold ${getRankColor(away_nfl_stats.turnover_differential_rank || 32)}`}>
+                          #{away_nfl_stats.turnover_differential_rank || 'N/A'}
+                        </span>
+                      </div>
+                    </>
+                  )}
+
+                  {/* COMBINED VIEW - Show stats with rankings */}
+                  {statsView === 'combined' && (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">PPG:</span>
+                        <span className={`font-bold ${
+                          home_nfl_stats && away_nfl_stats.points_per_game > home_nfl_stats.points_per_game
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }`}>
+                          {away_nfl_stats.points_per_game.toFixed(1)}
+                          <span className={`text-[10px] ml-1 ${getRankColor(away_nfl_stats.points_per_game_rank || 32)}`}>
+                            (#{away_nfl_stats.points_per_game_rank || 'N/A'})
+                          </span>
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">PA/G:</span>
+                        <span className={`font-bold ${
+                          home_nfl_stats && away_nfl_stats.points_allowed_per_game < home_nfl_stats.points_allowed_per_game
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }`}>
+                          {away_nfl_stats.points_allowed_per_game.toFixed(1)}
+                          <span className={`text-[10px] ml-1 ${getRankColor(away_nfl_stats.points_allowed_per_game_rank || 32)}`}>
+                            (#{away_nfl_stats.points_allowed_per_game_rank || 'N/A'})
+                          </span>
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Pass YPG:</span>
+                        <span className={`font-bold ${
+                          home_nfl_stats && away_nfl_stats.passing_yards_per_game > home_nfl_stats.passing_yards_per_game
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }`}>
+                          {away_nfl_stats.passing_yards_per_game.toFixed(0)}
+                          <span className={`text-[10px] ml-1 ${getRankColor(away_nfl_stats.passing_yards_per_game_rank || 32)}`}>
+                            (#{away_nfl_stats.passing_yards_per_game_rank || 'N/A'})
+                          </span>
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Rush YPG:</span>
+                        <span className={`font-bold ${
+                          home_nfl_stats && away_nfl_stats.rushing_yards_per_game > home_nfl_stats.rushing_yards_per_game
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }`}>
+                          {away_nfl_stats.rushing_yards_per_game.toFixed(0)}
+                          <span className={`text-[10px] ml-1 ${getRankColor(away_nfl_stats.rushing_yards_per_game_rank || 32)}`}>
+                            (#{away_nfl_stats.rushing_yards_per_game_rank || 'N/A'})
+                          </span>
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">TO Diff:</span>
+                        <span className={`font-bold ${
+                          away_nfl_stats.turnover_differential > 0 ? 'text-green-400' :
+                          away_nfl_stats.turnover_differential < 0 ? 'text-red-400' :
+                          'text-slate-200'
+                        }`}>
+                          {away_nfl_stats.turnover_differential > 0 ? '+' : ''}{away_nfl_stats.turnover_differential.toFixed(1)}
+                          <span className={`text-[10px] ml-1 ${getRankColor(away_nfl_stats.turnover_differential_rank || 32)}`}>
+                            (#{away_nfl_stats.turnover_differential_rank || 'N/A'})
+                          </span>
+                        </span>
+                      </div>
+                    </>
+                  )}
+
+                  {/* STATS VIEW (DEFAULT) - Show only stats */}
+                  {statsView === 'stats' && (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Record:</span>
+                        <span className={`font-semibold ${
+                          home_nfl_stats && away_nfl_stats.win_pct > home_nfl_stats.win_pct
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }`}>{away_nfl_stats.wins}-{away_nfl_stats.losses}{away_nfl_stats.ties > 0 ? `-${away_nfl_stats.ties}` : ''}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">PPG:</span>
+                        <span className={`font-bold ${
+                          home_nfl_stats && away_nfl_stats.points_per_game > home_nfl_stats.points_per_game
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }`}>{away_nfl_stats.points_per_game.toFixed(1)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">PA/G:</span>
+                        <span className={`font-bold ${
+                          home_nfl_stats && away_nfl_stats.points_allowed_per_game < home_nfl_stats.points_allowed_per_game
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }`}>{away_nfl_stats.points_allowed_per_game.toFixed(1)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Yards/G:</span>
+                        <span className={`font-bold ${
+                          home_nfl_stats && away_nfl_stats.total_yards_per_game > home_nfl_stats.total_yards_per_game
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }`}>{away_nfl_stats.total_yards_per_game.toFixed(0)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Pass YPG:</span>
+                        <span className={`font-bold ${
+                          home_nfl_stats && away_nfl_stats.passing_yards_per_game > home_nfl_stats.passing_yards_per_game
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }`}>{away_nfl_stats.passing_yards_per_game.toFixed(0)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Rush YPG:</span>
+                        <span className={`font-bold ${
+                          home_nfl_stats && away_nfl_stats.rushing_yards_per_game > home_nfl_stats.rushing_yards_per_game
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }`}>{away_nfl_stats.rushing_yards_per_game.toFixed(0)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">TO Diff:</span>
+                        <span className={`font-bold ${
+                          away_nfl_stats.turnover_differential > 0 ? 'text-green-400' :
+                          away_nfl_stats.turnover_differential < 0 ? 'text-red-400' :
+                          'text-slate-200'
+                        }`}>{away_nfl_stats.turnover_differential > 0 ? '+' : ''}{away_nfl_stats.turnover_differential.toFixed(1)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">3rd Down:</span>
+                        <span className={`font-bold ${
+                      home_nfl_stats && away_nfl_stats.third_down_pct > home_nfl_stats.third_down_pct
+                        ? 'text-green-400'
+                        : 'text-slate-200'
+                    }`}>{(away_nfl_stats.third_down_pct * 100).toFixed(1)}%</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-400">Red Zone:</span>
+                    <span className={`font-bold ${
+                      home_nfl_stats && away_nfl_stats.red_zone_pct > home_nfl_stats.red_zone_pct
+                        ? 'text-green-400'
+                        : 'text-slate-200'
+                    }`}>{(away_nfl_stats.red_zone_pct * 100).toFixed(1)}%</span>
+                  </div>
+                  {away_nfl_stats.form_trend && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400">Form:</span>
+                      <span className={`px-1 py-0.5 rounded text-[10px] ${
+                        away_nfl_stats.form_trend === 'HOT' ? 'bg-green-900 text-green-200' :
+                        away_nfl_stats.form_trend === 'COLD' ? 'bg-red-900 text-red-200' :
+                        'bg-slate-700 text-slate-300'
+                      }`}>{away_nfl_stats.form_trend}</span>
+                    </div>
+                  )}
+                </>
+              )}
+                </>
+              )}
+            </div>
+
+            {/* Home Team Stats */}
+            <div className="space-y-1">
+              <div className="text-slate-100 font-bold mb-2 text-center text-sm">{state.home_team.name}</div>
+              {home_nfl_stats && (
+                <>
+                  {/* RANKINGS VIEW - Show only rankings */}
+                  {statsView === 'rankings' && (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Off Rank:</span>
+                        <span className={`font-bold ${getRankColor(home_nfl_stats.points_per_game_rank || 32)}`}>
+                          #{home_nfl_stats.points_per_game_rank || 'N/A'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Def Rank:</span>
+                        <span className={`font-bold ${getRankColor(home_nfl_stats.points_allowed_per_game_rank || 32)}`}>
+                          #{home_nfl_stats.points_allowed_per_game_rank || 'N/A'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Pass Off:</span>
+                        <span className={`font-bold ${getRankColor(home_nfl_stats.passing_yards_per_game_rank || 32)}`}>
+                          #{home_nfl_stats.passing_yards_per_game_rank || 'N/A'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Rush Off:</span>
+                        <span className={`font-bold ${getRankColor(home_nfl_stats.rushing_yards_per_game_rank || 32)}`}>
+                          #{home_nfl_stats.rushing_yards_per_game_rank || 'N/A'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">TO Margin:</span>
+                        <span className={`font-bold ${getRankColor(home_nfl_stats.turnover_differential_rank || 32)}`}>
+                          #{home_nfl_stats.turnover_differential_rank || 'N/A'}
+                        </span>
+                      </div>
+                    </>
+                  )}
+
+                  {/* COMBINED VIEW - Show stats with rankings */}
+                  {statsView === 'combined' && (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">PPG:</span>
+                        <span className={`font-bold ${
+                          away_nfl_stats && home_nfl_stats.points_per_game > away_nfl_stats.points_per_game
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }`}>
+                          {home_nfl_stats.points_per_game.toFixed(1)}
+                          <span className={`text-[10px] ml-1 ${getRankColor(home_nfl_stats.points_per_game_rank || 32)}`}>
+                            (#{home_nfl_stats.points_per_game_rank || 'N/A'})
+                          </span>
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">PA/G:</span>
+                        <span className={`font-bold ${
+                          away_nfl_stats && home_nfl_stats.points_allowed_per_game < away_nfl_stats.points_allowed_per_game
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }`}>
+                          {home_nfl_stats.points_allowed_per_game.toFixed(1)}
+                          <span className={`text-[10px] ml-1 ${getRankColor(home_nfl_stats.points_allowed_per_game_rank || 32)}`}>
+                            (#{home_nfl_stats.points_allowed_per_game_rank || 'N/A'})
+                          </span>
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Pass YPG:</span>
+                        <span className={`font-bold ${
+                          away_nfl_stats && home_nfl_stats.passing_yards_per_game > away_nfl_stats.passing_yards_per_game
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }`}>
+                          {home_nfl_stats.passing_yards_per_game.toFixed(0)}
+                          <span className={`text-[10px] ml-1 ${getRankColor(home_nfl_stats.passing_yards_per_game_rank || 32)}`}>
+                            (#{home_nfl_stats.passing_yards_per_game_rank || 'N/A'})
+                          </span>
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Rush YPG:</span>
+                        <span className={`font-bold ${
+                          away_nfl_stats && home_nfl_stats.rushing_yards_per_game > away_nfl_stats.rushing_yards_per_game
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }`}>
+                          {home_nfl_stats.rushing_yards_per_game.toFixed(0)}
+                          <span className={`text-[10px] ml-1 ${getRankColor(home_nfl_stats.rushing_yards_per_game_rank || 32)}`}>
+                            (#{home_nfl_stats.rushing_yards_per_game_rank || 'N/A'})
+                          </span>
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">TO Diff:</span>
+                        <span className={`font-bold ${
+                          home_nfl_stats.turnover_differential > 0 ? 'text-green-400' :
+                          home_nfl_stats.turnover_differential < 0 ? 'text-red-400' :
+                          'text-slate-200'
+                        }`}>
+                          {home_nfl_stats.turnover_differential > 0 ? '+' : ''}{home_nfl_stats.turnover_differential.toFixed(1)}
+                          <span className={`text-[10px] ml-1 ${getRankColor(home_nfl_stats.turnover_differential_rank || 32)}`}>
+                            (#{home_nfl_stats.turnover_differential_rank || 'N/A'})
+                          </span>
+                        </span>
+                      </div>
+                    </>
+                  )}
+
+                  {/* STATS VIEW (DEFAULT) - Show only stats */}
+                  {statsView === 'stats' && (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Record:</span>
+                        <span className={`font-semibold ${
+                          away_nfl_stats && home_nfl_stats.win_pct > away_nfl_stats.win_pct
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }`}>{home_nfl_stats.wins}-{home_nfl_stats.losses}{home_nfl_stats.ties > 0 ? `-${home_nfl_stats.ties}` : ''}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">PPG:</span>
+                        <span className={`font-bold ${
+                          away_nfl_stats && home_nfl_stats.points_per_game > away_nfl_stats.points_per_game
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }`}>{home_nfl_stats.points_per_game.toFixed(1)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">PA/G:</span>
+                        <span className={`font-bold ${
+                          away_nfl_stats && home_nfl_stats.points_allowed_per_game < away_nfl_stats.points_allowed_per_game
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }`}>{home_nfl_stats.points_allowed_per_game.toFixed(1)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Yards/G:</span>
+                        <span className={`font-bold ${
+                          away_nfl_stats && home_nfl_stats.total_yards_per_game > away_nfl_stats.total_yards_per_game
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }`}>{home_nfl_stats.total_yards_per_game.toFixed(0)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Pass YPG:</span>
+                        <span className={`font-bold ${
+                          away_nfl_stats && home_nfl_stats.passing_yards_per_game > away_nfl_stats.passing_yards_per_game
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }`}>{home_nfl_stats.passing_yards_per_game.toFixed(0)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Rush YPG:</span>
+                        <span className={`font-bold ${
+                          away_nfl_stats && home_nfl_stats.rushing_yards_per_game > away_nfl_stats.rushing_yards_per_game
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }`}>{home_nfl_stats.rushing_yards_per_game.toFixed(0)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">TO Diff:</span>
+                        <span className={`font-bold ${
+                          home_nfl_stats.turnover_differential > 0 ? 'text-green-400' :
+                          home_nfl_stats.turnover_differential < 0 ? 'text-red-400' :
+                          'text-slate-200'
+                        }`}>{home_nfl_stats.turnover_differential > 0 ? '+' : ''}{home_nfl_stats.turnover_differential.toFixed(1)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">3rd Down:</span>
+                        <span className={`font-bold ${
+                          away_nfl_stats && home_nfl_stats.third_down_pct > away_nfl_stats.third_down_pct
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }`}>{(home_nfl_stats.third_down_pct * 100).toFixed(1)}%</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Red Zone:</span>
+                        <span className={`font-bold ${
+                          away_nfl_stats && home_nfl_stats.red_zone_pct > away_nfl_stats.red_zone_pct
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }`}>{(home_nfl_stats.red_zone_pct * 100).toFixed(1)}%</span>
+                      </div>
+                      {home_nfl_stats.form_trend && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-400">Form:</span>
+                          <span className={`px-1 py-0.5 rounded text-[10px] ${
+                            home_nfl_stats.form_trend === 'HOT' ? 'bg-green-900 text-green-200' :
+                            home_nfl_stats.form_trend === 'COLD' ? 'bg-red-900 text-red-200' :
+                            'bg-slate-700 text-slate-300'
+                          }`}>{home_nfl_stats.form_trend}</span>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Odds Summary */}
+      <div className="border-t border-slate-700 pt-3 space-y-2">
+        <div className="flex justify-between text-sm">
+          <span className="text-slate-400">Pregame Total (FD):</span>
+          <span className="font-bold text-white">{Math.round(projection.pregame_total)}</span>
+        </div>
+        <div className="flex justify-between text-sm">
+          <span className="text-slate-400">Current Live Avg:</span>
+          <span className="font-bold text-white">{avgTotal}</span>
+        </div>
+        {projection.line_movement !== null && projection.line_movement !== undefined && (
+          <div className="flex justify-between text-sm">
+            <span className="text-slate-400">Line Movement:</span>
+            <span className={`font-bold ${projection.line_movement > 0 ? 'text-green-400' : projection.line_movement < 0 ? 'text-red-400' : 'text-white'}`}>
+              {projection.line_movement > 0 ? '+' : ''}{projection.line_movement.toFixed(1)}
+            </span>
+          </div>
+        )}
+        {projection.best_book_disparity && projection.best_disparity_amount && (
+          <div className="flex justify-between text-sm">
+            <span className="text-slate-400">Biggest Outlier:</span>
+            <span className="font-bold text-yellow-400">{projection.best_book_disparity} (<span className="font-bold">{projection.best_disparity_amount.toFixed(1)}</span>)</span>
+          </div>
+        )}
+      </div>
+
+      {/* Projection (only for live games) */}
+      {state.status === 'live' && projection.projected_final > 0 && (
+        <div className="border-t border-slate-700 mt-3 pt-3 space-y-2">
+          <div className="flex justify-between text-sm">
+            <span className="text-slate-400">Projected:</span>
+            <span className="font-bold text-blue-400">{projection.projected_final.toFixed(1)}</span>
+          </div>
+          {projection.edge !== null && (
+            <div className="flex justify-between text-sm">
+              <span className="text-slate-400">Edge:</span>
+              <span className={`font-bold ${
+                Math.abs(projection.edge) >= 5
+                  ? projection.edge > 0 ? 'text-green-400' : 'text-red-400'
+                  : 'text-slate-300'
+              }`}>
+                {projection.edge > 0 ? '+' : ''}{projection.edge.toFixed(1)}
+              </span>
+            </div>
+          )}
+          {projection.pace_indicator && (
+            <div className="flex justify-between text-sm">
+              <span className="text-slate-400">Pace:</span>
+              <span className="text-slate-300">{projection.pace_indicator}</span>
+            </div>
+          )}
+          {projection.strength_factor !== null && projection.strength_factor !== undefined && (
+            <div className="flex justify-between text-sm">
+              <span className="text-slate-400">Strength:</span>
+              <div className="flex items-center gap-2">
+                <div className="w-24 h-2 bg-slate-700 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full transition-all ${
+                      projection.strength_factor >= 70 ? 'bg-green-500' :
+                      projection.strength_factor >= 50 ? 'bg-yellow-500' :
+                      projection.strength_factor >= 30 ? 'bg-orange-500' : 'bg-red-500'
+                    }`}
+                    style={{ width: `${Math.min(100, projection.strength_factor)}%` }}
+                  />
+                </div>
+                <span className={`font-bold ${
+                  projection.strength_factor >= 70 ? 'text-green-400' :
+                  projection.strength_factor >= 50 ? 'text-yellow-400' :
+                  projection.strength_factor >= 30 ? 'text-orange-400' : 'text-red-400'
+                }`}>
+                  {projection.strength_factor.toFixed(1)}
+                </span>
+              </div>
+            </div>
+          )}
+          {projection.unit_recommendation !== null && projection.unit_recommendation !== undefined && projection.unit_recommendation > 0 && (
+            <div className="flex justify-between text-sm">
+              <span className="text-slate-400">Bet Size:</span>
+              <span className="font-bold text-purple-400">{projection.unit_recommendation.toFixed(1)} units</span>
+            </div>
+          )}
+          {projection.recommendation && (
+            <div className={`text-center font-bold text-sm py-2 rounded ${
+              projection.recommendation === 'OVER'
+                ? 'bg-green-900 text-green-200'
+                : 'bg-red-900 text-red-200'
+            }`}>
+              BET {projection.recommendation}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* All Odds with Latency */}
+      {odds.length > 0 && (
+        <div className="border-t border-slate-700 mt-3 pt-3">
+          <div className="text-xs text-slate-400 mb-2">
+            Sportsbook Lines & Speed (Best Overs ↑ / Best Unders ↓)
+            <div className="text-[10px] text-slate-500 mt-0.5">Latency times are approximate and vary by sport</div>
+          </div>
+          <div className="space-y-1">
+            {(() => {
+              // Deduplicate odds by bookmaker (keep first occurrence)
+              const uniqueOdds = odds.filter((odd, index, self) =>
+                index === self.findIndex((o) => o.bookmaker === odd.bookmaker)
+              );
+
+              // Find min and max latency across all books
+              const latencies = uniqueOdds.map(o => o.latency_ms).filter(l => l !== null && l !== undefined) as number[];
+              const minLatency = latencies.length > 0 ? Math.min(...latencies) : null;
+              const maxLatency = latencies.length > 0 ? Math.max(...latencies) : null;
+
+              return uniqueOdds.map((odd, idx) => {
+                // Determine if this book should be highlighted based on recommendation
+                const shouldHighlight = projection.recommendation && (
+                  (projection.recommendation === 'OVER' && odd.is_best_over) ||
+                  (projection.recommendation === 'UNDER' && odd.is_best_under)
+                );
+
+                // Only highlight fastest (red) and slowest (green)
+                const getLatencyColor = (latencyMs: number | null) => {
+                  if (latencyMs === null || latencyMs === undefined) return 'text-slate-400';
+                  if (minLatency !== null && latencyMs === minLatency) return 'text-red-400'; // Fastest = worst
+                  if (maxLatency !== null && latencyMs === maxLatency && maxLatency > minLatency) return 'text-green-400'; // Slowest = best
+                  return 'text-slate-400'; // Everything else neutral
+                };
+
+                // Format latency for display
+                const formatLatency = (latencyMs: number | null) => {
+                  if (latencyMs === null || latencyMs === undefined) return '';
+                  if (latencyMs === 0) return '~0s';
+                  if (latencyMs < 1000) return '~<1s';
+                  const seconds = Math.round(latencyMs / 1000);
+                  return `~${seconds}s`;
+                };
+
+                // Only show edge for slowest book
+                const getBettorEdge = (latencyMs: number | null) => {
+                  if (latencyMs === null || latencyMs === undefined) return '';
+                  if (maxLatency === null || latencyMs !== maxLatency || maxLatency === minLatency) return '';
+
+                  // Calculate edge based on actual delay
+                  if (maxLatency < 5000) return '(+0.5%)';
+                  if (maxLatency < 15000) return '(+1.5%)';
+                  return '(+3%)';
+                };
+
+                const bookmakerInfo = getBookmakerInfo(odd.bookmaker);
+
+                return (
+                  <div
+                    key={idx}
+                    className={`flex justify-between items-center text-xs p-1 rounded ${
+                      shouldHighlight ? 'bg-blue-900/50 border border-blue-500' : ''
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-0.5 rounded font-bold text-xs ${bookmakerInfo.bg} ${bookmakerInfo.text}`}>
+                        {odd.bookmaker}
+                      </span>
+                      {shouldHighlight && <span className="text-blue-300">⭐</span>}
+                      <span className={`${getLatencyColor(odd.latency_ms)} text-xs font-bold`} title="Slower books give you more time to react">
+                        {formatLatency(odd.latency_ms)} {getBettorEdge(odd.latency_ms)}
+                      </span>
+                    </div>
+                    <span className={`${shouldHighlight ? 'text-blue-200 font-bold text-sm' : 'text-slate-300 font-bold'}`}>
+                      O/U <span className="font-extrabold text-base">{odd.total}</span> (<span className="font-bold">{odd.over_price > 0 ? '+' : ''}{odd.over_price}/{odd.under_price > 0 ? '+' : ''}{odd.under_price}</span>)
+                    </span>
+                  </div>
+                );
+              });
+            })()}
+          </div>
+        </div>
+      )}
+
+      {/* Best Spreads and ML Section */}
+      {odds.length > 0 && odds.some(o => o.home_spread !== null && o.home_spread !== undefined) && (
+        <div className="border-t border-slate-700 mt-3 pt-3">
+          <div className="text-sm text-slate-300 font-bold mb-2">Best Available Lines</div>
+          <div className="space-y-2 text-sm">
+            {/* Best Spreads */}
+            {(() => {
+              const oddsWithSpread = odds.filter(o => o.home_spread !== null && o.home_spread !== undefined);
+              if (oddsWithSpread.length === 0) return null;
+
+              // Find best spreads for each team (more favorable number + best price)
+              const bestHomeSpread = oddsWithSpread.reduce((best, curr) => {
+                if (!best) return curr;
+                // Home team wants lowest spread (less points to give)
+                if (curr.home_spread! > best.home_spread!) return curr;
+                if (curr.home_spread === best.home_spread && (curr.home_spread_price || 0) > (best.home_spread_price || 0)) return curr;
+                return best;
+              });
+
+              const bestAwaySpread = oddsWithSpread.reduce((best, curr) => {
+                if (!best) return curr;
+                // Away team wants highest spread (more points to get)
+                if (curr.away_spread! > best.away_spread!) return curr;
+                if (curr.away_spread === best.away_spread && (curr.away_spread_price || 0) > (best.away_spread_price || 0)) return curr;
+                return best;
+              });
+
+              return (
+                <div>
+                  <div className="text-xs text-slate-400 mb-1 font-semibold">Spreads</div>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <span className="text-slate-300 font-semibold">{state.away_team.name.split(' ').slice(-1)[0]}: </span>
+                      <span className="text-green-400 font-bold">
+                        {bestAwaySpread.away_spread! > 0 ? '+' : ''}{bestAwaySpread.away_spread}
+                        ({bestAwaySpread.away_spread_price! > 0 ? '+' : ''}{bestAwaySpread.away_spread_price})
+                      </span>
+                      <span className="text-slate-500 text-xs ml-1">@{bestAwaySpread.bookmaker}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-300 font-semibold">{state.home_team.name.split(' ').slice(-1)[0]}: </span>
+                      <span className="text-green-400 font-bold">
+                        {bestHomeSpread.home_spread! > 0 ? '+' : ''}{bestHomeSpread.home_spread}
+                        ({bestHomeSpread.home_spread_price! > 0 ? '+' : ''}{bestHomeSpread.home_spread_price})
+                      </span>
+                      <span className="text-slate-500 text-xs ml-1">@{bestHomeSpread.bookmaker}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Best Money Lines */}
+            {(() => {
+              const oddsWithML = odds.filter(o => o.home_ml !== null && o.home_ml !== undefined);
+              if (oddsWithML.length === 0) return null;
+
+              // Find best ML for each team (highest odds = best value)
+              const bestHomeML = oddsWithML.reduce((best, curr) => {
+                if (!best) return curr;
+                if (curr.home_ml! > best.home_ml!) return curr;
+                return best;
+              });
+
+              const bestAwayML = oddsWithML.reduce((best, curr) => {
+                if (!best) return curr;
+                if (curr.away_ml! > best.away_ml!) return curr;
+                return best;
+              });
+
+              return (
+                <div>
+                  <div className="text-xs text-slate-400 mb-1 font-semibold">Money Lines</div>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <span className="text-slate-300 font-semibold">{state.away_team.name.split(' ').slice(-1)[0]}: </span>
+                      <span className="text-blue-400 font-bold">
+                        {bestAwayML.away_ml! > 0 ? '+' : ''}{bestAwayML.away_ml}
+                      </span>
+                      <span className="text-slate-500 text-xs ml-1">@{bestAwayML.bookmaker}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-300 font-semibold">{state.home_team.name.split(' ').slice(-1)[0]}: </span>
+                      <span className="text-blue-400 font-bold">
+                        {bestHomeML.home_ml! > 0 ? '+' : ''}{bestHomeML.home_ml}
+                      </span>
+                      <span className="text-slate-500 text-xs ml-1">@{bestHomeML.bookmaker}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      )}
+
+      {/* Team Stats Section - Moved to bottom */}
+      {(away_team_stats || home_team_stats) && (
+        <div className="border-t border-slate-700 mt-3 pt-3">
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-xs text-slate-400">NBA Season Stats</div>
+            <div className="flex gap-1">
+              <button
+                onClick={() => setStatsView('stats')}
+                className={`px-2 py-0.5 rounded text-[10px] transition-colors ${
+                  statsView === 'stats'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                }`}
+              >
+                Stats
+              </button>
+              <button
+                onClick={() => setStatsView('rankings')}
+                className={`px-2 py-0.5 rounded text-[10px] transition-colors ${
+                  statsView === 'rankings'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                }`}
+              >
+                Ranks
+              </button>
+              <button
+                onClick={() => setStatsView('combined')}
+                className={`px-2 py-0.5 rounded text-[10px] transition-colors ${
+                  statsView === 'combined'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                }`}
+              >
+                Both
+              </button>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4 text-xs">
+            {/* Away Team Stats */}
+            <div className="space-y-1">
+              <div className="text-slate-100 font-bold mb-2 text-center text-sm">{state.away_team.name}</div>
+              {away_team_stats && (
+                <>
+                  {/* RANKINGS VIEW */}
+                  {statsView === 'rankings' && (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">PPG Rank:</span>
+                        <span className={`font-bold ${getRankColor(away_team_stats.pts_per_game_rank || 30)}`}>
+                          #{away_team_stats.pts_per_game_rank || 'N/A'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">OffRtg:</span>
+                        <span className={`font-bold ${getRankColor(away_team_stats.off_rating_rank || 30)}`}>
+                          #{away_team_stats.off_rating_rank || 'N/A'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">DefRtg:</span>
+                        <span className={`font-bold ${getRankColor(away_team_stats.def_rating_rank || 30)}`}>
+                          #{away_team_stats.def_rating_rank || 'N/A'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">NetRtg:</span>
+                        <span className={`font-bold ${getRankColor(away_team_stats.net_rating_rank || 30)}`}>
+                          #{away_team_stats.net_rating_rank || 'N/A'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Pace:</span>
+                        <span className={`font-bold ${getRankColor(away_team_stats.pace_rank || 30)}`}>
+                          #{away_team_stats.pace_rank || 'N/A'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">FG%:</span>
+                        <span className={`font-bold ${getRankColor(away_team_stats.fg_pct_rank || 30)}`}>
+                          #{away_team_stats.fg_pct_rank || 'N/A'}
+                        </span>
+                      </div>
+                    </>
+                  )}
+
+                  {/* COMBINED VIEW */}
+                  {statsView === 'combined' && (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">PPG:</span>
+                        <span className={`${
+                          home_team_stats && away_team_stats.pts_per_game > home_team_stats.pts_per_game
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }`}>
+                          {away_team_stats.pts_per_game.toFixed(1)}
+                          <span className={`text-[10px] ml-1 ${getRankColor(away_team_stats.pts_per_game_rank || 30)}`}>
+                            (#{away_team_stats.pts_per_game_rank || 'N/A'})
+                          </span>
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">OffRtg:</span>
+                        <span className={`${
+                          home_team_stats && away_team_stats.off_rating > home_team_stats.off_rating
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }`}>
+                          {away_team_stats.off_rating.toFixed(1)}
+                          <span className={`text-[10px] ml-1 ${getRankColor(away_team_stats.off_rating_rank || 30)}`}>
+                            (#{away_team_stats.off_rating_rank || 'N/A'})
+                          </span>
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">DefRtg:</span>
+                        <span className={`${
+                          home_team_stats && away_team_stats.def_rating < home_team_stats.def_rating
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }`}>
+                          {away_team_stats.def_rating.toFixed(1)}
+                          <span className={`text-[10px] ml-1 ${getRankColor(away_team_stats.def_rating_rank || 30)}`}>
+                            (#{away_team_stats.def_rating_rank || 'N/A'})
+                          </span>
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">NetRtg:</span>
+                        <span className={`${
+                          home_team_stats && away_team_stats.net_rating > home_team_stats.net_rating
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }`}>
+                          {away_team_stats.net_rating.toFixed(1)}
+                          <span className={`text-[10px] ml-1 ${getRankColor(away_team_stats.net_rating_rank || 30)}`}>
+                            (#{away_team_stats.net_rating_rank || 'N/A'})
+                          </span>
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Pace:</span>
+                        <span className={`${
+                          home_team_stats && away_team_stats.pace > home_team_stats.pace
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }`}>
+                          {away_team_stats.pace.toFixed(1)}
+                          <span className={`text-[10px] ml-1 ${getRankColor(away_team_stats.pace_rank || 30)}`}>
+                            (#{away_team_stats.pace_rank || 'N/A'})
+                          </span>
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">FG%:</span>
+                        <span className={`${
+                          home_team_stats && away_team_stats.fg_pct > home_team_stats.fg_pct
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }`}>
+                          {(away_team_stats.fg_pct * 100).toFixed(1)}%
+                          <span className={`text-[10px] ml-1 ${getRankColor(away_team_stats.fg_pct_rank || 30)}`}>
+                            (#{away_team_stats.fg_pct_rank || 'N/A'})
+                          </span>
+                        </span>
+                      </div>
+                    </>
+                  )}
+
+                  {/* STATS VIEW */}
+                  {statsView === 'stats' && (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Record:</span>
+                        <span className={`font-semibold ${
+                          home_team_stats && away_team_stats.win_pct > home_team_stats.win_pct
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }`}>{away_team_stats.wins}-{away_team_stats.losses}</span>
+                      </div>
+                      {away_team_stats.last_5_record && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-400">L5:</span>
+                          <div className="flex items-center gap-1">
+                            <span className="text-slate-200">{away_team_stats.last_5_record}</span>
+                            {away_team_stats.form_trend === 'HOT' && (
+                              <span className="px-1 py-0.5 bg-green-900 text-green-200 rounded text-[10px]">HOT</span>
+                            )}
+                            {away_team_stats.form_trend === 'COLD' && (
+                              <span className="px-1 py-0.5 bg-red-900 text-red-200 rounded text-[10px]">COLD</span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">PPG:</span>
+                        <span className={
+                          home_team_stats && away_team_stats.pts_per_game > home_team_stats.pts_per_game
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }>{away_team_stats.pts_per_game.toFixed(1)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">OffRtg:</span>
+                        <span className={
+                          home_team_stats && away_team_stats.off_rating > home_team_stats.off_rating
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }>{away_team_stats.off_rating.toFixed(1)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">DefRtg:</span>
+                        <span className={
+                          home_team_stats && away_team_stats.def_rating < home_team_stats.def_rating
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }>{away_team_stats.def_rating.toFixed(1)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Pace:</span>
+                        <span className={
+                          home_team_stats && away_team_stats.pace > home_team_stats.pace
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }>{away_team_stats.pace.toFixed(1)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">FG%:</span>
+                        <span className={
+                          home_team_stats && away_team_stats.fg_pct > home_team_stats.fg_pct
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }>{(away_team_stats.fg_pct * 100).toFixed(1)}%</span>
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Home Team Stats */}
+            <div className="space-y-1">
+              <div className="text-slate-100 font-bold mb-2 text-center text-sm">{state.home_team.name}</div>
+              {home_team_stats && (
+                <>
+                  {/* RANKINGS VIEW */}
+                  {statsView === 'rankings' && (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">PPG Rank:</span>
+                        <span className={`font-bold ${getRankColor(home_team_stats.pts_per_game_rank || 30)}`}>
+                          #{home_team_stats.pts_per_game_rank || 'N/A'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">OffRtg:</span>
+                        <span className={`font-bold ${getRankColor(home_team_stats.off_rating_rank || 30)}`}>
+                          #{home_team_stats.off_rating_rank || 'N/A'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">DefRtg:</span>
+                        <span className={`font-bold ${getRankColor(home_team_stats.def_rating_rank || 30)}`}>
+                          #{home_team_stats.def_rating_rank || 'N/A'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">NetRtg:</span>
+                        <span className={`font-bold ${getRankColor(home_team_stats.net_rating_rank || 30)}`}>
+                          #{home_team_stats.net_rating_rank || 'N/A'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Pace:</span>
+                        <span className={`font-bold ${getRankColor(home_team_stats.pace_rank || 30)}`}>
+                          #{home_team_stats.pace_rank || 'N/A'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">FG%:</span>
+                        <span className={`font-bold ${getRankColor(home_team_stats.fg_pct_rank || 30)}`}>
+                          #{home_team_stats.fg_pct_rank || 'N/A'}
+                        </span>
+                      </div>
+                    </>
+                  )}
+
+                  {/* COMBINED VIEW */}
+                  {statsView === 'combined' && (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">PPG:</span>
+                        <span className={`${
+                          away_team_stats && home_team_stats.pts_per_game > away_team_stats.pts_per_game
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }`}>
+                          {home_team_stats.pts_per_game.toFixed(1)}
+                          <span className={`text-[10px] ml-1 ${getRankColor(home_team_stats.pts_per_game_rank || 30)}`}>
+                            (#{home_team_stats.pts_per_game_rank || 'N/A'})
+                          </span>
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">OffRtg:</span>
+                        <span className={`${
+                          away_team_stats && home_team_stats.off_rating > away_team_stats.off_rating
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }`}>
+                          {home_team_stats.off_rating.toFixed(1)}
+                          <span className={`text-[10px] ml-1 ${getRankColor(home_team_stats.off_rating_rank || 30)}`}>
+                            (#{home_team_stats.off_rating_rank || 'N/A'})
+                          </span>
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">DefRtg:</span>
+                        <span className={`${
+                          away_team_stats && home_team_stats.def_rating < away_team_stats.def_rating
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }`}>
+                          {home_team_stats.def_rating.toFixed(1)}
+                          <span className={`text-[10px] ml-1 ${getRankColor(home_team_stats.def_rating_rank || 30)}`}>
+                            (#{home_team_stats.def_rating_rank || 'N/A'})
+                          </span>
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">NetRtg:</span>
+                        <span className={`${
+                          away_team_stats && home_team_stats.net_rating > away_team_stats.net_rating
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }`}>
+                          {home_team_stats.net_rating.toFixed(1)}
+                          <span className={`text-[10px] ml-1 ${getRankColor(home_team_stats.net_rating_rank || 30)}`}>
+                            (#{home_team_stats.net_rating_rank || 'N/A'})
+                          </span>
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Pace:</span>
+                        <span className={`${
+                          away_team_stats && home_team_stats.pace > away_team_stats.pace
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }`}>
+                          {home_team_stats.pace.toFixed(1)}
+                          <span className={`text-[10px] ml-1 ${getRankColor(home_team_stats.pace_rank || 30)}`}>
+                            (#{home_team_stats.pace_rank || 'N/A'})
+                          </span>
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">FG%:</span>
+                        <span className={`${
+                          away_team_stats && home_team_stats.fg_pct > away_team_stats.fg_pct
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }`}>
+                          {(home_team_stats.fg_pct * 100).toFixed(1)}%
+                          <span className={`text-[10px] ml-1 ${getRankColor(home_team_stats.fg_pct_rank || 30)}`}>
+                            (#{home_team_stats.fg_pct_rank || 'N/A'})
+                          </span>
+                        </span>
+                      </div>
+                    </>
+                  )}
+
+                  {/* STATS VIEW */}
+                  {statsView === 'stats' && (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Record:</span>
+                        <span className={`font-semibold ${
+                          away_team_stats && home_team_stats.win_pct > away_team_stats.win_pct
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }`}>{home_team_stats.wins}-{home_team_stats.losses}</span>
+                      </div>
+                      {home_team_stats.last_5_record && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-400">L5:</span>
+                          <div className="flex items-center gap-1">
+                            <span className="text-slate-200">{home_team_stats.last_5_record}</span>
+                            {home_team_stats.form_trend === 'HOT' && (
+                              <span className="px-1 py-0.5 bg-green-900 text-green-200 rounded text-[10px]">HOT</span>
+                            )}
+                            {home_team_stats.form_trend === 'COLD' && (
+                              <span className="px-1 py-0.5 bg-red-900 text-red-200 rounded text-[10px]">COLD</span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">PPG:</span>
+                        <span className={
+                          away_team_stats && home_team_stats.pts_per_game > away_team_stats.pts_per_game
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }>{home_team_stats.pts_per_game.toFixed(1)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">OffRtg:</span>
+                        <span className={
+                          away_team_stats && home_team_stats.off_rating > away_team_stats.off_rating
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }>{home_team_stats.off_rating.toFixed(1)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">DefRtg:</span>
+                        <span className={
+                          away_team_stats && home_team_stats.def_rating < away_team_stats.def_rating
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }>{home_team_stats.def_rating.toFixed(1)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Pace:</span>
+                        <span className={
+                          away_team_stats && home_team_stats.pace > away_team_stats.pace
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }>{home_team_stats.pace.toFixed(1)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">FG%:</span>
+                        <span className={
+                          away_team_stats && home_team_stats.fg_pct > away_team_stats.fg_pct
+                            ? 'text-green-400'
+                            : 'text-slate-200'
+                        }>{(home_team_stats.fg_pct * 100).toFixed(1)}%</span>
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* NFL Live Stats Section */}
+      {sportBadge === 'NFL' && state.status === 'live' && (away_nfl_live_stats || home_nfl_live_stats) && (() => {
+        // Helper function to parse numeric value from stat string (e.g., "150" from "150", "3-10" returns 3, "12:30" for possession)
+        const parseStatValue = (stat: string | null | undefined, isPercentage = false): number | null => {
+          if (!stat) return null;
+          if (isPercentage) {
+            // Handle efficiency like "3-10" (3/10)
+            const parts = stat.split('-');
+            if (parts.length === 2) {
+              const made = parseInt(parts[0]);
+              const total = parseInt(parts[1]);
+              return total > 0 ? made / total : 0;
+            }
+          }
+          // For possession time like "12:30", convert to minutes
+          if (stat.includes(':')) {
+            const [mins, secs] = stat.split(':').map(Number);
+            return mins + secs / 60;
+          }
+          // Handle sacks like "2-15" (2 sacks for 15 yards)
+          if (stat.includes('-')) {
+            return parseFloat(stat.split('-')[0]);
+          }
+          return parseFloat(stat);
+        };
+
+        return (
+        <div className="border-t border-slate-700 mt-3 pt-3">
+          <div className="text-xs text-slate-400 mb-2 font-semibold">Live Game Stats</div>
+          <div className="grid grid-cols-3 gap-2 text-xs">
+            {/* Stat Label Column */}
+            <div className="space-y-1 text-center">
+              <div className="text-slate-500 font-semibold">{state.away_team.name.split(' ').pop()}</div>
+              {away_nfl_live_stats?.first_downs && <div className={`font-semibold ${
+                home_nfl_live_stats?.first_downs && parseStatValue(away_nfl_live_stats.first_downs)! > parseStatValue(home_nfl_live_stats.first_downs)! ? 'text-green-400' : 'text-slate-300'
+              }`}>{away_nfl_live_stats.first_downs}</div>}
+              {away_nfl_live_stats?.first_downs_passing && <div className={
+                home_nfl_live_stats?.first_downs_passing && parseStatValue(away_nfl_live_stats.first_downs_passing)! > parseStatValue(home_nfl_live_stats.first_downs_passing)! ? 'text-green-400' : 'text-slate-300'
+              }>{away_nfl_live_stats.first_downs_passing}</div>}
+              {away_nfl_live_stats?.first_downs_rushing && <div className={
+                home_nfl_live_stats?.first_downs_rushing && parseStatValue(away_nfl_live_stats.first_downs_rushing)! > parseStatValue(home_nfl_live_stats.first_downs_rushing)! ? 'text-green-400' : 'text-slate-300'
+              }>{away_nfl_live_stats.first_downs_rushing}</div>}
+              {away_nfl_live_stats?.first_downs_penalty && <div className="text-slate-300">{away_nfl_live_stats.first_downs_penalty}</div>}
+              {away_nfl_live_stats?.third_down_eff && <div className={
+                home_nfl_live_stats?.third_down_eff && parseStatValue(away_nfl_live_stats.third_down_eff, true)! > parseStatValue(home_nfl_live_stats.third_down_eff, true)! ? 'text-green-400' : 'text-slate-300'
+              }>{away_nfl_live_stats.third_down_eff}</div>}
+              {away_nfl_live_stats?.fourth_down_eff && <div className={
+                home_nfl_live_stats?.fourth_down_eff && parseStatValue(away_nfl_live_stats.fourth_down_eff, true)! > parseStatValue(home_nfl_live_stats.fourth_down_eff, true)! ? 'text-green-400' : 'text-slate-300'
+              }>{away_nfl_live_stats.fourth_down_eff}</div>}
+              {away_nfl_live_stats?.total_yards && <div className={`font-semibold ${
+                home_nfl_live_stats?.total_yards && parseStatValue(away_nfl_live_stats.total_yards)! > parseStatValue(home_nfl_live_stats.total_yards)! ? 'text-green-400' : 'text-slate-300'
+              }`}>{away_nfl_live_stats.total_yards}</div>}
+              {away_nfl_live_stats?.yards_per_play && <div className={
+                home_nfl_live_stats?.yards_per_play && parseStatValue(away_nfl_live_stats.yards_per_play)! > parseStatValue(home_nfl_live_stats.yards_per_play)! ? 'text-green-400' : 'text-slate-300'
+              }>{away_nfl_live_stats.yards_per_play}</div>}
+              {away_nfl_live_stats?.comp_att && <div className="text-slate-300">{away_nfl_live_stats.comp_att}</div>}
+              {away_nfl_live_stats?.passing_yards && <div className={
+                home_nfl_live_stats?.passing_yards && parseStatValue(away_nfl_live_stats.passing_yards)! > parseStatValue(home_nfl_live_stats.passing_yards)! ? 'text-green-400' : 'text-slate-300'
+              }>{away_nfl_live_stats.passing_yards}</div>}
+              {away_nfl_live_stats?.yards_per_pass && <div className={
+                home_nfl_live_stats?.yards_per_pass && parseStatValue(away_nfl_live_stats.yards_per_pass)! > parseStatValue(home_nfl_live_stats.yards_per_pass)! ? 'text-green-400' : 'text-slate-300'
+              }>{away_nfl_live_stats.yards_per_pass}</div>}
+              {away_nfl_live_stats?.interceptions_thrown && <div className={
+                home_nfl_live_stats?.interceptions_thrown && parseStatValue(away_nfl_live_stats.interceptions_thrown)! < parseStatValue(home_nfl_live_stats.interceptions_thrown)! ? 'text-green-400' : 'text-slate-300'
+              }>{away_nfl_live_stats.interceptions_thrown}</div>}
+              {away_nfl_live_stats?.sacks_yards_lost && <div className={
+                home_nfl_live_stats?.sacks_yards_lost && parseStatValue(away_nfl_live_stats.sacks_yards_lost)! < parseStatValue(home_nfl_live_stats.sacks_yards_lost)! ? 'text-green-400' : 'text-slate-300'
+              }>{away_nfl_live_stats.sacks_yards_lost}</div>}
+              {away_nfl_live_stats?.rushing_yards && <div className={
+                home_nfl_live_stats?.rushing_yards && parseStatValue(away_nfl_live_stats.rushing_yards)! > parseStatValue(home_nfl_live_stats.rushing_yards)! ? 'text-green-400' : 'text-slate-300'
+              }>{away_nfl_live_stats.rushing_yards}</div>}
+              {away_nfl_live_stats?.rushing_attempts && <div className="text-slate-300">{away_nfl_live_stats.rushing_attempts}</div>}
+              {away_nfl_live_stats?.yards_per_rush && <div className={
+                home_nfl_live_stats?.yards_per_rush && parseStatValue(away_nfl_live_stats.yards_per_rush)! > parseStatValue(home_nfl_live_stats.yards_per_rush)! ? 'text-green-400' : 'text-slate-300'
+              }>{away_nfl_live_stats.yards_per_rush}</div>}
+              {away_nfl_live_stats?.red_zone && <div className={
+                home_nfl_live_stats?.red_zone && parseStatValue(away_nfl_live_stats.red_zone, true)! > parseStatValue(home_nfl_live_stats.red_zone, true)! ? 'text-green-400' : 'text-slate-300'
+              }>{away_nfl_live_stats.red_zone}</div>}
+              {away_nfl_live_stats?.penalties && <div className={
+                home_nfl_live_stats?.penalties && parseStatValue(away_nfl_live_stats.penalties)! < parseStatValue(home_nfl_live_stats.penalties)! ? 'text-green-400' : 'text-slate-300'
+              }>{away_nfl_live_stats.penalties}</div>}
+              {away_nfl_live_stats?.turnovers && <div className={
+                home_nfl_live_stats?.turnovers && parseStatValue(away_nfl_live_stats.turnovers)! < parseStatValue(home_nfl_live_stats.turnovers)! ? 'text-green-400' : 'text-slate-300'
+              }>{away_nfl_live_stats.turnovers}</div>}
+              {away_nfl_live_stats?.fumbles_lost && <div className={
+                home_nfl_live_stats?.fumbles_lost && parseStatValue(away_nfl_live_stats.fumbles_lost)! < parseStatValue(home_nfl_live_stats.fumbles_lost)! ? 'text-green-400' : 'text-slate-300'
+              }>{away_nfl_live_stats.fumbles_lost}</div>}
+              {away_nfl_live_stats?.possession && <div className={
+                home_nfl_live_stats?.possession && parseStatValue(away_nfl_live_stats.possession)! > parseStatValue(home_nfl_live_stats.possession)! ? 'text-green-400' : 'text-slate-300'
+              }>{away_nfl_live_stats.possession}</div>}
+              {away_nfl_live_stats?.total_plays && <div className={
+                home_nfl_live_stats?.total_plays && parseStatValue(away_nfl_live_stats.total_plays)! > parseStatValue(home_nfl_live_stats.total_plays)! ? 'text-green-400' : 'text-slate-300'
+              }>{away_nfl_live_stats.total_plays}</div>}
+            </div>
+
+            {/* Middle Column - Stat Names */}
+            <div className="space-y-1 text-center">
+              <div className="text-slate-400 font-semibold">Stat</div>
+              {away_nfl_live_stats?.first_downs && <div className="text-slate-400 font-semibold">1st Downs</div>}
+              {away_nfl_live_stats?.first_downs_passing && <div className="text-slate-400">Passing 1st</div>}
+              {away_nfl_live_stats?.first_downs_rushing && <div className="text-slate-400">Rushing 1st</div>}
+              {away_nfl_live_stats?.first_downs_penalty && <div className="text-slate-400">1st from Pen</div>}
+              {away_nfl_live_stats?.third_down_eff && <div className="text-slate-400">3rd Down</div>}
+              {away_nfl_live_stats?.fourth_down_eff && <div className="text-slate-400">4th Down</div>}
+              {away_nfl_live_stats?.total_yards && <div className="text-slate-400 font-semibold">Total Yards</div>}
+              {away_nfl_live_stats?.yards_per_play && <div className="text-slate-400">Yds/Play</div>}
+              {away_nfl_live_stats?.comp_att && <div className="text-slate-400">Comp/Att</div>}
+              {away_nfl_live_stats?.passing_yards && <div className="text-slate-400">Pass Yds</div>}
+              {away_nfl_live_stats?.yards_per_pass && <div className="text-slate-400">Yds/Pass</div>}
+              {away_nfl_live_stats?.interceptions_thrown && <div className="text-slate-400">INTs</div>}
+              {away_nfl_live_stats?.sacks_yards_lost && <div className="text-slate-400">Sacks-Yds</div>}
+              {away_nfl_live_stats?.rushing_yards && <div className="text-slate-400">Rush Yds</div>}
+              {away_nfl_live_stats?.rushing_attempts && <div className="text-slate-400">Rush Att</div>}
+              {away_nfl_live_stats?.yards_per_rush && <div className="text-slate-400">Yds/Rush</div>}
+              {away_nfl_live_stats?.red_zone && <div className="text-slate-400">Red Zone</div>}
+              {away_nfl_live_stats?.penalties && <div className="text-slate-400">Penalties</div>}
+              {away_nfl_live_stats?.turnovers && <div className="text-slate-400">Turnovers</div>}
+              {away_nfl_live_stats?.fumbles_lost && <div className="text-slate-400">Fumbles</div>}
+              {away_nfl_live_stats?.possession && <div className="text-slate-400">Possession</div>}
+              {away_nfl_live_stats?.total_plays && <div className="text-slate-400">Total Plays</div>}
+            </div>
+
+            {/* Home Team Column */}
+            <div className="space-y-1 text-center">
+              <div className="text-slate-500 font-semibold">{state.home_team.name.split(' ').pop()}</div>
+              {home_nfl_live_stats?.first_downs && <div className={`font-semibold ${
+                away_nfl_live_stats?.first_downs && parseStatValue(home_nfl_live_stats.first_downs)! > parseStatValue(away_nfl_live_stats.first_downs)! ? 'text-green-400' : 'text-slate-300'
+              }`}>{home_nfl_live_stats.first_downs}</div>}
+              {home_nfl_live_stats?.first_downs_passing && <div className={
+                away_nfl_live_stats?.first_downs_passing && parseStatValue(home_nfl_live_stats.first_downs_passing)! > parseStatValue(away_nfl_live_stats.first_downs_passing)! ? 'text-green-400' : 'text-slate-300'
+              }>{home_nfl_live_stats.first_downs_passing}</div>}
+              {home_nfl_live_stats?.first_downs_rushing && <div className={
+                away_nfl_live_stats?.first_downs_rushing && parseStatValue(home_nfl_live_stats.first_downs_rushing)! > parseStatValue(away_nfl_live_stats.first_downs_rushing)! ? 'text-green-400' : 'text-slate-300'
+              }>{home_nfl_live_stats.first_downs_rushing}</div>}
+              {home_nfl_live_stats?.first_downs_penalty && <div className="text-slate-300">{home_nfl_live_stats.first_downs_penalty}</div>}
+              {home_nfl_live_stats?.third_down_eff && <div className={
+                away_nfl_live_stats?.third_down_eff && parseStatValue(home_nfl_live_stats.third_down_eff, true)! > parseStatValue(away_nfl_live_stats.third_down_eff, true)! ? 'text-green-400' : 'text-slate-300'
+              }>{home_nfl_live_stats.third_down_eff}</div>}
+              {home_nfl_live_stats?.fourth_down_eff && <div className={
+                away_nfl_live_stats?.fourth_down_eff && parseStatValue(home_nfl_live_stats.fourth_down_eff, true)! > parseStatValue(away_nfl_live_stats.fourth_down_eff, true)! ? 'text-green-400' : 'text-slate-300'
+              }>{home_nfl_live_stats.fourth_down_eff}</div>}
+              {home_nfl_live_stats?.total_yards && <div className={`font-semibold ${
+                away_nfl_live_stats?.total_yards && parseStatValue(home_nfl_live_stats.total_yards)! > parseStatValue(away_nfl_live_stats.total_yards)! ? 'text-green-400' : 'text-slate-300'
+              }`}>{home_nfl_live_stats.total_yards}</div>}
+              {home_nfl_live_stats?.yards_per_play && <div className={
+                away_nfl_live_stats?.yards_per_play && parseStatValue(home_nfl_live_stats.yards_per_play)! > parseStatValue(away_nfl_live_stats.yards_per_play)! ? 'text-green-400' : 'text-slate-300'
+              }>{home_nfl_live_stats.yards_per_play}</div>}
+              {home_nfl_live_stats?.comp_att && <div className="text-slate-300">{home_nfl_live_stats.comp_att}</div>}
+              {home_nfl_live_stats?.passing_yards && <div className={
+                away_nfl_live_stats?.passing_yards && parseStatValue(home_nfl_live_stats.passing_yards)! > parseStatValue(away_nfl_live_stats.passing_yards)! ? 'text-green-400' : 'text-slate-300'
+              }>{home_nfl_live_stats.passing_yards}</div>}
+              {home_nfl_live_stats?.yards_per_pass && <div className={
+                away_nfl_live_stats?.yards_per_pass && parseStatValue(home_nfl_live_stats.yards_per_pass)! > parseStatValue(away_nfl_live_stats.yards_per_pass)! ? 'text-green-400' : 'text-slate-300'
+              }>{home_nfl_live_stats.yards_per_pass}</div>}
+              {home_nfl_live_stats?.interceptions_thrown && <div className={
+                away_nfl_live_stats?.interceptions_thrown && parseStatValue(home_nfl_live_stats.interceptions_thrown)! < parseStatValue(away_nfl_live_stats.interceptions_thrown)! ? 'text-green-400' : 'text-slate-300'
+              }>{home_nfl_live_stats.interceptions_thrown}</div>}
+              {home_nfl_live_stats?.sacks_yards_lost && <div className={
+                away_nfl_live_stats?.sacks_yards_lost && parseStatValue(home_nfl_live_stats.sacks_yards_lost)! < parseStatValue(away_nfl_live_stats.sacks_yards_lost)! ? 'text-green-400' : 'text-slate-300'
+              }>{home_nfl_live_stats.sacks_yards_lost}</div>}
+              {home_nfl_live_stats?.rushing_yards && <div className={
+                away_nfl_live_stats?.rushing_yards && parseStatValue(home_nfl_live_stats.rushing_yards)! > parseStatValue(away_nfl_live_stats.rushing_yards)! ? 'text-green-400' : 'text-slate-300'
+              }>{home_nfl_live_stats.rushing_yards}</div>}
+              {home_nfl_live_stats?.rushing_attempts && <div className="text-slate-300">{home_nfl_live_stats.rushing_attempts}</div>}
+              {home_nfl_live_stats?.yards_per_rush && <div className={
+                away_nfl_live_stats?.yards_per_rush && parseStatValue(home_nfl_live_stats.yards_per_rush)! > parseStatValue(away_nfl_live_stats.yards_per_rush)! ? 'text-green-400' : 'text-slate-300'
+              }>{home_nfl_live_stats.yards_per_rush}</div>}
+              {home_nfl_live_stats?.red_zone && <div className={
+                away_nfl_live_stats?.red_zone && parseStatValue(home_nfl_live_stats.red_zone, true)! > parseStatValue(away_nfl_live_stats.red_zone, true)! ? 'text-green-400' : 'text-slate-300'
+              }>{home_nfl_live_stats.red_zone}</div>}
+              {home_nfl_live_stats?.penalties && <div className={
+                away_nfl_live_stats?.penalties && parseStatValue(home_nfl_live_stats.penalties)! < parseStatValue(away_nfl_live_stats.penalties)! ? 'text-green-400' : 'text-slate-300'
+              }>{home_nfl_live_stats.penalties}</div>}
+              {home_nfl_live_stats?.turnovers && <div className={
+                away_nfl_live_stats?.turnovers && parseStatValue(home_nfl_live_stats.turnovers)! < parseStatValue(away_nfl_live_stats.turnovers)! ? 'text-green-400' : 'text-slate-300'
+              }>{home_nfl_live_stats.turnovers}</div>}
+              {home_nfl_live_stats?.fumbles_lost && <div className={
+                away_nfl_live_stats?.fumbles_lost && parseStatValue(home_nfl_live_stats.fumbles_lost)! < parseStatValue(away_nfl_live_stats.fumbles_lost)! ? 'text-green-400' : 'text-slate-300'
+              }>{home_nfl_live_stats.fumbles_lost}</div>}
+              {home_nfl_live_stats?.possession && <div className={
+                away_nfl_live_stats?.possession && parseStatValue(home_nfl_live_stats.possession)! > parseStatValue(away_nfl_live_stats.possession)! ? 'text-green-400' : 'text-slate-300'
+              }>{home_nfl_live_stats.possession}</div>}
+              {home_nfl_live_stats?.total_plays && <div className={
+                away_nfl_live_stats?.total_plays && parseStatValue(home_nfl_live_stats.total_plays)! > parseStatValue(away_nfl_live_stats.total_plays)! ? 'text-green-400' : 'text-slate-300'
+              }>{home_nfl_live_stats.total_plays}</div>}
+            </div>
+          </div>
+        </div>
+        )
+      })()}
+    </div>
+  );
+}
