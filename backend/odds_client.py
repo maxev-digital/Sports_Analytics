@@ -1,7 +1,7 @@
 """Odds API Client"""
 import httpx
 from typing import List
-from models import GameState, GameOdds, Team
+from live_models import GameState, GameOdds, Team
 from config import ODDS_API_KEY, ODDS_API_BASE, SPORTS, REGION, MARKETS
 import logging
 

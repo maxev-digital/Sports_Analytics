@@ -11,8 +11,11 @@ SPORTS = [
     "icehockey_nhl",              # NHL
     "americanfootball_ncaaf",     # NCAA Football
     "baseball_mlb",               # MLB
+    "golf_pga_championship",      # PGA Golf
+    "tennis_atp",                 # Tennis (ATP)
+    "mma_mixed_martial_arts",     # MMA/UFC
 ]
-REGION = "us"
+REGION = "us,us2,uk,au,eu"  # Fetch from all regions for maximum bookmaker coverage
 MARKETS = "h2h,spreads,totals"  # Fetch money lines, spreads, and totals
 
 # Polling

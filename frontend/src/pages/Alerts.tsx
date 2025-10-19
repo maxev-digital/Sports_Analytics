@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { GoaliePullAlerts } from '../components/GoaliePullAlert';
 
 interface ArbitrageAlert {
   game_id: string;
@@ -58,7 +59,7 @@ export function Alerts() {
   const [alertsData, setAlertsData] = useState<AlertsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'arbitrage' | 'steam' | 'lines'>('arbitrage');
+  const [activeTab, setActiveTab] = useState<'arbitrage' | 'steam' | 'lines' | 'goalie'>('goalie');
   const [autoRefresh, setAutoRefresh] = useState(true);
 
   const fetchAlerts = async () => {
@@ -139,36 +140,36 @@ export function Alerts() {
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setAutoRefresh(!autoRefresh)}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                className={`px-4 py-2 rounded border-2 font-bold tracking-wide transition-colors ${
                   autoRefresh
-                    ? 'bg-green-600 text-white'
-                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                    ? 'bg-green-600 text-white border-green-700 hover:border-green-600'
+                    : 'bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800 hover:border-blue-600'
                 }`}
               >
-                {autoRefresh ? '● Auto-Refresh ON' : 'Auto-Refresh OFF'}
+                {autoRefresh ? 'AUTO-REFRESH ON' : 'AUTO-REFRESH OFF'}
               </button>
               <button
                 onClick={fetchAlerts}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white border-2 border-blue-700 hover:border-blue-600 rounded font-bold tracking-wide transition-colors"
               >
-                Refresh Now
+                REFRESH NOW
               </button>
             </div>
           </div>
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-lg p-6">
-              <div className="text-sm text-slate-400 mb-1">Arbitrage Opportunities</div>
-              <div className="text-3xl font-bold text-green-400">{alertsData?.arbitrage.count || 0}</div>
+            <div className="bg-green-900 border-2 border-green-700 rounded p-6">
+              <div className="text-sm text-white font-bold tracking-wide mb-1">ARBITRAGE OPPORTUNITIES</div>
+              <div className="text-3xl font-bold text-white">{alertsData?.arbitrage.count || 0}</div>
             </div>
-            <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-lg p-6">
-              <div className="text-sm text-slate-400 mb-1">Steam Moves</div>
-              <div className="text-3xl font-bold text-orange-400">{alertsData?.steam_moves.count || 0}</div>
+            <div className="bg-blue-900 border-2 border-blue-700 rounded p-6">
+              <div className="text-sm text-white font-bold tracking-wide mb-1">STEAM MOVES</div>
+              <div className="text-3xl font-bold text-white">{alertsData?.steam_moves.count || 0}</div>
             </div>
-            <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-lg p-6">
-              <div className="text-sm text-slate-400 mb-1">Line Movements</div>
-              <div className="text-3xl font-bold text-blue-400">{alertsData?.line_movements.count || 0}</div>
+            <div className="bg-slate-900 border-2 border-slate-700 rounded p-6">
+              <div className="text-sm text-white font-bold tracking-wide mb-1">LINE MOVEMENTS</div>
+              <div className="text-3xl font-bold text-white">{alertsData?.line_movements.count || 0}</div>
             </div>
           </div>
         </div>
@@ -176,34 +177,44 @@ export function Alerts() {
         {/* Tabs */}
         <div className="flex gap-2 mb-6">
           <button
-            onClick={() => setActiveTab('arbitrage')}
-            className={`px-6 py-3 rounded-lg font-medium transition-colors ${
-              activeTab === 'arbitrage'
-                ? 'bg-green-600 text-white'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+            onClick={() => setActiveTab('goalie')}
+            className={`px-6 py-3 rounded border-2 font-bold tracking-wide transition-colors ${
+              activeTab === 'goalie'
+                ? 'bg-red-600 text-white border-red-700'
+                : 'bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800 hover:border-blue-600'
             }`}
           >
-            Arbitrage ({alertsData?.arbitrage.count || 0})
+            🚨 NHL GOALIE PULLS
+          </button>
+          <button
+            onClick={() => setActiveTab('arbitrage')}
+            className={`px-6 py-3 rounded border-2 font-bold tracking-wide transition-colors ${
+              activeTab === 'arbitrage'
+                ? 'bg-green-600 text-white border-green-700'
+                : 'bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800 hover:border-blue-600'
+            }`}
+          >
+            ARBITRAGE ({alertsData?.arbitrage.count || 0})
           </button>
           <button
             onClick={() => setActiveTab('steam')}
-            className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+            className={`px-6 py-3 rounded border-2 font-bold tracking-wide transition-colors ${
               activeTab === 'steam'
-                ? 'bg-orange-600 text-white'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                ? 'bg-blue-600 text-white border-blue-700'
+                : 'bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800 hover:border-blue-600'
             }`}
           >
-            Steam Moves ({alertsData?.steam_moves.count || 0})
+            STEAM MOVES ({alertsData?.steam_moves.count || 0})
           </button>
           <button
             onClick={() => setActiveTab('lines')}
-            className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+            className={`px-6 py-3 rounded border-2 font-bold tracking-wide transition-colors ${
               activeTab === 'lines'
-                ? 'bg-blue-600 text-white'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                ? 'bg-slate-600 text-white border-slate-700'
+                : 'bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800 hover:border-blue-600'
             }`}
           >
-            Line Movements ({alertsData?.line_movements.count || 0})
+            LINE MOVEMENTS ({alertsData?.line_movements.count || 0})
           </button>
         </div>
 
@@ -211,13 +222,13 @@ export function Alerts() {
         {activeTab === 'arbitrage' && (
           <div className="space-y-4">
             {alertsData?.arbitrage.alerts.length === 0 ? (
-              <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-12 text-center">
+              <div className="bg-slate-800 border-2 border-slate-700 rounded p-12 text-center">
                 <div className="text-slate-400 text-lg">No arbitrage opportunities detected</div>
                 <div className="text-slate-500 text-sm mt-2">Scanning every 10 seconds...</div>
               </div>
             ) : (
               alertsData?.arbitrage.alerts.map((alert, idx) => (
-                <div key={idx} className="bg-gradient-to-r from-green-900/20 to-green-800/20 border border-green-700/50 rounded-lg p-6">
+                <div key={idx} className="bg-green-900 border-2 border-green-700 rounded p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <span className={`px-3 py-1 rounded-full text-xs font-bold text-white ${getSportBadgeColor(alert.sport)}`}>
@@ -241,7 +252,7 @@ export function Alerts() {
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div className="bg-slate-800/50 rounded-lg p-4">
+                    <div className="bg-slate-800 border-2 border-slate-700 rounded p-4">
                       <div className="text-sm text-slate-400 mb-2">Book A: {alert.book_a}</div>
                       <div className="text-xl font-bold text-white mb-1">
                         {alert.odds_a > 0 ? `+${alert.odds_a}` : alert.odds_a}
@@ -250,7 +261,7 @@ export function Alerts() {
                         Stake: ${alert.stake_a.toFixed(2)}
                       </div>
                     </div>
-                    <div className="bg-slate-800/50 rounded-lg p-4">
+                    <div className="bg-slate-800 border-2 border-slate-700 rounded p-4">
                       <div className="text-sm text-slate-400 mb-2">Book B: {alert.book_b}</div>
                       <div className="text-xl font-bold text-white mb-1">
                         {alert.odds_b > 0 ? `+${alert.odds_b}` : alert.odds_b}
@@ -282,13 +293,13 @@ export function Alerts() {
         {activeTab === 'steam' && (
           <div className="space-y-4">
             {alertsData?.steam_moves.alerts.length === 0 ? (
-              <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-12 text-center">
+              <div className="bg-slate-800 border-2 border-slate-700 rounded p-12 text-center">
                 <div className="text-slate-400 text-lg">No steam moves detected</div>
                 <div className="text-slate-500 text-sm mt-2">Scanning every 10 seconds...</div>
               </div>
             ) : (
               alertsData?.steam_moves.alerts.map((alert, idx) => (
-                <div key={idx} className="bg-gradient-to-r from-orange-900/20 to-orange-800/20 border border-orange-700/50 rounded-lg p-6">
+                <div key={idx} className="bg-blue-900 border-2 border-blue-700 rounded p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <span className={`px-3 py-1 rounded-full text-xs font-bold text-white ${getSportBadgeColor(alert.sport)}`}>
@@ -303,13 +314,13 @@ export function Alerts() {
                     </div>
                     <div className="text-right">
                       <div className="text-sm text-slate-400">Consensus</div>
-                      <div className="text-2xl font-bold text-orange-400">
+                      <div className="text-2xl font-bold text-white">
                         {alert.consensus_percent.toFixed(0)}%
                       </div>
                     </div>
                   </div>
 
-                  <div className="bg-slate-800/50 rounded-lg p-4 mb-4">
+                  <div className="bg-slate-800 border-2 border-slate-700 rounded p-4 mb-4">
                     <div className="grid grid-cols-3 gap-4 text-center">
                       <div>
                         <div className="text-sm text-slate-400 mb-1">Original Line</div>
@@ -346,13 +357,13 @@ export function Alerts() {
         {activeTab === 'lines' && (
           <div className="space-y-4">
             {alertsData?.line_movements.alerts.length === 0 ? (
-              <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-12 text-center">
+              <div className="bg-slate-800 border-2 border-slate-700 rounded p-12 text-center">
                 <div className="text-slate-400 text-lg">No significant line movements detected</div>
                 <div className="text-slate-500 text-sm mt-2">Scanning every 10 seconds...</div>
               </div>
             ) : (
               alertsData?.line_movements.alerts.map((alert, idx) => (
-                <div key={idx} className="bg-gradient-to-r from-blue-900/20 to-blue-800/20 border border-blue-700/50 rounded-lg p-6">
+                <div key={idx} className="bg-slate-900 border-2 border-slate-700 rounded p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <span className={`px-3 py-1 rounded-full text-xs font-bold text-white ${getSportBadgeColor(alert.sport)}`}>
@@ -367,13 +378,13 @@ export function Alerts() {
                     </div>
                     <div className="text-right">
                       <div className="text-sm text-slate-400">{alert.bookmaker}</div>
-                      <div className="text-2xl font-bold text-blue-400">
+                      <div className="text-2xl font-bold text-white">
                         {alert.movement_percent.toFixed(1)}%
                       </div>
                     </div>
                   </div>
 
-                  <div className="bg-slate-800/50 rounded-lg p-4 mb-4">
+                  <div className="bg-slate-800 border-2 border-slate-700 rounded p-4 mb-4">
                     <div className="grid grid-cols-3 gap-4 text-center">
                       <div>
                         <div className="text-sm text-slate-400 mb-1">Original</div>
@@ -399,6 +410,11 @@ export function Alerts() {
               ))
             )}
           </div>
+        )}
+
+        {/* NHL Goalie Pull Alerts */}
+        {activeTab === 'goalie' && (
+          <GoaliePullAlerts />
         )}
       </div>
     </div>

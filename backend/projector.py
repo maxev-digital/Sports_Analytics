@@ -1,5 +1,5 @@
 """Advanced game projection algorithm with pace analysis"""
-from models import GameState, GameProjection, TeamStats
+from live_models import GameState, GameProjection, TeamStats
 from typing import Optional, Tuple
 import logging
 

@@ -206,6 +206,47 @@ class NFLTeamStats(BaseModel):
     sacks_rank: Optional[int] = None  # Defensive sacks rank
     turnover_differential_rank: Optional[int] = None  # Turnover margin rank
 
+class MLBTeamStats(BaseModel):
+    """Season statistics for MLB teams"""
+    team_id: str
+    team_name: str
+    games_played: int
+    wins: int
+    losses: int
+    win_pct: float
+    # Batting statistics
+    runs_per_game: float  # Runs scored per game
+    batting_avg: float  # Team batting average
+    on_base_pct: float  # OBP
+    slugging_pct: float  # SLG
+    ops: float  # On-base + slugging
+    home_runs_per_game: float
+    hits_per_game: float
+    stolen_bases: int
+    # Pitching statistics
+    era: float  # Earned run average
+    whip: float  # Walks + hits per inning
+    strikeouts_per_9: float  # K/9
+    walks_per_9: float  # BB/9
+    hits_allowed_per_9: float
+    saves: int
+    blown_saves: int
+    quality_starts: int
+    # Recent form
+    last_10_record: Optional[str] = None  # "7-3" format
+    form_trend: Optional[str] = None  # "HOT", "COLD", "NEUTRAL"
+    home_record: Optional[str] = None  # "45-36"
+    away_record: Optional[str] = None  # "40-41"
+    # Rankings (1-30 for MLB)
+    runs_per_game_rank: Optional[int] = None
+    batting_avg_rank: Optional[int] = None
+    ops_rank: Optional[int] = None
+    home_runs_rank: Optional[int] = None
+    era_rank: Optional[int] = None
+    whip_rank: Optional[int] = None
+    strikeouts_per_9_rank: Optional[int] = None
+    saves_rank: Optional[int] = None
+
 class LiveGame(BaseModel):
     state: GameState
     odds: list[GameOdds]
@@ -220,3 +261,6 @@ class LiveGame(BaseModel):
     away_nhl_momentum: Optional[NHLMomentumStats] = None  # NHL-specific momentum
     home_nhl_stats: Optional[NHLTeamStats] = None  # NHL-specific season stats
     away_nhl_stats: Optional[NHLTeamStats] = None  # NHL-specific season stats
+    home_mlb_stats: Optional[MLBTeamStats] = None  # MLB-specific season stats
+    away_mlb_stats: Optional[MLBTeamStats] = None  # MLB-specific season stats
+

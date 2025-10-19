@@ -1,16 +1,19 @@
 import { Link, useLocation } from 'react-router-dom';
+import { uiEmojis } from '../utils/sportDetection';
 
 export function Navigation() {
   const location = useLocation();
 
   const navItems = [
-    { path: '/', label: 'Live Games' },
-    { path: '/alerts', label: 'Alerts' },
-    { path: '/tools', label: 'Tools' },
-    { path: '/analytics', label: 'Analytics' },
-    { path: '/props', label: 'Props' },
-    { path: '/learn', label: 'Learn' },
-    { path: '/pricing', label: 'Pricing' },
+    { path: '/', label: 'Live Games', emoji: uiEmojis.fire },
+    { path: '/multi-sport', label: 'Multi-Sport', emoji: uiEmojis.target },
+    { path: '/alerts', label: 'Alerts', emoji: uiEmojis.lightning },
+    { path: '/tools', label: 'Tools', emoji: uiEmojis.search },
+    { path: '/analytics', label: 'Analytics', emoji: uiEmojis.chart },
+    { path: '/props', label: 'Props', emoji: uiEmojis.book },
+    { path: '/learn', label: 'Learn', emoji: uiEmojis.graduation },
+    { path: '/getting-started', label: 'Get Started', emoji: uiEmojis.rocket },
+    { path: '/pricing', label: 'Pricing', emoji: uiEmojis.dollar },
   ];
 
   const isActive = (path: string) => {
@@ -41,12 +44,15 @@ export function Navigation() {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`px-4 py-2 rounded-lg font-semibold transition-all text-sm ${
+                className={`px-4 py-2 rounded-lg font-semibold transition-all text-sm flex items-center gap-2 ${
                   isActive(item.path)
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
                     : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
                 }`}
               >
+                {item.emoji && (
+                  <img src={item.emoji} alt="" className="w-4 h-4" style={{ imageRendering: 'crisp-edges' }} />
+                )}
                 {item.label}
               </Link>
             ))}
@@ -54,11 +60,8 @@ export function Navigation() {
 
           {/* Right Side Actions */}
           <div className="flex items-center gap-3">
-            <button className="hidden md:block px-4 py-2 text-slate-300 hover:text-slate-100 font-semibold transition-colors text-sm">
-              Sign In
-            </button>
             <button className="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold rounded-lg shadow-lg shadow-blue-600/30 transition-all text-sm">
-              Get Started
+              Sign In
             </button>
           </div>
         </div>
@@ -69,12 +72,15 @@ export function Navigation() {
             <Link
               key={item.path}
               to={item.path}
-              className={`px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+              className={`px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
                 isActive(item.path)
                   ? 'bg-blue-600 text-white'
                   : 'bg-slate-800 text-slate-300'
               }`}
             >
+              {item.emoji && (
+                <img src={item.emoji} alt="" className="w-3.5 h-3.5" style={{ imageRendering: 'crisp-edges' }} />
+              )}
               {item.label}
             </Link>
           ))}

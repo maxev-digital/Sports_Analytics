@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { LiveGame } from '../types';
 import { GameCard } from '../components/GameCard';
+import { sportEmojis } from '../utils/sportDetection';
 
 export function LiveGames() {
   const [games, setGames] = useState<LiveGame[]>([]);
@@ -15,7 +16,7 @@ export function LiveGames() {
 
   const fetchGames = async () => {
     try {
-      const response = await fetch('http://localhost:8001/api/games');
+      const response = await fetch('/api/games');
       const data = await response.json();
       setGames(data);
       setLoading(false);
@@ -26,19 +27,19 @@ export function LiveGames() {
   };
 
   const sports = [
-    { key: 'all', label: 'All Sports', logo: null },
-    { key: 'nfl', label: 'NFL', filter: 'americanfootball_nfl', logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/nfl.png' },
-    { key: 'ncaaf', label: 'NCAAF', filter: 'americanfootball_ncaaf', logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/ncaa.png' },
-    { key: 'nba', label: 'NBA', filter: 'basketball_nba', logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/nba.png' },
-    { key: 'ncaab', label: 'NCAAB', filter: 'basketball_ncaab', logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/ncaa.png' },
-    { key: 'nhl', label: 'NHL', filter: 'icehockey_nhl', logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/nhl.png' },
-    { key: 'mlb', label: 'MLB', filter: 'baseball_mlb', logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/mlb.png' },
-    { key: 'pga', label: 'PGA', filter: 'golf_pga', logo: 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/leagues/500/pga.png' },
-    { key: 'atp', label: 'ATP', filter: 'tennis_atp', logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/atp.png' },
-    { key: 'wta', label: 'WTA', filter: 'tennis_wta', logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/wta.png' },
-    { key: 'mma', label: 'MMA', filter: 'mma_mixed_martial_arts', logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/ufc.png' },
-    { key: 'wnba', label: 'WNBA', filter: 'basketball_wnba', logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/wnba.png' },
-    { key: 'nascar', label: 'NASCAR', filter: 'motorsport_nascar', logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/nascar.png' },
+    { key: 'all', label: 'All Sports', logo: null, emoji: null },
+    { key: 'nfl', label: 'NFL', filter: 'americanfootball_nfl', logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/nfl.png', emoji: sportEmojis.NFL },
+    { key: 'ncaaf', label: 'NCAAF', filter: 'americanfootball_ncaaf', logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/ncaa.png', emoji: sportEmojis.NCAAF },
+    { key: 'nba', label: 'NBA', filter: 'basketball_nba', logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/nba.png', emoji: sportEmojis.NBA },
+    { key: 'ncaab', label: 'NCAAB', filter: 'basketball_ncaab', logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/ncaa.png', emoji: sportEmojis.NCAAB },
+    { key: 'nhl', label: 'NHL', filter: 'icehockey_nhl', logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/nhl.png', emoji: sportEmojis.NHL },
+    { key: 'mlb', label: 'MLB', filter: 'baseball_mlb', logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/mlb.png', emoji: sportEmojis.MLB },
+    { key: 'pga', label: 'PGA', filter: 'golf_pga', logo: 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/leagues/500/pga.png', emoji: sportEmojis.PGA },
+    { key: 'atp', label: 'ATP', filter: 'tennis_atp', logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/atp.png', emoji: sportEmojis.TENNIS },
+    { key: 'wta', label: 'WTA', filter: 'tennis_wta', logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/wta.png', emoji: sportEmojis.TENNIS },
+    { key: 'mma', label: 'MMA', filter: 'mma_mixed_martial_arts', logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/ufc.png', emoji: sportEmojis.MMA },
+    { key: 'wnba', label: 'WNBA', filter: 'basketball_wnba', logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/wnba.png', emoji: sportEmojis.NBA },
+    { key: 'nascar', label: 'NASCAR', filter: 'motorsport_nascar', logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/nascar.png', emoji: null },
   ];
 
   const filteredGames = selectedSport === 'all'
@@ -60,7 +61,7 @@ export function LiveGames() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' }}>
       {/* Sport Filter Tabs */}
       <div className="sticky top-0 z-10 bg-slate-900/95 backdrop-blur-sm border-b border-slate-700">
         <div className="max-w-7xl mx-auto px-4 py-3">
@@ -69,12 +70,20 @@ export function LiveGames() {
               <button
                 key={sport.key}
                 onClick={() => setSelectedSport(sport.key)}
-                className={`px-3 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all ${
+                className={`px-3 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
                   selectedSport === sport.key
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
                     : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                 }`}
               >
+                {sport.emoji && (
+                  <img
+                    src={sport.emoji}
+                    alt={sport.label}
+                    className="w-4 h-4"
+                    style={{ imageRendering: 'crisp-edges' }}
+                  />
+                )}
                 {sport.label}
               </button>
             ))}
@@ -119,7 +128,18 @@ export function LiveGames() {
         {/* No Games Message */}
         {filteredGames.length === 0 && (
           <div className="text-center py-20">
-            <div className="text-6xl mb-4">🏀</div>
+            {(() => {
+              const currentSport = sports.find(s => s.key === selectedSport);
+              const emojiUrl = currentSport?.emoji || sportEmojis.NBA;
+              return (
+                <img
+                  src={emojiUrl}
+                  alt="No games"
+                  className="w-16 h-16 mx-auto mb-4"
+                  style={{ imageRendering: 'crisp-edges' }}
+                />
+              );
+            })()}
             <h3 className="text-xl font-semibold text-slate-300 mb-2">
               No {selectedSport !== 'all' ? sports.find(s => s.key === selectedSport)?.label : ''} games available
             </h3>

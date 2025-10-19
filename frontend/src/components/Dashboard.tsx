@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { LiveGame } from '../types';
 import { GameCard } from './GameCard';
+import { sportEmojis } from '../utils/sportDetection';
 
 type Sport = 'NBA' | 'NHL' | 'NCAAF' | 'NFL' | 'MLB' | 'ALL';
 
@@ -185,7 +186,7 @@ export function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-4">
       {/* Header with League Logo */}
       <div className="max-w-7xl mx-auto mb-6">
         <div className="flex items-center justify-between mb-4">
@@ -245,52 +246,57 @@ export function Dashboard() {
           </button>
           <button
             onClick={() => setSelectedSport('NBA')}
-            className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-colors ${
+            className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-colors flex items-center gap-2 ${
               selectedSport === 'NBA'
                 ? 'bg-blue-600 text-white'
                 : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
             }`}
           >
+            <img src={sportEmojis.NBA} alt="NBA" className="w-4 h-4" style={{ imageRendering: 'crisp-edges' }} />
             NBA ({nbaGames.length})
           </button>
           <button
             onClick={() => setSelectedSport('NHL')}
-            className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-colors ${
+            className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-colors flex items-center gap-2 ${
               selectedSport === 'NHL'
                 ? 'bg-blue-600 text-white'
                 : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
             }`}
           >
+            <img src={sportEmojis.NHL} alt="NHL" className="w-4 h-4" style={{ imageRendering: 'crisp-edges' }} />
             NHL ({nhlGames.length})
           </button>
           <button
             onClick={() => setSelectedSport('NCAAF')}
-            className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-colors ${
+            className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-colors flex items-center gap-2 ${
               selectedSport === 'NCAAF'
                 ? 'bg-blue-600 text-white'
                 : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
             }`}
           >
+            <img src={sportEmojis.NCAAF} alt="NCAAF" className="w-4 h-4" style={{ imageRendering: 'crisp-edges' }} />
             NCAAF ({ncaafGames.length})
           </button>
           <button
             onClick={() => setSelectedSport('NFL')}
-            className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-colors ${
+            className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-colors flex items-center gap-2 ${
               selectedSport === 'NFL'
                 ? 'bg-blue-600 text-white'
                 : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
             }`}
           >
+            <img src={sportEmojis.NFL} alt="NFL" className="w-4 h-4" style={{ imageRendering: 'crisp-edges' }} />
             NFL ({nflGames.length})
           </button>
           <button
             onClick={() => setSelectedSport('MLB')}
-            className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-colors ${
+            className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-colors flex items-center gap-2 ${
               selectedSport === 'MLB'
                 ? 'bg-blue-600 text-white'
                 : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
             }`}
           >
+            <img src={sportEmojis.MLB} alt="MLB" className="w-4 h-4" style={{ imageRendering: 'crisp-edges' }} />
             MLB ({mlbGames.length})
           </button>
         </div>

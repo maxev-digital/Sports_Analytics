@@ -1,12 +1,15 @@
 """Game tracking and state management"""
-from models import GameState, LiveGame, GameOdds, Team, GameProjection, TeamStats, NFLLiveStats, NFLTeamStats, NHLMomentumStats, NHLTeamStats
+from live_models import GameState, LiveGame, GameOdds, Team, GameProjection, TeamStats, NFLLiveStats, NFLTeamStats, NHLMomentumStats, NHLTeamStats, MLBTeamStats
 from odds_client import OddsAPIClient
 from projector import GameProjector
+from momentum_calculator import MomentumCalculator
 from nba_stats_client import NBAStatsClient
 from nba_live_client import NBALiveClient
 from espn_nfl_client import ESPNNFLClient
 from nfl_stats_client import NFLStatsClient
 from nhl_stats_client import NHLStatsClient
+from mlb_stats_client import MLBStatsClient
+from nhl_goalie_pull_predictor import GoaliePullPredictor
 from config import POLL_INTERVAL
 from typing import Dict, List, Optional
 import asyncio
@@ -24,14 +27,17 @@ class GameTracker:
         self.espn_nfl_client = ESPNNFLClient()
         self.nfl_stats_client = NFLStatsClient()
         self.nhl_stats_client = NHLStatsClient()
+        self.mlb_stats_client = MLBStatsClient()
         self.games: Dict[str, LiveGame] = {}
         self.running = False
         self.team_stats_cache: Dict[str, TeamStats] = {}  # Cache NBA team stats
         self.nfl_team_stats_cache: Dict[str, NFLTeamStats] = {}  # Cache NFL team stats
         self.nhl_team_stats_cache: Dict[str, NHLTeamStats] = {}  # Cache NHL team stats
+        self.mlb_team_stats_cache: Dict[str, MLBTeamStats] = {}  # Cache MLB team stats
         self.pregame_totals_cache: Dict[str, float] = {}  # Cache pregame totals per game_id
         self.espn_scoreboard_cache: Dict = {}  # Cache ESPN scoreboard data
         self.odds_timestamp_cache: Dict[str, Dict[str, float]] = {}  # Track when each book updates odds: {game_id: {bookmaker: timestamp}}
+        self.goalie_pull_opportunities: List[Dict] = []  # Track goalie pull betting opportunities
         
     async def start(self):
         """Start tracking games"""
@@ -82,6 +88,43 @@ class GameTracker:
             'Washington Capitals': 'wsh',
             'Winnipeg Jets': 'wpg',
             'Utah Hockey Club': 'uta'
+        }
+        return team_map.get(team_name)
+
+    def _map_mlb_team_name(self, team_name: str) -> Optional[str]:
+        """Map MLB team name to ESPN API abbreviation"""
+        team_map = {
+            'Arizona Diamondbacks': 'ARI',
+            'Atlanta Braves': 'ATL',
+            'Baltimore Orioles': 'BAL',
+            'Boston Red Sox': 'BOS',
+            'Chicago Cubs': 'CHC',
+            'Chicago White Sox': 'CHW',
+            'Cincinnati Reds': 'CIN',
+            'Cleveland Guardians': 'CLE',
+            'Colorado Rockies': 'COL',
+            'Detroit Tigers': 'DET',
+            'Houston Astros': 'HOU',
+            'Kansas City Royals': 'KC',
+            'Los Angeles Angels': 'LAA',
+            'Los Angeles Dodgers': 'LAD',
+            'Miami Marlins': 'MIA',
+            'Milwaukee Brewers': 'MIL',
+            'Minnesota Twins': 'MIN',
+            'New York Mets': 'NYM',
+            'New York Yankees': 'NYY',
+            'Oakland Athletics': 'OAK',
+            'Philadelphia Phillies': 'PHI',
+            'Pittsburgh Pirates': 'PIT',
+            'San Diego Padres': 'SD',
+            'San Francisco Giants': 'SF',
+            'Seattle Mariners': 'SEA',
+            'St Louis Cardinals': 'STL',
+            'St. Louis Cardinals': 'STL',
+            'Tampa Bay Rays': 'TB',
+            'Texas Rangers': 'TEX',
+            'Toronto Blue Jays': 'TOR',
+            'Washington Nationals': 'WSH',
         }
         return team_map.get(team_name)
 
@@ -298,6 +341,35 @@ class GameTracker:
             logger.warning(f"Error fetching NHL stats for {team_name}: {e}")
             return None
 
+    async def _get_mlb_team_stats(self, team_name: str) -> Optional[MLBTeamStats]:
+        """Get MLB team stats with caching"""
+        # Check if we have cached stats
+        if team_name in self.mlb_team_stats_cache:
+            return self.mlb_team_stats_cache[team_name]
+
+        # Map team name to abbreviation
+        team_abbr = self._map_mlb_team_name(team_name)
+        if not team_abbr:
+            logger.warning(f"Could not map MLB team name: {team_name}")
+            return None
+
+        try:
+            # Fetch season stats from ESPN API with rankings
+            mlb_stats = await self.mlb_stats_client.get_team_stats_with_rankings(team_abbr)
+            if not mlb_stats:
+                return None
+
+            # Update the team_name to use the proper display name (not just abbreviation)
+            mlb_stats.team_name = team_name
+
+            # Cache the stats
+            self.mlb_team_stats_cache[team_name] = mlb_stats
+            return mlb_stats
+
+        except Exception as e:
+            logger.warning(f"Error fetching MLB stats for {team_name}: {e}")
+            return None
+
     def _get_team_stats(self, team_name: str) -> Optional[TeamStats]:
         """Get team stats with caching"""
         # Check if we have cached stats
@@ -393,8 +465,8 @@ class GameTracker:
                 filtered_odds.append(game)
                 continue
 
-            # Include upcoming games for NBA, NHL, and NCAAF
-            if sport_key in ['basketball_nba', 'icehockey_nhl', 'americanfootball_ncaaf', 'basketball_ncaab']:
+            # Include upcoming games for NBA, NHL, NCAAF, NCAAB, NFL, and MLB
+            if sport_key in ['basketball_nba', 'icehockey_nhl', 'americanfootball_ncaaf', 'basketball_ncaab', 'americanfootball_nfl', 'baseball_mlb']:
                 filtered_odds.append(game)
                 logger.info(f"Including upcoming {sport_key} game: {game['away_team']} @ {game['home_team']}")
 
@@ -622,21 +694,22 @@ class GameTracker:
                             time_remaining = live_info['time_remaining']
                             logger.info(f"Live game data: {game_data['home_team']} vs {game_data['away_team']} - Q{quarter} {time_remaining}")
 
-                # Calculate momentum for NFL games (based on score differential and trends)
+                # Calculate momentum for ALL LIVE games using MomentumCalculator
                 home_momentum = None
                 away_momentum = None
-                if is_live and game_data.get('sport_key', '').startswith('americanfootball'):
-                    import random
-                    # Simple momentum calculation based on score differential
-                    # In a real system, this would analyze recent drives, turnovers, etc.
-                    if home_score is not None and away_score is not None:
-                        # Convert scores to int (API may return them as strings)
-                        home_score_int = int(home_score) if isinstance(home_score, str) else home_score
-                        away_score_int = int(away_score) if isinstance(away_score, str) else away_score
-                        score_diff = home_score_int - away_score_int
-                        # Normalize to -100 to 100 scale
-                        home_momentum = min(100, max(-100, score_diff * 10 + random.uniform(-20, 20)))
-                        away_momentum = -home_momentum  # Opposite momentum
+                if is_live and home_score is not None and away_score is not None:
+                    # Convert scores to int (API may return them as strings)
+                    home_score_int = int(home_score) if isinstance(home_score, str) else home_score
+                    away_score_int = int(away_score) if isinstance(away_score, str) else away_score
+
+                    # Calculate momentum using sport-specific algorithms
+                    home_momentum, away_momentum = MomentumCalculator.calculate_momentum(
+                        home_score=home_score_int,
+                        away_score=away_score_int,
+                        sport_key=game_data.get('sport_key', 'unknown'),
+                        period=quarter,
+                        time_remaining=time_remaining
+                    )
 
                 game_state = GameState(
                     id=game_id,
@@ -832,12 +905,11 @@ class GameTracker:
                 away_nhl_stats = None
 
                 if game_state.sport_key.startswith('icehockey'):
-                    # Skip NHL stats for now - just display the game without stats
-                    logger.info(f"Processing NHL game without stats: {game_state.away_team.name} @ {game_state.home_team.name}")
-
-                    # Skip NHL stats fetching to avoid delays
-                    # home_nhl_stats = await self._get_nhl_team_stats(game_state.home_team.name)
-                    # away_nhl_stats = await self._get_nhl_team_stats(game_state.away_team.name)
+                    # Fetch NHL season stats
+                    logger.info(f"Fetching NHL stats for {game_state.away_team.name} @ {game_state.home_team.name}")
+                    home_nhl_stats = await self._get_nhl_team_stats(game_state.home_team.name)
+                    away_nhl_stats = await self._get_nhl_team_stats(game_state.away_team.name)
+                    logger.info(f"NHL stats fetched - Home: {home_nhl_stats is not None}, Away: {away_nhl_stats is not None}")
 
                     # Fetch live momentum stats only for live games
                     if False and game_state.status == 'live':
@@ -889,6 +961,17 @@ class GameTracker:
                         except Exception as e:
                             logger.warning(f"Error fetching NHL momentum for game {game_id}: {e}")
 
+                # Fetch MLB team stats if this is an MLB game
+                home_mlb_stats = None
+                away_mlb_stats = None
+
+                if game_state.sport_key.startswith('baseball'):
+                    # Fetch MLB season stats
+                    logger.info(f"Fetching MLB stats for {game_state.away_team.name} @ {game_state.home_team.name}")
+                    home_mlb_stats = await self._get_mlb_team_stats(game_state.home_team.name)
+                    away_mlb_stats = await self._get_mlb_team_stats(game_state.away_team.name)
+                    logger.info(f"MLB stats fetched - Home: {home_mlb_stats is not None}, Away: {away_mlb_stats is not None}")
+
                 # Team stats already fetched earlier
                 new_games[game_id] = LiveGame(
                     state=game_state,
@@ -903,7 +986,9 @@ class GameTracker:
                     home_nhl_momentum=home_nhl_momentum,
                     away_nhl_momentum=away_nhl_momentum,
                     home_nhl_stats=home_nhl_stats,
-                    away_nhl_stats=away_nhl_stats
+                    away_nhl_stats=away_nhl_stats,
+                    home_mlb_stats=home_mlb_stats,
+                    away_mlb_stats=away_mlb_stats
                 )
             except Exception as e:
                 logger.warning(f"Error parsing game {game_data.get('id', 'unknown')}: {e}", exc_info=True)
@@ -911,16 +996,89 @@ class GameTracker:
 
         self.games = new_games
         logger.info(f"Updated {len(self.games)} games")
-    
+
+        # Check for NHL goalie pull opportunities
+        await self._check_goalie_pull_opportunities()
+
+    async def _check_goalie_pull_opportunities(self):
+        """Check all live NHL games for goalie pull betting opportunities"""
+        # Get all live NHL games
+        live_nhl_games = []
+
+        for game_id, live_game in self.games.items():
+            if live_game.state.sport_key.startswith('icehockey') and live_game.state.status == 'live':
+                # Convert to format expected by GoaliePullPredictor
+                game_dict = {
+                    'game_id': game_id,
+                    'away_team': live_game.state.away_team.name,
+                    'home_team': live_game.state.home_team.name,
+                    'away_score': live_game.state.away_team.score or 0,
+                    'home_score': live_game.state.home_team.score or 0,
+                    'period': live_game.state.quarter or 0,
+                    'time_remaining': live_game.state.time_remaining or '0:00',
+                    'time_remaining_seconds': self._parse_time_to_seconds(live_game.state.time_remaining or '0:00'),
+                    'current_score': (live_game.state.home_team.score or 0) + (live_game.state.away_team.score or 0)
+                }
+
+                live_nhl_games.append(game_dict)
+
+        if not live_nhl_games:
+            # No live NHL games, clear opportunities
+            self.goalie_pull_opportunities = []
+            return
+
+        # Prepare odds data for each game
+        odds_data = {}
+        for game in live_nhl_games:
+            game_id = game['game_id']
+            live_game = self.games.get(game_id)
+
+            if live_game and live_game.odds:
+                # Get average total from all books
+                avg_total = sum(odd.total for odd in live_game.odds) / len(live_game.odds)
+                # Get best over odds
+                best_over_odds = max(odd.over_price for odd in live_game.odds)
+
+                odds_data[game_id] = {
+                    'total': avg_total,
+                    'over_odds': best_over_odds
+                }
+
+        # Check for opportunities
+        opportunities = GoaliePullPredictor.check_for_opportunities(live_nhl_games, odds_data)
+
+        # Update stored opportunities
+        self.goalie_pull_opportunities = opportunities
+
+        # Log any HIGH priority opportunities
+        for opp in opportunities:
+            if opp['priority'] == 'HIGH':
+                logger.warning(f"🚨 HIGH PRIORITY GOALIE PULL OPPORTUNITY: {opp['game']}")
+                logger.warning(opp['alert_message'])
+
+    def _parse_time_to_seconds(self, time_str: str) -> int:
+        """Parse time string like '2:30' to seconds"""
+        try:
+            parts = time_str.split(':')
+            minutes = int(parts[0])
+            seconds = int(parts[1])
+            return (minutes * 60) + seconds
+        except:
+            return 0
+
     async def stop(self):
         """Stop tracking"""
         self.running = False
         await self.odds_client.close()
-    
+
     def get_all_games(self) -> List[LiveGame]:
         """Get all tracked games"""
         return list(self.games.values())
-    
+
     def get_game(self, game_id: str) -> LiveGame:
         """Get specific game"""
         return self.games.get(game_id)
+
+    def get_goalie_pull_opportunities(self) -> List[Dict]:
+        """Get current goalie pull betting opportunities"""
+        return self.goalie_pull_opportunities

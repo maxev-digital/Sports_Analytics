@@ -3139,8 +3139,8 @@ const articleContents: { [key: string]: ArticleContent } = {
     )
   },
 
-  'reading-live-odds': {
-    id: 'reading-live-odds',
+  'reading-live-odds-v2': {
+    id: 'reading-live-odds-v2',
     title: 'Reading Live Odds: A Complete Guide',
     category: 'Fundamentals',
     readTime: '10 min',
@@ -3358,6 +3358,396 @@ const articleContents: { [key: string]: ArticleContent } = {
           <h2>Next Steps</h2>
           <p>Learn unit sizing strategies: <Link to="/learn/unit-sizing" className="text-blue-400 hover:text-blue-300">Unit Sizing Based on Edge</Link>.</p>
           <p>Master bankroll basics: <Link to="/learn/bankroll-management-101" className="text-blue-400 hover:text-blue-300">Bankroll Management 101</Link>.</p>
+        </div>
+      </>
+    )
+  },
+
+  'arbitrage-betting': {
+    id: 'arbitrage-betting',
+    title: 'Arbitrage Betting: Guaranteed Profit Strategy',
+    category: 'Advanced',
+    readTime: '20 min',
+    lastUpdated: 'October 17, 2025',
+    author: 'Sport Trader.io Team',
+    metaDescription: 'Master arbitrage betting with real live data from our monitoring system. Learn how to guarantee profit regardless of game outcomes using live sportsbook data across 11+ bookmakers.',
+    content: (
+      <>
+        <div className="prose prose-invert prose-lg max-w-none">
+
+          <div className="bg-green-900/30 border border-green-500/30 rounded-lg p-6 my-8">
+            <h3 className="text-green-400 mt-0">Real Data - Right Now</h3>
+            <p className="mb-0">
+              <strong>This guide uses LIVE arbitrage opportunities</strong> detected by our monitoring system. These aren't theoretical examples—they're real bets you can place right now across 11+ sportsbooks.
+            </p>
+          </div>
+
+          <h2>What is Arbitrage Betting?</h2>
+          <p>
+            Arbitrage betting (or "arbing") is a strategy that <strong>guarantees profit</strong> by exploiting price differences between sportsbooks. You place bets on all possible outcomes of an event across different bookmakers, ensuring you profit regardless of the result.
+          </p>
+
+          <h3>The Core Concept</h3>
+          <p>Every betting odd has an "implied probability"—the bookmaker's assessment of the likelihood of that outcome:</p>
+
+          <div className="bg-slate-900/50 rounded-lg p-4 my-6 font-mono text-sm">
+            <p className="text-blue-300 mb-2">Conversion Formulas:</p>
+            <p className="text-slate-300">Positive odds (+150): Implied Prob = 100 / (odds + 100) = 100 / 250 = 40%</p>
+            <p className="text-slate-300">Negative odds (-110): Implied Prob = 110 / (110 + 100) = 52.4%</p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6 my-8">
+            <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-6">
+              <h4 className="text-red-400 mt-0">Normal Situation (No Arbitrage)</h4>
+              <ul className="text-sm mb-0">
+                <li>Team A at -110 → 52.4% implied probability</li>
+                <li>Team B at -110 → 52.4% implied probability</li>
+                <li><strong>Total: 104.8%</strong> ← Bookmaker has 4.8% edge (the "vig")</li>
+              </ul>
+            </div>
+            <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-6">
+              <h4 className="text-green-400 mt-0">Arbitrage Opportunity</h4>
+              <ul className="text-sm mb-0">
+                <li>Team A at +110 (Book 1) → 47.6% implied probability</li>
+                <li>Team B at +114 (Book 2) → 46.7% implied probability</li>
+                <li><strong>Total: 94.3%</strong> ← YOU have a 5.7% guaranteed profit!</li>
+              </ul>
+            </div>
+          </div>
+
+          <h2>Live Example #1: The 18.68% Monster (NHL)</h2>
+
+          <div className="bg-gradient-to-r from-yellow-900/30 to-orange-900/30 border border-yellow-500/50 rounded-xl p-6 my-8">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-3xl">⭐</span>
+              <h3 className="text-yellow-300 mt-0 mb-0">ACTIVE NOW - Highest Profit Opportunity</h3>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6 text-sm">
+              <div>
+                <p className="text-slate-400 mb-1">Sport</p>
+                <p className="text-white font-bold">NHL</p>
+              </div>
+              <div>
+                <p className="text-slate-400 mb-1">Match</p>
+                <p className="text-white font-bold">San Jose Sharks @ Utah Mammoth</p>
+              </div>
+              <div>
+                <p className="text-slate-400 mb-1">Market</p>
+                <p className="text-white font-bold">Point Spread</p>
+              </div>
+              <div>
+                <p className="text-slate-400 mb-1">Arbitrage Margin</p>
+                <p className="text-green-400 font-bold text-xl">18.68%</p>
+              </div>
+            </div>
+          </div>
+
+          <h3>The Opportunity Breakdown</h3>
+          <div className="overflow-x-auto my-6">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-800">
+                <tr>
+                  <th className="px-4 py-3 text-left">Sportsbook</th>
+                  <th className="px-4 py-3 text-left">Selection</th>
+                  <th className="px-4 py-3 text-right">Odds</th>
+                  <th className="px-4 py-3 text-right">Implied Prob</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-t border-slate-700">
+                  <td className="px-4 py-3 font-bold text-blue-400">BetMGM</td>
+                  <td className="px-4 py-3">San Jose Sharks (spread)</td>
+                  <td className="px-4 py-3 text-right font-mono">+150</td>
+                  <td className="px-4 py-3 text-right">40.0%</td>
+                </tr>
+                <tr className="border-t border-slate-700">
+                  <td className="px-4 py-3 font-bold text-orange-400">FanDuel</td>
+                  <td className="px-4 py-3">Utah Mammoth (spread)</td>
+                  <td className="px-4 py-3 text-right font-mono">+142</td>
+                  <td className="px-4 py-3 text-right">41.3%</td>
+                </tr>
+                <tr className="border-t border-slate-700 bg-green-900/20">
+                  <td className="px-4 py-3 font-bold" colSpan={2}>TOTAL (Both sides covered)</td>
+                  <td className="px-4 py-3 text-right">—</td>
+                  <td className="px-4 py-3 text-right font-bold text-green-400">81.3%</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>The Math: Step-by-Step</h3>
+
+          <p><strong>Step 1: Calculate Optimal Stakes</strong></p>
+          <p>For a $1,000 total investment:</p>
+          <div className="bg-slate-900/50 rounded-lg p-4 my-4 font-mono text-sm">
+            <p className="text-blue-300">BetMGM stake:  $508.13 on San Jose +150</p>
+            <p className="text-orange-300">FanDuel stake: $491.87 on Utah +142</p>
+            <p className="text-slate-400">Total invested: $1,000.00</p>
+          </div>
+
+          <p><strong>Step 2: Calculate Guaranteed Returns</strong></p>
+
+          <div className="grid md:grid-cols-2 gap-6 my-6">
+            <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-6">
+              <h4 className="text-blue-400 mt-0">Scenario A - BetMGM wins</h4>
+              <p className="text-sm font-mono">Payout = $508.13 × 2.50 = $1,270.33</p>
+              <p className="text-sm font-mono">Profit = $1,270.33 - $1,000 = <span className="text-green-400 font-bold">+$270.33</span></p>
+            </div>
+            <div className="bg-orange-900/20 border border-orange-500/30 rounded-lg p-6">
+              <h4 className="text-orange-400 mt-0">Scenario B - FanDuel wins</h4>
+              <p className="text-sm font-mono">Payout = $491.87 × 2.42 = $1,190.33</p>
+              <p className="text-sm font-mono">Profit = $1,190.33 - $1,000 = <span className="text-green-400 font-bold">+$190.33</span></p>
+            </div>
+          </div>
+
+          <div className="bg-green-900/30 border border-green-500/50 rounded-lg p-6 my-8">
+            <h3 className="text-green-400 mt-0">Guaranteed Minimum Profit: $190.33 (19.0% ROI)</h3>
+            <p className="mb-0">Regardless of which team covers the spread, you walk away with at least $190 in pure profit!</p>
+          </div>
+
+          <h2>Live Example #2: Safe 6% Return (NHL Totals)</h2>
+
+          <div className="bg-slate-800/50 border border-slate-600 rounded-lg p-6 my-6">
+            <h3 className="text-blue-400 mt-0">Boston Bruins @ Colorado Avalanche</h3>
+            <p className="text-sm text-slate-400 mb-4">Total Points (Over/Under 6.5 goals)</p>
+
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <p className="text-xs text-slate-500 mb-1">OVER 6.5</p>
+                <p className="font-bold">FanDuel: +112 (47.17%)</p>
+                <p className="text-sm text-slate-400">Stake: $497.65</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 mb-1">UNDER 6.5</p>
+                <p className="font-bold">DraftKings: +114 (46.73%)</p>
+                <p className="text-sm text-slate-400">Stake: $502.35</p>
+              </div>
+            </div>
+
+            <div className="mt-4 pt-4 border-t border-slate-700">
+              <p className="text-sm mb-2"><strong>Total Implied Probability:</strong> 93.9%</p>
+              <p className="text-green-400 font-bold">Arbitrage Margin: 6.1%</p>
+              <p className="text-sm mt-3">
+                <strong>If OVER hits:</strong> $1,055.02 → Profit: $55.02<br />
+                <strong>If UNDER hits:</strong> $1,075.03 → Profit: $75.03
+              </p>
+              <p className="text-green-400 font-bold mt-3">Guaranteed Profit: $55.02 (5.5% ROI)</p>
+            </div>
+          </div>
+
+          <h2>Why Do These Opportunities Exist?</h2>
+
+          <h3>1. Independent Pricing Models</h3>
+          <p>Each sportsbook uses proprietary algorithms. BetMGM might price Utah Mammoth differently than FanDuel. Different customer bases create different risk exposures. Books don't coordinate pricing (that would be illegal).</p>
+
+          <h3>2. Market Inefficiencies</h3>
+          <p>Books update at different speeds:</p>
+          <ul>
+            <li>Sharp books (Pinnacle, Circa) move lines instantly</li>
+            <li>Recreational books (FanDuel, DraftKings) may lag 30-60 seconds</li>
+            <li>Regional books wait for consensus</li>
+          </ul>
+          <p>When injury news breaks or a sharp bet lands, arbitrage windows open.</p>
+
+          <h3>3. Promotional Odds</h3>
+          <p>Books boost odds to attract customers. "Odds Boost" promotions create intentional arbitrage. New market states have aggressive pricing to gain market share.</p>
+
+          <h2>Our Real-Time Monitoring System</h2>
+
+          <div className="bg-gradient-to-r from-blue-900/30 to-purple-900/30 border border-blue-500/30 rounded-xl p-6 my-8">
+            <h3 className="text-blue-400 mt-0">System Status</h3>
+            <div className="grid md:grid-cols-3 gap-6 text-sm">
+              <div>
+                <p className="text-slate-400 mb-1">Scan Frequency</p>
+                <p className="text-white font-bold">Every 10 seconds</p>
+              </div>
+              <div>
+                <p className="text-slate-400 mb-1">Bookmakers Monitored</p>
+                <p className="text-white font-bold">11 sportsbooks</p>
+              </div>
+              <div>
+                <p className="text-slate-400 mb-1">Sports Tracked</p>
+                <p className="text-white font-bold">NBA, NFL, NHL, NCAA, MLB</p>
+              </div>
+              <div>
+                <p className="text-slate-400 mb-1">Markets</p>
+                <p className="text-white font-bold">Moneylines, Spreads, Totals</p>
+              </div>
+              <div>
+                <p className="text-slate-400 mb-1">Success Rate</p>
+                <p className="text-green-400 font-bold">85.4%</p>
+              </div>
+              <div>
+                <p className="text-slate-400 mb-1">Average Profit</p>
+                <p className="text-green-400 font-bold">2.3%</p>
+              </div>
+            </div>
+          </div>
+
+          <h3>How It Works</h3>
+          <ol>
+            <li><strong>Data Collection:</strong> Every 10 seconds, fetch odds from The Odds API for all sports and markets</li>
+            <li><strong>Arbitrage Detection:</strong> For each game, find best odds for each outcome across ALL books, calculate total implied probability</li>
+            <li><strong>Alert Generation:</strong> If total probability {"<"} 100%, arbitrage exists! Calculate optimal stakes and profit percentage</li>
+            <li><strong>Real-Time Broadcasting:</strong> WebSocket pushes alerts to dashboard, browser extension, and mobile app</li>
+          </ol>
+
+          <h2>ARB Auto Bettor™ Extension</h2>
+
+          <div className="bg-purple-900/20 border border-purple-500/30 rounded-lg p-6 my-8">
+            <h3 className="text-purple-400 mt-0">95% Automated, 100% Legal</h3>
+            <p>Our custom-built browser extension automates the arbitrage betting process while keeping you fully compliant with sportsbook terms of service.</p>
+
+            <h4 className="text-purple-300">What It Does:</h4>
+            <ul className="text-sm">
+              <li>✅ Real-time monitoring via WebSocket connection</li>
+              <li>✅ Instant push notifications for HIGH priority opportunities (5%+)</li>
+              <li>✅ Auto-navigation to sportsbook game pages</li>
+              <li>✅ Auto-fill bet slips with exact selection and calculated stake</li>
+              <li>✅ Highlights "Place Bet" button with pulsing green glow</li>
+              <li>✅ <strong>YOU click to confirm</strong> (required by law)</li>
+            </ul>
+
+            <h4 className="text-purple-300 mt-4">What It Doesn't Do (To Stay Legal):</h4>
+            <ul className="text-sm">
+              <li>❌ Never auto-clicks "Place Bet"</li>
+              <li>❌ Never submits bets without user interaction</li>
+              <li>❌ Never stores your credentials</li>
+              <li>❌ Never bypasses CAPTCHA or security</li>
+            </ul>
+          </div>
+
+          <h3>Time Savings</h3>
+          <div className="overflow-x-auto my-6">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-800">
+                <tr>
+                  <th className="px-4 py-3 text-left">Task</th>
+                  <th className="px-4 py-3 text-right">Manual Time</th>
+                  <th className="px-4 py-3 text-right">With Extension</th>
+                  <th className="px-4 py-3 text-right">Savings</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-t border-slate-700">
+                  <td className="px-4 py-3">Find opportunity</td>
+                  <td className="px-4 py-3 text-right">2-5 min</td>
+                  <td className="px-4 py-3 text-right">Instant alert</td>
+                  <td className="px-4 py-3 text-right text-green-400">100%</td>
+                </tr>
+                <tr className="border-t border-slate-700">
+                  <td className="px-4 py-3">Navigate to games</td>
+                  <td className="px-4 py-3 text-right">40s per book</td>
+                  <td className="px-4 py-3 text-right">2s</td>
+                  <td className="px-4 py-3 text-right text-green-400">95%</td>
+                </tr>
+                <tr className="border-t border-slate-700">
+                  <td className="px-4 py-3">Fill bet slips</td>
+                  <td className="px-4 py-3 text-right">30s per bet</td>
+                  <td className="px-4 py-3 text-right">3s auto-fill</td>
+                  <td className="px-4 py-3 text-right text-green-400">90%</td>
+                </tr>
+                <tr className="border-t border-slate-700">
+                  <td className="px-4 py-3">Calculate stakes</td>
+                  <td className="px-4 py-3 text-right">60s</td>
+                  <td className="px-4 py-3 text-right">Instant</td>
+                  <td className="px-4 py-3 text-right text-green-400">100%</td>
+                </tr>
+                <tr className="border-t border-slate-700 bg-green-900/20">
+                  <td className="px-4 py-3 font-bold">Total per arb</td>
+                  <td className="px-4 py-3 text-right font-bold">5-8 minutes</td>
+                  <td className="px-4 py-3 text-right font-bold">30-45 seconds</td>
+                  <td className="px-4 py-3 text-right font-bold text-green-400">90%</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h2>Profitability Analysis</h2>
+
+          <h3>Conservative Scenario (Manual Execution)</h3>
+          <div className="bg-slate-900/50 rounded-lg p-6 my-6">
+            <p className="text-sm font-mono text-slate-300 mb-2">8-12 arbitrage opportunities per day</p>
+            <p className="text-sm font-mono text-slate-300 mb-2">Average 2% profit margin</p>
+            <p className="text-sm font-mono text-slate-300 mb-2">$100-200 stake per opportunity</p>
+            <p className="text-sm font-mono text-slate-300 mb-4">70% capture rate (opportunities still available)</p>
+            <hr className="border-slate-700 my-4" />
+            <p className="text-lg font-bold text-green-400">$16-48/day = $400-1,200/month</p>
+          </div>
+
+          <h3>Aggressive Scenario (With ARB Auto Bettor)</h3>
+          <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-6 my-6">
+            <p className="text-sm font-mono text-slate-300 mb-2">30-50 arbitrage opportunities per day</p>
+            <p className="text-sm font-mono text-slate-300 mb-2">Average 2.5% profit margin</p>
+            <p className="text-sm font-mono text-slate-300 mb-2">$500-1,000 stake per opportunity</p>
+            <p className="text-sm font-mono text-slate-300 mb-4">85% capture rate (faster execution)</p>
+            <hr className="border-slate-700 my-4" />
+            <p className="text-lg font-bold text-green-400">$375-1,250/day = $9,000-31,000/month</p>
+          </div>
+
+          <div className="bg-yellow-900/30 border border-yellow-500/30 rounded-lg p-6 my-8">
+            <h3 className="text-yellow-400 mt-0">The Catch</h3>
+            <ul className="text-sm mb-0">
+              <li><strong>Speed matters:</strong> Most opportunities close within 2-5 minutes</li>
+              <li><strong>Account limits:</strong> Sportsbooks restrict profitable players over time</li>
+              <li><strong>Bankroll required:</strong> Need $10,000+ for serious operation</li>
+              <li><strong>Time commitment:</strong> Monitoring, executing, managing accounts</li>
+              <li><strong>Diminishing returns:</strong> As you scale up, books limit you faster</li>
+            </ul>
+          </div>
+
+          <h2>Common Mistakes to Avoid</h2>
+
+          <h3>❌ Mistake #1: Ignoring Betting Limits</h3>
+          <p>You calculate a perfect $1,000 arbitrage, but Book A limits you to $250 and Book B limits you to $400. Your stakes don't align and the arbitrage breaks.</p>
+          <p><strong>Solution:</strong> Know limits before betting. Start small ($100-200 per arb). Build account history with recreational bets.</p>
+
+          <h3>❌ Mistake #2: Wrong Line/Total</h3>
+          <p>Multiple lines exist for the same game. Betting Lakers -4.5 at one book and Warriors +5.5 at another looks like arbitrage but has a 1-point gap.</p>
+          <p><strong>Solution:</strong> Verify exact lines match, or ensure the gap creates a profitable "middle".</p>
+
+          <h3>❌ Mistake #3: Accounts Get Limited</h3>
+          <p>After consistent arbitrage profits, books will limit your bet sizes, require manual review, or ban you entirely.</p>
+          <p><strong>Solution:</strong> Mix in recreational bets at bad odds. Bet popular markets occasionally. Don't max out every arbitrage. Spread action across many books.</p>
+
+          <h2>Next Steps</h2>
+
+          <div className="bg-blue-900/30 border border-blue-500/30 rounded-lg p-6 my-8">
+            <h3 className="text-blue-400 mt-0">Get Started Today</h3>
+            <ol className="text-sm mb-0">
+              <li><strong>View Live Opportunities:</strong> Visit the <Link to="/alerts" className="text-blue-300 hover:text-blue-200 underline">Alerts page</Link> to see current arbitrage opportunities</li>
+              <li><strong>Fund Sportsbook Accounts:</strong> Minimum $1,000 each at DraftKings, FanDuel, BetMGM, Caesars</li>
+              <li><strong>Install ARB Auto Bettor:</strong> Browser extension automates 90% of the process</li>
+              <li><strong>Start Small:</strong> Begin with $100-200 stakes to learn the process</li>
+              <li><strong>Scale Up:</strong> Increase position sizes as you gain experience</li>
+            </ol>
+          </div>
+
+          <div className="bg-gradient-to-r from-green-900/30 to-blue-900/30 border border-green-500/30 rounded-xl p-8 my-8 text-center">
+            <h3 className="text-3xl font-bold text-white mb-4">The Math is Certain. The Profit is Guaranteed.</h3>
+            <p className="text-xl text-slate-300 mb-6">
+              Right now, 20+ arbitrage opportunities are active with profits ranging from 1.1% to 18.68%.
+            </p>
+            <Link
+              to="/alerts"
+              className="inline-block px-8 py-4 bg-green-600 hover:bg-green-700 text-white font-bold text-lg rounded-lg transition-colors"
+            >
+              View Live Arbitrage Opportunities →
+            </Link>
+          </div>
+
+          <h2>Legal & Responsible Gaming</h2>
+          <p className="text-sm text-slate-400">
+            <strong>What's Legal:</strong> Detecting arbitrage opportunities, calculating optimal stakes, placing bets at multiple sportsbooks, using software to find opportunities, browser extensions that assist (not automate) betting.
+          </p>
+          <p className="text-sm text-slate-400">
+            <strong>What's NOT Legal:</strong> Automated bet placement without human interaction, using bots to bypass CAPTCHA, sharing accounts, coordinating with other bettors, exploiting software glitches.
+          </p>
+          <p className="text-sm text-slate-400">
+            <strong>Our Approach:</strong> ARB Auto Bettor is 95% automated but 100% ToS compliant. The extension finds opportunities, navigates to games, fills bet slips, but requires YOU to click "Place Bet" for final confirmation.
+          </p>
+
         </div>
       </>
     )

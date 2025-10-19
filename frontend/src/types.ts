@@ -204,6 +204,47 @@ export interface NFLTeamStats {
   turnover_differential_rank?: number | null;  // Turnover margin rank
 }
 
+export interface MLBTeamStats {
+  team_id: string;
+  team_name: string;
+  games_played: number;
+  wins: number;
+  losses: number;
+  win_pct: number;
+  // Batting statistics
+  runs_per_game: number;  // Runs scored per game
+  batting_avg: number;  // Team batting average
+  on_base_pct: number;  // OBP
+  slugging_pct: number;  // SLG
+  ops: number;  // On-base + slugging
+  home_runs_per_game: number;
+  hits_per_game: number;
+  stolen_bases: number;
+  // Pitching statistics
+  era: number;  // Earned run average
+  whip: number;  // Walks + hits per inning
+  strikeouts_per_9: number;  // K/9
+  walks_per_9: number;  // BB/9
+  hits_allowed_per_9: number;
+  saves: number;
+  blown_saves: number;
+  quality_starts: number;
+  // Recent form
+  last_10_record?: string | null;  // "7-3" format
+  form_trend?: string | null;  // "HOT", "COLD", "NEUTRAL"
+  home_record?: string | null;  // "45-36"
+  away_record?: string | null;  // "40-41"
+  // Rankings (1-30 for MLB)
+  runs_per_game_rank?: number | null;
+  batting_avg_rank?: number | null;
+  ops_rank?: number | null;
+  home_runs_rank?: number | null;
+  era_rank?: number | null;
+  whip_rank?: number | null;
+  strikeouts_per_9_rank?: number | null;
+  saves_rank?: number | null;
+}
+
 export interface LiveGame {
   state: GameState;
   odds: GameOdds[];
@@ -218,4 +259,6 @@ export interface LiveGame {
   away_nhl_momentum: NHLMomentumStats | null;
   home_nhl_stats: NHLTeamStats | null;
   away_nhl_stats: NHLTeamStats | null;
+  home_mlb_stats: MLBTeamStats | null;
+  away_mlb_stats: MLBTeamStats | null;
 }

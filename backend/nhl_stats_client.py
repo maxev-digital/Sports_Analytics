@@ -3,7 +3,7 @@ import httpx
 import logging
 from typing import Dict, Optional, List
 from datetime import datetime
-from models import NHLTeamStats
+from live_models import NHLTeamStats
 
 logger = logging.getLogger(__name__)
 

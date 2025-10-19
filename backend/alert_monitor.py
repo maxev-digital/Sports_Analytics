@@ -61,8 +61,13 @@ class SteamMoveAlert:
     original_line: float
     new_line: float
     movement: float
+    movement_direction: str  # 'up' or 'down'
     books_moved: List[str]
     consensus_percent: float
+    books_not_moved: List[str]  # Books that still have old line
+    best_stale_book: str  # Best book with stale line
+    best_stale_line: float  # The old line value
+    best_stale_odds: float  # Best odds at stale line
     timestamp: datetime
 
 @dataclass
@@ -93,11 +98,17 @@ class AlertMonitor:
 
         # Alert thresholds
         self.arbitrage_min_profit = 0.5  # 0.5% minimum profit
-        self.steam_move_threshold = 0.7  # 70% of books moving same direction
-        self.line_movement_threshold = 1.5  # 1.5 point movement
+        self.steam_move_min_books = 2  # Minimum 2 books must move
+        self.steam_move_threshold = 0.5  # 50% of books moving same direction (lowered from 70%)
+        self.steam_move_min_movement = 0.5  # Minimum 0.5 point movement
+        self.line_movement_threshold = 1.0  # 1.0 point movement (lowered from 1.5)
 
         # Active alerts
-        self.active_alerts: List[Any] = []
+        self.active_alerts: Dict[str, List[Any]] = {
+            'arbitrage': [],
+            'steam_moves': [],
+            'line_movements': []
+        }
 
         # Performance tracking - simulated data for demo purposes
         self.performance_stats = {
@@ -293,7 +304,7 @@ class AlertMonitor:
 
         # Track line movements by market
         for market_type in ['spreads', 'totals']:
-            movements = {'up': [], 'down': []}
+            movements = {'up': [], 'down': [], 'no_move': []}
 
             for book in bookmakers:
                 book_key = book.get('key')
@@ -339,18 +350,21 @@ class AlertMonitor:
                     prev_line = prev_outcome.get('point', 0)
                     movement = current_line - prev_line
 
-                if abs(movement) >= 0.5:  # At least 0.5 point movement
+                if abs(movement) >= self.steam_move_min_movement:  # At least 0.5 point movement
                     if movement > 0:
-                        movements['up'].append({'book': book_key, 'movement': movement, 'new_line': current_line, 'old_line': prev_line})
+                        movements['up'].append({'book': book_key, 'movement': movement, 'new_line': current_line, 'old_line': prev_line, 'new_price': current_price})
                     else:
-                        movements['down'].append({'book': book_key, 'movement': movement, 'new_line': current_line, 'old_line': prev_line})
+                        movements['down'].append({'book': book_key, 'movement': movement, 'new_line': current_line, 'old_line': prev_line, 'new_price': current_price})
+                else:
+                    # Book hasn't moved - this is the VALUE!
+                    movements['no_move'].append({'book': book_key, 'line': current_line, 'price': current_price, 'prev_line': prev_line})
 
-            # Check for steam move (70%+ books moving same direction)
+            # Check for steam move (50%+ books moving same direction, min 2 books)
             total_books_moved = len(movements['up']) + len(movements['down'])
 
-            if total_books_moved >= 3:
-                up_percent = len(movements['up']) / total_books_moved
-                down_percent = len(movements['down']) / total_books_moved
+            if total_books_moved >= self.steam_move_min_books:
+                up_percent = len(movements['up']) / total_books_moved if total_books_moved > 0 else 0
+                down_percent = len(movements['down']) / total_books_moved if total_books_moved > 0 else 0
 
                 if up_percent >= self.steam_move_threshold or down_percent >= self.steam_move_threshold:
                     direction = 'up' if up_percent > down_percent else 'down'
@@ -359,6 +373,23 @@ class AlertMonitor:
                     avg_movement = sum(m['movement'] for m in moved_books) / len(moved_books)
                     avg_old_line = sum(m['old_line'] for m in moved_books) / len(moved_books)
                     avg_new_line = sum(m['new_line'] for m in moved_books) / len(moved_books)
+
+                    # Find best stale book (books that haven't moved yet)
+                    stale_books = movements['no_move']
+                    best_stale_book = None
+                    best_stale_line = avg_old_line
+                    best_stale_odds = None
+
+                    if stale_books:
+                        # Find book with best odds at stale line
+                        best_stale = max(stale_books, key=lambda x: x['price'])
+                        best_stale_book = best_stale['book']
+                        best_stale_line = best_stale['line']
+                        best_stale_odds = best_stale['price']
+                    else:
+                        # No stale books - all have moved
+                        best_stale_book = "All books moved"
+                        best_stale_odds = 0
 
                     alert = SteamMoveAlert(
                         game_id=game_id,
@@ -370,8 +401,13 @@ class AlertMonitor:
                         original_line=avg_old_line,
                         new_line=avg_new_line,
                         movement=avg_movement,
+                        movement_direction=direction,
                         books_moved=[m['book'] for m in moved_books],
                         consensus_percent=max(up_percent, down_percent) * 100,
+                        books_not_moved=[b['book'] for b in stale_books],
+                        best_stale_book=best_stale_book,
+                        best_stale_line=best_stale_line,
+                        best_stale_odds=best_stale_odds,
                         timestamp=datetime.now()
                     )
 
@@ -476,6 +512,9 @@ class AlertMonitor:
                 # Detect line movements
                 line_alerts = self.detect_line_movement(game_id, game)
                 all_alerts['line_movements'].extend(line_alerts)
+
+        # Add last_updated timestamp
+        all_alerts['last_updated'] = datetime.now().isoformat()
 
         self.active_alerts = all_alerts
         return all_alerts
