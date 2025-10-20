@@ -24,7 +24,7 @@ const getLogoUrl = (key: string, useLocal: boolean = false): string => {
     // Production: Use self-hosted logos
     return `/assets/bookmaker-logos/${key}.png`;
   }
-  // Development: Use Google favicon service
+  // Development: Use Google S2 Favicon API (proven reliable)
   const domain = key
     .replace('_us', '')
     .replace('ag', '.ag')
@@ -32,7 +32,7 @@ const getLogoUrl = (key: string, useLocal: boolean = false): string => {
     .replace('betonline', 'betonline.ag')
     .replace('lowvig', 'lowvig.ag')
     .replace('betus', 'betus.com.pa');
-  return `https://www.google.com/s2/favicons?domain=${domain}.com&sz=64`;
+  return `https://www.google.com/s2/favicons?domain=${domain}.com&sz=128`;
 };
 
 /**

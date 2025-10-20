@@ -54,7 +54,8 @@ export const uiEmojis = {
   book: 'https://em-content.zobj.net/source/microsoft-teams/363/books_1f4da.png',
   graduation: 'https://em-content.zobj.net/source/microsoft-teams/363/graduation-cap_1f393.png',
   rocket: 'https://em-content.zobj.net/source/microsoft-teams/363/rocket_1f680.png',
-  dollar: 'https://em-content.zobj.net/source/microsoft-teams/363/money-bag_1f4b0.png'
+  dollar: 'https://em-content.zobj.net/source/microsoft-teams/363/money-bag_1f4b0.png',
+  gear: 'https://em-content.zobj.net/source/microsoft-teams/363/gear_2699-fe0f.png'
 };
 
 /**

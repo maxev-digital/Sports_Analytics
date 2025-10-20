@@ -16,7 +16,7 @@ export function LiveGames() {
 
   const fetchGames = async () => {
     try {
-      const response = await fetch('/api/games');
+      const response = await fetch('/api/games?user_id=default');
       const data = await response.json();
       setGames(data);
       setLoading(false);

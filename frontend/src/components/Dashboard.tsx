@@ -2,10 +2,14 @@ import { useState, useEffect, useRef } from 'react';
 import { LiveGame } from '../types';
 import { GameCard } from './GameCard';
 import { sportEmojis } from '../utils/sportDetection';
+import { useWebSocket } from '../hooks/useWebSocket';
 
 type Sport = 'NBA' | 'NHL' | 'NCAAF' | 'NFL' | 'MLB' | 'ALL';
 
 export function Dashboard() {
+  // Use WebSocket for real-time updates instead of polling
+  const { games: wsGames, connected: wsConnected, lastUpdate: wsLastUpdate, error: wsError } = useWebSocket();
+
   const [games, setGames] = useState<LiveGame[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -98,33 +102,23 @@ export function Dashboard() {
     });
   }, [games, soundEnabled, loading]);
 
-  const fetchGames = async () => {
-    try {
-      const response = await fetch('http://localhost:8000/api/games');
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
-      setGames(data);
-      setLastUpdate(new Date());
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch games');
-      console.error('Error fetching games:', err);
-    } finally {
+  // Update games from WebSocket
+  useEffect(() => {
+    if (wsGames.length > 0) {
+      setGames(wsGames);
       setLoading(false);
     }
-  };
 
-  useEffect(() => {
-    // Initial fetch
-    fetchGames();
+    if (wsLastUpdate) {
+      setLastUpdate(wsLastUpdate);
+    }
 
-    // Poll every 15 seconds
-    const interval = setInterval(fetchGames, 15000);
-
-    return () => clearInterval(interval);
-  }, []);
+    if (wsError) {
+      setError(wsError);
+    } else {
+      setError(null);
+    }
+  }, [wsGames, wsLastUpdate, wsError]);
 
   // Helper function to get sport from game
   const getSport = (game: LiveGame): Sport => {
@@ -199,18 +193,34 @@ export function Dashboard() {
               />
               <div>
                 <h1 className="text-3xl font-bold text-white">{selectedSport} Games</h1>
-                <p className="text-slate-400 text-sm">
-                  Last updated: {lastUpdate.toLocaleTimeString()}
-                </p>
+                <div className="flex items-center gap-3">
+                  <p className="text-slate-400 text-sm">
+                    Last updated: {lastUpdate.toLocaleTimeString()}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+                    <span className={`text-xs font-semibold ${wsConnected ? 'text-green-400' : 'text-red-400'}`}>
+                      {wsConnected ? 'LIVE' : 'Disconnected'}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           )}
           {selectedSport === 'ALL' && (
             <div>
               <h1 className="text-3xl font-bold text-white mb-1">Live Betting Dashboard</h1>
-              <p className="text-slate-400 text-sm">
-                Last updated: {lastUpdate.toLocaleTimeString()}
-              </p>
+              <div className="flex items-center gap-3">
+                <p className="text-slate-400 text-sm">
+                  Last updated: {lastUpdate.toLocaleTimeString()}
+                </p>
+                <div className="flex items-center gap-2">
+                  <div className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+                  <span className={`text-xs font-semibold ${wsConnected ? 'text-green-400' : 'text-red-400'}`}>
+                    {wsConnected ? 'LIVE' : 'Disconnected'}
+                  </span>
+                </div>
+              </div>
             </div>
           )}
           <div className="flex items-center gap-4">
@@ -366,7 +376,10 @@ export function Dashboard() {
 
       {/* Footer */}
       <div className="max-w-7xl mx-auto mt-12 text-center text-sm text-slate-500">
-        <p>Data updates every 15 seconds</p>
+        <p className="flex items-center justify-center gap-2">
+          <span className={`inline-block w-1.5 h-1.5 rounded-full ${wsConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+          {wsConnected ? 'Real-time updates via WebSocket (3s refresh)' : 'Disconnected - Reconnecting...'}
+        </p>
         <p className="mt-1">Powered by Odds API</p>
       </div>
     </div>

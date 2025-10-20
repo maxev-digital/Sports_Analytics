@@ -59,8 +59,8 @@ export function AnalyticsSample() {
     const fetchData = async () => {
       try {
         const [perfResponse, alertsResponse] = await Promise.all([
-          fetch('http://localhost:8000/api/alerts/performance'),
-          fetch('http://localhost:8000/api/alerts/arbitrage')
+          fetch('/api/alerts/performance'),
+          fetch('/api/alerts/arbitrage')
         ]);
 
         if (perfResponse.ok) {

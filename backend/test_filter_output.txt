@@ -1,0 +1,164 @@
+[NFL STATS] Fetching for Minnesota Vikings vs Philadelphia Eagles
+[NFL STATS] Fetched - Home: True, Away: True
+[NFL STATS] Fetching for New York Jets vs Carolina Panthers
+[NFL STATS] Fetched - Home: True, Away: True
+[NFL STATS] Fetching for Los Angeles Chargers vs Indianapolis Colts
+[NFL STATS] Fetched - Home: True, Away: True
+[NFL STATS] Fetching for Denver Broncos vs New York Giants
+[NFL STATS] Fetched - Home: True, Away: True
+[NFL STATS] Fetching for Arizona Cardinals vs Green Bay Packers
+[NFL STATS] Fetched - Home: True, Away: True
+[NFL STATS] Fetching for Dallas Cowboys vs Washington Commanders
+[NFL STATS] Fetched - Home: True, Away: True
+[NFL STATS] Fetching for San Francisco 49ers vs Atlanta Falcons
+[NFL STATS] Fetched - Home: True, Away: True
+[NFL STATS] Fetching for Detroit Lions vs Tampa Bay Buccaneers
+[NFL STATS] Fetched - Home: True, Away: True
+[NFL STATS] Fetching for Seattle Seahawks vs Houston Texans
+[NFL STATS] Fetched - Home: True, Away: True
+[NCAAF STATS] Fetching for Florida International Panthers vs Kennesaw State Owls
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for Louisiana Tech Bulldogs vs Western Kentucky Hilltoppers
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for Delaware Blue Hens vs Middle Tennessee Blue Raiders
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for New Mexico State Aggies vs Missouri State Bears
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for Georgia State Panthers vs South Alabama Jaguars
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for Charlotte 49ers vs North Texas Mean Green
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for Virginia Tech Hokies vs California Golden Bears
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for Nevada Wolf Pack vs Boise State Broncos
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for Old Dominion Monarchs vs Appalachian State Mountaineers
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for Kent State Golden Flashes vs Bowling Green Falcons
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for Utah Utes vs Colorado Buffaloes
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for Eastern Michigan Eagles vs Ohio Bobcats
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for Georgia Tech Yellow Jackets vs Syracuse Orange
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for Indiana Hoosiers vs UCLA Bruins
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for Iowa Hawkeyes vs Minnesota Golden Gophers
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for Kansas Jayhawks vs Kansas State Wildcats
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for Memphis Tigers vs South Florida Bulls
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for Nebraska Cornhuskers vs Northwestern Wildcats
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for North Carolina Tar Heels vs Virginia Cavaliers
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for Oklahoma Sooners vs Ole Miss Rebels
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for Purdue Boilermakers vs Rutgers Scarlet Knights
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for Wake Forest Demon Deacons vs SMU Mustangs
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for Arkansas Razorbacks vs Auburn Tigers
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for Buffalo Bulls vs Akron Zips
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for New Mexico Lobos vs Utah State Aggies
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for Rice Owls vs UConn Huskies
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for South Carolina Gamecocks vs Alabama Crimson Tide
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for Iowa State Cyclones vs BYU Cougars
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for Northern Illinois Huskies vs Ball State Cardinals
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for Central Michigan Chippewas vs UMass Minutemen
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for Navy Midshipmen vs Florida Atlantic Owls
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for Fresno State Bulldogs vs San Diego State Aztecs
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for Washington Huskies vs Illinois Fighting Illini
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for Miami (OH) RedHawks vs Western Michigan Broncos
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for Vanderbilt Commodores vs Missouri Tigers
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for Pittsburgh Panthers vs NC State Wolfpack
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for Oregon Ducks vs Wisconsin Badgers
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for Southern Mississippi Golden Eagles vs UL Monroe Warhawks
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for Tulsa Golden Hurricane vs Temple Owls
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for Washington State Cougars vs Toledo Rockets
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for Cincinnati Bearcats vs Baylor Bears
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for Texas Tech Red Raiders vs Oklahoma State Cowboys
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for Mississippi State Bulldogs vs Texas Longhorns
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for West Virginia Mountaineers vs TCU Horned Frogs
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for Arkansas State Red Wolves vs Georgia Southern Eagles
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for Troy Trojans vs Louisiana Ragin Cajuns
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for Miami Hurricanes vs Stanford Cardinal
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for Louisville Cardinals vs Boston College Eagles
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for Wyoming Cowboys vs Colorado State Rams
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for LSU Tigers vs Texas A&M Aggies
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for Michigan State Spartans vs Michigan Wolverines
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for Kentucky Wildcats vs Tennessee Volunteers
+[NCAAF STATS] Fetched - Home: False, Away: False
+[NCAAF STATS] Fetching for Arizona State Sun Devils vs Houston Cougars
+[NCAAF STATS] Fetched - Home: False, Away: False
+Using cached stats for ARI
+Using cached stats for ATH
+Using cached stats for ATL
+Using cached stats for BAL
+Using cached stats for BOS
+Using cached stats for CHC
+Using cached stats for CHW
+Using cached stats for CIN
+Using cached stats for CLE
+Using cached stats for COL
+Using cached stats for DET
+Using cached stats for HOU
+Using cached stats for KC
+Using cached stats for LAA
+Using cached stats for LAD
+Using cached stats for MIA
+Using cached stats for MIL
+Using cached stats for MIN
+Using cached stats for NYM
+Using cached stats for NYY
+Using cached stats for PHI
+Using cached stats for PIT
+Using cached stats for SD
+Using cached stats for SF
+Using cached stats for SEA
+Using cached stats for STL
+Using cached stats for TB
+Using cached stats for TEX
+Using cached stats for TOR
+Using cached stats for WSH
+Total games: 113
+Enabled bookmakers: 62
+Sample enabled: ['draftkings', 'fanduel', 'betmgm']
+
+First odds bookmaker: 'DraftKings'
+Normalized: 'draftkings'
+Is in enabled? True
+
+Filtered games: 95
+First filtered game has 6 odds

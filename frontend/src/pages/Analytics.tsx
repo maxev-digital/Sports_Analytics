@@ -60,8 +60,8 @@ export function Analytics() {
     const fetchData = async () => {
       try {
         const [perfResponse, alertsResponse] = await Promise.all([
-          fetch('http://localhost:8000/api/alerts/performance'),
-          fetch('http://localhost:8000/api/alerts/arbitrage')
+          fetch('/api/alerts/performance'),
+          fetch('/api/alerts/arbitrage')
         ]);
 
         if (perfResponse.ok) {
@@ -196,7 +196,7 @@ export function Analytics() {
 
         {/* MODULE 1: Overall Performance Overview */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-green-900 border-2 border-green-700 rounded p-6 hover:shadow-lg hover:shadow-green-600/20 hover:border-green-600 transition-all">
+          <div className="bg-gradient-to-br from-green-900 via-green-700 to-green-900 border-4 border-green-700 rounded-lg p-6 hover:shadow-lg hover:shadow-green-600/20 hover:border-green-600 transition-all">
             <div className="flex items-center justify-between mb-3">
               <div className="text-sm text-white font-bold tracking-wide">TOTAL PROFIT</div>
             </div>
@@ -206,7 +206,7 @@ export function Analytics() {
             <div className="text-xs text-green-300/60">{totalAlerts} total alerts tracked</div>
           </div>
 
-          <div className="bg-blue-900 border-2 border-blue-700 rounded p-6 hover:shadow-lg hover:shadow-blue-600/20 hover:border-blue-600 transition-all">
+          <div className="bg-gradient-to-br from-blue-900 via-blue-700 to-blue-900 border-4 border-blue-700 rounded-lg p-6 hover:shadow-lg hover:shadow-blue-600/20 hover:border-blue-600 transition-all">
             <div className="flex items-center justify-between mb-3">
               <div className="text-sm text-white font-bold tracking-wide">WIN RATE</div>
             </div>
@@ -216,7 +216,7 @@ export function Analytics() {
             <div className="text-xs text-blue-300/60">{totalSuccess} successful alerts</div>
           </div>
 
-          <div className="bg-slate-900 border-2 border-slate-700 rounded p-6 hover:shadow-lg hover:shadow-blue-600/20 hover:border-blue-600 transition-all">
+          <div className="bg-gradient-to-br from-slate-900 via-slate-700 to-slate-900 border-4 border-slate-700 rounded-lg p-6 hover:shadow-lg hover:shadow-blue-600/20 hover:border-blue-600 transition-all">
             <div className="flex items-center justify-between mb-3">
               <div className="text-sm text-white font-bold tracking-wide">AVERAGE ROI</div>
             </div>
@@ -226,7 +226,7 @@ export function Analytics() {
             <div className="text-xs text-slate-400">Return on investment</div>
           </div>
 
-          <div className="bg-slate-900 border-2 border-slate-700 rounded p-6 hover:shadow-lg hover:shadow-blue-600/20 hover:border-blue-600 transition-all">
+          <div className="bg-gradient-to-br from-slate-900 via-slate-700 to-slate-900 border-4 border-slate-700 rounded-lg p-6 hover:shadow-lg hover:shadow-blue-600/20 hover:border-blue-600 transition-all">
             <div className="flex items-center justify-between mb-3">
               <div className="text-sm text-white font-bold tracking-wide">ACTIVE ALERTS</div>
             </div>
@@ -240,12 +240,12 @@ export function Analytics() {
         {/* MODULE 2: ROI and Profit Tracking + MODULE 3: Win Rate by Alert Type */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* Module 2: ROI Breakdown */}
-          <div className="bg-slate-800 border-2 border-slate-700 rounded p-6">
+          <div className="bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 border-4 border-slate-700 rounded-lg p-6">
             <h3 className="text-xl font-bold text-white mb-5 tracking-wide">
               PROFIT BY ALERT TYPE
             </h3>
             <div className="space-y-4">
-              <div className="bg-slate-900 rounded p-4 border-2 border-green-700">
+              <div className="bg-gradient-to-br from-slate-900 via-slate-700 to-slate-900 rounded-lg p-4 border-4 border-green-700">
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-green-400 font-semibold">Arbitrage</span>
                   <span className="text-green-400 font-bold">${performanceData.arbitrage.total_profit.toFixed(2)}</span>
@@ -256,13 +256,13 @@ export function Analytics() {
                 </div>
                 <div className="mt-2 bg-slate-800 rounded-full h-2">
                   <div
-                    className="bg-green-500 h-2 rounded-full"
+                    className="bg-gradient-to-br from-green-500 via-green-700 to-green-900 h-2 rounded-full"
                     style={{ width: `${(performanceData.arbitrage.total_profit / totalProfit) * 100}%` }}
                   ></div>
                 </div>
               </div>
 
-              <div className="bg-slate-900 rounded p-4 border-2 border-blue-700">
+              <div className="bg-gradient-to-br from-slate-900 via-slate-700 to-slate-900 rounded-lg p-4 border-4 border-blue-700">
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-blue-400 font-semibold">Steam Moves</span>
                   <span className="text-blue-400 font-bold">${performanceData.steam_moves.total_profit.toFixed(2)}</span>
@@ -273,13 +273,13 @@ export function Analytics() {
                 </div>
                 <div className="mt-2 bg-slate-800 rounded-full h-2">
                   <div
-                    className="bg-blue-500 h-2 rounded-full"
+                    className="bg-gradient-to-br from-blue-500 via-blue-700 to-blue-900 h-2 rounded-full"
                     style={{ width: `${(performanceData.steam_moves.total_profit / totalProfit) * 100}%` }}
                   ></div>
                 </div>
               </div>
 
-              <div className="bg-slate-900 rounded p-4 border-2 border-slate-700">
+              <div className="bg-gradient-to-br from-slate-900 via-slate-700 to-slate-900 rounded-lg p-4 border-4 border-slate-700">
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-slate-300 font-semibold">Line Movements</span>
                   <span className="text-white font-bold">${performanceData.line_movements.total_profit.toFixed(2)}</span>
@@ -288,9 +288,9 @@ export function Analytics() {
                   <span>{performanceData.line_movements.total_alerts} alerts</span>
                   <span>Avg: ${performanceData.line_movements.avg_profit.toFixed(2)}/alert</span>
                 </div>
-                <div className="mt-2 bg-slate-800 rounded h-2">
+                <div className="mt-2 bg-slate-800 rounded-lg h-2">
                   <div
-                    className="bg-slate-500 h-2 rounded"
+                    className="bg-gradient-to-br from-slate-500 via-slate-700 to-slate-900 h-2 rounded"
                     style={{ width: `${(performanceData.line_movements.total_profit / totalProfit) * 100}%` }}
                   ></div>
                 </div>
@@ -299,12 +299,12 @@ export function Analytics() {
           </div>
 
           {/* Module 3: Win Rate Breakdown */}
-          <div className="bg-slate-800 border-2 border-slate-700 rounded p-6">
+          <div className="bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 border-4 border-slate-700 rounded-lg p-6">
             <h3 className="text-xl font-bold text-white mb-5 tracking-wide">
               WIN RATE ANALYSIS
             </h3>
             <div className="space-y-4">
-              <div className="bg-slate-900 rounded p-4">
+              <div className="bg-gradient-to-br from-slate-900 via-slate-700 to-slate-900 rounded-lg p-4">
                 <div className="flex justify-between items-center mb-3">
                   <div>
                     <div className="text-white font-semibold mb-1">Arbitrage Alerts</div>
@@ -316,7 +316,7 @@ export function Analytics() {
                     {performanceData.arbitrage.win_rate.toFixed(1)}%
                   </div>
                 </div>
-                <div className="bg-slate-800 rounded-full h-3">
+                <div className="bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 rounded-full h-3">
                   <div
                     className="bg-gradient-to-r from-green-600 to-green-400 h-3 rounded-full flex items-center justify-end pr-2"
                     style={{ width: `${performanceData.arbitrage.win_rate}%` }}
@@ -326,7 +326,7 @@ export function Analytics() {
                 </div>
               </div>
 
-              <div className="bg-slate-900 rounded p-4">
+              <div className="bg-gradient-to-br from-slate-900 via-slate-700 to-slate-900 rounded-lg p-4">
                 <div className="flex justify-between items-center mb-3">
                   <div>
                     <div className="text-white font-semibold mb-1">Steam Moves</div>
@@ -338,7 +338,7 @@ export function Analytics() {
                     {performanceData.steam_moves.win_rate.toFixed(1)}%
                   </div>
                 </div>
-                <div className="bg-slate-800 rounded-full h-3">
+                <div className="bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 rounded-full h-3">
                   <div
                     className="bg-gradient-to-r from-blue-600 to-blue-400 h-3 rounded-full flex items-center justify-end pr-2"
                     style={{ width: `${performanceData.steam_moves.win_rate}%` }}
@@ -348,7 +348,7 @@ export function Analytics() {
                 </div>
               </div>
 
-              <div className="bg-slate-900 rounded p-4">
+              <div className="bg-gradient-to-br from-slate-900 via-slate-700 to-slate-900 rounded-lg p-4">
                 <div className="flex justify-between items-center mb-3">
                   <div>
                     <div className="text-white font-semibold mb-1">Line Movements</div>
@@ -360,9 +360,9 @@ export function Analytics() {
                     {performanceData.line_movements.win_rate.toFixed(1)}%
                   </div>
                 </div>
-                <div className="bg-slate-800 rounded h-3">
+                <div className="bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 rounded-lg h-3">
                   <div
-                    className="bg-gradient-to-r from-slate-600 to-slate-500 h-3 rounded flex items-center justify-end pr-2"
+                    className="bg-gradient-to-r from-slate-600 to-slate-500 h-3 rounded-lg flex items-center justify-end pr-2"
                     style={{ width: `${performanceData.line_movements.win_rate}%` }}
                   >
                     <span className="text-[10px] text-white font-bold">{performanceData.line_movements.win_rate.toFixed(0)}%</span>
@@ -374,7 +374,7 @@ export function Analytics() {
         </div>
 
         {/* MODULE 4: Alert Distribution Chart */}
-        <div className="bg-slate-800 border-2 border-slate-700 rounded p-6 mb-8">
+        <div className="bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 border-4 border-slate-700 rounded-lg p-6 mb-8">
           <h3 className="text-xl font-bold text-white mb-5 tracking-wide">
             ALERT VOLUME DISTRIBUTION
           </h3>
@@ -477,7 +477,7 @@ export function Analytics() {
         {/* MODULE 5: Profit Trends + MODULE 6: Recent High-Value Alerts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* Module 5: Profit Trends */}
-          <div className="bg-slate-800 border-2 border-slate-700 rounded p-6">
+          <div className="bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 border-4 border-slate-700 rounded-lg p-6">
             <h3 className="text-xl font-bold text-white mb-5 tracking-wide">
               CUMULATIVE PROFIT TREND
             </h3>
@@ -488,12 +488,12 @@ export function Analytics() {
                 { period: 'Last 30 Days', profit: totalProfit * 0.52, color: 'bg-purple-500' },
                 { period: 'All Time', profit: totalProfit, color: 'bg-amber-500' }
               ].map((item) => (
-                <div key={item.period} className="bg-slate-900 rounded p-4">
+                <div key={item.period} className="bg-gradient-to-br from-slate-900 via-slate-700 to-slate-900 rounded-lg p-4">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-slate-300 text-sm">{item.period}</span>
                     <span className="text-white font-bold">${item.profit.toFixed(2)}</span>
                   </div>
-                  <div className="bg-slate-800 rounded h-2">
+                  <div className="bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 rounded-lg h-2">
                     <div
                       className={`${item.color} h-2 rounded`}
                       style={{ width: `${(item.profit / totalProfit) * 100}%` }}
@@ -505,14 +505,14 @@ export function Analytics() {
           </div>
 
           {/* Module 6: Recent High-Value Alerts */}
-          <div className="bg-slate-800 border-2 border-slate-700 rounded p-6">
+          <div className="bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 border-4 border-slate-700 rounded-lg p-6">
             <h3 className="text-xl font-bold text-white mb-5 tracking-wide">
               TOP ACTIVE OPPORTUNITIES
             </h3>
             <div className="space-y-3">
               {recentAlerts.length > 0 ? (
                 recentAlerts.map((alert, idx) => (
-                  <div key={idx} className="bg-green-900 border-2 border-green-700 rounded p-3">
+                  <div key={idx} className="bg-gradient-to-br from-green-900 via-green-700 to-green-900 border-4 border-green-700 rounded-lg p-3">
                     <div className="flex justify-between items-start mb-2">
                       <div>
                         <div className="text-sm font-semibold text-white mb-1">
@@ -532,10 +532,10 @@ export function Analytics() {
                       </div>
                     </div>
                     <div className="flex gap-2 text-xs">
-                      <span className="bg-slate-800/70 px-2 py-1 rounded text-slate-300">
+                      <span className="bg-slate-800/70 px-2 py-1 rounded-lg text-slate-300">
                         {alert.book_a}: {alert.odds_a > 0 ? '+' : ''}{alert.odds_a}
                       </span>
-                      <span className="bg-slate-800/70 px-2 py-1 rounded text-slate-300">
+                      <span className="bg-slate-800/70 px-2 py-1 rounded-lg text-slate-300">
                         {alert.book_b}: {alert.odds_b > 0 ? '+' : ''}{alert.odds_b}
                       </span>
                     </div>
@@ -551,13 +551,13 @@ export function Analytics() {
         </div>
 
         {/* MODULE 7: Sport-by-Sport Breakdown */}
-        <div className="bg-slate-800 border-2 border-slate-700 rounded p-6 mb-8">
+        <div className="bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 border-4 border-slate-700 rounded-lg p-6 mb-8">
           <h3 className="text-xl font-bold text-white mb-5 tracking-wide">
             PERFORMANCE BY SPORT
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {sportStats.map((sport) => (
-              <div key={sport.sport} className="bg-slate-900 rounded p-4 border-2 border-slate-700 hover:border-blue-600 transition-all">
+              <div key={sport.sport} className="bg-gradient-to-br from-slate-900 via-slate-700 to-slate-900 rounded-lg p-4 border-4 border-slate-700 hover:border-blue-600 transition-all">
                 <div className="text-center mb-3">
                   <div className="flex justify-center mb-2">
                     {sport.hasLogo ? (
@@ -595,7 +595,7 @@ export function Analytics() {
         </div>
 
         {/* MODULE 8: Bookmaker Success Analysis */}
-        <div className="bg-slate-800 border-2 border-slate-700 rounded p-6 mb-8">
+        <div className="bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 border-4 border-slate-700 rounded-lg p-6 mb-8">
           <h3 className="text-xl font-bold text-white mb-5 tracking-wide">
             TOP PERFORMING BOOKMAKERS
           </h3>
@@ -647,13 +647,13 @@ export function Analytics() {
         </div>
 
         {/* MODULE 9: Time-based Performance Patterns */}
-        <div className="bg-slate-800 border-2 border-slate-700 rounded p-6">
+        <div className="bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 border-4 border-slate-700 rounded-lg p-6">
           <h3 className="text-xl font-bold text-white mb-5 tracking-wide">
             PERFORMANCE BY TIME OF DAY
           </h3>
           <div className="space-y-4">
             {hourlyPerformance.map((period) => (
-              <div key={period.time} className="bg-slate-900 rounded p-4">
+              <div key={period.time} className="bg-gradient-to-br from-slate-900 via-slate-700 to-slate-900 rounded-lg p-4">
                 <div className="flex justify-between items-center mb-3">
                   <div className="text-white font-semibold">{period.time}</div>
                   <div className="flex gap-6">
@@ -671,16 +671,16 @@ export function Analytics() {
                     </div>
                   </div>
                 </div>
-                <div className="bg-slate-800 rounded h-3">
+                <div className="bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 rounded-lg h-3">
                   <div
-                    className="bg-gradient-to-r from-blue-600 to-blue-500 h-3 rounded transition-all"
+                    className="bg-gradient-to-r from-blue-600 to-blue-500 h-3 rounded-lg transition-all"
                     style={{ width: `${(period.alerts / 401) * 100}%` }}
                   ></div>
                 </div>
               </div>
             ))}
           </div>
-          <div className="mt-5 bg-blue-900 border-2 border-blue-700 rounded p-4">
+          <div className="mt-5 bg-blue-900 border-4 border-blue-700 rounded-lg p-4">
             <div className="flex items-start gap-3">
               <div>
                 <div className="text-blue-300 font-semibold mb-1">Peak Performance Window</div>

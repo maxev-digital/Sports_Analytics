@@ -49,7 +49,7 @@ export function Props() {
     const fetchProps = async () => {
       setLoading(true);
       try {
-        const response = await fetch(`http://localhost:8000/api/props/${selectedSport}`);
+        const response = await fetch(`/api/props/${selectedSport}`);
         if (response.ok) {
           const data = await response.json();
           setProps(data.props || []);
@@ -298,7 +298,7 @@ export function Props() {
                         <td key={bookmaker} className="py-4 px-4">
                           <div className="flex flex-col gap-1">
                             {prop.bookmakers[bookmaker]?.over && (
-                              <div className={`text-center px-2 py-1 rounded text-sm font-semibold ${
+                              <div className={`text-center px-2 py-1 rounded-lg text-sm font-semibold ${
                                 prop.best_over?.bookmaker === bookmaker
                                   ? 'bg-green-900/50 text-green-400 border border-green-700'
                                   : 'bg-slate-700/50 text-slate-300'
@@ -307,7 +307,7 @@ export function Props() {
                               </div>
                             )}
                             {prop.bookmakers[bookmaker]?.under && (
-                              <div className={`text-center px-2 py-1 rounded text-sm font-semibold ${
+                              <div className={`text-center px-2 py-1 rounded-lg text-sm font-semibold ${
                                 prop.best_under?.bookmaker === bookmaker
                                   ? 'bg-blue-900/50 text-blue-400 border border-blue-700'
                                   : 'bg-slate-700/50 text-slate-300'
@@ -321,12 +321,12 @@ export function Props() {
                       <td className="py-4 px-4">
                         <div className="flex flex-col gap-1">
                           {prop.best_over && (
-                            <div className="text-center px-2 py-1 rounded text-sm font-bold bg-green-900/50 text-green-400 border border-green-700">
+                            <div className="text-center px-2 py-1 rounded-lg text-sm font-bold bg-green-900/50 text-green-400 border border-green-700">
                               O {formatOdds(prop.best_over.odds)}
                             </div>
                           )}
                           {prop.best_under && (
-                            <div className="text-center px-2 py-1 rounded text-sm font-bold bg-blue-900/50 text-blue-400 border border-blue-700">
+                            <div className="text-center px-2 py-1 rounded-lg text-sm font-bold bg-blue-900/50 text-blue-400 border border-blue-700">
                               U {formatOdds(prop.best_under.odds)}
                             </div>
                           )}

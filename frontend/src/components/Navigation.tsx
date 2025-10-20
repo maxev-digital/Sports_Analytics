@@ -1,8 +1,10 @@
 import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import { uiEmojis } from '../utils/sportDetection';
 
 export function Navigation() {
   const location = useLocation();
+  const { username, logout } = useAuth();
 
   const navItems = [
     { path: '/', label: 'Live Games', emoji: uiEmojis.fire },
@@ -11,6 +13,7 @@ export function Navigation() {
     { path: '/tools', label: 'Tools', emoji: uiEmojis.search },
     { path: '/analytics', label: 'Analytics', emoji: uiEmojis.chart },
     { path: '/props', label: 'Props', emoji: uiEmojis.book },
+    { path: '/settings', label: 'Settings', emoji: uiEmojis.gear },
     { path: '/learn', label: 'Learn', emoji: uiEmojis.graduation },
     { path: '/getting-started', label: 'Get Started', emoji: uiEmojis.rocket },
     { path: '/pricing', label: 'Pricing', emoji: uiEmojis.dollar },
@@ -33,8 +36,8 @@ export function Navigation() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
             <div>
-              <div className="text-xl font-bold text-slate-100">Sport Trader.io</div>
-              <div className="text-[10px] text-blue-400 -mt-0.5">Real Time AI Game and Data Analysis</div>
+              <div className="text-xl font-bold text-slate-100">Max EV Sports</div>
+              <div className="text-[10px] text-blue-400 -mt-0.5">Maximum EV Is Our Specialty</div>
             </div>
           </Link>
 
@@ -60,9 +63,20 @@ export function Navigation() {
 
           {/* Right Side Actions */}
           <div className="flex items-center gap-3">
-            <button className="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold rounded-lg shadow-lg shadow-blue-600/30 transition-all text-sm">
-              Sign In
-            </button>
+            <div className="flex items-center gap-3 bg-slate-800/50 border-2 border-slate-700 rounded-lg px-4 py-2">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
+                  {username ? username.charAt(0).toUpperCase() : 'U'}
+                </div>
+                <span className="text-slate-300 text-sm font-semibold">{username}</span>
+              </div>
+              <button
+                onClick={logout}
+                className="px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-all text-xs"
+              >
+                Logout
+              </button>
+            </div>
           </div>
         </div>
 

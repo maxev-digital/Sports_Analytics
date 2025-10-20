@@ -91,24 +91,30 @@ class NFLStatsClient:
                 team_name = team_abbr
             else:
                 # For NFL, fetch team info to get team ID from abbreviation
+                # First, get team list to find team ID
                 url = f"{base_url}/teams"
                 response = await self.client.get(url)
                 response.raise_for_status()
                 teams_data = response.json()
 
                 # Find team by abbreviation
-                team_info = None
+                team_id = None
                 for team in teams_data.get('sports', [{}])[0].get('leagues', [{}])[0].get('teams', []):
                     team_data = team.get('team', {})
                     if team_data.get('abbreviation', '').lower() == team_abbr.lower():
-                        team_info = team_data
+                        team_id = team_data.get('id')
                         break
 
-                if not team_info:
+                if not team_id:
                     logger.warning(f"Could not find NFL team: {team_abbr}")
                     return None
 
-                team_id = team_info.get('id')
+                # Now fetch detailed team info (includes record with W-L and points against)
+                team_detail_url = f"{base_url}/teams/{team_id}"
+                response = await self.client.get(team_detail_url)
+                response.raise_for_status()
+                team_detail_data = response.json()
+                team_info = team_detail_data.get('team', {})
                 team_name = team_info.get('displayName', team_abbr.upper())
 
             # Fetch team statistics
@@ -131,19 +137,33 @@ class NFLStatsClient:
             # Get games played from stats (more reliable than record parsing)
             games_played = int(stats_obj.get('gamesPlayed', 0))
 
-            # Parse record if available
-            record = team_info.get('record', {}).get('items', [{}])[0].get('summary', '0-0')
-            record_parts = record.split('-')
-            wins = int(record_parts[0]) if len(record_parts) > 0 and record_parts[0].isdigit() else 0
-            losses = int(record_parts[1]) if len(record_parts) > 1 and record_parts[1].isdigit() else 0
-            ties = int(record_parts[2]) if len(record_parts) > 2 and record_parts[2].isdigit() else 0
+            # Parse record from team detail endpoint (includes W-L and points against)
+            record_items = team_info.get('record', {}).get('items', [])
+            wins = 0
+            losses = 0
+            ties = 0
+            points_allowed_total = 0.0
+            points_for_total = 0.0
+
+            # Find the "total" record (not home/away splits)
+            for record_item in record_items:
+                if record_item.get('type') == 'total':
+                    record_stats = {stat['name']: stat['value'] for stat in record_item.get('stats', [])}
+                    wins = int(record_stats.get('wins', 0))
+                    losses = int(record_stats.get('losses', 0))
+                    ties = int(record_stats.get('ties', 0))
+                    points_allowed_total = float(record_stats.get('pointsAgainst', 0))
+                    points_for_total = float(record_stats.get('pointsFor', 0))
+                    break
+
             win_pct = round(wins / games_played, 3) if games_played > 0 else 0.000
 
             # Build stat values with defaults (using per-game values where available)
             points_per_game = float(stats_obj.get('totalPointsPerGame', 0))
-            # Note: ESPN doesn't provide defensive stats directly - would need opponent data
-            points_allowed = 0.0  # TODO: Calculate from opponent scoring or use different API
-            point_differential = 0.0  # TODO: Calculate properly
+            # Calculate points allowed per game from record data
+            points_allowed = points_allowed_total / games_played if games_played > 0 else 0.0
+            # Calculate point differential
+            point_differential = (points_for_total - points_allowed_total) / games_played if games_played > 0 else 0.0
 
             total_yards = float(stats_obj.get('totalYards', 0)) / games_played if games_played > 0 else 0.0
             yards_allowed = 0.0  # TODO: Would need defensive API endpoint

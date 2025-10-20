@@ -46,7 +46,7 @@ export const BookmakerLogo: React.FC<BookmakerLogoProps> = ({
       e.currentTarget.src = bookmaker.logoFallback;
       setImgError(true);
     } else {
-      // Second error: show placeholder
+      // Second error: hide broken image
       e.currentTarget.style.display = 'none';
     }
   };

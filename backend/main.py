@@ -10,6 +10,7 @@ from live_models import LiveGame
 from alert_monitor import AlertMonitor, ArbitrageAlert, SteamMoveAlert, LineMovementAlert
 from live_analytics_engine import analytics_engine
 from plays_database import plays_db
+from settings_database import settings_db, BOOKMAKER_PRESETS
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
 import asyncio
@@ -18,6 +19,7 @@ import time
 import json
 from datetime import datetime
 from dotenv import load_dotenv
+import auth  # Authentication module
 
 # Betting ensemble temporarily disabled to avoid import conflicts
 # from backend.models.ensemble.betting_ensemble import BettingEnsemble, GameData, EnsemblePrediction
@@ -25,17 +27,22 @@ BettingEnsemble = None
 GameData = None
 EnsemblePrediction = None
 
-load_dotenv(dotenv_path='../../../.env')
+# Load .env from the same directory as main.py (backend folder)
+load_dotenv()
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="NBA Live Betting API")
 
-# CORS for local development - allow all local ports
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
+# CORS configuration - supports both production (env var) and local development
+cors_origins_env = os.getenv('CORS_ORIGINS', '')
+if cors_origins_env:
+    # Production: use comma-separated list from environment
+    cors_origins = [origin.strip() for origin in cors_origins_env.split(',')]
+else:
+    # Local development: allow all local ports
+    cors_origins = [
         "http://localhost:5173",
         "http://localhost:5174",
         "http://localhost:5175",
@@ -51,7 +58,11 @@ app.add_middleware(
         "http://127.0.0.1:5177",
         "http://127.0.0.1:5178",
         "http://127.0.0.1:5179"
-    ],
+    ]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -73,6 +84,56 @@ alert_monitor = AlertMonitor(odds_api_key=os.getenv('ODDS_API_KEY', ''))
 # )
 betting_ensemble = None
 
+# ========== WEBSOCKET CONNECTION MANAGER ==========
+
+class ConnectionManager:
+    """Manages WebSocket connections for real-time updates"""
+
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
+        self.last_broadcast_data = None
+
+    async def connect(self, websocket: WebSocket):
+        """Accept new WebSocket connection"""
+        await websocket.accept()
+        self.active_connections.append(websocket)
+        logger.info(f"WebSocket connected. Total connections: {len(self.active_connections)}")
+
+    def disconnect(self, websocket: WebSocket):
+        """Remove WebSocket connection"""
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
+            logger.info(f"WebSocket disconnected. Total connections: {len(self.active_connections)}")
+
+    async def broadcast(self, message: dict):
+        """Broadcast message to all connected clients"""
+        # Store last broadcast for new connections
+        self.last_broadcast_data = message
+
+        # Send to all active connections
+        disconnected = []
+        for connection in self.active_connections:
+            try:
+                await connection.send_json(message)
+            except Exception as e:
+                logger.error(f"Error broadcasting to client: {e}")
+                disconnected.append(connection)
+
+        # Clean up disconnected clients
+        for conn in disconnected:
+            self.disconnect(conn)
+
+    async def send_initial_data(self, websocket: WebSocket):
+        """Send current game state to newly connected client"""
+        if self.last_broadcast_data:
+            try:
+                await websocket.send_json(self.last_broadcast_data)
+            except Exception as e:
+                logger.error(f"Error sending initial data: {e}")
+
+# WebSocket manager instance
+ws_manager = ConnectionManager()
+
 @app.on_event("startup")
 async def startup():
     """Start game tracking and alert monitoring on app startup"""
@@ -88,6 +149,10 @@ async def startup():
     )
     logger.info("Alert monitoring started for NBA, NFL, NHL (10s intervals - real-time arbitrage detection)")
 
+    # Start WebSocket broadcaster for real-time updates
+    asyncio.create_task(broadcast_game_updates())
+    logger.info("WebSocket broadcaster started (3s intervals - real-time odds pushes)")
+
 @app.on_event("shutdown")
 async def shutdown():
     """Stop tracking on shutdown"""
@@ -97,18 +162,231 @@ async def shutdown():
 async def root():
     return {"message": "NBA Live Betting API", "status": "running"}
 
+# ========== WEBSOCKET ENDPOINT ==========
+
+@app.websocket("/ws/live-odds")
+async def websocket_live_odds(websocket: WebSocket):
+    """
+    WebSocket endpoint for real-time odds updates
+    Clients connect here to receive live game data pushes
+    """
+    await ws_manager.connect(websocket)
+
+    try:
+        # Send initial data immediately upon connection
+        await ws_manager.send_initial_data(websocket)
+
+        # Keep connection alive and listen for client messages
+        while True:
+            # Wait for any message from client (ping/pong to keep alive)
+            try:
+                data = await asyncio.wait_for(websocket.receive_text(), timeout=30.0)
+                # Echo back to confirm connection is alive
+                await websocket.send_json({"type": "pong", "timestamp": datetime.now().isoformat()})
+            except asyncio.TimeoutError:
+                # Send ping if no message received
+                await websocket.send_json({"type": "ping", "timestamp": datetime.now().isoformat()})
+
+    except WebSocketDisconnect:
+        ws_manager.disconnect(websocket)
+        logger.info("Client disconnected")
+    except Exception as e:
+        logger.error(f"WebSocket error: {e}")
+        ws_manager.disconnect(websocket)
+
+# ========== WEBSOCKET BROADCASTER TASK ==========
+
+async def broadcast_game_updates():
+    """
+    Background task that broadcasts game updates to all connected WebSocket clients
+    Runs every 3 seconds to push live data
+    """
+    logger.info("Starting WebSocket broadcaster...")
+    previous_data = None
+
+    while True:
+        try:
+            # Get current games from tracker
+            games = list(tracker.games.values())
+
+            if games:
+                # Serialize games to dict format
+                games_data = [
+                    {
+                        "state": {
+                            "id": game.state.id,
+                            "sport_key": game.state.sport_key,
+                            "home_team": {
+                                "name": game.state.home_team.name,
+                                "score": game.state.home_team.score,
+                                "spread": game.state.home_team.spread,
+                                "spread_price": game.state.home_team.spread_price,
+                                "money_line": game.state.home_team.money_line,
+                                "momentum": game.state.home_team.momentum,
+                            },
+                            "away_team": {
+                                "name": game.state.away_team.name,
+                                "score": game.state.away_team.score,
+                                "spread": game.state.away_team.spread,
+                                "spread_price": game.state.away_team.spread_price,
+                                "money_line": game.state.away_team.money_line,
+                                "momentum": game.state.away_team.momentum,
+                            },
+                            "commence_time": game.state.commence_time,
+                            "status": game.state.status,
+                            "quarter": game.state.quarter,
+                            "time_remaining": game.state.time_remaining,
+                        },
+                        "odds": [
+                            {
+                                "bookmaker": odd.bookmaker,
+                                "total": odd.total,
+                                "over_price": odd.over_price,
+                                "under_price": odd.under_price,
+                                "is_best_over": odd.is_best_over,
+                                "is_best_under": odd.is_best_under,
+                                "latency_ms": odd.latency_ms,
+                                "home_spread": odd.home_spread,
+                                "away_spread": odd.away_spread,
+                                "home_spread_price": odd.home_spread_price,
+                                "away_spread_price": odd.away_spread_price,
+                                "home_ml": odd.home_ml,
+                                "away_ml": odd.away_ml,
+                            }
+                            for odd in game.odds
+                        ],
+                        "projection": {
+                            "current_total": game.projection.current_total if game.projection else None,
+                            "projected_final": game.projection.projected_final if game.projection else None,
+                            "edge": game.projection.edge if game.projection else None,
+                            "confidence": game.projection.confidence if game.projection else None,
+                            "recommendation": game.projection.recommendation if game.projection else None,
+                        } if game.projection else None,
+                    }
+                    for game in games
+                ]
+
+                # Create broadcast message
+                message = {
+                    "type": "games_update",
+                    "timestamp": datetime.now().isoformat(),
+                    "count": len(games_data),
+                    "games": games_data
+                }
+
+                # Only broadcast if data changed (avoid spamming same data)
+                current_data_str = json.dumps(games_data, sort_keys=True)
+                if current_data_str != previous_data:
+                    await ws_manager.broadcast(message)
+                    logger.debug(f"Broadcasted {len(games_data)} games to {len(ws_manager.active_connections)} clients")
+                    previous_data = current_data_str
+
+        except Exception as e:
+            logger.error(f"Error in broadcast task: {e}", exc_info=True)
+
+        # Wait 3 seconds before next update (much faster than 30s polling!)
+        await asyncio.sleep(3)
+
+def normalize_bookmaker_name(name: str) -> str:
+    """
+    Normalize bookmaker names to a consistent format for comparison.
+    The Odds API returns display names like "DraftKings", "Bally Bet"
+    but our settings use keys like "draftkings", "ballybet"
+    """
+    import re
+    # Remove parentheses and their contents first (e.g., " (AU)" -> "")
+    normalized = re.sub(r'\s*\([^)]*\)', '', name)
+    # Convert to lowercase
+    normalized = normalized.lower()
+    # Remove ALL special characters except alphanumeric
+    normalized = re.sub(r'[^a-z0-9]', '', normalized)
+    return normalized
+
+def filter_games_by_bookmakers(games: List[LiveGame], enabled_bookmakers: List[str]) -> List[LiveGame]:
+    """
+    Filter games to only include odds from enabled bookmakers
+    Returns games that have at least 2 enabled bookmakers for comparison
+    """
+    filtered_games = []
+    # Normalize all enabled bookmakers for comparison
+    enabled_set = {normalize_bookmaker_name(bm) for bm in enabled_bookmakers}
+
+    # DEBUG logging
+    if games:
+        logger.info(f"[FILTER DEBUG] Enabled bookmakers count: {len(enabled_set)}")
+        logger.info(f"[FILTER DEBUG] Sample enabled: {list(enabled_set)[:5]}")
+        first_game_bookmakers = [normalize_bookmaker_name(odd.bookmaker) for odd in games[0].odds]
+        logger.info(f"[FILTER DEBUG] First game has {len(games[0].odds)} odds")
+        logger.info(f"[FILTER DEBUG] First game normalized bookmakers: {first_game_bookmakers[:5]}")
+        matches = [bm for bm in first_game_bookmakers if bm in enabled_set]
+        logger.info(f"[FILTER DEBUG] Matches found: {matches[:5]}")
+
+    for game in games:
+        # Filter odds to only enabled bookmakers (with normalization)
+        filtered_odds = [odd for odd in game.odds if normalize_bookmaker_name(odd.bookmaker) in enabled_set]
+
+        # Only include games with at least 2 bookmakers for comparison
+        if len(filtered_odds) >= 2:
+            # Create new game object with filtered odds
+            filtered_game = game.copy(deep=True)
+            filtered_game.odds = filtered_odds
+            filtered_games.append(filtered_game)
+
+    return filtered_games
+
+
 @app.get("/api/games", response_model=List[LiveGame])
-async def get_games():
-    """Get all live games"""
-    return tracker.get_all_games()
+async def get_games(user_id: str = 'default'):
+    """
+    Get all live games filtered by user's enabled bookmakers
+    Only returns games with at least 2 enabled bookmakers
+    """
+    try:
+        # Get user settings
+        settings = settings_db.get_settings(user_id)
+        if not settings:
+            # If no settings found, return all games (backwards compatible)
+            return tracker.get_all_games()
+
+        # Get all games
+        all_games = tracker.get_all_games()
+
+        # Filter by enabled bookmakers
+        filtered_games = filter_games_by_bookmakers(all_games, settings['enabled_bookmakers'])
+
+        return filtered_games
+
+    except Exception as e:
+        logger.error(f"Error filtering games: {str(e)}")
+        # On error, return all games (fail-safe)
+        return tracker.get_all_games()
 
 @app.get("/api/games/{game_id}", response_model=LiveGame)
-async def get_game(game_id: str):
-    """Get specific game"""
-    game = tracker.get_game(game_id)
-    if not game:
-        return {"error": "Game not found"}
-    return game
+async def get_game(game_id: str, user_id: str = 'default'):
+    """Get specific game filtered by user's enabled bookmakers"""
+    try:
+        game = tracker.get_game(game_id)
+        if not game:
+            return {"error": "Game not found"}
+
+        # Get user settings
+        settings = settings_db.get_settings(user_id)
+        if not settings:
+            return game
+
+        # Filter bookmakers
+        enabled_set = set(settings['enabled_bookmakers'])
+        filtered_odds = [odd for odd in game.odds if odd.bookmaker in enabled_set]
+
+        # Return game with filtered odds
+        filtered_game = game.copy(deep=True)
+        filtered_game.odds = filtered_odds
+        return filtered_game
+
+    except Exception as e:
+        logger.error(f"Error filtering game: {str(e)}")
+        # On error, return unfiltered game
+        return tracker.get_game(game_id) or {"error": "Game not found"}
 
 @app.get("/api/health")
 async def health():
@@ -117,6 +395,263 @@ async def health():
         "status": "healthy",
         "games_tracked": len(tracker.games)
     }
+
+
+# ========== AUTH REQUEST MODELS ==========
+
+class LoginRequest(BaseModel):
+    """Request model for user login"""
+    username: str
+    password: str
+
+
+class LogoutRequest(BaseModel):
+    """Request model for user logout"""
+    token: str
+
+
+class ChangePasswordRequest(BaseModel):
+    """Request model for changing password"""
+    old_password: str
+    new_password: str
+
+
+# ========== AUTHENTICATION ENDPOINTS ==========
+
+@app.post("/api/auth/login")
+async def login(request: LoginRequest):
+    """
+    User login endpoint
+    Returns session token on success
+    """
+    try:
+        # Verify credentials
+        if not auth.verify_password(request.username, request.password):
+            raise HTTPException(status_code=401, detail="Invalid username or password")
+
+        # Create session
+        token = auth.create_session(request.username)
+
+        return {
+            "success": True,
+            "message": "Login successful",
+            "token": token,
+            "username": request.username
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Login error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Login failed")
+
+
+@app.post("/api/auth/logout")
+async def logout(request: LogoutRequest):
+    """
+    User logout endpoint
+    Invalidates session token
+    """
+    try:
+        auth.delete_session(request.token)
+        return {
+            "success": True,
+            "message": "Logout successful"
+        }
+    except Exception as e:
+        logger.error(f"Logout error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Logout failed")
+
+
+@app.get("/api/auth/verify")
+async def verify_session(token: str):
+    """
+    Verify session token
+    Returns username if valid, 401 if invalid
+    """
+    try:
+        username = auth.verify_session(token)
+        if not username:
+            raise HTTPException(status_code=401, detail="Invalid or expired session")
+
+        return {
+            "success": True,
+            "valid": True,
+            "username": username
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Session verification error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Verification failed")
+
+
+class ChangePasswordWithTokenRequest(BaseModel):
+    """Request model for changing password with token"""
+    token: str
+    old_password: str
+    new_password: str
+
+
+@app.post("/api/auth/change-password")
+async def change_password(request: ChangePasswordWithTokenRequest):
+    """
+    Change user password
+    Requires valid session token
+    """
+    try:
+        # Verify session
+        username = auth.verify_session(request.token)
+        if not username:
+            raise HTTPException(status_code=401, detail="Invalid or expired session")
+
+        # Change password
+        success = auth.change_password(username, request.old_password, request.new_password)
+        if not success:
+            raise HTTPException(status_code=400, detail="Old password is incorrect")
+
+        return {
+            "success": True,
+            "message": "Password changed successfully"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Password change error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Password change failed")
+
+# ========== ADMIN ENDPOINTS (User Activity Tracking) ==========
+
+@app.get("/api/admin/users")
+async def get_all_users(token: str):
+    """Get list of all users (Admin only)"""
+    try:
+        username = auth.verify_session(token)
+        if not username:
+            raise HTTPException(status_code=401, detail="Invalid or expired session")
+
+        # Check if user is admin
+        users = auth.load_users()
+        if users.get(username, {}).get("role") != "admin":
+            raise HTTPException(status_code=403, detail="Admin access required")
+
+        users_list = auth.get_all_users_list()
+        return {
+            "count": len(users_list),
+            "users": users_list
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Get users error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve users")
+
+@app.get("/api/admin/active-sessions")
+async def get_active_sessions(token: str):
+    """Get all active sessions (Admin only)"""
+    try:
+        username = auth.verify_session(token)
+        if not username:
+            raise HTTPException(status_code=401, detail="Invalid or expired session")
+
+        # Check if user is admin
+        users = auth.load_users()
+        if users.get(username, {}).get("role") != "admin":
+            raise HTTPException(status_code=403, detail="Admin access required")
+
+        sessions = auth.get_active_sessions()
+        return {
+            "count": len(sessions),
+            "sessions": sessions
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Get sessions error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve sessions")
+
+@app.get("/api/admin/activity-log")
+async def get_activity_log(token: str, username: str = None, limit: int = 100):
+    """Get user activity log (Admin only)"""
+    try:
+        admin_username = auth.verify_session(token)
+        if not admin_username:
+            raise HTTPException(status_code=401, detail="Invalid or expired session")
+
+        # Check if user is admin
+        users = auth.load_users()
+        if users.get(admin_username, {}).get("role") != "admin":
+            raise HTTPException(status_code=403, detail="Admin access required")
+
+        activity = auth.get_user_activity(username, limit)
+        return {
+            "count": len(activity),
+            "activity": activity,
+            "filtered_by": username if username else "all users"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Get activity log error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve activity log")
+
+@app.get("/api/admin/user-stats/{username}")
+async def get_user_stats(username: str, token: str):
+    """Get statistics for a specific user (Admin only)"""
+    try:
+        admin_username = auth.verify_session(token)
+        if not admin_username:
+            raise HTTPException(status_code=401, detail="Invalid or expired session")
+
+        # Check if user is admin
+        users = auth.load_users()
+        if users.get(admin_username, {}).get("role") != "admin":
+            raise HTTPException(status_code=403, detail="Admin access required")
+
+        stats = auth.get_user_statistics(username)
+        return stats
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Get user stats error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve user statistics")
+
+@app.get("/api/admin/all-user-stats")
+async def get_all_user_stats(token: str):
+    """Get statistics for all users (Admin only)"""
+    try:
+        admin_username = auth.verify_session(token)
+        if not admin_username:
+            raise HTTPException(status_code=401, detail="Invalid or expired session")
+
+        # Check if user is admin
+        users = auth.load_users()
+        if users.get(admin_username, {}).get("role") != "admin":
+            raise HTTPException(status_code=403, detail="Admin access required")
+
+        users_list = auth.get_all_users_list()
+        all_stats = []
+
+        for user in users_list:
+            stats = auth.get_user_statistics(user["username"])
+            all_stats.append(stats)
+
+        return {
+            "count": len(all_stats),
+            "statistics": all_stats
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Get all user stats error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve statistics")
 
 @app.get("/api/goalie-pull-opportunities")
 async def get_goalie_pull_opportunities():
@@ -130,101 +665,262 @@ async def get_goalie_pull_opportunities():
 # ========== ALERT ENDPOINTS ==========
 
 @app.get("/api/alerts/arbitrage")
-async def get_arbitrage_alerts():
-    """Get all current arbitrage opportunities"""
-    alerts = alert_monitor.active_alerts.get('arbitrage', [])
-    return {
-        "count": len(alerts),
-        "alerts": [
-            {
-                "game_id": alert.game_id,
-                "sport": alert.sport,
-                "home_team": alert.home_team,
-                "away_team": alert.away_team,
-                "market_type": alert.market_type,
-                "book_a": alert.book_a,
-                "book_b": alert.book_b,
-                "odds_a": alert.odds_a,
-                "odds_b": alert.odds_b,
-                "profit_percent": round(alert.profit_percent, 2),
-                "stake_a": round(alert.stake_a, 2),
-                "stake_b": round(alert.stake_b, 2),
-                "total_stake": round(alert.total_stake, 2),
-                "guaranteed_profit": round(alert.guaranteed_profit, 2),
-                "timestamp": alert.timestamp.isoformat(),
-                "expires_in": alert.expires_in
-            }
-            for alert in alerts
-        ]
-    }
+async def get_arbitrage_alerts(user_id: str = 'default'):
+    """Get arbitrage opportunities filtered by user's enabled bookmakers"""
+    try:
+        # Get user settings
+        settings = settings_db.get_settings(user_id)
+        enabled_bookmakers = set(settings['enabled_bookmakers']) if settings else None
+
+        alerts = alert_monitor.active_alerts.get('arbitrage', [])
+
+        # Filter alerts to only include those involving enabled bookmakers
+        if enabled_bookmakers:
+            alerts = [
+                alert for alert in alerts
+                if alert.book_a in enabled_bookmakers and alert.book_b in enabled_bookmakers
+            ]
+
+        return {
+            "count": len(alerts),
+            "alerts": [
+                {
+                    "game_id": alert.game_id,
+                    "sport": alert.sport,
+                    "home_team": alert.home_team,
+                    "away_team": alert.away_team,
+                    "market_type": alert.market_type,
+                    "book_a": alert.book_a,
+                    "book_b": alert.book_b,
+                    "odds_a": alert.odds_a,
+                    "odds_b": alert.odds_b,
+                    "profit_percent": round(alert.profit_percent, 2),
+                    "stake_a": round(alert.stake_a, 2),
+                    "stake_b": round(alert.stake_b, 2),
+                    "total_stake": round(alert.total_stake, 2),
+                    "guaranteed_profit": round(alert.guaranteed_profit, 2),
+                    "timestamp": alert.timestamp.isoformat(),
+                    "expires_in": alert.expires_in
+                }
+                for alert in alerts
+            ]
+        }
+
+    except Exception as e:
+        logger.error(f"Error filtering arbitrage alerts: {str(e)}")
+        # On error, return all alerts
+        alerts = alert_monitor.active_alerts.get('arbitrage', [])
+        return {
+            "count": len(alerts),
+            "alerts": [
+                {
+                    "game_id": alert.game_id,
+                    "sport": alert.sport,
+                    "home_team": alert.home_team,
+                    "away_team": alert.away_team,
+                    "market_type": alert.market_type,
+                    "book_a": alert.book_a,
+                    "book_b": alert.book_b,
+                    "odds_a": alert.odds_a,
+                    "odds_b": alert.odds_b,
+                    "profit_percent": round(alert.profit_percent, 2),
+                    "stake_a": round(alert.stake_a, 2),
+                    "stake_b": round(alert.stake_b, 2),
+                    "total_stake": round(alert.total_stake, 2),
+                    "guaranteed_profit": round(alert.guaranteed_profit, 2),
+                    "timestamp": alert.timestamp.isoformat(),
+                    "expires_in": alert.expires_in
+                }
+                for alert in alerts
+            ]
+        }
 
 @app.get("/api/alerts/steam-moves")
-async def get_steam_move_alerts():
-    """Get all current steam move alerts"""
-    alerts = alert_monitor.active_alerts.get('steam_moves', [])
-    return {
-        "count": len(alerts),
-        "alerts": [
-            {
-                "game_id": alert.game_id,
-                "sport": alert.sport,
-                "home_team": alert.home_team,
-                "away_team": alert.away_team,
-                "market_type": alert.market_type,
-                "side": alert.side,
-                "original_line": alert.original_line,
-                "new_line": alert.new_line,
-                "movement": round(alert.movement, 1),
-                "books_moved": alert.books_moved,
-                "consensus_percent": round(alert.consensus_percent, 1),
-                "timestamp": alert.timestamp.isoformat()
-            }
-            for alert in alerts
-        ]
-    }
+async def get_steam_move_alerts(user_id: str = 'default'):
+    """Get steam move alerts filtered by user's enabled bookmakers"""
+    try:
+        # Get user settings
+        settings = settings_db.get_settings(user_id)
+        enabled_bookmakers = set(settings['enabled_bookmakers']) if settings else None
+
+        alerts = alert_monitor.active_alerts.get('steam_moves', [])
+
+        # Filter alerts where at least one of the books that moved is enabled
+        if enabled_bookmakers:
+            alerts = [
+                alert for alert in alerts
+                if any(book in enabled_bookmakers for book in alert.books_moved)
+            ]
+
+        return {
+            "count": len(alerts),
+            "alerts": [
+                {
+                    "game_id": alert.game_id,
+                    "sport": alert.sport,
+                    "home_team": alert.home_team,
+                    "away_team": alert.away_team,
+                    "market_type": alert.market_type,
+                    "side": alert.side,
+                    "original_line": alert.original_line,
+                    "new_line": alert.new_line,
+                    "movement": round(alert.movement, 1),
+                    "books_moved": alert.books_moved,
+                    "consensus_percent": round(alert.consensus_percent, 1),
+                    "timestamp": alert.timestamp.isoformat()
+                }
+                for alert in alerts
+            ]
+        }
+
+    except Exception as e:
+        logger.error(f"Error filtering steam move alerts: {str(e)}")
+        # On error, return all alerts
+        alerts = alert_monitor.active_alerts.get('steam_moves', [])
+        return {
+            "count": len(alerts),
+            "alerts": [
+                {
+                    "game_id": alert.game_id,
+                    "sport": alert.sport,
+                    "home_team": alert.home_team,
+                    "away_team": alert.away_team,
+                    "market_type": alert.market_type,
+                    "side": alert.side,
+                    "original_line": alert.original_line,
+                    "new_line": alert.new_line,
+                    "movement": round(alert.movement, 1),
+                    "books_moved": alert.books_moved,
+                    "consensus_percent": round(alert.consensus_percent, 1),
+                    "timestamp": alert.timestamp.isoformat()
+                }
+                for alert in alerts
+            ]
+        }
 
 @app.get("/api/alerts/line-movements")
-async def get_line_movement_alerts():
-    """Get all current line movement alerts"""
-    alerts = alert_monitor.active_alerts.get('line_movements', [])
-    return {
-        "count": len(alerts),
-        "alerts": [
-            {
-                "game_id": alert.game_id,
-                "sport": alert.sport,
-                "home_team": alert.home_team,
-                "away_team": alert.away_team,
-                "market_type": alert.market_type,
-                "bookmaker": alert.bookmaker,
-                "original_line": alert.original_line,
-                "new_line": alert.new_line,
-                "movement": round(alert.movement, 1),
-                "movement_percent": round(alert.movement_percent, 1),
-                "timestamp": alert.timestamp.isoformat()
-            }
-            for alert in alerts
-        ]
-    }
+async def get_line_movement_alerts(user_id: str = 'default'):
+    """Get line movement alerts filtered by user's enabled bookmakers"""
+    try:
+        # Get user settings
+        settings = settings_db.get_settings(user_id)
+        enabled_bookmakers = set(settings['enabled_bookmakers']) if settings else None
+
+        alerts = alert_monitor.active_alerts.get('line_movements', [])
+
+        # Filter alerts to only include enabled bookmakers
+        if enabled_bookmakers:
+            alerts = [
+                alert for alert in alerts
+                if alert.bookmaker in enabled_bookmakers
+            ]
+
+        return {
+            "count": len(alerts),
+            "alerts": [
+                {
+                    "game_id": alert.game_id,
+                    "sport": alert.sport,
+                    "home_team": alert.home_team,
+                    "away_team": alert.away_team,
+                    "market_type": alert.market_type,
+                    "bookmaker": alert.bookmaker,
+                    "original_line": alert.original_line,
+                    "new_line": alert.new_line,
+                    "movement": round(alert.movement, 1),
+                    "movement_percent": round(alert.movement_percent, 1),
+                    "timestamp": alert.timestamp.isoformat()
+                }
+                for alert in alerts
+            ]
+        }
+
+    except Exception as e:
+        logger.error(f"Error filtering line movement alerts: {str(e)}")
+        # On error, return all alerts
+        alerts = alert_monitor.active_alerts.get('line_movements', [])
+        return {
+            "count": len(alerts),
+            "alerts": [
+                {
+                    "game_id": alert.game_id,
+                    "sport": alert.sport,
+                    "home_team": alert.home_team,
+                    "away_team": alert.away_team,
+                    "market_type": alert.market_type,
+                    "bookmaker": alert.bookmaker,
+                    "original_line": alert.original_line,
+                    "new_line": alert.new_line,
+                    "movement": round(alert.movement, 1),
+                    "movement_percent": round(alert.movement_percent, 1),
+                    "timestamp": alert.timestamp.isoformat()
+                }
+                for alert in alerts
+            ]
+        }
 
 @app.get("/api/alerts/all")
-async def get_all_alerts():
-    """Get all alerts (arbitrage, steam moves, line movements)"""
-    return {
-        "arbitrage": {
-            "count": len(alert_monitor.active_alerts.get('arbitrage', [])),
-            "alerts": alert_monitor.active_alerts.get('arbitrage', [])
-        },
-        "steam_moves": {
-            "count": len(alert_monitor.active_alerts.get('steam_moves', [])),
-            "alerts": alert_monitor.active_alerts.get('steam_moves', [])
-        },
-        "line_movements": {
-            "count": len(alert_monitor.active_alerts.get('line_movements', [])),
-            "alerts": alert_monitor.active_alerts.get('line_movements', [])
-        },
-        "last_updated": alert_monitor.active_alerts.get('last_updated', None)
-    }
+async def get_all_alerts(user_id: str = 'default'):
+    """Get all alerts filtered by user's enabled bookmakers"""
+    try:
+        # Get user settings
+        settings = settings_db.get_settings(user_id)
+        enabled_bookmakers = set(settings['enabled_bookmakers']) if settings else None
+
+        # Get all alerts
+        arb_alerts = alert_monitor.active_alerts.get('arbitrage', [])
+        steam_alerts = alert_monitor.active_alerts.get('steam_moves', [])
+        line_alerts = alert_monitor.active_alerts.get('line_movements', [])
+
+        # Filter if settings exist
+        if enabled_bookmakers:
+            arb_alerts = [
+                alert for alert in arb_alerts
+                if alert.book_a in enabled_bookmakers and alert.book_b in enabled_bookmakers
+            ]
+            steam_alerts = [
+                alert for alert in steam_alerts
+                if any(book in enabled_bookmakers for book in alert.books_moved)
+            ]
+            line_alerts = [
+                alert for alert in line_alerts
+                if alert.bookmaker in enabled_bookmakers
+            ]
+
+        return {
+            "arbitrage": {
+                "count": len(arb_alerts),
+                "alerts": arb_alerts
+            },
+            "steam_moves": {
+                "count": len(steam_alerts),
+                "alerts": steam_alerts
+            },
+            "line_movements": {
+                "count": len(line_alerts),
+                "alerts": line_alerts
+            },
+            "last_updated": alert_monitor.active_alerts.get('last_updated', None)
+        }
+
+    except Exception as e:
+        logger.error(f"Error filtering all alerts: {str(e)}")
+        # On error, return all alerts
+        return {
+            "arbitrage": {
+                "count": len(alert_monitor.active_alerts.get('arbitrage', [])),
+                "alerts": alert_monitor.active_alerts.get('arbitrage', [])
+            },
+            "steam_moves": {
+                "count": len(alert_monitor.active_alerts.get('steam_moves', [])),
+                "alerts": alert_monitor.active_alerts.get('steam_moves', [])
+            },
+            "line_movements": {
+                "count": len(alert_monitor.active_alerts.get('line_movements', [])),
+                "alerts": alert_monitor.active_alerts.get('line_movements', [])
+            },
+            "last_updated": alert_monitor.active_alerts.get('last_updated', None)
+        }
 
 @app.get("/api/alerts/config")
 async def get_alert_config():
@@ -926,6 +1622,50 @@ class PlayResultRequest(BaseModel):
     verified: bool = True
 
 
+# ========== SETTINGS REQUEST MODELS ==========
+
+class BookmakerSettingsRequest(BaseModel):
+    """Request model for updating enabled bookmakers"""
+    enabled_bookmakers: List[str]
+
+
+class BankrollSettingsRequest(BaseModel):
+    """Request model for updating bankroll settings"""
+    total_bankroll: float
+    unit_size: float
+    risk_level: str  # low, medium, high
+
+
+class AlertSettingsRequest(BaseModel):
+    """Request model for updating alert settings"""
+    min_arb_profit: float
+    steam_move_threshold: float
+    line_movement_threshold: float
+    alert_sound_enabled: bool
+
+
+class DisplaySettingsRequest(BaseModel):
+    """Request model for updating display settings"""
+    show_latency: bool
+    highlight_pinnacle: bool
+    dark_mode: bool
+
+
+class AllSettingsRequest(BaseModel):
+    """Request model for updating all settings"""
+    enabled_bookmakers: List[str]
+    total_bankroll: float = 10000.0
+    unit_size: float = 100.0
+    risk_level: str = "medium"
+    min_arb_profit: float = 1.0
+    steam_move_threshold: float = 5.0
+    line_movement_threshold: float = 3.0
+    alert_sound_enabled: bool = True
+    show_latency: bool = True
+    highlight_pinnacle: bool = True
+    dark_mode: bool = True
+
+
 @app.post("/api/plays/log")
 async def log_recommended_play(request: RecommendedPlayRequest):
     """
@@ -1228,6 +1968,280 @@ async def get_plays_for_sport(sport: str, limit: int = 50):
     except Exception as e:
         logger.error(f"Error fetching sport plays: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch sport plays: {str(e)}")
+
+
+# ========== SETTINGS ENDPOINTS ==========
+
+@app.get("/api/settings")
+async def get_user_settings(user_id: str = 'default'):
+    """
+    Get all user settings
+    - Enabled bookmakers for filtering
+    - Bankroll management settings
+    - Alert threshold settings
+    - Display preferences
+    """
+    try:
+        settings = settings_db.get_settings(user_id)
+        if not settings:
+            raise HTTPException(status_code=404, detail="Settings not found for user")
+
+        return {
+            "success": True,
+            "settings": settings
+        }
+
+    except Exception as e:
+        logger.error(f"Error fetching settings: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch settings: {str(e)}")
+
+
+@app.put("/api/settings/bookmakers")
+async def update_bookmaker_settings(request: BookmakerSettingsRequest, user_id: str = 'default'):
+    """
+    Update enabled bookmakers list
+    This controls which bookmakers appear in odds feeds and alerts
+    """
+    try:
+        success = settings_db.update_enabled_bookmakers(
+            bookmakers=request.enabled_bookmakers,
+            user_id=user_id
+        )
+
+        if not success:
+            raise HTTPException(status_code=404, detail="User settings not found")
+
+        return {
+            "success": True,
+            "message": "Bookmaker settings updated",
+            "enabled_bookmakers": request.enabled_bookmakers
+        }
+
+    except Exception as e:
+        logger.error(f"Error updating bookmaker settings: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to update bookmaker settings: {str(e)}")
+
+
+@app.put("/api/settings/bankroll")
+async def update_bankroll_settings(request: BankrollSettingsRequest, user_id: str = 'default'):
+    """
+    Update bankroll management settings
+    - Total bankroll
+    - Unit size
+    - Risk level (low/medium/high)
+    """
+    try:
+        success = settings_db.update_bankroll_settings(
+            total_bankroll=request.total_bankroll,
+            unit_size=request.unit_size,
+            risk_level=request.risk_level,
+            user_id=user_id
+        )
+
+        if not success:
+            raise HTTPException(status_code=404, detail="User settings not found")
+
+        return {
+            "success": True,
+            "message": "Bankroll settings updated",
+            "bankroll": request.total_bankroll,
+            "unit_size": request.unit_size,
+            "risk_level": request.risk_level
+        }
+
+    except Exception as e:
+        logger.error(f"Error updating bankroll settings: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to update bankroll settings: {str(e)}")
+
+
+@app.put("/api/settings/alerts")
+async def update_alert_settings(request: AlertSettingsRequest, user_id: str = 'default'):
+    """
+    Update alert threshold settings
+    - Minimum arbitrage profit %
+    - Steam move threshold
+    - Line movement threshold
+    - Alert sound on/off
+    """
+    try:
+        success = settings_db.update_alert_settings(
+            min_arb_profit=request.min_arb_profit,
+            steam_move_threshold=request.steam_move_threshold,
+            line_movement_threshold=request.line_movement_threshold,
+            alert_sound_enabled=request.alert_sound_enabled,
+            user_id=user_id
+        )
+
+        if not success:
+            raise HTTPException(status_code=404, detail="User settings not found")
+
+        return {
+            "success": True,
+            "message": "Alert settings updated",
+            "alert_settings": {
+                "min_arb_profit": request.min_arb_profit,
+                "steam_move_threshold": request.steam_move_threshold,
+                "line_movement_threshold": request.line_movement_threshold,
+                "alert_sound_enabled": request.alert_sound_enabled
+            }
+        }
+
+    except Exception as e:
+        logger.error(f"Error updating alert settings: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to update alert settings: {str(e)}")
+
+
+@app.put("/api/settings/display")
+async def update_display_settings(request: DisplaySettingsRequest, user_id: str = 'default'):
+    """
+    Update display preferences
+    - Show latency indicators
+    - Highlight Pinnacle odds
+    - Dark mode
+    """
+    try:
+        success = settings_db.update_display_settings(
+            show_latency=request.show_latency,
+            highlight_pinnacle=request.highlight_pinnacle,
+            dark_mode=request.dark_mode,
+            user_id=user_id
+        )
+
+        if not success:
+            raise HTTPException(status_code=404, detail="User settings not found")
+
+        return {
+            "success": True,
+            "message": "Display settings updated",
+            "display_settings": {
+                "show_latency": request.show_latency,
+                "highlight_pinnacle": request.highlight_pinnacle,
+                "dark_mode": request.dark_mode
+            }
+        }
+
+    except Exception as e:
+        logger.error(f"Error updating display settings: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to update display settings: {str(e)}")
+
+
+@app.put("/api/settings")
+async def update_all_settings(request: AllSettingsRequest, user_id: str = 'default'):
+    """
+    Update all settings at once
+    Useful for initial setup or bulk updates
+    """
+    try:
+        settings_dict = request.dict()
+        success = settings_db.update_all_settings(settings_dict, user_id)
+
+        if not success:
+            raise HTTPException(status_code=404, detail="User settings not found")
+
+        return {
+            "success": True,
+            "message": "All settings updated",
+            "settings": settings_dict
+        }
+
+    except Exception as e:
+        logger.error(f"Error updating all settings: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to update settings: {str(e)}")
+
+
+@app.post("/api/settings/reset")
+async def reset_settings(user_id: str = 'default'):
+    """
+    Reset all settings to defaults
+    - Resets to popular US bookmakers
+    - Default bankroll and thresholds
+    """
+    try:
+        success = settings_db.reset_to_defaults(user_id)
+
+        return {
+            "success": True,
+            "message": "Settings reset to defaults",
+            "settings": settings_db.get_settings(user_id)
+        }
+
+    except Exception as e:
+        logger.error(f"Error resetting settings: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to reset settings: {str(e)}")
+
+
+@app.get("/api/settings/presets")
+async def get_bookmaker_presets():
+    """
+    Get all available bookmaker presets
+    Returns predefined groups of bookmakers for quick selection
+
+    Available presets:
+    - sharp_books: Low-margin books preferred by pros
+    - us_major: Top US legal sportsbooks
+    - us_all: All US-accessible books
+    - offshore: US offshore books
+    - uk_major: Top UK bookmakers
+    - uk_all: All UK books
+    - australia: Australian sportsbooks
+    - europe: European bookmakers
+    - low_vig: Lowest margin books
+    - high_limits: Books accepting large wagers
+    - exchanges: Betting exchanges
+    - popular_only: Most commonly used books
+    - arbitrage_focused: Books with frequent arb opportunities
+    """
+    try:
+        return {
+            "success": True,
+            "presets": BOOKMAKER_PRESETS
+        }
+    except Exception as e:
+        logger.error(f"Error fetching presets: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch presets: {str(e)}")
+
+
+@app.put("/api/settings/presets/{preset_name}")
+async def apply_bookmaker_preset(preset_name: str, user_id: str = 'default'):
+    """
+    Apply a bookmaker preset to user's settings
+
+    Example: PUT /api/settings/presets/sharp_books?user_id=default
+
+    This will replace the user's current enabled bookmakers with the preset's bookmakers
+    """
+    try:
+        # Check if preset exists
+        if preset_name not in BOOKMAKER_PRESETS:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Preset '{preset_name}' not found. Available presets: {list(BOOKMAKER_PRESETS.keys())}"
+            )
+
+        # Get the bookmakers from the preset
+        preset = BOOKMAKER_PRESETS[preset_name]
+        bookmakers = preset["bookmakers"]
+
+        # Update user's enabled bookmakers
+        success = settings_db.update_enabled_bookmakers(bookmakers, user_id)
+
+        if not success:
+            raise HTTPException(status_code=404, detail="User settings not found")
+
+        return {
+            "success": True,
+            "message": f"Applied preset: {preset['name']}",
+            "preset_name": preset_name,
+            "preset_description": preset["description"],
+            "enabled_bookmakers": bookmakers,
+            "count": len(bookmakers)
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error applying preset: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to apply preset: {str(e)}")
 
 
 # ========== WEBSOCKET ENDPOINT ==========

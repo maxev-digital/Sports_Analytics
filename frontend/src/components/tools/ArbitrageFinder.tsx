@@ -52,7 +52,7 @@ export function ArbitrageFinder() {
   useEffect(() => {
     const fetchLiveArbitrage = async () => {
       try {
-        const response = await fetch('http://localhost:8000/api/alerts/arbitrage');
+        const response = await fetch('/api/alerts/arbitrage');
         if (response.ok) {
           const data = await response.json();
           setLiveOpportunities(data.alerts || []);
@@ -74,7 +74,7 @@ export function ArbitrageFinder() {
   useEffect(() => {
     const fetchPerformance = async () => {
       try {
-        const response = await fetch('http://localhost:8000/api/alerts/performance');
+        const response = await fetch('/api/alerts/performance');
         if (response.ok) {
           const data = await response.json();
           setPerformanceStats(data.arbitrage);

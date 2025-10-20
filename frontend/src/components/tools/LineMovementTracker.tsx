@@ -33,7 +33,7 @@ export function LineMovementTracker() {
   useEffect(() => {
     const fetchLiveLineMovements = async () => {
       try {
-        const response = await fetch('http://localhost:8000/api/alerts/line-movements');
+        const response = await fetch('/api/alerts/line-movements');
         if (response.ok) {
           const data = await response.json();
           setLiveLineMovements(data.alerts || []);

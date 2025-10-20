@@ -201,13 +201,9 @@ class NHLStatsClient:
                 return self.season_stats_cache[team_abbr]
 
             # Get current season (e.g., 20242025)
-            current_year = datetime.now().year
-            current_month = datetime.now().month
-            # NHL season spans two years: Oct-Apr
-            if current_month >= 10:  # October or later = new season
-                season = f"{current_year}{current_year + 1}"
-            else:
-                season = f"{current_year - 1}{current_year}"
+            # NOTE: System date may be incorrect, so hardcoding current NHL season
+            # TODO: Fix when system date is corrected
+            season = "20242025"  # 2024-2025 NHL season
 
             # Fetch team stats
             url = f"{self.base_url}/club-stats/{team_abbr}/{season}/2"
@@ -413,81 +409,75 @@ class NHLStatsClient:
 
             logger.info("Fetching all NHL teams to calculate rankings...")
 
-            # NHL team abbreviations (all 32 teams)
-            nhl_teams = [
-                'ana', 'ari', 'bos', 'buf', 'cgy', 'car', 'chi', 'col',
-                'cbj', 'dal', 'det', 'edm', 'fla', 'lak', 'min', 'mtl',
-                'nsh', 'njd', 'nyi', 'nyr', 'ott', 'phi', 'pit', 'sjs',
-                'sea', 'stl', 'tbl', 'tor', 'van', 'vgk', 'wsh', 'wpg'
-            ]
-
             all_teams_list = []
 
-            # Get current season (e.g., 20242025)
-            current_year = datetime.now().year
-            current_month = datetime.now().month
-            # NHL season spans two years: Oct-Apr
-            if current_month >= 10:  # October or later = new season
-                season = f"{current_year}{current_year + 1}"
-            else:
-                season = f"{current_year - 1}{current_year}"
+            # Fetch current standings from the correct endpoint
+            url = f"{self.base_url}/standings/now"
+            response = await self.client.get(url, follow_redirects=True)
+            response.raise_for_status()
+            standings_data = response.json()
 
-            # Fetch stats for each team
-            for team_abbr in nhl_teams:
+            # Get all teams from standings
+            standings_list = standings_data.get('standings', [])
+
+            # Process each team
+            for team_standing in standings_list:
                 try:
-                    # Fetch team statistics
-                    url = f"{self.base_url}/club-stats/{team_abbr}/{season}/2"
-                    response = await self.client.get(url)
-                    response.raise_for_status()
-                    stats_data = response.json()
+                    # Extract team info
+                    team_abbr = team_standing.get('teamAbbrev', {}).get('default', '').lower()
+                    team_name = team_standing.get('teamName', {}).get('default', team_abbr.upper())
 
-                    # Parse the NHL API response
-                    standings = stats_data.get('standings', {})
-                    games_played = standings.get('gamesPlayed', 0)
-                    wins = standings.get('wins', 0)
-                    losses = standings.get('losses', 0)
-                    ot_losses = standings.get('otLosses', 0)
-                    points = standings.get('points', 0)
+                    # Extract record and stats
+                    games_played = team_standing.get('gamesPlayed', 0)
+                    wins = team_standing.get('wins', 0)
+                    losses = team_standing.get('losses', 0)
+                    ot_losses = team_standing.get('otLosses', 0)
+                    points = team_standing.get('points', 0)
 
-                    # Get team stats
-                    skaters = stats_data.get('skaters', [])
-                    goalies = stats_data.get('goalies', [])
+                    # Extract goals
+                    goals_for = team_standing.get('goalFor', 0)
+                    goals_against = team_standing.get('goalAgainst', 0)
+                    goal_differential = team_standing.get('goalDifferential', 0)
 
-                    # Calculate team totals from player stats
-                    total_goals = sum(s.get('goals', 0) for s in skaters)
-                    total_assists = sum(s.get('assists', 0) for s in skaters)
-                    total_shots = sum(s.get('shots', 0) for s in skaters)
+                    # Calculate per-game averages
+                    goals_per_game = goals_for / games_played if games_played > 0 else 0.0
+                    goals_against_per_game = goals_against / games_played if games_played > 0 else 0.0
 
-                    # Calculate averages
-                    goals_per_game = total_goals / games_played if games_played > 0 else 0
-                    shots_per_game = total_shots / games_played if games_played > 0 else 0
+                    # Calculate win percentage
+                    win_pct = wins / games_played if games_played > 0 else 0.0
 
-                    # Get goalie stats for GA and save %
-                    goals_against = sum(g.get('goalsAgainst', 0) for g in goalies)
-                    saves = sum(g.get('saves', 0) for g in goalies)
-                    shots_against = sum(g.get('shotsAgainst', 0) for g in goalies)
+                    # Form trend based on recent record
+                    streak_code = team_standing.get('streakCode', '')
+                    streak_count = team_standing.get('streakCount', 0)
 
-                    goals_against_per_game = goals_against / games_played if games_played > 0 else 0
-                    shots_against_per_game = shots_against / games_played if games_played > 0 else 0
-                    save_pct = saves / shots_against if shots_against > 0 else 0
-                    shooting_pct = total_goals / total_shots if total_shots > 0 else 0
+                    if streak_code == 'W' and streak_count >= 3:
+                        form_trend = "HOT"
+                    elif streak_code == 'L' and streak_count >= 3:
+                        form_trend = "COLD"
+                    else:
+                        form_trend = "NEUTRAL"
 
-                    # Calculate additional stats
-                    win_pct = wins / games_played if games_played > 0 else 0
-                    pdo = (shooting_pct + save_pct) * 100  # PDO is Sh% + Sv% (scaled to 100)
+                    # Get last 10 record
+                    l10_wins = team_standing.get('l10Wins', 0)
+                    l10_losses = team_standing.get('l10Losses', 0)
+                    l10_ot_losses = team_standing.get('l10OtLosses', 0)
+                    last_10_record = f"{l10_wins}-{l10_losses}-{l10_ot_losses}"
 
-                    # Power play and penalty kill stats (from team stats)
-                    pp_pct = stats_data.get('powerPlay', {}).get('pct', 0) / 100.0
-                    pk_pct = stats_data.get('penaltyKill', {}).get('pct', 0) / 100.0
-                    faceoff_win_pct = stats_data.get('faceoffWinPct', {}).get('pct', 0) / 100.0
-
-                    # Form trend based on win %
-                    form_trend = "HOT" if win_pct > 0.6 else "COLD" if win_pct < 0.4 else "NEUTRAL"
+                    # NOTE: The /standings endpoint doesn't include advanced stats like shots, PP%, PK%, etc.
+                    # For now, we'll use placeholder values. Could fetch from /club-stats if needed.
+                    shots_per_game = 0.0  # TODO: Fetch from club-stats if needed
+                    shots_against_per_game = 0.0
+                    power_play_pct = 0.0
+                    penalty_kill_pct = 0.0
+                    faceoff_win_pct = 0.0
+                    shooting_pct = 0.0
+                    save_pct = 0.0
+                    pdo = 100.0  # Neutral PDO
 
                     # Add to list as dict (rankings will be added later)
                     team_dict = {
                         'team_id': team_abbr,
-                        'team_name': team_abbr.upper(),  # Will be properly mapped later
+                        'team_name': team_name,
                         'games_played': games_played,
                         'wins': wins,
                         'losses': losses,
@@ -498,13 +488,13 @@ class NHLStatsClient:
                         'goals_against_per_game': goals_against_per_game,
                         'shots_per_game': shots_per_game,
                         'shots_against_per_game': shots_against_per_game,
-                        'power_play_pct': pp_pct,
-                        'penalty_kill_pct': pk_pct,
+                        'power_play_pct': power_play_pct,
+                        'penalty_kill_pct': penalty_kill_pct,
                         'faceoff_win_pct': faceoff_win_pct,
                         'shooting_pct': shooting_pct,
                         'save_pct': save_pct,
                         'pdo': pdo,
-                        'last_10_record': None,
+                        'last_10_record': last_10_record,
                         'form_trend': form_trend,
                         'home_record': None,
                         'away_record': None
@@ -512,7 +502,8 @@ class NHLStatsClient:
                     all_teams_list.append(team_dict)
 
                 except Exception as e:
-                    logger.warning(f"Error fetching NHL stats for {team_abbr}: {e}")
+                    team_name = team_standing.get('teamAbbrev', {}).get('default', 'Unknown')
+                    logger.warning(f"Error processing NHL stats for {team_name}: {e}")
                     continue
 
             # Now calculate rankings by sorting

@@ -5,6 +5,7 @@
  * with the new BookmakerLogo component
  */
 
+import React from 'react';
 import { BookmakerLogo, BookmakerBadge, BookmakerLink } from '../components/BookmakerLogo';
 
 // ============================================

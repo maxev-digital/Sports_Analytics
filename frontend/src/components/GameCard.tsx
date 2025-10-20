@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { LiveGame } from '../types';
 import { detectSport, getSportEmoji, getSportGradientClasses, getSportBorderClass } from '../utils/sportDetection';
+import { BOOKMAKERS } from '../data/bookmakers';
+import { openSportsbook } from '../utils/deepLinking';
+import { getGameSpecificUrl } from '../utils/gameUrls';
 
 interface GameCardProps {
   game: LiveGame;
@@ -8,6 +11,32 @@ interface GameCardProps {
 
 // Sportsbook logo URLs and fallback badges
 const getBookmakerInfo = (bookmaker: string) => {
+  // Normalize bookmaker name to match BOOKMAKERS keys
+  // API returns: "MyBookie.ag", "Nordic Bet", "DraftKings"
+  // Database keys: "mybookieag", "nordicbet", "draftkings"
+  const normalizedKey = bookmaker
+    .toLowerCase()
+    .replace(/\s+/g, '')      // Remove all spaces: "Nordic Bet" -> "nordicbet"
+    .replace(/\./g, '')       // Remove periods: "MyBookie.ag" -> "mybookieag"
+    .replace(/_/g, '');       // Remove underscores if any
+
+  // Try to find in BOOKMAKERS database
+  const bookmakerData = BOOKMAKERS[normalizedKey];
+
+  if (bookmakerData) {
+    return {
+      logo: bookmakerData.logo,
+      short: bookmaker.substring(0, 3).toUpperCase(),
+      bg: 'bg-slate-800',
+      text: 'text-slate-200'
+    };
+  }
+
+  // Fallback to old hardcoded data
+  return getBookmakerInfoFallback(bookmaker);
+};
+
+const getBookmakerInfoFallback = (bookmaker: string) => {
   const bookmakers: Record<string, { logo: string; short: string; bg: string; text: string }> = {
     'DraftKings': {
       logo: 'https://sportsbook-brands.draftkings.com/images/dk-sportsbook-logo.svg',
@@ -89,6 +118,9 @@ export function GameCard({ game }: GameCardProps) {
 
   // Stats view toggle: 'stats' (raw stats), 'rankings' (ranks only), 'combined' (stats + ranks)
   const [statsView, setStatsView] = useState<'stats' | 'rankings' | 'combined'>('stats');
+
+  // Market type toggle: 'spread', 'moneyline', 'totals'
+  const [selectedMarket, setSelectedMarket] = useState<'spread' | 'moneyline' | 'totals'>('totals');
 
   // Helper function to get rank color (green for top 10, yellow for 11-20, white for 21+)
   const getRankColor = (rank: number) => {
@@ -316,47 +348,164 @@ export function GameCard({ game }: GameCardProps) {
   const sportBorder = getSportBorderClass(sport);
   const sportEmoji = getSportEmoji(sport);
 
-  // NHL-specific styling: white background, ALL black text, thick red border, hockey rink lines
+  // Sport-specific styling
   const isNHL = sport === 'NHL';
-  const cardBackground = isNHL ? 'bg-white' : bgColor;
-  const cardBorder = isNHL ? 'border-red-600 border-4' : `border-2 ${edgeClass}`;
-  const cardRounding = isNHL ? 'rounded-3xl' : 'rounded-lg';
-  const textPrimary = isNHL ? 'text-black' : 'text-white';
-  const textSecondary = isNHL ? 'text-black font-bold' : 'text-slate-300';
-  const textTertiary = isNHL ? 'text-black font-bold' : 'text-slate-400';
-  const textLabel = isNHL ? 'text-black font-semibold' : 'text-slate-400';
-  const textValue = isNHL ? 'text-black font-bold' : 'text-slate-200';
-  const textHeader = isNHL ? 'text-black font-bold' : 'text-slate-100';
-  const textMuted = isNHL ? 'text-gray-600' : 'text-slate-500';
+  const isNBA = sport === 'NBA';
+
+  // Card background: NHL=ice with blue tint, NBA=wood court with gradient, others=gradient
+  const cardBackground = isNHL ? 'bg-gradient-to-br from-blue-200 via-cyan-100 to-blue-200' : isNBA ? 'bg-gradient-to-br from-[#8B5A2B] via-[#A0522D] to-[#704214]' : sportGradient;
+  const cardBorder = isNHL ? 'border-red-600 border-4' : isNBA ? 'border-amber-800 border-4' : `border-2 ${sportBorder}`;
+  const cardRounding = isNHL ? 'rounded-3xl' : isNBA ? 'rounded-2xl' : 'rounded-lg';
+
+  // Text colors
+  const textPrimary = (isNHL || isNBA) ? 'text-black' : 'text-white';
+  const textSecondary = (isNHL || isNBA) ? 'text-black font-bold' : 'text-slate-300';
+  const textTertiary = (isNHL || isNBA) ? 'text-black font-bold' : 'text-slate-400';
+  const textLabel = (isNHL || isNBA) ? 'text-black font-semibold' : 'text-slate-400';
+  const textValue = (isNHL || isNBA) ? 'text-black font-bold' : 'text-slate-200';
+  const textHeader = (isNHL || isNBA) ? 'text-black font-bold' : 'text-slate-100';
+  const textMuted = (isNHL || isNBA) ? 'text-gray-700' : 'text-slate-500';
+  const dividerClass = (isNHL || isNBA) ? '' : 'border-t border-slate-700';
 
   return (
     <div className={`${cardBackground} ${cardRounding} p-4 ${cardBorder} hover:shadow-lg transition-shadow relative overflow-hidden`}>
-      {/* Hockey Rink Lines (NHL only) */}
+      {/* Hockey Rink Lines (NHL only) - Horizontal lines like looking down at ice */}
       {isNHL && (
-        <div className="absolute inset-0 pointer-events-none opacity-10">
-          {/* Center red line */}
-          <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-red-600 transform -translate-x-1/2"></div>
-          {/* Blue lines */}
-          <div className="absolute left-1/4 top-0 bottom-0 w-0.5 bg-blue-600"></div>
-          <div className="absolute left-3/4 top-0 bottom-0 w-0.5 bg-blue-600"></div>
-          {/* Face-off circles */}
-          <div className="absolute left-1/4 top-1/2 w-16 h-16 border-2 border-blue-600 rounded-full transform -translate-x-1/2 -translate-y-1/2"></div>
-          <div className="absolute left-3/4 top-1/2 w-16 h-16 border-2 border-blue-600 rounded-full transform -translate-x-1/2 -translate-y-1/2"></div>
-          {/* Center ice circle */}
-          <div className="absolute left-1/2 top-1/2 w-20 h-20 border-2 border-blue-600 rounded-full transform -translate-x-1/2 -translate-y-1/2"></div>
-          <div className="absolute left-1/2 top-1/2 w-3 h-3 bg-blue-600 rounded-full transform -translate-x-1/2 -translate-y-1/2"></div>
+        <div className="absolute inset-0 pointer-events-none opacity-15">
+          {/* Goal lines (red) - 11 feet from boards in 200ft rink = ~5.5% */}
+          <div className="absolute left-0 right-0 h-3 bg-red-600" style={{ top: '10%' }}></div>
+          <div className="absolute left-0 right-0 h-3 bg-red-600" style={{ top: '90%' }}></div>
+
+          {/* Blue lines - 75ft from boards in 200ft rink = 37.5% */}
+          <div className="absolute left-0 right-0 h-2 bg-blue-600" style={{ top: '37.5%' }}></div>
+          <div className="absolute left-0 right-0 h-2 bg-blue-600" style={{ top: '62.5%' }}></div>
+
+          {/* Center red line - middle of rink */}
+          <div className="absolute left-0 right-0 h-3 bg-red-600" style={{ top: '50%' }}></div>
+
+          {/* Center ice circle (blue) */}
+          <div className="absolute left-1/2 w-40 h-40 border-[5px] border-blue-600 rounded-full transform -translate-x-1/2 -translate-y-1/2" style={{ top: '50%' }}></div>
+          <div className="absolute left-1/2 w-4 h-4 bg-blue-600 rounded-full transform -translate-x-1/2 -translate-y-1/2" style={{ top: '50%' }}></div>
+
+          {/* Four face-off circles in zones (two in each end zone) */}
+          {/* Top zone - left and right circles */}
+          <div className="absolute w-28 h-28 border-[4px] border-red-600 rounded-full transform -translate-x-1/2 -translate-y-1/2" style={{ left: '30%', top: '23%' }}></div>
+          <div className="absolute w-3 h-3 bg-red-600 rounded-full transform -translate-x-1/2 -translate-y-1/2" style={{ left: '30%', top: '23%' }}></div>
+
+          <div className="absolute w-28 h-28 border-[4px] border-red-600 rounded-full transform -translate-x-1/2 -translate-y-1/2" style={{ left: '70%', top: '23%' }}></div>
+          <div className="absolute w-3 h-3 bg-red-600 rounded-full transform -translate-x-1/2 -translate-y-1/2" style={{ left: '70%', top: '23%' }}></div>
+
+          {/* Bottom zone - left and right circles */}
+          <div className="absolute w-28 h-28 border-[4px] border-red-600 rounded-full transform -translate-x-1/2 -translate-y-1/2" style={{ left: '30%', top: '77%' }}></div>
+          <div className="absolute w-3 h-3 bg-red-600 rounded-full transform -translate-x-1/2 -translate-y-1/2" style={{ left: '30%', top: '77%' }}></div>
+
+          <div className="absolute w-28 h-28 border-[4px] border-red-600 rounded-full transform -translate-x-1/2 -translate-y-1/2" style={{ left: '70%', top: '77%' }}></div>
+          <div className="absolute w-3 h-3 bg-red-600 rounded-full transform -translate-x-1/2 -translate-y-1/2" style={{ left: '70%', top: '77%' }}></div>
+
+          {/* Goal creases (semi-circles at each end) */}
+          {/* Top goal crease */}
+          <div className="absolute w-24 h-14 border-[4px] border-blue-600 border-t-0 rounded-b-full transform -translate-x-1/2" style={{ left: '50%', top: '4%' }}></div>
+
+          {/* Bottom goal crease */}
+          <div className="absolute w-24 h-14 border-[4px] border-blue-600 border-b-0 rounded-t-full transform -translate-x-1/2" style={{ left: '50%', bottom: '4%' }}></div>
         </div>
       )}
+
+      {/* Basketball Court (NBA only) - Wood texture with court lines */}
+      {isNBA && (
+        <>
+          {/* Wood grain texture overlay */}
+          <div className="absolute inset-0 pointer-events-none opacity-20"
+               style={{
+                 backgroundImage: `
+                   repeating-linear-gradient(
+                     90deg,
+                     rgba(139, 69, 19, 0.1) 0px,
+                     rgba(160, 82, 45, 0.2) 2px,
+                     rgba(139, 69, 19, 0.1) 4px,
+                     rgba(160, 82, 45, 0.2) 6px,
+                     rgba(139, 69, 19, 0.1) 8px
+                   ),
+                   linear-gradient(
+                     180deg,
+                     rgba(160, 82, 45, 0.3) 0%,
+                     rgba(139, 69, 19, 0.1) 50%,
+                     rgba(160, 82, 45, 0.3) 100%
+                   )
+                 `
+               }}
+          ></div>
+
+          {/* Court lines overlay */}
+          <div className="absolute inset-0 pointer-events-none opacity-25">
+            {/* Baselines (top and bottom) */}
+            <div className="absolute left-0 right-0 h-1 bg-white" style={{ top: '8%' }}></div>
+            <div className="absolute left-0 right-0 h-1 bg-white" style={{ bottom: '8%' }}></div>
+
+            {/* Half-court line */}
+            <div className="absolute left-0 right-0 h-1 bg-white" style={{ top: '50%' }}></div>
+
+            {/* Sidelines (left and right) */}
+            <div className="absolute top-0 bottom-0 w-0.5 bg-white" style={{ left: '5%' }}></div>
+            <div className="absolute top-0 bottom-0 w-0.5 bg-white" style={{ right: '5%' }}></div>
+
+            {/* Center circle */}
+            <div className="absolute left-1/2 w-20 h-20 border-2 border-white rounded-full transform -translate-x-1/2 -translate-y-1/2" style={{ top: '50%' }}></div>
+            <div className="absolute left-1/2 w-2 h-2 bg-white rounded-full transform -translate-x-1/2 -translate-y-1/2" style={{ top: '50%' }}></div>
+
+            {/* Top 3-point arc */}
+            <svg className="absolute left-1/2 transform -translate-x-1/2" style={{ top: '8%', width: '45%', height: '25%' }} viewBox="0 0 100 60">
+              <path d="M 10,0 Q 50,55 90,0" fill="none" stroke="white" strokeWidth="1.5"/>
+            </svg>
+
+            {/* Bottom 3-point arc */}
+            <svg className="absolute left-1/2 transform -translate-x-1/2" style={{ bottom: '8%', width: '45%', height: '25%' }} viewBox="0 0 100 60">
+              <path d="M 10,60 Q 50,5 90,60" fill="none" stroke="white" strokeWidth="1.5"/>
+            </svg>
+
+            {/* Top paint/key (free throw lane) */}
+            <div className="absolute border-2 border-white" style={{
+              left: '40%',
+              width: '20%',
+              top: '8%',
+              height: '18%'
+            }}>
+              {/* Free throw circle (top half) */}
+              <div className="absolute left-1/2 w-16 h-8 border-2 border-white border-b-0 rounded-t-full transform -translate-x-1/2" style={{ bottom: '-1px' }}></div>
+            </div>
+
+            {/* Bottom paint/key (free throw lane) */}
+            <div className="absolute border-2 border-white" style={{
+              left: '40%',
+              width: '20%',
+              bottom: '8%',
+              height: '18%'
+            }}>
+              {/* Free throw circle (bottom half) */}
+              <div className="absolute left-1/2 w-16 h-8 border-2 border-white border-t-0 rounded-b-full transform -translate-x-1/2" style={{ top: '-1px' }}></div>
+            </div>
+
+            {/* Restricted area arcs (under basket) */}
+            <svg className="absolute left-1/2 transform -translate-x-1/2" style={{ top: '8%', width: '8%', height: '8%' }} viewBox="0 0 40 40">
+              <path d="M 5,0 Q 20,35 35,0" fill="none" stroke="white" strokeWidth="1.5"/>
+            </svg>
+            <svg className="absolute left-1/2 transform -translate-x-1/2" style={{ bottom: '8%', width: '8%', height: '8%' }} viewBox="0 0 40 40">
+              <path d="M 5,40 Q 20,5 35,40" fill="none" stroke="white" strokeWidth="1.5"/>
+            </svg>
+          </div>
+        </>
+      )}
+
       {/* Header */}
       <div className="flex justify-between items-start mb-3 relative z-10">
         <div>
-          <div className={`text-xs ${textLabel}`}>{gameDate}</div>
-          <div className={`text-sm font-semibold ${textSecondary}`}>{gameTime} CST</div>
+          <div className={`text-base ${textLabel}`}>{gameDate}</div>
+          <div className={`text-lg font-semibold ${textSecondary}`}>{gameTime} CST</div>
         </div>
-        <div className={`px-2 py-1 rounded text-xs font-semibold ${
+        <div className={`px-2 py-1 rounded text-base font-semibold ${
           state.status === 'live'
             ? 'bg-red-600 text-white'
-            : isNHL ? 'bg-gray-200 text-black' : 'bg-slate-700 ${textSecondary}'
+            : (isNHL || isNBA) ? 'bg-gray-200 text-black' : 'bg-slate-700 ${textSecondary}'
         }`}>
           {state.status === 'live' ? 'LIVE' : 'UPCOMING'}
         </div>
@@ -372,10 +521,10 @@ export function GameCard({ game }: GameCardProps) {
               <span className={`font-medium ${textPrimary}`}>{state.away_team.name}</span>
             </div>
             {state.away_team.score !== null && (
-              <span className={`text-xl font-bold ${textPrimary}`}>{state.away_team.score}</span>
+              <span className={`text-3xl font-bold ${textPrimary}`}>{state.away_team.score}</span>
             )}
           </div>
-          <div className={`flex gap-4 text-xs ${sportBadge !== 'NCAAF' ? 'ml-10' : ''}`}>
+          <div className={`flex gap-4 text-base ${sportBadge !== 'NCAAF' ? 'ml-10' : ''}`}>
             {state.away_team.spread !== null && state.away_team.spread !== undefined && (
               <div className={textSecondary}>
                 <span className={textTertiary}>{isNHL ? "Puck Line: " : "Spread: "}</span>
@@ -400,10 +549,10 @@ export function GameCard({ game }: GameCardProps) {
               <span className={`font-medium ${textPrimary}`}>{state.home_team.name}</span>
             </div>
             {state.home_team.score !== null && (
-              <span className={`text-xl font-bold ${textPrimary}`}>{state.home_team.score}</span>
+              <span className={`text-3xl font-bold ${textPrimary}`}>{state.home_team.score}</span>
             )}
           </div>
-          <div className={`flex gap-4 text-xs ${sportBadge !== 'NCAAF' ? 'ml-10' : ''}`}>
+          <div className={`flex gap-4 text-base ${sportBadge !== 'NCAAF' ? 'ml-10' : ''}`}>
             {state.home_team.spread !== null && state.home_team.spread !== undefined && (
               <div className={textSecondary}>
                 <span className={textTertiary}>{isNHL ? "Puck Line: " : "Spread: "}</span>
@@ -423,7 +572,7 @@ export function GameCard({ game }: GameCardProps) {
 
       {/* Game Status */}
       {state.status === 'live' && state.quarter && state.time_remaining && (
-        <div className={`text-xs ${textLabel} mb-3`}>
+        <div className={`text-base ${textLabel} mb-3`}>
           Q{state.quarter} - {state.time_remaining}
         </div>
       )}
@@ -431,9 +580,9 @@ export function GameCard({ game }: GameCardProps) {
       {/* Team Momentum Bar (NFL only, live games) */}
       {sportBadge === 'NFL' && state.status === 'live' && (state.home_team.momentum !== null || state.away_team.momentum !== null) && (
         <div className="mb-3">
-          <div className={`text-xs ${textLabel} mb-1`}>Game Momentum</div>
+          <div className={`text-base ${textLabel} mb-1`}>Game Momentum</div>
           <div className="flex items-center gap-2">
-            <span className={`text-xs ${textLabel} w-12`}>{state.away_team.name.split(' ').pop()}</span>
+            <span className={`text-base ${textLabel} w-12`}>{state.away_team.name.split(' ').pop()}</span>
             <div className="flex-1 h-3 bg-slate-700 rounded-full overflow-hidden relative">
               {/* Calculate momentum percentage (-100 to 100 scale) */}
               {(() => {
@@ -459,7 +608,7 @@ export function GameCard({ game }: GameCardProps) {
                 );
               })()}
             </div>
-            <span className={`text-xs ${textLabel} w-12 text-right`}>{state.home_team.name.split(' ').pop()}</span>
+            <span className={`text-base ${textLabel} w-12 text-right`}>{state.home_team.name.split(' ').pop()}</span>
           </div>
         </div>
       )}
@@ -467,25 +616,25 @@ export function GameCard({ game }: GameCardProps) {
       {/* Live Betting Lines (All Sports, Live Games) */}
       {state.status === 'live' && (state.away_team.money_line || state.home_team.money_line || state.away_team.spread || state.home_team.spread) && (
         <div className="mb-3 border border-yellow-600/30 bg-yellow-900/10 rounded p-3">
-          <div className={`text-sm ${isNHL ? 'text-yellow-600' : 'text-yellow-400'} font-bold mb-2`}>Live Betting Lines</div>
+          <div className={`text-lg ${isNHL ? 'text-yellow-600' : 'text-yellow-400'} font-bold mb-2`}>Live Betting Lines</div>
 
           {/* Live Spreads */}
           {(state.away_team.spread !== null || state.home_team.spread !== null) && (
             <div className="mb-2">
-              <div className={`text-xs ${textLabel} mb-1`}>Spreads</div>
-              <div className="flex justify-between text-sm">
+              <div className={`text-base ${textLabel} mb-1`}>Spreads</div>
+              <div className="flex justify-between text-base">
                 <div className={textSecondary}>
                   <span className={textTertiary}>{state.away_team.name.split(' ').pop()}: </span>
                   <span className={`font-bold ${isNHL ? 'text-green-600' : 'text-green-400'}`}>
                     {state.away_team.spread !== null ? `${state.away_team.spread > 0 ? '+' : ''}${state.away_team.spread}` : 'N/A'}
-                    {state.away_team.spread_price && <span className="text-xs"> ({state.away_team.spread_price > 0 ? '+' : ''}{state.away_team.spread_price})</span>}
+                    {state.away_team.spread_price && <span className="text-sm"> ({state.away_team.spread_price > 0 ? '+' : ''}{state.away_team.spread_price})</span>}
                   </span>
                 </div>
                 <div className={textSecondary}>
                   <span className={textTertiary}>{state.home_team.name.split(' ').pop()}: </span>
                   <span className={`font-bold ${isNHL ? 'text-green-600' : 'text-green-400'}`}>
                     {state.home_team.spread !== null ? `${state.home_team.spread > 0 ? '+' : ''}${state.home_team.spread}` : 'N/A'}
-                    {state.home_team.spread_price && <span className="text-xs"> ({state.home_team.spread_price > 0 ? '+' : ''}{state.home_team.spread_price})</span>}
+                    {state.home_team.spread_price && <span className="text-sm"> ({state.home_team.spread_price > 0 ? '+' : ''}{state.home_team.spread_price})</span>}
                   </span>
                 </div>
               </div>
@@ -495,8 +644,8 @@ export function GameCard({ game }: GameCardProps) {
           {/* Live Money Lines */}
           {(state.away_team.money_line !== null || state.home_team.money_line !== null) && (
             <div>
-              <div className={`text-xs ${textLabel} mb-1`}>Money Lines</div>
-              <div className="flex justify-between text-sm">
+              <div className={`text-base ${textLabel} mb-1`}>Money Lines</div>
+              <div className="flex justify-between text-base">
                 <div className={textSecondary}>
                   <span className={textTertiary}>{state.away_team.name.split(' ').pop()}: </span>
                   <span className={`font-bold ${(state.away_team.money_line || 0) > 0 ? (isNHL ? 'text-blue-600' : 'text-blue-400') : textPrimary}`}>
@@ -518,13 +667,13 @@ export function GameCard({ game }: GameCardProps) {
       {/* First Half Lines (All Sports, 1st half only) */}
       {state.status === 'live' && state.quarter && state.quarter <= 2 && (
         <div className="mb-3 border border-purple-600/30 bg-purple-900/10 rounded p-3">
-          <div className="text-sm text-purple-400 font-bold mb-2">1st Half Lines</div>
+          <div className="text-lg text-purple-400 font-bold mb-2">1st Half Lines</div>
 
           {/* First Half Total */}
           {projection.first_half_total && (
             <div className="mb-2">
-              <div className={`text-xs ${textLabel} font-semibold mb-1`}>Total</div>
-              <div className="flex justify-between text-sm">
+              <div className={`text-base ${textLabel} font-semibold mb-1`}>Total</div>
+              <div className="flex justify-between text-base">
                 <div className={`${textSecondary}`}>
                   <span className={`${textLabel}`}>Current: </span>
                   <span className="font-bold text-white">{projection.first_half_current || 0}</span>
@@ -540,20 +689,20 @@ export function GameCard({ game }: GameCardProps) {
           {/* First Half Spreads */}
           {(state.away_team.spread !== null || state.home_team.spread !== null) && (
             <div className="mb-2">
-              <div className={`text-xs ${textLabel} font-semibold mb-1`}>Spreads</div>
-              <div className="flex justify-between text-sm">
+              <div className={`text-base ${textLabel} font-semibold mb-1`}>Spreads</div>
+              <div className="flex justify-between text-base">
                 <div className={`${textSecondary}`}>
                   <span className={`${textLabel}`}>{state.away_team.name.split(' ').pop()}: </span>
                   <span className="font-bold text-green-400">
                     {state.away_team.spread !== null ? `${state.away_team.spread > 0 ? '+' : ''}${(state.away_team.spread / 2).toFixed(1)}` : 'N/A'}
-                    {state.away_team.spread_price && <span className="text-xs"> ({state.away_team.spread_price > 0 ? '+' : ''}{state.away_team.spread_price})</span>}
+                    {state.away_team.spread_price && <span className="text-sm"> ({state.away_team.spread_price > 0 ? '+' : ''}{state.away_team.spread_price})</span>}
                   </span>
                 </div>
                 <div className={`${textSecondary}`}>
                   <span className={`${textLabel}`}>{state.home_team.name.split(' ').pop()}: </span>
                   <span className="font-bold text-green-400">
                     {state.home_team.spread !== null ? `${state.home_team.spread > 0 ? '+' : ''}${(state.home_team.spread / 2).toFixed(1)}` : 'N/A'}
-                    {state.home_team.spread_price && <span className="text-xs"> ({state.home_team.spread_price > 0 ? '+' : ''}{state.home_team.spread_price})</span>}
+                    {state.home_team.spread_price && <span className="text-sm"> ({state.home_team.spread_price > 0 ? '+' : ''}{state.home_team.spread_price})</span>}
                   </span>
                 </div>
               </div>
@@ -563,8 +712,8 @@ export function GameCard({ game }: GameCardProps) {
           {/* First Half Money Lines */}
           {(state.away_team.money_line !== null || state.home_team.money_line !== null) && (
             <div>
-              <div className={`text-xs ${textLabel} font-semibold mb-1`}>Money Lines</div>
-              <div className="flex justify-between text-sm">
+              <div className={`text-base ${textLabel} font-semibold mb-1`}>Money Lines</div>
+              <div className="flex justify-between text-base">
                 <div className={`${textSecondary}`}>
                   <span className={`${textLabel}`}>{state.away_team.name.split(' ').pop()}: </span>
                   <span className={`font-bold ${(state.away_team.money_line || 0) > 0 ? 'text-blue-400' : 'text-white'}`}>
@@ -586,9 +735,9 @@ export function GameCard({ game }: GameCardProps) {
       {/* NHL Momentum Bar (NHL only, live games) */}
       {sportBadge === 'NHL' && state.status === 'live' && (away_nhl_momentum || home_nhl_momentum) && (
         <div className="mb-3">
-          <div className={`text-xs ${textLabel} mb-1`}>Game Momentum</div>
+          <div className={`text-base ${textLabel} mb-1`}>Game Momentum</div>
           <div className="flex items-center gap-2">
-            <span className={`text-xs ${textLabel} w-12`}>{state.away_team.name.split(' ').pop()}</span>
+            <span className={`text-base ${textLabel} w-12`}>{state.away_team.name.split(' ').pop()}</span>
             <div className="flex-1 h-3 bg-slate-700 rounded-full overflow-hidden relative">
               {/* Calculate momentum percentage (0-100 scale for each team) */}
               {(() => {
@@ -614,7 +763,7 @@ export function GameCard({ game }: GameCardProps) {
                 );
               })()}
             </div>
-            <span className={`text-xs ${textLabel} w-12 text-right`}>{state.home_team.name.split(' ').pop()}</span>
+            <span className={`text-base ${textLabel} w-12 text-right`}>{state.home_team.name.split(' ').pop()}</span>
           </div>
         </div>
       )}
@@ -622,8 +771,8 @@ export function GameCard({ game }: GameCardProps) {
       {/* NHL Momentum Stats (NHL only, live games) */}
       {sportBadge === 'NHL' && state.status === 'live' && (away_nhl_momentum || home_nhl_momentum) && (
         <div className="mb-3 border border-cyan-600/30 bg-cyan-900/10 rounded p-2">
-          <div className="text-xs text-cyan-400 font-semibold mb-2">Recent Momentum (Last 5 Min)</div>
-          <div className="grid grid-cols-2 gap-3 text-xs">
+          <div className="text-base text-cyan-400 font-semibold mb-2">Recent Momentum (Last 5 Min)</div>
+          <div className="grid grid-cols-2 gap-3 text-base">
             {/* Away Team Momentum */}
             <div>
               <div className={`${textLabel} font-semibold mb-1`}>{state.away_team.name.split(' ').pop()}</div>
@@ -682,7 +831,7 @@ export function GameCard({ game }: GameCardProps) {
                   </div>
                   {away_nhl_momentum.possession_indicator && (
                     <div className="mt-1">
-                      <span className={`text-[10px] px-2 py-0.5 rounded ${
+                      <span className={`text-sm px-2 py-0.5 rounded ${
                         away_nhl_momentum.possession_indicator === 'ATTACKING' ? 'bg-green-900 text-green-200' :
                         away_nhl_momentum.possession_indicator === 'DEFENDING' ? 'bg-red-900 text-red-200' :
                         'bg-slate-700 ${textSecondary}'
@@ -753,7 +902,7 @@ export function GameCard({ game }: GameCardProps) {
                   </div>
                   {home_nhl_momentum.possession_indicator && (
                     <div className="mt-1">
-                      <span className={`text-[10px] px-2 py-0.5 rounded ${
+                      <span className={`text-sm px-2 py-0.5 rounded ${
                         home_nhl_momentum.possession_indicator === 'ATTACKING' ? 'bg-green-900 text-green-200' :
                         home_nhl_momentum.possession_indicator === 'DEFENDING' ? 'bg-red-900 text-red-200' :
                         'bg-slate-700 ${textSecondary}'
@@ -771,46 +920,46 @@ export function GameCard({ game }: GameCardProps) {
 
       {/* NHL Season Stats Section */}
       {sportBadge === 'NHL' && (away_nhl_stats || home_nhl_stats) && (
-        <div className="mb-3 border-t border-slate-700 pt-3">
-          <div className="flex items-center justify-between mb-2">
-            <div className={`text-xs ${textLabel}`}>NHL Season Stats</div>
-            <div className="flex gap-1">
+        <div className={`mb-3 ${dividerClass} pt-3`}>
+          <div className="mb-3">
+            <div className={`text-base ${textLabel} mb-2`}>NHL Season Stats</div>
+            <div className="flex gap-2">
               <button
                 onClick={() => setStatsView('stats')}
-                className={`px-2 py-0.5 text-[10px] rounded transition-colors ${
+                className={`flex-1 px-3 py-2 rounded-lg text-lg font-semibold transition-all ${
                   statsView === 'stats'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-700 ${textSecondary} hover:bg-slate-600'
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
+                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                 }`}
               >
                 Stats
               </button>
               <button
                 onClick={() => setStatsView('rankings')}
-                className={`px-2 py-0.5 text-[10px] rounded transition-colors ${
+                className={`flex-1 px-3 py-2 rounded-lg text-lg font-semibold transition-all ${
                   statsView === 'rankings'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-700 ${textSecondary} hover:bg-slate-600'
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
+                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                 }`}
               >
                 Ranks
               </button>
               <button
                 onClick={() => setStatsView('combined')}
-                className={`px-2 py-0.5 text-[10px] rounded transition-colors ${
+                className={`flex-1 px-3 py-2 rounded-lg text-lg font-semibold transition-all ${
                   statsView === 'combined'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-700 ${textSecondary} hover:bg-slate-600'
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
+                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                 }`}
               >
                 Both
               </button>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4 text-xs">
+          <div className="grid grid-cols-2 gap-4 text-base">
             {/* Away Team Stats */}
             <div className="space-y-1">
-              <div className={`${textHeader} font-bold mb-2 text-center text-sm`}>{state.away_team.name}</div>
+              <div className={`${textHeader} font-bold mb-2 text-center text-base`}>{state.away_team.name}</div>
               {away_nhl_stats && (
                 <>
                   {(statsView === 'stats' || statsView === 'combined') && (
@@ -882,7 +1031,7 @@ export function GameCard({ game }: GameCardProps) {
                       {away_nhl_stats.form_trend && (
                         <div className="flex items-center justify-between">
                           <span className={`${textLabel}`}>Form:</span>
-                          <span className={`px-1 py-0.5 rounded text-[10px] ${
+                          <span className={`px-1 py-0.5 rounded text-sm ${
                             away_nhl_stats.form_trend === 'HOT' ? 'bg-green-900 text-green-200' :
                             away_nhl_stats.form_trend === 'COLD' ? 'bg-red-900 text-red-200' :
                             'bg-slate-700 ${textSecondary}'
@@ -933,7 +1082,7 @@ export function GameCard({ game }: GameCardProps) {
 
             {/* Home Team Stats */}
             <div className="space-y-1">
-              <div className={`${textHeader} font-bold mb-2 text-center text-sm`}>{state.home_team.name}</div>
+              <div className={`${textHeader} font-bold mb-2 text-center text-base`}>{state.home_team.name}</div>
               {home_nhl_stats && (
                 <>
                   {(statsView === 'stats' || statsView === 'combined') && (
@@ -1005,7 +1154,7 @@ export function GameCard({ game }: GameCardProps) {
                       {home_nhl_stats.form_trend && (
                         <div className="flex items-center justify-between">
                           <span className={`${textLabel}`}>Form:</span>
-                          <span className={`px-1 py-0.5 rounded text-[10px] ${
+                          <span className={`px-1 py-0.5 rounded text-sm ${
                             home_nhl_stats.form_trend === 'HOT' ? 'bg-green-900 text-green-200' :
                             home_nhl_stats.form_trend === 'COLD' ? 'bg-red-900 text-red-200' :
                             'bg-slate-700 ${textSecondary}'
@@ -1059,47 +1208,47 @@ export function GameCard({ game }: GameCardProps) {
 
       {/* NFL Season Stats Section */}
       {(sportBadge === 'NFL' || sportBadge === 'NCAAF') && (away_nfl_stats || home_nfl_stats) && (
-        <div className="mb-3 border-t border-slate-700 pt-3">
+        <div className={`mb-3 ${dividerClass} pt-3`}>
           {/* Stats View Toggle */}
-          <div className="flex items-center justify-between mb-2">
-            <div className={`text-xs ${textLabel}`}>Season Stats</div>
-            <div className="flex gap-1">
+          <div className="mb-3">
+            <div className={`text-base ${textLabel} mb-2`}>Season Stats</div>
+            <div className="flex gap-2">
               <button
                 onClick={() => setStatsView('stats')}
-                className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-all ${
+                className={`flex-1 px-3 py-2 rounded-lg text-lg font-semibold transition-all ${
                   statsView === 'stats'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-700 ${textLabel} hover:bg-slate-600'
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
+                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                 }`}
               >
                 Stats
               </button>
               <button
                 onClick={() => setStatsView('rankings')}
-                className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-all ${
+                className={`flex-1 px-3 py-2 rounded-lg text-lg font-semibold transition-all ${
                   statsView === 'rankings'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-700 ${textLabel} hover:bg-slate-600'
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
+                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                 }`}
               >
                 Ranks
               </button>
               <button
                 onClick={() => setStatsView('combined')}
-                className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-all ${
+                className={`flex-1 px-3 py-2 rounded-lg text-lg font-semibold transition-all ${
                   statsView === 'combined'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-700 ${textLabel} hover:bg-slate-600'
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
+                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                 }`}
               >
                 Both
               </button>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4 text-xs">
+          <div className="grid grid-cols-2 gap-4 text-base">
             {/* Away Team Stats */}
             <div className="space-y-1">
-              <div className={`${textHeader} font-bold mb-2 text-center text-sm`}>{state.away_team.name}</div>
+              <div className={`${textHeader} font-bold mb-2 text-center text-base`}>{state.away_team.name}</div>
               {away_nfl_stats && (
                 <>
                   {/* RANKINGS VIEW - Show only rankings */}
@@ -1149,7 +1298,7 @@ export function GameCard({ game }: GameCardProps) {
                             : `${textValue}`
                         }`}>
                           {away_nfl_stats.points_per_game.toFixed(1)}
-                          <span className={`text-[10px] ml-1 ${getRankColor(away_nfl_stats.points_per_game_rank || 32)}`}>
+                          <span className={`text-sm ml-1 ${getRankColor(away_nfl_stats.points_per_game_rank || 32)}`}>
                             (#{away_nfl_stats.points_per_game_rank || 'N/A'})
                           </span>
                         </span>
@@ -1162,7 +1311,7 @@ export function GameCard({ game }: GameCardProps) {
                             : `${textValue}`
                         }`}>
                           {away_nfl_stats.points_allowed_per_game.toFixed(1)}
-                          <span className={`text-[10px] ml-1 ${getRankColor(away_nfl_stats.points_allowed_per_game_rank || 32)}`}>
+                          <span className={`text-sm ml-1 ${getRankColor(away_nfl_stats.points_allowed_per_game_rank || 32)}`}>
                             (#{away_nfl_stats.points_allowed_per_game_rank || 'N/A'})
                           </span>
                         </span>
@@ -1175,7 +1324,7 @@ export function GameCard({ game }: GameCardProps) {
                             : `${textValue}`
                         }`}>
                           {away_nfl_stats.passing_yards_per_game.toFixed(0)}
-                          <span className={`text-[10px] ml-1 ${getRankColor(away_nfl_stats.passing_yards_per_game_rank || 32)}`}>
+                          <span className={`text-sm ml-1 ${getRankColor(away_nfl_stats.passing_yards_per_game_rank || 32)}`}>
                             (#{away_nfl_stats.passing_yards_per_game_rank || 'N/A'})
                           </span>
                         </span>
@@ -1188,7 +1337,7 @@ export function GameCard({ game }: GameCardProps) {
                             : `${textValue}`
                         }`}>
                           {away_nfl_stats.rushing_yards_per_game.toFixed(0)}
-                          <span className={`text-[10px] ml-1 ${getRankColor(away_nfl_stats.rushing_yards_per_game_rank || 32)}`}>
+                          <span className={`text-sm ml-1 ${getRankColor(away_nfl_stats.rushing_yards_per_game_rank || 32)}`}>
                             (#{away_nfl_stats.rushing_yards_per_game_rank || 'N/A'})
                           </span>
                         </span>
@@ -1200,7 +1349,7 @@ export function GameCard({ game }: GameCardProps) {
                           away_nfl_stats.turnover_differential < 0 ? 'text-red-400' : `${textValue}`
                         }`}>
                           {away_nfl_stats.turnover_differential > 0 ? '+' : ''}{away_nfl_stats.turnover_differential.toFixed(1)}
-                          <span className={`text-[10px] ml-1 ${getRankColor(away_nfl_stats.turnover_differential_rank || 32)}`}>
+                          <span className={`text-sm ml-1 ${getRankColor(away_nfl_stats.turnover_differential_rank || 32)}`}>
                             (#{away_nfl_stats.turnover_differential_rank || 'N/A'})
                           </span>
                         </span>
@@ -1285,7 +1434,7 @@ export function GameCard({ game }: GameCardProps) {
                   {away_nfl_stats.form_trend && (
                     <div className="flex items-center justify-between">
                       <span className={`${textLabel}`}>Form:</span>
-                      <span className={`px-1 py-0.5 rounded text-[10px] ${
+                      <span className={`px-1 py-0.5 rounded text-sm ${
                         away_nfl_stats.form_trend === 'HOT' ? 'bg-green-900 text-green-200' :
                         away_nfl_stats.form_trend === 'COLD' ? 'bg-red-900 text-red-200' :
                         'bg-slate-700 ${textSecondary}'
@@ -1300,7 +1449,7 @@ export function GameCard({ game }: GameCardProps) {
 
             {/* Home Team Stats */}
             <div className="space-y-1">
-              <div className={`${textHeader} font-bold mb-2 text-center text-sm`}>{state.home_team.name}</div>
+              <div className={`${textHeader} font-bold mb-2 text-center text-base`}>{state.home_team.name}</div>
               {home_nfl_stats && (
                 <>
                   {/* RANKINGS VIEW - Show only rankings */}
@@ -1350,7 +1499,7 @@ export function GameCard({ game }: GameCardProps) {
                             : `${textValue}`
                         }`}>
                           {home_nfl_stats.points_per_game.toFixed(1)}
-                          <span className={`text-[10px] ml-1 ${getRankColor(home_nfl_stats.points_per_game_rank || 32)}`}>
+                          <span className={`text-sm ml-1 ${getRankColor(home_nfl_stats.points_per_game_rank || 32)}`}>
                             (#{home_nfl_stats.points_per_game_rank || 'N/A'})
                           </span>
                         </span>
@@ -1363,7 +1512,7 @@ export function GameCard({ game }: GameCardProps) {
                             : `${textValue}`
                         }`}>
                           {home_nfl_stats.points_allowed_per_game.toFixed(1)}
-                          <span className={`text-[10px] ml-1 ${getRankColor(home_nfl_stats.points_allowed_per_game_rank || 32)}`}>
+                          <span className={`text-sm ml-1 ${getRankColor(home_nfl_stats.points_allowed_per_game_rank || 32)}`}>
                             (#{home_nfl_stats.points_allowed_per_game_rank || 'N/A'})
                           </span>
                         </span>
@@ -1376,7 +1525,7 @@ export function GameCard({ game }: GameCardProps) {
                             : `${textValue}`
                         }`}>
                           {home_nfl_stats.passing_yards_per_game.toFixed(0)}
-                          <span className={`text-[10px] ml-1 ${getRankColor(home_nfl_stats.passing_yards_per_game_rank || 32)}`}>
+                          <span className={`text-sm ml-1 ${getRankColor(home_nfl_stats.passing_yards_per_game_rank || 32)}`}>
                             (#{home_nfl_stats.passing_yards_per_game_rank || 'N/A'})
                           </span>
                         </span>
@@ -1389,7 +1538,7 @@ export function GameCard({ game }: GameCardProps) {
                             : `${textValue}`
                         }`}>
                           {home_nfl_stats.rushing_yards_per_game.toFixed(0)}
-                          <span className={`text-[10px] ml-1 ${getRankColor(home_nfl_stats.rushing_yards_per_game_rank || 32)}`}>
+                          <span className={`text-sm ml-1 ${getRankColor(home_nfl_stats.rushing_yards_per_game_rank || 32)}`}>
                             (#{home_nfl_stats.rushing_yards_per_game_rank || 'N/A'})
                           </span>
                         </span>
@@ -1401,7 +1550,7 @@ export function GameCard({ game }: GameCardProps) {
                           home_nfl_stats.turnover_differential < 0 ? 'text-red-400' : `${textValue}`
                         }`}>
                           {home_nfl_stats.turnover_differential > 0 ? '+' : ''}{home_nfl_stats.turnover_differential.toFixed(1)}
-                          <span className={`text-[10px] ml-1 ${getRankColor(home_nfl_stats.turnover_differential_rank || 32)}`}>
+                          <span className={`text-sm ml-1 ${getRankColor(home_nfl_stats.turnover_differential_rank || 32)}`}>
                             (#{home_nfl_stats.turnover_differential_rank || 'N/A'})
                           </span>
                         </span>
@@ -1486,7 +1635,7 @@ export function GameCard({ game }: GameCardProps) {
                       {home_nfl_stats.form_trend && (
                         <div className="flex items-center justify-between">
                           <span className={`${textLabel}`}>Form:</span>
-                          <span className={`px-1 py-0.5 rounded text-[10px] ${
+                          <span className={`px-1 py-0.5 rounded text-sm ${
                             home_nfl_stats.form_trend === 'HOT' ? 'bg-green-900 text-green-200' :
                             home_nfl_stats.form_trend === 'COLD' ? 'bg-red-900 text-red-200' :
                             'bg-slate-700 ${textSecondary}'
@@ -1503,17 +1652,17 @@ export function GameCard({ game }: GameCardProps) {
       )}
 
       {/* Odds Summary */}
-      <div className="border-t border-slate-700 pt-3 space-y-2">
-        <div className="flex justify-between text-sm">
+      <div className={`${dividerClass} pt-3 space-y-2`}>
+        <div className="flex justify-between text-base">
           <span className={`${textLabel}`}>Pregame Total (FD):</span>
           <span className="font-bold text-white">{Math.round(projection.pregame_total)}</span>
         </div>
-        <div className="flex justify-between text-sm">
+        <div className="flex justify-between text-base">
           <span className={`${textLabel}`}>Current Live Avg:</span>
           <span className="font-bold text-white">{avgTotal}</span>
         </div>
         {projection.line_movement !== null && projection.line_movement !== undefined && (
-          <div className="flex justify-between text-sm">
+          <div className="flex justify-between text-base">
             <span className={`${textLabel}`}>Line Movement:</span>
             <span className={`font-bold ${projection.line_movement > 0 ? 'text-green-400' : projection.line_movement < 0 ? 'text-red-400' : 'text-white'}`}>
               {projection.line_movement > 0 ? '+' : ''}{projection.line_movement.toFixed(1)}
@@ -1521,7 +1670,7 @@ export function GameCard({ game }: GameCardProps) {
           </div>
         )}
         {projection.best_book_disparity && projection.best_disparity_amount && (
-          <div className="flex justify-between text-sm">
+          <div className="flex justify-between text-base">
             <span className={`${textLabel}`}>Biggest Outlier:</span>
             <span className="font-bold text-yellow-400">{projection.best_book_disparity} (<span className="font-bold">{projection.best_disparity_amount.toFixed(1)}</span>)</span>
           </div>
@@ -1530,13 +1679,13 @@ export function GameCard({ game }: GameCardProps) {
 
       {/* Projection (only for live games) */}
       {state.status === 'live' && projection.projected_final > 0 && (
-        <div className="border-t border-slate-700 mt-3 pt-3 space-y-2">
-          <div className="flex justify-between text-sm">
+        <div className={`${dividerClass} mt-3 pt-3 space-y-2`}>
+          <div className="flex justify-between text-base">
             <span className={`${textLabel}`}>Projected:</span>
             <span className="font-bold text-blue-400">{projection.projected_final.toFixed(1)}</span>
           </div>
           {projection.edge !== null && (
-            <div className="flex justify-between text-sm">
+            <div className="flex justify-between text-base">
               <span className={`${textLabel}`}>Edge:</span>
               <span className={`font-bold ${
                 Math.abs(projection.edge) >= 5
@@ -1548,13 +1697,13 @@ export function GameCard({ game }: GameCardProps) {
             </div>
           )}
           {projection.pace_indicator && (
-            <div className="flex justify-between text-sm">
+            <div className="flex justify-between text-base">
               <span className={`${textLabel}`}>Pace:</span>
               <span className={`${textSecondary}`}>{projection.pace_indicator}</span>
             </div>
           )}
           {projection.strength_factor !== null && projection.strength_factor !== undefined && (
-            <div className="flex justify-between text-sm">
+            <div className="flex justify-between text-base">
               <span className={`${textLabel}`}>Strength:</span>
               <div className="flex items-center gap-2">
                 <div className="w-24 h-2 bg-slate-700 rounded-full overflow-hidden">
@@ -1578,13 +1727,13 @@ export function GameCard({ game }: GameCardProps) {
             </div>
           )}
           {projection.unit_recommendation !== null && projection.unit_recommendation !== undefined && projection.unit_recommendation > 0 && (
-            <div className="flex justify-between text-sm">
+            <div className="flex justify-between text-base">
               <span className={`${textLabel}`}>Bet Size:</span>
               <span className="font-bold text-purple-400">{projection.unit_recommendation.toFixed(1)} units</span>
             </div>
           )}
           {projection.recommendation && (
-            <div className={`text-center font-bold text-sm py-2 rounded ${
+            <div className={`text-center font-bold text-lg py-2 rounded ${
               projection.recommendation === 'OVER'
                 ? 'bg-green-900 text-green-200'
                 : 'bg-red-900 text-red-200'
@@ -1597,10 +1746,61 @@ export function GameCard({ game }: GameCardProps) {
 
       {/* All Odds with Latency */}
       {odds.length > 0 && (
-        <div className="border-t border-slate-700 mt-3 pt-3">
-          <div className={`text-xs ${textLabel} mb-2`}>
-            Sportsbook Lines & Speed (Best Overs ↑ / Best Unders ↓)
-            <div className={`text-[10px] ${textMuted} mt-0.5`}>Latency times are approximate and vary by sport</div>
+        <div className={`${dividerClass} mt-3 pt-3`}>
+          {/* Market Type Tabs */}
+          <div className="flex gap-2 mb-3">
+            <button
+              onClick={() => setSelectedMarket('spread')}
+              className={`flex-1 px-3 py-2 rounded-lg text-lg font-semibold transition-all ${
+                selectedMarket === 'spread'
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
+                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+              }`}
+            >
+              Spread
+            </button>
+            <button
+              onClick={() => setSelectedMarket('moneyline')}
+              className={`flex-1 px-3 py-2 rounded-lg text-lg font-semibold transition-all ${
+                selectedMarket === 'moneyline'
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
+                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+              }`}
+            >
+              Moneyline
+            </button>
+            <button
+              onClick={() => setSelectedMarket('totals')}
+              className={`flex-1 px-3 py-2 rounded-lg text-lg font-semibold transition-all ${
+                selectedMarket === 'totals'
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
+                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+              }`}
+            >
+              Totals
+            </button>
+          </div>
+
+          {/* Section Header */}
+          <div className={`text-base ${textLabel} mb-2`}>
+            {selectedMarket === 'totals' && (
+              <>
+                Sportsbook Lines & Speed (Best Overs ↑ / Best Unders ↓)
+                <div className={`text-sm ${textMuted} mt-0.5`}>Latency times are approximate and vary by sport</div>
+              </>
+            )}
+            {selectedMarket === 'spread' && (
+              <>
+                Sportsbook Spreads & Speed
+                <div className={`text-sm ${textMuted} mt-0.5`}>Latency times are approximate and vary by sport</div>
+              </>
+            )}
+            {selectedMarket === 'moneyline' && (
+              <>
+                Sportsbook Moneylines & Speed
+                <div className={`text-sm ${textMuted} mt-0.5`}>Latency times are approximate and vary by sport</div>
+              </>
+            )}
           </div>
           <div className="space-y-1">
             {(() => {
@@ -1651,29 +1851,94 @@ export function GameCard({ game }: GameCardProps) {
 
                 const bookmakerInfo = getBookmakerInfo(odd.bookmaker);
 
+                // Get bookmaker URL for clickable link
+                const normalizedKey = odd.bookmaker
+                  .toLowerCase()
+                  .replace(/\s+/g, '')
+                  .replace(/\./g, '')
+                  .replace(/_/g, '');
+                const bookmakerData = BOOKMAKERS[normalizedKey];
+
+                // Try to get game-specific URL first, fallback to generic sport URL
+                const gameSpecificUrl = getGameSpecificUrl(
+                  normalizedKey,
+                  state.home_team.name,
+                  state.away_team.name,
+                  state.sport_key,
+                  state.commence_time
+                );
+                const bookmakerUrl = gameSpecificUrl || bookmakerData?.url || '#';
+
                 return (
                   <div
                     key={idx}
-                    className={`flex justify-between items-center text-xs p-1 rounded ${
+                    className={`flex justify-between items-center text-base p-1 rounded ${
                       shouldHighlight ? 'bg-blue-900/50 border border-blue-500' : ''
                     }`}
                   >
                     <div className="flex items-center gap-2">
                       {bookmakerInfo.logo ? (
-                        <img src={bookmakerInfo.logo} alt={odd.bookmaker} className="w-5 h-5 object-contain" />
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            openSportsbook(bookmakerUrl, odd.bookmaker);
+                          }}
+                          className="inline-block hover:opacity-70 transition-opacity cursor-pointer border-0 bg-transparent p-0"
+                          title={`Visit ${odd.bookmaker}`}
+                        >
+                          <img
+                            src={bookmakerInfo.logo}
+                            alt={odd.bookmaker}
+                            className="w-5 h-5 object-contain"
+                            onError={(e) => e.currentTarget.style.display = 'none'}
+                          />
+                        </button>
                       ) : (
-                        <span className={`px-2 py-0.5 rounded font-bold text-xs ${bookmakerInfo.bg} ${bookmakerInfo.text}`}>
-                          {bookmakerInfo.short}
-                        </span>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            openSportsbook(bookmakerUrl, odd.bookmaker);
+                          }}
+                          className="inline-block hover:opacity-70 transition-opacity cursor-pointer border-0 bg-transparent p-0"
+                          title={`Visit ${odd.bookmaker}`}
+                        >
+                          <span className={`px-2 py-0.5 rounded font-bold text-base ${bookmakerInfo.bg} ${bookmakerInfo.text}`}>
+                            {bookmakerInfo.short}
+                          </span>
+                        </button>
                       )}
+                      <span className={`${textSecondary} text-base`}>{odd.bookmaker}</span>
                       {shouldHighlight && <span className="text-blue-300">⭐</span>}
-                      <span className={`${getLatencyColor(odd.latency_ms)} text-xs font-bold`} title="Slower books give you more time to react">
+                      <span className={`${getLatencyColor(odd.latency_ms)} text-base font-bold`} title="Slower books give you more time to react">
                         {formatLatency(odd.latency_ms)} {getBettorEdge(odd.latency_ms)}
                       </span>
                     </div>
-                    <span className={`${shouldHighlight ? 'text-blue-200 font-bold text-sm' : `${textSecondary} font-bold`}`}>
-                      O/U <span className="font-extrabold text-base">{odd.total}</span> (<span className="font-bold">{odd.over_price > 0 ? '+' : ''}{odd.over_price}/{odd.under_price > 0 ? '+' : ''}{odd.under_price}</span>)
-                    </span>
+                    {/* Display based on selected market */}
+                    {selectedMarket === 'totals' && (
+                      <span className={`${shouldHighlight ? 'text-blue-200 font-bold text-base' : `${textSecondary} font-bold`}`}>
+                        O/U <span className="font-extrabold text-lg">{odd.total}</span> (<span className="font-bold">{odd.over_price > 0 ? '+' : ''}{odd.over_price}/{odd.under_price > 0 ? '+' : ''}{odd.under_price}</span>)
+                      </span>
+                    )}
+                    {selectedMarket === 'spread' && (
+                      <div className={`${shouldHighlight ? 'text-blue-200' : textSecondary} text-base font-bold flex gap-3`}>
+                        <span>
+                          {state.home_team.name.split(' ').pop()}: <span className="font-extrabold text-base">{odd.home_spread > 0 ? '+' : ''}{odd.home_spread}</span> <span className="text-sm">({odd.home_spread_price > 0 ? '+' : ''}{odd.home_spread_price})</span>
+                        </span>
+                        <span>
+                          {state.away_team.name.split(' ').pop()}: <span className="font-extrabold text-base">{odd.away_spread > 0 ? '+' : ''}{odd.away_spread}</span> <span className="text-sm">({odd.away_spread_price > 0 ? '+' : ''}{odd.away_spread_price})</span>
+                        </span>
+                      </div>
+                    )}
+                    {selectedMarket === 'moneyline' && (
+                      <div className={`${shouldHighlight ? 'text-blue-200' : textSecondary} text-base font-bold flex gap-3`}>
+                        <span>
+                          {state.home_team.name.split(' ').pop()}: <span className="font-extrabold text-base">{odd.home_ml > 0 ? '+' : ''}{odd.home_ml}</span>
+                        </span>
+                        <span>
+                          {state.away_team.name.split(' ').pop()}: <span className="font-extrabold text-base">{odd.away_ml > 0 ? '+' : ''}{odd.away_ml}</span>
+                        </span>
+                      </div>
+                    )}
                   </div>
                 );
               });
@@ -1684,9 +1949,9 @@ export function GameCard({ game }: GameCardProps) {
 
       {/* Best Spreads and ML Section */}
       {odds.length > 0 && odds.some(o => o.home_spread !== null && o.home_spread !== undefined) && (
-        <div className="border-t border-slate-700 mt-3 pt-3">
-          <div className={`text-sm ${textSecondary} font-bold mb-2`}>Best Available Lines</div>
-          <div className="space-y-2 text-sm">
+        <div className={`${dividerClass} mt-3 pt-3`}>
+          <div className={`text-lg ${textSecondary} font-bold mb-2`}>Best Available Lines</div>
+          <div className="space-y-2 text-base">
             {/* Best Spreads */}
             {(() => {
               const oddsWithSpread = odds.filter(o => o.home_spread !== null && o.home_spread !== undefined);
@@ -1711,7 +1976,7 @@ export function GameCard({ game }: GameCardProps) {
 
               return (
                 <div>
-                  <div className={`text-xs ${textLabel} mb-1 font-semibold`}>Spreads</div>
+                  <div className={`text-base ${textLabel} mb-1 font-semibold`}>Spreads</div>
                   <div className="flex justify-between items-center">
                     <div>
                       <span className={`${textSecondary} font-semibold`}>{state.away_team.name.split(' ').slice(-1)[0]}: </span>
@@ -1719,7 +1984,7 @@ export function GameCard({ game }: GameCardProps) {
                         {bestAwaySpread.away_spread! > 0 ? '+' : ''}{bestAwaySpread.away_spread}
                         ({bestAwaySpread.away_spread_price! > 0 ? '+' : ''}{bestAwaySpread.away_spread_price})
                       </span>
-                      <span className={`${textMuted} text-xs ml-1`}>@{bestAwaySpread.bookmaker}</span>
+                      <span className={`${textMuted} text-base ml-1`}>@{bestAwaySpread.bookmaker}</span>
                     </div>
                     <div>
                       <span className={`${textSecondary} font-semibold`}>{state.home_team.name.split(' ').slice(-1)[0]}: </span>
@@ -1727,7 +1992,7 @@ export function GameCard({ game }: GameCardProps) {
                         {bestHomeSpread.home_spread! > 0 ? '+' : ''}{bestHomeSpread.home_spread}
                         ({bestHomeSpread.home_spread_price! > 0 ? '+' : ''}{bestHomeSpread.home_spread_price})
                       </span>
-                      <span className={`${textMuted} text-xs ml-1`}>@{bestHomeSpread.bookmaker}</span>
+                      <span className={`${textMuted} text-base ml-1`}>@{bestHomeSpread.bookmaker}</span>
                     </div>
                   </div>
                 </div>
@@ -1754,21 +2019,21 @@ export function GameCard({ game }: GameCardProps) {
 
               return (
                 <div>
-                  <div className={`text-xs ${textLabel} mb-1 font-semibold`}>Money Lines</div>
+                  <div className={`text-base ${textLabel} mb-1 font-semibold`}>Money Lines</div>
                   <div className="flex justify-between items-center">
                     <div>
                       <span className={`${textSecondary} font-semibold`}>{state.away_team.name.split(' ').slice(-1)[0]}: </span>
                       <span className="text-blue-400 font-bold">
                         {bestAwayML.away_ml! > 0 ? '+' : ''}{bestAwayML.away_ml}
                       </span>
-                      <span className={`${textMuted} text-xs ml-1`}>@{bestAwayML.bookmaker}</span>
+                      <span className={`${textMuted} text-base ml-1`}>@{bestAwayML.bookmaker}</span>
                     </div>
                     <div>
                       <span className={`${textSecondary} font-semibold`}>{state.home_team.name.split(' ').slice(-1)[0]}: </span>
                       <span className="text-blue-400 font-bold">
                         {bestHomeML.home_ml! > 0 ? '+' : ''}{bestHomeML.home_ml}
                       </span>
-                      <span className={`${textMuted} text-xs ml-1`}>@{bestHomeML.bookmaker}</span>
+                      <span className={`${textMuted} text-base ml-1`}>@{bestHomeML.bookmaker}</span>
                     </div>
                   </div>
                 </div>
@@ -1780,46 +2045,46 @@ export function GameCard({ game }: GameCardProps) {
 
       {/* Team Stats Section - Moved to bottom */}
       {(away_team_stats || home_team_stats) && (
-        <div className="border-t border-slate-700 mt-3 pt-3">
-          <div className="flex items-center justify-between mb-2">
-            <div className={`text-xs ${textLabel}`}>NBA Season Stats</div>
-            <div className="flex gap-1">
+        <div className={`${dividerClass} mt-3 pt-3`}>
+          <div className="mb-3">
+            <div className={`text-base ${textLabel} mb-2`}>NBA Season Stats</div>
+            <div className="flex gap-2">
               <button
                 onClick={() => setStatsView('stats')}
-                className={`px-2 py-0.5 rounded text-[10px] transition-colors ${
+                className={`flex-1 px-3 py-2 rounded-lg text-lg font-semibold transition-all ${
                   statsView === 'stats'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-700 ${textSecondary} hover:bg-slate-600'
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
+                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                 }`}
               >
                 Stats
               </button>
               <button
                 onClick={() => setStatsView('rankings')}
-                className={`px-2 py-0.5 rounded text-[10px] transition-colors ${
+                className={`flex-1 px-3 py-2 rounded-lg text-lg font-semibold transition-all ${
                   statsView === 'rankings'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-700 ${textSecondary} hover:bg-slate-600'
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
+                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                 }`}
               >
                 Ranks
               </button>
               <button
                 onClick={() => setStatsView('combined')}
-                className={`px-2 py-0.5 rounded text-[10px] transition-colors ${
+                className={`flex-1 px-3 py-2 rounded-lg text-lg font-semibold transition-all ${
                   statsView === 'combined'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-700 ${textSecondary} hover:bg-slate-600'
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
+                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                 }`}
               >
                 Both
               </button>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4 text-xs">
+          <div className="grid grid-cols-2 gap-4 text-base">
             {/* Away Team Stats */}
             <div className="space-y-1">
-              <div className={`${textHeader} font-bold mb-2 text-center text-sm`}>{state.away_team.name}</div>
+              <div className={`${textHeader} font-bold mb-2 text-center text-base`}>{state.away_team.name}</div>
               {away_team_stats && (
                 <>
                   {/* RANKINGS VIEW */}
@@ -1875,7 +2140,7 @@ export function GameCard({ game }: GameCardProps) {
                             : `${textValue}`
                         }`}>
                           {away_team_stats.pts_per_game.toFixed(1)}
-                          <span className={`text-[10px] ml-1 ${getRankColor(away_team_stats.pts_per_game_rank || 30)}`}>
+                          <span className={`text-sm ml-1 ${getRankColor(away_team_stats.pts_per_game_rank || 30)}`}>
                             (#{away_team_stats.pts_per_game_rank || 'N/A'})
                           </span>
                         </span>
@@ -1888,7 +2153,7 @@ export function GameCard({ game }: GameCardProps) {
                             : `${textValue}`
                         }`}>
                           {away_team_stats.off_rating.toFixed(1)}
-                          <span className={`text-[10px] ml-1 ${getRankColor(away_team_stats.off_rating_rank || 30)}`}>
+                          <span className={`text-sm ml-1 ${getRankColor(away_team_stats.off_rating_rank || 30)}`}>
                             (#{away_team_stats.off_rating_rank || 'N/A'})
                           </span>
                         </span>
@@ -1901,7 +2166,7 @@ export function GameCard({ game }: GameCardProps) {
                             : `${textValue}`
                         }`}>
                           {away_team_stats.def_rating.toFixed(1)}
-                          <span className={`text-[10px] ml-1 ${getRankColor(away_team_stats.def_rating_rank || 30)}`}>
+                          <span className={`text-sm ml-1 ${getRankColor(away_team_stats.def_rating_rank || 30)}`}>
                             (#{away_team_stats.def_rating_rank || 'N/A'})
                           </span>
                         </span>
@@ -1914,7 +2179,7 @@ export function GameCard({ game }: GameCardProps) {
                             : `${textValue}`
                         }`}>
                           {away_team_stats.net_rating.toFixed(1)}
-                          <span className={`text-[10px] ml-1 ${getRankColor(away_team_stats.net_rating_rank || 30)}`}>
+                          <span className={`text-sm ml-1 ${getRankColor(away_team_stats.net_rating_rank || 30)}`}>
                             (#{away_team_stats.net_rating_rank || 'N/A'})
                           </span>
                         </span>
@@ -1927,7 +2192,7 @@ export function GameCard({ game }: GameCardProps) {
                             : `${textValue}`
                         }`}>
                           {away_team_stats.pace.toFixed(1)}
-                          <span className={`text-[10px] ml-1 ${getRankColor(away_team_stats.pace_rank || 30)}`}>
+                          <span className={`text-sm ml-1 ${getRankColor(away_team_stats.pace_rank || 30)}`}>
                             (#{away_team_stats.pace_rank || 'N/A'})
                           </span>
                         </span>
@@ -1940,7 +2205,7 @@ export function GameCard({ game }: GameCardProps) {
                             : `${textValue}`
                         }`}>
                           {(away_team_stats.fg_pct * 100).toFixed(1)}%
-                          <span className={`text-[10px] ml-1 ${getRankColor(away_team_stats.fg_pct_rank || 30)}`}>
+                          <span className={`text-sm ml-1 ${getRankColor(away_team_stats.fg_pct_rank || 30)}`}>
                             (#{away_team_stats.fg_pct_rank || 'N/A'})
                           </span>
                         </span>
@@ -1965,10 +2230,10 @@ export function GameCard({ game }: GameCardProps) {
                           <div className="flex items-center gap-1">
                             <span className={`${textValue}`}>{away_team_stats.last_5_record}</span>
                             {away_team_stats.form_trend === 'HOT' && (
-                              <span className="px-1 py-0.5 bg-green-900 text-green-200 rounded text-[10px]">HOT</span>
+                              <span className="px-1 py-0.5 bg-green-900 text-green-200 rounded text-sm">HOT</span>
                             )}
                             {away_team_stats.form_trend === 'COLD' && (
-                              <span className="px-1 py-0.5 bg-red-900 text-red-200 rounded text-[10px]">COLD</span>
+                              <span className="px-1 py-0.5 bg-red-900 text-red-200 rounded text-sm">COLD</span>
                             )}
                           </div>
                         </div>
@@ -2021,7 +2286,7 @@ export function GameCard({ game }: GameCardProps) {
 
             {/* Home Team Stats */}
             <div className="space-y-1">
-              <div className={`${textHeader} font-bold mb-2 text-center text-sm`}>{state.home_team.name}</div>
+              <div className={`${textHeader} font-bold mb-2 text-center text-base`}>{state.home_team.name}</div>
               {home_team_stats && (
                 <>
                   {/* RANKINGS VIEW */}
@@ -2077,7 +2342,7 @@ export function GameCard({ game }: GameCardProps) {
                             : `${textValue}`
                         }`}>
                           {home_team_stats.pts_per_game.toFixed(1)}
-                          <span className={`text-[10px] ml-1 ${getRankColor(home_team_stats.pts_per_game_rank || 30)}`}>
+                          <span className={`text-sm ml-1 ${getRankColor(home_team_stats.pts_per_game_rank || 30)}`}>
                             (#{home_team_stats.pts_per_game_rank || 'N/A'})
                           </span>
                         </span>
@@ -2090,7 +2355,7 @@ export function GameCard({ game }: GameCardProps) {
                             : `${textValue}`
                         }`}>
                           {home_team_stats.off_rating.toFixed(1)}
-                          <span className={`text-[10px] ml-1 ${getRankColor(home_team_stats.off_rating_rank || 30)}`}>
+                          <span className={`text-sm ml-1 ${getRankColor(home_team_stats.off_rating_rank || 30)}`}>
                             (#{home_team_stats.off_rating_rank || 'N/A'})
                           </span>
                         </span>
@@ -2103,7 +2368,7 @@ export function GameCard({ game }: GameCardProps) {
                             : `${textValue}`
                         }`}>
                           {home_team_stats.def_rating.toFixed(1)}
-                          <span className={`text-[10px] ml-1 ${getRankColor(home_team_stats.def_rating_rank || 30)}`}>
+                          <span className={`text-sm ml-1 ${getRankColor(home_team_stats.def_rating_rank || 30)}`}>
                             (#{home_team_stats.def_rating_rank || 'N/A'})
                           </span>
                         </span>
@@ -2116,7 +2381,7 @@ export function GameCard({ game }: GameCardProps) {
                             : `${textValue}`
                         }`}>
                           {home_team_stats.net_rating.toFixed(1)}
-                          <span className={`text-[10px] ml-1 ${getRankColor(home_team_stats.net_rating_rank || 30)}`}>
+                          <span className={`text-sm ml-1 ${getRankColor(home_team_stats.net_rating_rank || 30)}`}>
                             (#{home_team_stats.net_rating_rank || 'N/A'})
                           </span>
                         </span>
@@ -2129,7 +2394,7 @@ export function GameCard({ game }: GameCardProps) {
                             : `${textValue}`
                         }`}>
                           {home_team_stats.pace.toFixed(1)}
-                          <span className={`text-[10px] ml-1 ${getRankColor(home_team_stats.pace_rank || 30)}`}>
+                          <span className={`text-sm ml-1 ${getRankColor(home_team_stats.pace_rank || 30)}`}>
                             (#{home_team_stats.pace_rank || 'N/A'})
                           </span>
                         </span>
@@ -2142,7 +2407,7 @@ export function GameCard({ game }: GameCardProps) {
                             : `${textValue}`
                         }`}>
                           {(home_team_stats.fg_pct * 100).toFixed(1)}%
-                          <span className={`text-[10px] ml-1 ${getRankColor(home_team_stats.fg_pct_rank || 30)}`}>
+                          <span className={`text-sm ml-1 ${getRankColor(home_team_stats.fg_pct_rank || 30)}`}>
                             (#{home_team_stats.fg_pct_rank || 'N/A'})
                           </span>
                         </span>
@@ -2167,10 +2432,10 @@ export function GameCard({ game }: GameCardProps) {
                           <div className="flex items-center gap-1">
                             <span className={`${textValue}`}>{home_team_stats.last_5_record}</span>
                             {home_team_stats.form_trend === 'HOT' && (
-                              <span className="px-1 py-0.5 bg-green-900 text-green-200 rounded text-[10px]">HOT</span>
+                              <span className="px-1 py-0.5 bg-green-900 text-green-200 rounded text-sm">HOT</span>
                             )}
                             {home_team_stats.form_trend === 'COLD' && (
-                              <span className="px-1 py-0.5 bg-red-900 text-red-200 rounded text-[10px]">COLD</span>
+                              <span className="px-1 py-0.5 bg-red-900 text-red-200 rounded text-sm">COLD</span>
                             )}
                           </div>
                         </div>
@@ -2251,9 +2516,9 @@ export function GameCard({ game }: GameCardProps) {
         };
 
         return (
-        <div className="border-t border-slate-700 mt-3 pt-3">
-          <div className={`text-xs ${textLabel} mb-2 font-semibold`}>Live Game Stats</div>
-          <div className="grid grid-cols-3 gap-2 text-xs">
+        <div className={`${dividerClass} mt-3 pt-3`}>
+          <div className={`text-base ${textLabel} mb-2 font-semibold`}>Live Game Stats</div>
+          <div className="grid grid-cols-3 gap-2 text-base">
             {/* Stat Label Column */}
             <div className="space-y-1 text-center">
               <div className={`${textMuted} font-semibold`}>{state.away_team.name.split(' ').pop()}</div>

@@ -54,7 +54,7 @@ export const GoaliePullAlerts: React.FC = () => {
   useEffect(() => {
     const fetchOpportunities = async () => {
       try {
-        const response = await fetch('http://localhost:8000/api/goalie-pull-opportunities');
+        const response = await fetch('/api/goalie-pull-opportunities');
         if (!response.ok) {
           throw new Error('Failed to fetch goalie pull opportunities');
         }
