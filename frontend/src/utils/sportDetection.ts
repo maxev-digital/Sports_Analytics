@@ -126,10 +126,10 @@ export const sportStyles: Record<SportType, SportStyle> = {
     glowColor: 'rgba(132, 204, 22, 0.3)'
   },
   'TENNIS': {
-    gradientFrom: 'from-yellow-900',
-    gradientTo: 'to-slate-800',
-    borderColor: 'border-yellow-500',
-    glowColor: 'rgba(234, 179, 8, 0.3)'
+    gradientFrom: 'from-yellow-600',
+    gradientTo: 'to-yellow-700',
+    borderColor: 'border-yellow-400',
+    glowColor: 'rgba(250, 204, 21, 0.3)'
   },
   'MMA': {
     gradientFrom: 'from-rose-900',

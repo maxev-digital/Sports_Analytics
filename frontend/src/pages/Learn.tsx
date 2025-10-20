@@ -105,6 +105,34 @@ const articles: Article[] = [
     category: 'Strategy',
     readTime: '9 min'
   },
+  {
+    id: 'back-to-back-vs-rested',
+    title: 'Back-to-Back vs Rested: The Ultimate Fatigue Edge',
+    description: 'NBA and NHL teams on back-to-backs lose 61% ATS against rested opponents. Learn the science of fatigue, rest differential analysis, and why this edge has persisted for decades.',
+    category: 'Strategy',
+    readTime: '18 min'
+  },
+  {
+    id: 'reverse-line-movement',
+    title: 'Reverse Line Movement (RLM): Following Sharp Money',
+    description: 'When the line moves opposite of public betting percentages, sharps are in action. 59% win rate following RLM. Learn to identify and exploit these opportunities.',
+    category: 'Strategy',
+    readTime: '16 min'
+  },
+  {
+    id: 'fade-the-public',
+    title: 'Fade the Public: The Contrarian Edge',
+    description: 'Betting against teams with 70%+ public support wins 57% of the time. Understand why the public loses, when to fade, and how to profit from market inefficiencies.',
+    category: 'Strategy',
+    readTime: '15 min'
+  },
+  {
+    id: 'situational-betting',
+    title: 'Situational Betting: Revenge, Letdown, and Lookahead Spots',
+    description: 'Teams after blowout losses, emotional wins, or before big games perform predictably. Learn to identify and exploit these high-value situational spots.',
+    category: 'Strategy',
+    readTime: '20 min'
+  },
 
   // Section 4: Bankroll Management
   {

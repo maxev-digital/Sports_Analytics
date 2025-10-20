@@ -16,6 +16,7 @@ export interface GameState {
   status: 'upcoming' | 'live' | 'completed';
   quarter: number | null;
   time_remaining: string | null;
+  tournament?: string | null;  // For tennis: "Australian Open", "Wimbledon", etc.
 }
 
 export interface GameOdds {

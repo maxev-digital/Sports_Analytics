@@ -351,21 +351,28 @@ export function GameCard({ game }: GameCardProps) {
   // Sport-specific styling
   const isNHL = sport === 'NHL';
   const isNBA = sport === 'NBA';
+  const isTennis = sport === 'TENNIS';
 
-  // Card background: NHL=ice with blue tint, NBA=wood court with gradient, others=gradient
-  const cardBackground = isNHL ? 'bg-gradient-to-br from-blue-200 via-cyan-100 to-blue-200' : isNBA ? 'bg-gradient-to-br from-[#8B5A2B] via-[#A0522D] to-[#704214]' : sportGradient;
-  const cardBorder = isNHL ? 'border-red-600 border-4' : isNBA ? 'border-amber-800 border-4' : `border-2 ${sportBorder}`;
-  const cardRounding = isNHL ? 'rounded-3xl' : isNBA ? 'rounded-2xl' : 'rounded-lg';
+  // Card background: NHL=ice with blue tint, NBA=blue gradient, Tennis=deep yellow, others=gradient
+  const cardBackground = isNHL ? 'bg-gradient-to-br from-blue-200 via-cyan-100 to-blue-200'
+    : isNBA ? 'bg-gradient-to-br from-blue-900 to-slate-800'
+    : isTennis ? 'bg-gradient-to-br from-yellow-600 to-yellow-700'
+    : sportGradient;
+  const cardBorder = isNHL ? 'border-red-600 border-4'
+    : isNBA ? 'border-2 border-blue-500'
+    : isTennis ? 'border-2 border-yellow-400'
+    : `border-2 ${sportBorder}`;
+  const cardRounding = isNHL ? 'rounded-3xl' : isNBA ? 'rounded-lg' : 'rounded-lg';
 
   // Text colors
-  const textPrimary = (isNHL || isNBA) ? 'text-black' : 'text-white';
-  const textSecondary = (isNHL || isNBA) ? 'text-black font-bold' : 'text-slate-300';
-  const textTertiary = (isNHL || isNBA) ? 'text-black font-bold' : 'text-slate-400';
-  const textLabel = (isNHL || isNBA) ? 'text-black font-semibold' : 'text-slate-400';
-  const textValue = (isNHL || isNBA) ? 'text-black font-bold' : 'text-slate-200';
-  const textHeader = (isNHL || isNBA) ? 'text-black font-bold' : 'text-slate-100';
-  const textMuted = (isNHL || isNBA) ? 'text-gray-700' : 'text-slate-500';
-  const dividerClass = (isNHL || isNBA) ? '' : 'border-t border-slate-700';
+  const textPrimary = (isNHL || isTennis) ? 'text-black' : 'text-white';
+  const textSecondary = (isNHL || isTennis) ? 'text-black font-bold' : 'text-slate-300';
+  const textTertiary = (isNHL || isTennis) ? 'text-black font-bold' : 'text-slate-400';
+  const textLabel = (isNHL || isTennis) ? 'text-black font-semibold' : 'text-slate-400';
+  const textValue = (isNHL || isTennis) ? 'text-black font-bold' : 'text-slate-200';
+  const textHeader = (isNHL || isTennis) ? 'text-black font-bold' : 'text-slate-100';
+  const textMuted = (isNHL || isTennis) ? 'text-gray-700' : 'text-slate-500';
+  const dividerClass = (isNHL || isTennis) ? '' : 'border-t border-slate-700';
 
   return (
     <div className={`${cardBackground} ${cardRounding} p-4 ${cardBorder} hover:shadow-lg transition-shadow relative overflow-hidden`}>
@@ -409,91 +416,6 @@ export function GameCard({ game }: GameCardProps) {
           {/* Bottom goal crease */}
           <div className="absolute w-24 h-14 border-[4px] border-blue-600 border-b-0 rounded-t-full transform -translate-x-1/2" style={{ left: '50%', bottom: '4%' }}></div>
         </div>
-      )}
-
-      {/* Basketball Court (NBA only) - Wood texture with court lines */}
-      {isNBA && (
-        <>
-          {/* Wood grain texture overlay */}
-          <div className="absolute inset-0 pointer-events-none opacity-20"
-               style={{
-                 backgroundImage: `
-                   repeating-linear-gradient(
-                     90deg,
-                     rgba(139, 69, 19, 0.1) 0px,
-                     rgba(160, 82, 45, 0.2) 2px,
-                     rgba(139, 69, 19, 0.1) 4px,
-                     rgba(160, 82, 45, 0.2) 6px,
-                     rgba(139, 69, 19, 0.1) 8px
-                   ),
-                   linear-gradient(
-                     180deg,
-                     rgba(160, 82, 45, 0.3) 0%,
-                     rgba(139, 69, 19, 0.1) 50%,
-                     rgba(160, 82, 45, 0.3) 100%
-                   )
-                 `
-               }}
-          ></div>
-
-          {/* Court lines overlay */}
-          <div className="absolute inset-0 pointer-events-none opacity-25">
-            {/* Baselines (top and bottom) */}
-            <div className="absolute left-0 right-0 h-1 bg-white" style={{ top: '8%' }}></div>
-            <div className="absolute left-0 right-0 h-1 bg-white" style={{ bottom: '8%' }}></div>
-
-            {/* Half-court line */}
-            <div className="absolute left-0 right-0 h-1 bg-white" style={{ top: '50%' }}></div>
-
-            {/* Sidelines (left and right) */}
-            <div className="absolute top-0 bottom-0 w-0.5 bg-white" style={{ left: '5%' }}></div>
-            <div className="absolute top-0 bottom-0 w-0.5 bg-white" style={{ right: '5%' }}></div>
-
-            {/* Center circle */}
-            <div className="absolute left-1/2 w-20 h-20 border-2 border-white rounded-full transform -translate-x-1/2 -translate-y-1/2" style={{ top: '50%' }}></div>
-            <div className="absolute left-1/2 w-2 h-2 bg-white rounded-full transform -translate-x-1/2 -translate-y-1/2" style={{ top: '50%' }}></div>
-
-            {/* Top 3-point arc */}
-            <svg className="absolute left-1/2 transform -translate-x-1/2" style={{ top: '8%', width: '45%', height: '25%' }} viewBox="0 0 100 60">
-              <path d="M 10,0 Q 50,55 90,0" fill="none" stroke="white" strokeWidth="1.5"/>
-            </svg>
-
-            {/* Bottom 3-point arc */}
-            <svg className="absolute left-1/2 transform -translate-x-1/2" style={{ bottom: '8%', width: '45%', height: '25%' }} viewBox="0 0 100 60">
-              <path d="M 10,60 Q 50,5 90,60" fill="none" stroke="white" strokeWidth="1.5"/>
-            </svg>
-
-            {/* Top paint/key (free throw lane) */}
-            <div className="absolute border-2 border-white" style={{
-              left: '40%',
-              width: '20%',
-              top: '8%',
-              height: '18%'
-            }}>
-              {/* Free throw circle (top half) */}
-              <div className="absolute left-1/2 w-16 h-8 border-2 border-white border-b-0 rounded-t-full transform -translate-x-1/2" style={{ bottom: '-1px' }}></div>
-            </div>
-
-            {/* Bottom paint/key (free throw lane) */}
-            <div className="absolute border-2 border-white" style={{
-              left: '40%',
-              width: '20%',
-              bottom: '8%',
-              height: '18%'
-            }}>
-              {/* Free throw circle (bottom half) */}
-              <div className="absolute left-1/2 w-16 h-8 border-2 border-white border-t-0 rounded-b-full transform -translate-x-1/2" style={{ top: '-1px' }}></div>
-            </div>
-
-            {/* Restricted area arcs (under basket) */}
-            <svg className="absolute left-1/2 transform -translate-x-1/2" style={{ top: '8%', width: '8%', height: '8%' }} viewBox="0 0 40 40">
-              <path d="M 5,0 Q 20,35 35,0" fill="none" stroke="white" strokeWidth="1.5"/>
-            </svg>
-            <svg className="absolute left-1/2 transform -translate-x-1/2" style={{ bottom: '8%', width: '8%', height: '8%' }} viewBox="0 0 40 40">
-              <path d="M 5,40 Q 20,5 35,40" fill="none" stroke="white" strokeWidth="1.5"/>
-            </svg>
-          </div>
-        </>
       )}
 
       {/* Header */}

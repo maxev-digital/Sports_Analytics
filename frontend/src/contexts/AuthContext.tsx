@@ -21,6 +21,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Check for existing session on mount
   useEffect(() => {
+    // Auto-login for localhost development
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      console.log('🔓 Local development mode: Auto-login enabled');
+      setIsAuthenticated(true);
+      setUsername('dev-user');
+      setToken('dev-token');
+      localStorage.setItem('auth_token', 'dev-token');
+      localStorage.setItem('auth_username', 'dev-user');
+      setLoading(false);
+      return;
+    }
+
     const storedToken = localStorage.getItem('auth_token');
     const storedUsername = localStorage.getItem('auth_username');
 

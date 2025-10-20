@@ -49,8 +49,40 @@ export function LiveGames() {
         return sport && game.state.sport_key.includes(sport.filter);
       });
 
+  // Check if current selection is tennis (ATP or WTA)
+  const isTennisSelected = selectedSport === 'atp' || selectedSport === 'wta' ||
+    (selectedSport === 'all' && filteredGames.some(g => g.state.sport_key.includes('tennis')));
+
+  // Group tennis games by tournament
+  const groupTennisByTournament = (games: LiveGame[]) => {
+    const grouped: Record<string, LiveGame[]> = {};
+    games.forEach(game => {
+      const tournament = game.state.tournament || 'Other Matches';
+      if (!grouped[tournament]) {
+        grouped[tournament] = [];
+      }
+      grouped[tournament].push(game);
+    });
+
+    // Sort each tournament group: live games first, then by commence_time
+    Object.keys(grouped).forEach(tournament => {
+      grouped[tournament].sort((a, b) => {
+        if (a.state.status === 'live' && b.state.status !== 'live') return -1;
+        if (a.state.status !== 'live' && b.state.status === 'live') return 1;
+        return new Date(a.state.commence_time).getTime() - new Date(b.state.commence_time).getTime();
+      });
+    });
+
+    return grouped;
+  };
+
   const liveGames = filteredGames.filter(g => g.state.status === 'live');
   const upcomingGames = filteredGames.filter(g => g.state.status === 'upcoming');
+
+  // For tennis, group by tournament
+  const tennisGames = filteredGames.filter(g => g.state.sport_key.includes('tennis'));
+  const tennisByTournament = groupTennisByTournament(tennisGames);
+  const isShowingOnlyTennis = (selectedSport === 'atp' || selectedSport === 'wta') && tennisGames.length > 0;
 
   if (loading) {
     return (
@@ -92,37 +124,73 @@ export function LiveGames() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-6">
-        {/* Live Games Section */}
-        {liveGames.length > 0 && (
-          <div className="mb-8">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                <h2 className="text-2xl font-bold text-slate-100">Live Games</h2>
-              </div>
-              <span className="text-sm text-slate-400">({liveGames.length})</span>
-            </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {liveGames.map((game) => (
-                <GameCard key={game.state.id} game={game} />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Upcoming Games Section */}
-        {upcomingGames.length > 0 && (
+        {/* Tennis Tournament View */}
+        {isShowingOnlyTennis && Object.keys(tennisByTournament).length > 0 ? (
           <div>
-            <div className="flex items-center gap-3 mb-4">
-              <h2 className="text-2xl font-bold text-slate-100">Upcoming Games</h2>
-              <span className="text-sm text-slate-400">({upcomingGames.length})</span>
-            </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {upcomingGames.map((game) => (
-                <GameCard key={game.state.id} game={game} />
-              ))}
-            </div>
+            {Object.entries(tennisByTournament).map(([tournament, tournamentGames]) => (
+              <div key={tournament} className="mb-8">
+                {/* Tournament Header */}
+                <div className="flex items-center gap-3 mb-4">
+                  <img
+                    src="https://em-content.zobj.net/source/microsoft-teams/363/tennis_1f3be.png"
+                    alt="Tennis"
+                    className="w-8 h-8"
+                    style={{ imageRendering: 'crisp-edges' }}
+                  />
+                  <h2 className="text-2xl font-bold text-slate-100">{tournament}</h2>
+                  <span className="text-sm text-slate-400">({tournamentGames.length} matches)</span>
+                  {tournamentGames.some(g => g.state.status === 'live') && (
+                    <div className="flex items-center gap-1.5 ml-2">
+                      <div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse"></div>
+                      <span className="text-xs text-red-400 font-semibold">LIVE</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Tournament Matches */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {tournamentGames.map((game) => (
+                    <GameCard key={game.state.id} game={game} />
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
+        ) : (
+          <>
+            {/* Live Games Section (Non-Tennis) */}
+            {liveGames.length > 0 && (
+              <div className="mb-8">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                    <h2 className="text-2xl font-bold text-slate-100">Live Games</h2>
+                  </div>
+                  <span className="text-sm text-slate-400">({liveGames.length})</span>
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {liveGames.map((game) => (
+                    <GameCard key={game.state.id} game={game} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Upcoming Games Section (Non-Tennis) */}
+            {upcomingGames.length > 0 && (
+              <div>
+                <div className="flex items-center gap-3 mb-4">
+                  <h2 className="text-2xl font-bold text-slate-100">Upcoming Games</h2>
+                  <span className="text-sm text-slate-400">({upcomingGames.length})</span>
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {upcomingGames.map((game) => (
+                    <GameCard key={game.state.id} game={game} />
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         {/* No Games Message */}
