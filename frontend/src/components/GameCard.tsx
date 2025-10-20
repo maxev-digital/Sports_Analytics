@@ -353,14 +353,14 @@ export function GameCard({ game }: GameCardProps) {
   const isNBA = sport === 'NBA';
   const isTennis = sport === 'TENNIS';
 
-  // Card background: NHL=ice with blue tint, NBA=blue gradient, Tennis=deep yellow, others=gradient
+  // Card background: NHL=ice with blue tint, Tennis=deep yellow, NBA=blue gradient, others=gradient
   const cardBackground = isNHL ? 'bg-gradient-to-br from-blue-200 via-cyan-100 to-blue-200'
-    : isNBA ? 'bg-gradient-to-br from-blue-900 to-slate-800'
     : isTennis ? 'bg-gradient-to-br from-yellow-600 to-yellow-700'
+    : isNBA ? 'bg-gradient-to-br from-blue-900 to-slate-800'
     : sportGradient;
   const cardBorder = isNHL ? 'border-red-600 border-4'
-    : isNBA ? 'border-2 border-blue-500'
     : isTennis ? 'border-2 border-yellow-400'
+    : isNBA ? 'border-2 border-blue-500'
     : `border-2 ${sportBorder}`;
   const cardRounding = isNHL ? 'rounded-3xl' : isNBA ? 'rounded-lg' : 'rounded-lg';
 

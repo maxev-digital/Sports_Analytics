@@ -63,15 +63,14 @@ export function Navigation() {
   return (
     <nav className="sticky top-0 z-50 bg-slate-900/95 backdrop-blur-sm border-b border-slate-700 shadow-lg">
       <div className="max-w-7xl mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-24 py-4">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <svg className="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-12 h-12 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
             <div>
-              <div className="text-xl font-bold text-slate-100">Max EV Sports</div>
-              <div className="text-[10px] text-blue-400 -mt-0.5">Maximum EV Is Our Specialty</div>
+              <div className="text-2xl font-bold text-slate-100">Max EV Sports</div>
             </div>
           </Link>
 
@@ -82,14 +81,14 @@ export function Navigation() {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`px-4 py-2 rounded-lg font-semibold transition-all text-sm flex items-center gap-2 ${
+                className={`px-5 py-2.5 rounded-lg font-semibold transition-all text-base flex items-center gap-2 ${
                   isActive(item.path)
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
                     : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
                 }`}
               >
                 {item.emoji && (
-                  <img src={item.emoji} alt="" className="w-4 h-4" style={{ imageRendering: 'crisp-edges' }} />
+                  <img src={item.emoji} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} />
                 )}
                 {item.label}
               </Link>
@@ -99,15 +98,15 @@ export function Navigation() {
             <div className="relative" ref={settingsRef}>
               <button
                 onClick={() => setSettingsDropdownOpen(!settingsDropdownOpen)}
-                className={`px-4 py-2 rounded-lg font-semibold transition-all text-sm flex items-center gap-2 ${
+                className={`px-5 py-2.5 rounded-lg font-semibold transition-all text-base flex items-center gap-2 ${
                   isDropdownActive(settingsItems)
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
                     : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
                 }`}
               >
-                <img src={uiEmojis.gear} alt="" className="w-4 h-4" style={{ imageRendering: 'crisp-edges' }} />
+                <img src={uiEmojis.gear} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} />
                 Settings
-                <svg className={`w-4 h-4 transition-transform ${settingsDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className={`w-5 h-5 transition-transform ${settingsDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
@@ -119,14 +118,14 @@ export function Navigation() {
                       key={item.path}
                       to={item.path}
                       onClick={() => setSettingsDropdownOpen(false)}
-                      className={`px-4 py-2 flex items-center gap-3 transition-all ${
+                      className={`px-4 py-2.5 flex items-center gap-3 transition-all ${
                         isActive(item.path)
                           ? 'bg-blue-600 text-white'
                           : 'text-slate-300 hover:bg-slate-700 hover:text-slate-100'
                       }`}
                     >
-                      <img src={item.emoji} alt="" className="w-4 h-4" style={{ imageRendering: 'crisp-edges' }} />
-                      <span className="font-semibold text-sm">{item.label}</span>
+                      <img src={item.emoji} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} />
+                      <span className="font-semibold text-base">{item.label}</span>
                     </Link>
                   ))}
                 </div>
@@ -137,15 +136,15 @@ export function Navigation() {
             <div className="relative" ref={learnRef}>
               <button
                 onClick={() => setLearnDropdownOpen(!learnDropdownOpen)}
-                className={`px-4 py-2 rounded-lg font-semibold transition-all text-sm flex items-center gap-2 ${
+                className={`px-5 py-2.5 rounded-lg font-semibold transition-all text-base flex items-center gap-2 ${
                   isDropdownActive(learnItems)
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
                     : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
                 }`}
               >
-                <img src={uiEmojis.graduation} alt="" className="w-4 h-4" style={{ imageRendering: 'crisp-edges' }} />
+                <img src={uiEmojis.graduation} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} />
                 Learn
-                <svg className={`w-4 h-4 transition-transform ${learnDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className={`w-5 h-5 transition-transform ${learnDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
@@ -157,14 +156,14 @@ export function Navigation() {
                       key={item.path}
                       to={item.path}
                       onClick={() => setLearnDropdownOpen(false)}
-                      className={`px-4 py-2 flex items-center gap-3 transition-all ${
+                      className={`px-4 py-2.5 flex items-center gap-3 transition-all ${
                         isActive(item.path)
                           ? 'bg-blue-600 text-white'
                           : 'text-slate-300 hover:bg-slate-700 hover:text-slate-100'
                       }`}
                     >
-                      <img src={item.emoji} alt="" className="w-4 h-4" style={{ imageRendering: 'crisp-edges' }} />
-                      <span className="font-semibold text-sm">{item.label}</span>
+                      <img src={item.emoji} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} />
+                      <span className="font-semibold text-base">{item.label}</span>
                     </Link>
                   ))}
                 </div>
@@ -174,19 +173,19 @@ export function Navigation() {
             {/* Pricing - standalone */}
             <Link
               to="/pricing"
-              className={`px-4 py-2 rounded-lg font-semibold transition-all text-sm flex items-center gap-2 ${
+              className={`px-5 py-2.5 rounded-lg font-semibold transition-all text-base flex items-center gap-2 ${
                 isActive('/pricing')
                   ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
                   : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
               }`}
             >
-              <img src={uiEmojis.dollar} alt="" className="w-4 h-4" style={{ imageRendering: 'crisp-edges' }} />
+              <img src={uiEmojis.dollar} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} />
               Pricing
             </Link>
           </div>
 
           {/* Right Side Actions */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 ml-auto">
             <div className="flex items-center gap-3 bg-slate-800/50 border-2 border-slate-700 rounded-lg px-4 py-2">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center text-white font-bold text-sm">

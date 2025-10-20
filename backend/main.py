@@ -140,10 +140,10 @@ async def startup():
     logger.info("Starting NBA Live Betting API...")
     asyncio.create_task(tracker.start())
 
-    # Start alert monitoring for NBA, NFL, and NHL
+    # Start alert monitoring for NBA, NFL, NHL, and Tennis
     asyncio.create_task(
         alert_monitor.start_monitoring(
-            sports=['basketball_nba', 'americanfootball_nfl', 'icehockey_nhl'],
+            sports=['basketball_nba', 'americanfootball_nfl', 'icehockey_nhl', 'tennis_atp', 'tennis_wta'],
             interval_seconds=10
         )
     )
