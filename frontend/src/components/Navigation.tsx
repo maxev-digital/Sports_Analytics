@@ -13,6 +13,7 @@ export function Navigation() {
     { path: '/tools', label: 'Tools', emoji: uiEmojis.search },
     { path: '/analytics', label: 'Analytics', emoji: uiEmojis.chart },
     { path: '/props', label: 'Props', emoji: uiEmojis.book },
+    { path: '/strategy-settings', label: 'Strategies', emoji: uiEmojis.trophy },
     { path: '/settings', label: 'Settings', emoji: uiEmojis.gear },
     { path: '/learn', label: 'Learn', emoji: uiEmojis.graduation },
     { path: '/getting-started', label: 'Get Started', emoji: uiEmojis.rocket },

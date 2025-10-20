@@ -15,6 +15,7 @@ import { ArticleDetail } from './pages/ArticleDetail';
 import { GettingStarted } from './pages/GettingStarted';
 import { MultiSport } from './pages/MultiSport';
 import { Settings } from './pages/Settings';
+import { StrategySettings } from './pages/StrategySettings';
 
 function App() {
   return (
@@ -40,6 +41,7 @@ function App() {
                     <Route path="/alerts" element={<Alerts />} />
                     <Route path="/multi-sport" element={<MultiSport />} />
                     <Route path="/settings" element={<Settings />} />
+                    <Route path="/strategy-settings" element={<StrategySettings />} />
                     <Route path="/learn" element={<Learn />} />
                     <Route path="/learn/:articleId" element={<ArticleDetail />} />
                     <Route path="/getting-started" element={<GettingStarted />} />
