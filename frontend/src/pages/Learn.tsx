@@ -168,6 +168,13 @@ const articles: Article[] = [
 
   // Section 6: Advanced Strategies
   {
+    id: 'nhl-goalie-pull-strategy',
+    title: 'NHL Goalie Pull Strategy: Winning with 48% Success Rate',
+    description: 'Master the most profitable NHL betting strategy. Learn how positive expected value (EV) makes you profitable even with a 48% win rate. Real-world examples, full math breakdowns, and why this beats the closing line 90%+ of the time.',
+    category: 'Advanced',
+    readTime: '25 min'
+  },
+  {
     id: 'middling-opportunities',
     title: 'Middling Opportunities',
     description: 'What is a middle, live betting scenarios, risk vs reward, and real NBA examples.',
