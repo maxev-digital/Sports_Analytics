@@ -2364,6 +2364,480 @@ async def websocket_endpoint(websocket: WebSocket):
             active_websocket_connections.remove(websocket)
         raise  # Re-raise to see full error
 
+# ========== STRATEGY ENDPOINTS (PHASE 1 - LIVE BETTING STRATEGIES) ==========
+
+# Import strategy modules
+import sys
+from pathlib import Path
+
+# Add strategies directory to path
+strategies_path = Path(__file__).parent.parent.parent.parent / "backend" / "strategies"
+if str(strategies_path) not in sys.path:
+    sys.path.insert(0, str(strategies_path))
+
+from halftime_tracker import HalftimeTracker
+from fatigue_detector import FatigueDetector
+from weather_integration import WeatherIntegration
+from momentum_detector import MomentumDetector
+
+# Initialize strategy instances
+halftime_tracker = HalftimeTracker()
+fatigue_detector = FatigueDetector()
+weather_integration = WeatherIntegration()
+momentum_detector = MomentumDetector(window_size_minutes=5)
+
+
+# Request models for strategy endpoints
+class HalftimeUpdateRequest(BaseModel):
+    """Request model for halftime/period updates"""
+    game_id: str
+    sport: str
+    period: str
+    time_remaining: str
+    home_score: int
+    away_score: int
+    home_team: str
+    away_team: str
+
+
+class FatigueAnalysisRequest(BaseModel):
+    """Request model for fatigue analysis"""
+    home_team: str
+    away_team: str
+    sport: str
+    game_date: str  # ISO format
+    home_miles_traveled: Optional[float] = 0.0
+    away_miles_traveled: Optional[float] = 0.0
+    home_time_zones: Optional[int] = 0
+    away_time_zones: Optional[int] = 0
+
+
+class WeatherUpdateRequest(BaseModel):
+    """Request model for weather updates"""
+    game_id: str
+    location: str
+    temperature: Optional[float] = None
+    precipitation: Optional[str] = None  # 'none', 'rain', 'snow'
+    wind_speed: Optional[float] = None
+    wind_direction: Optional[str] = None
+    humidity: Optional[float] = None
+    conditions: Optional[str] = None
+
+
+class WeatherAnalysisRequest(BaseModel):
+    """Request model for weather impact analysis"""
+    game_id: str
+    sport: str
+    home_team: str
+    away_team: str
+    current_total: Optional[float] = None
+
+
+class MomentumEventRequest(BaseModel):
+    """Request model for adding momentum events"""
+    game_id: str
+    event_type: str
+    team: str  # 'home' or 'away'
+    value: float = 1.0
+    metadata: Optional[Dict[str, Any]] = None
+
+
+class MomentumAnalysisRequest(BaseModel):
+    """Request model for momentum analysis"""
+    game_id: str
+    sport: str
+    home_team: str
+    away_team: str
+    home_score: int
+    away_score: int
+
+
+# ========== HALFTIME/PERIOD TRACKING ENDPOINTS ==========
+
+@app.post("/api/strategies/halftime/update")
+async def update_halftime_state(request: HalftimeUpdateRequest):
+    """
+    Update game state for halftime/period tracking
+
+    Analyzes period transitions and generates betting opportunities
+    for halftime adjustments and period-specific bets
+    """
+    try:
+        from datetime import datetime
+
+        analysis = halftime_tracker.update_game_state(
+            game_id=request.game_id,
+            sport=request.sport,
+            period=request.period,
+            time_remaining=request.time_remaining,
+            home_score=request.home_score,
+            away_score=request.away_score,
+            home_team=request.home_team,
+            away_team=request.away_team
+        )
+
+        return {
+            "success": True,
+            "analysis": analysis
+        }
+
+    except Exception as e:
+        logger.error(f"Error updating halftime state: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to update halftime state: {str(e)}")
+
+
+@app.get("/api/strategies/halftime/history/{game_id}")
+async def get_halftime_history(game_id: str):
+    """
+    Get period history for a game
+
+    Returns all period-by-period data and transitions
+    """
+    try:
+        history = halftime_tracker.get_period_history(game_id)
+
+        return {
+            "success": True,
+            "game_id": game_id,
+            "period_count": len(history),
+            "history": history
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting halftime history: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get halftime history: {str(e)}")
+
+
+# ========== FATIGUE DETECTION ENDPOINTS ==========
+
+@app.post("/api/strategies/fatigue/analyze")
+async def analyze_fatigue(request: FatigueAnalysisRequest):
+    """
+    Analyze schedule fatigue for both teams
+
+    Detects back-to-back games, rest day differentials, and travel impact
+    Generates betting opportunities based on fatigue mismatches
+    """
+    try:
+        from datetime import datetime
+
+        game_date = datetime.fromisoformat(request.game_date)
+
+        analysis = fatigue_detector.analyze_fatigue(
+            home_team=request.home_team,
+            away_team=request.away_team,
+            sport=request.sport,
+            game_date=game_date,
+            home_miles_traveled=request.home_miles_traveled,
+            away_miles_traveled=request.away_miles_traveled,
+            home_time_zones=request.home_time_zones,
+            away_time_zones=request.away_time_zones
+        )
+
+        return {
+            "success": True,
+            "analysis": analysis
+        }
+
+    except Exception as e:
+        logger.error(f"Error analyzing fatigue: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to analyze fatigue: {str(e)}")
+
+
+@app.post("/api/strategies/fatigue/schedule/{team_name}")
+async def update_team_schedule(team_name: str, sport: str, games: List[Dict[str, Any]]):
+    """
+    Update team schedule for fatigue tracking
+
+    Provide list of games with date, location, opponent for accurate rest day calculation
+    """
+    try:
+        from datetime import datetime
+
+        # Convert date strings to datetime objects
+        for game in games:
+            if isinstance(game.get('date'), str):
+                game['date'] = datetime.fromisoformat(game['date'])
+
+        fatigue_detector.update_team_schedule(
+            team_name=team_name,
+            sport=sport,
+            games=games
+        )
+
+        return {
+            "success": True,
+            "message": f"Schedule updated for {team_name}",
+            "game_count": len(games)
+        }
+
+    except Exception as e:
+        logger.error(f"Error updating team schedule: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to update team schedule: {str(e)}")
+
+
+# ========== WEATHER INTEGRATION ENDPOINTS ==========
+
+@app.post("/api/strategies/weather/update")
+async def update_weather(request: WeatherUpdateRequest):
+    """
+    Update weather conditions for a game
+
+    Provide current weather data for outdoor sports (NFL, NCAAF, MLB, MLS, Golf)
+    """
+    try:
+        weather_data = weather_integration.update_weather(
+            game_id=request.game_id,
+            location=request.location,
+            temperature=request.temperature,
+            precipitation=request.precipitation,
+            wind_speed=request.wind_speed,
+            wind_direction=request.wind_direction,
+            humidity=request.humidity,
+            conditions=request.conditions
+        )
+
+        return {
+            "success": True,
+            "weather": weather_data
+        }
+
+    except Exception as e:
+        logger.error(f"Error updating weather: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to update weather: {str(e)}")
+
+
+@app.post("/api/strategies/weather/analyze")
+async def analyze_weather_impact(request: WeatherAnalysisRequest):
+    """
+    Analyze weather impact on betting opportunities
+
+    Generates recommendations based on rain, snow, wind, temperature
+    Historical data: Rain -12% passing (NFL), Wind >10mph affects scoring (MLB)
+    """
+    try:
+        analysis = weather_integration.analyze_weather_impact(
+            game_id=request.game_id,
+            sport=request.sport,
+            home_team=request.home_team,
+            away_team=request.away_team,
+            current_total=request.current_total
+        )
+
+        return {
+            "success": True,
+            "analysis": analysis
+        }
+
+    except Exception as e:
+        logger.error(f"Error analyzing weather impact: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to analyze weather impact: {str(e)}")
+
+
+@app.get("/api/strategies/weather/{game_id}")
+async def get_weather(game_id: str):
+    """Get cached weather data for a game"""
+    try:
+        weather = weather_integration.get_weather(game_id)
+
+        if not weather:
+            raise HTTPException(status_code=404, detail="No weather data found for this game")
+
+        return {
+            "success": True,
+            "weather": weather
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting weather: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get weather: {str(e)}")
+
+
+# ========== MOMENTUM DETECTION ENDPOINTS ==========
+
+@app.post("/api/strategies/momentum/event")
+async def add_momentum_event(request: MomentumEventRequest):
+    """
+    Add a game event for momentum tracking
+
+    Event types: score, shot, turnover, possession, penalty, hit, save
+    Tracks events over 5-minute sliding window
+    """
+    try:
+        momentum_detector.add_event(
+            game_id=request.game_id,
+            event_type=request.event_type,
+            team=request.team,
+            value=request.value,
+            metadata=request.metadata
+        )
+
+        return {
+            "success": True,
+            "message": "Event added to momentum tracker"
+        }
+
+    except Exception as e:
+        logger.error(f"Error adding momentum event: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to add momentum event: {str(e)}")
+
+
+@app.post("/api/strategies/momentum/analyze")
+async def analyze_momentum(request: MomentumAnalysisRequest):
+    """
+    Analyze current momentum and generate betting opportunities
+
+    Detects:
+    - Momentum shifts (Corsi >60% in NHL, 8-0 runs in NBA)
+    - Scoring runs and streaks
+    - Comeback opportunities
+
+    Historical performance: Momentum teams cover 57-63% ATS (NBA)
+    """
+    try:
+        analysis = momentum_detector.calculate_momentum(
+            game_id=request.game_id,
+            sport=request.sport,
+            home_team=request.home_team,
+            away_team=request.away_team,
+            home_score=request.home_score,
+            away_score=request.away_score
+        )
+
+        return {
+            "success": True,
+            "analysis": analysis
+        }
+
+    except Exception as e:
+        logger.error(f"Error analyzing momentum: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to analyze momentum: {str(e)}")
+
+
+@app.get("/api/strategies/momentum/current/{game_id}")
+async def get_current_momentum(game_id: str):
+    """Get current momentum state for a game"""
+    try:
+        momentum = momentum_detector.get_current_momentum(game_id)
+
+        if not momentum:
+            raise HTTPException(status_code=404, detail="No momentum data found for this game")
+
+        return {
+            "success": True,
+            "momentum": momentum
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting current momentum: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get current momentum: {str(e)}")
+
+
+@app.get("/api/strategies/momentum/history/{game_id}")
+async def get_momentum_history(game_id: str):
+    """Get momentum history for a game"""
+    try:
+        history = momentum_detector.get_momentum_history(game_id)
+
+        return {
+            "success": True,
+            "game_id": game_id,
+            "history_count": len(history),
+            "history": history
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting momentum history: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get momentum history: {str(e)}")
+
+
+# ========== COMBINED STRATEGY ANALYSIS ENDPOINT ==========
+
+@app.post("/api/strategies/analyze-all")
+async def analyze_all_strategies(
+    game_id: str,
+    sport: str,
+    home_team: str,
+    away_team: str,
+    home_score: int,
+    away_score: int,
+    period: Optional[str] = None,
+    time_remaining: Optional[str] = None,
+    game_date: Optional[str] = None
+):
+    """
+    Run all strategy analyses for a game
+
+    Combines:
+    - Halftime/period analysis
+    - Fatigue detection
+    - Weather impact
+    - Momentum detection
+
+    Returns comprehensive betting opportunities from all strategies
+    """
+    try:
+        all_opportunities = []
+
+        # Halftime analysis (if period info available)
+        if period and time_remaining:
+            halftime_analysis = halftime_tracker.update_game_state(
+                game_id=game_id,
+                sport=sport,
+                period=period,
+                time_remaining=time_remaining,
+                home_score=home_score,
+                away_score=away_score,
+                home_team=home_team,
+                away_team=away_team
+            )
+            all_opportunities.extend(halftime_analysis.get('opportunities', []))
+
+        # Momentum analysis (if we have event data)
+        momentum_analysis = momentum_detector.calculate_momentum(
+            game_id=game_id,
+            sport=sport,
+            home_team=home_team,
+            away_team=away_team,
+            home_score=home_score,
+            away_score=away_score
+        )
+        if momentum_analysis.get('has_momentum_data', True):
+            all_opportunities.extend(momentum_analysis.get('opportunities', []))
+
+        # Weather analysis (if outdoor sport and weather data available)
+        if sport in ['NFL', 'NCAAF', 'MLB', 'MLS', 'PGA', 'NCAAG']:
+            weather_analysis = weather_integration.analyze_weather_impact(
+                game_id=game_id,
+                sport=sport,
+                home_team=home_team,
+                away_team=away_team,
+                current_total=None
+            )
+            if weather_analysis.get('has_weather_data', False):
+                all_opportunities.extend(weather_analysis.get('opportunities', []))
+
+        # Sort opportunities by edge percentage (highest first)
+        all_opportunities.sort(key=lambda x: x.get('edge_percentage', 0), reverse=True)
+
+        return {
+            "success": True,
+            "game_id": game_id,
+            "sport": sport,
+            "opportunity_count": len(all_opportunities),
+            "opportunities": all_opportunities,
+            "timestamp": datetime.now().isoformat()
+        }
+
+    except Exception as e:
+        logger.error(f"Error analyzing all strategies: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to analyze all strategies: {str(e)}")
+
+
 # Mount static files (production frontend)
 # Serve production build from ../frontend/dist
 import os.path
