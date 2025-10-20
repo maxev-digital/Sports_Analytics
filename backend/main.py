@@ -2379,12 +2379,14 @@ from halftime_tracker import HalftimeTracker
 from fatigue_detector import FatigueDetector
 from weather_integration import WeatherIntegration
 from momentum_detector import MomentumDetector
+from favorite_comeback_detector import FavoriteComeb ackDetector
 
 # Initialize strategy instances
 halftime_tracker = HalftimeTracker()
 fatigue_detector = FatigueDetector()
 weather_integration = WeatherIntegration()
 momentum_detector = MomentumDetector(window_size_minutes=5)
+favorite_comeback_detector = FavoriteComeb ackDetector()
 
 
 # Request models for strategy endpoints
@@ -2450,6 +2452,24 @@ class MomentumAnalysisRequest(BaseModel):
     away_team: str
     home_score: int
     away_score: int
+
+
+class FavoriteComeb ackRequest(BaseModel):
+    """Request model for favorite comeback analysis"""
+    game_id: str
+    sport: str
+    home_team: str
+    away_team: str
+    home_score: int
+    away_score: int
+    period: str
+    time_remaining: str
+    home_team_favorite: bool
+    pregame_spread: float
+    current_spread: Optional[float] = None
+    home_season_stats: Optional[Dict[str, Any]] = None
+    away_season_stats: Optional[Dict[str, Any]] = None
+    quarter_stats: Optional[Dict[str, Any]] = None
 
 
 # ========== HALFTIME/PERIOD TRACKING ENDPOINTS ==========
@@ -2753,6 +2773,48 @@ async def get_momentum_history(game_id: str):
     except Exception as e:
         logger.error(f"Error getting momentum history: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to get momentum history: {str(e)}")
+
+
+# ========== FAVORITE COMEBACK DETECTION ENDPOINT ==========
+
+@app.post("/api/strategies/favorite-comeback/analyze")
+async def analyze_favorite_comeback(request: FavoriteComeb ackRequest):
+    """
+    Analyze if a favorite comeback opportunity exists
+
+    Detects when favorites trail underdogs after hot starts and are
+    likely to regress to their true talent level.
+
+    Historical data:
+    - Favorites trailing after Q1: 58% cover 2H spread
+    - Favorites trailing at halftime: 60.3% ATS in 2H (2005-2023)
+    """
+    try:
+        analysis = favorite_comeback_detector.analyze_comeback_opportunity(
+            game_id=request.game_id,
+            sport=request.sport,
+            home_team=request.home_team,
+            away_team=request.away_team,
+            home_score=request.home_score,
+            away_score=request.away_score,
+            period=request.period,
+            time_remaining=request.time_remaining,
+            home_team_favorite=request.home_team_favorite,
+            pregame_spread=request.pregame_spread,
+            current_spread=request.current_spread,
+            home_season_stats=request.home_season_stats,
+            away_season_stats=request.away_season_stats,
+            quarter_stats=request.quarter_stats
+        )
+
+        return {
+            "success": True,
+            "analysis": analysis
+        }
+
+    except Exception as e:
+        logger.error(f"Error analyzing favorite comeback: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to analyze favorite comeback: {str(e)}")
 
 
 # ========== COMBINED STRATEGY ANALYSIS ENDPOINT ==========

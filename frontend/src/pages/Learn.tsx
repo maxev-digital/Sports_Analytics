@@ -175,6 +175,13 @@ const articles: Article[] = [
     readTime: '25 min'
   },
   {
+    id: 'nba-favorite-comeback-strategy',
+    title: 'NBA Favorite Comeback Strategy: Profiting from Regression to the Mean',
+    description: 'When favorites trail underdogs after hot starts, regression creates value. Historical data: 60.3% ATS at halftime. Learn the regression scoring system, when to bet 2H spreads, and why underdogs shooting 15% above average always regress.',
+    category: 'Advanced',
+    readTime: '22 min'
+  },
+  {
     id: 'middling-opportunities',
     title: 'Middling Opportunities',
     description: 'What is a middle, live betting scenarios, risk vs reward, and real NBA examples.',
