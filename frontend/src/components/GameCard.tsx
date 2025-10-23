@@ -4,6 +4,8 @@ import { detectSport, getSportEmoji, getSportGradientClasses, getSportBorderClas
 import { BOOKMAKERS } from '../data/bookmakers';
 import { openSportsbook } from '../utils/deepLinking';
 import { getGameSpecificUrl } from '../utils/gameUrls';
+import { trackBetClick } from '../utils/betTracking';
+import { useAuth } from '../contexts/AuthContext';
 
 interface GameCardProps {
   game: LiveGame;
@@ -116,11 +118,79 @@ const getBookmakerInfoFallback = (bookmaker: string) => {
 export function GameCard({ game }: GameCardProps) {
   const { state, odds, projection, home_team_stats, away_team_stats, home_nfl_live_stats, away_nfl_live_stats, home_nfl_stats, away_nfl_stats, home_nhl_momentum, away_nhl_momentum, home_nhl_stats, away_nhl_stats } = game;
 
+  // Get username for bet tracking
+  const { username } = useAuth();
+
   // Stats view toggle: 'stats' (raw stats), 'rankings' (ranks only), 'combined' (stats + ranks)
   const [statsView, setStatsView] = useState<'stats' | 'rankings' | 'combined'>('stats');
 
   // Market type toggle: 'spread', 'moneyline', 'totals'
   const [selectedMarket, setSelectedMarket] = useState<'spread' | 'moneyline' | 'totals'>('totals');
+
+  // Handle bet tracking when bookmaker is clicked
+  const handleBookmakerClick = async (bookmakerName: string, odd: any, bookmakerUrl: string) => {
+    // Only track bet if user is logged in
+    if (!username) {
+      openSportsbook(bookmakerUrl, bookmakerName);
+      return;
+    }
+
+    // Determine bet details based on selected market and projection recommendation
+    let betType: 'spread' | 'total' | 'moneyline' | 'prop' = 'total';
+    let betSide = '';
+    let betOdds = 0;
+
+    if (selectedMarket === 'totals') {
+      betType = 'total';
+      // Use projection recommendation if available, otherwise default to OVER
+      if (projection.recommendation === 'OVER') {
+        betSide = 'OVER';
+        betOdds = odd.over_price;
+      } else if (projection.recommendation === 'UNDER') {
+        betSide = 'UNDER';
+        betOdds = odd.under_price;
+      } else {
+        // Default to OVER if no recommendation
+        betSide = 'OVER';
+        betOdds = odd.over_price;
+      }
+    } else if (selectedMarket === 'spread') {
+      betType = 'spread';
+      // Default to home team spread, but use projection if available
+      betSide = `${state.home_team.name} ${odd.home_spread > 0 ? '+' : ''}${odd.home_spread}`;
+      betOdds = odd.home_spread_price;
+    } else if (selectedMarket === 'moneyline') {
+      betType = 'moneyline';
+      // Default to home team ML
+      betSide = state.home_team.name;
+      betOdds = odd.home_ml;
+    }
+
+    // Track the bet click
+    try {
+      await trackBetClick({
+        userId: username,
+        gameId: state.id,
+        sport: state.sport_key,
+        homeTeam: state.home_team.name,
+        awayTeam: state.away_team.name,
+        commenceTime: state.commence_time,
+        betType,
+        betSide,
+        odds: betOdds,
+        bookmaker: bookmakerName,
+        confidence: projection.confidence as 'HIGH' | 'MEDIUM' | 'LOW' | undefined,
+        edgePercent: projection.edge ? Math.abs(projection.edge) : undefined,
+      });
+
+      console.log(`✅ Bet tracked: ${betSide} at ${betOdds} via ${bookmakerName}`);
+    } catch (error) {
+      console.error('Failed to track bet:', error);
+    }
+
+    // Open sportsbook
+    openSportsbook(bookmakerUrl, bookmakerName);
+  };
 
   // Helper function to get rank color (green for top 10, yellow for 11-20, white for 21+)
   const getRankColor = (rank: number) => {
@@ -492,12 +562,44 @@ export function GameCard({ game }: GameCardProps) {
         </div>
       </div>
 
-      {/* Game Status */}
-      {state.status === 'live' && state.quarter && state.time_remaining && (
-        <div className={`text-base ${textLabel} mb-3`}>
-          Q{state.quarter} - {state.time_remaining}
-        </div>
-      )}
+      {/* Game Status - Period/Quarter/Inning Display */}
+      {state.status === 'live' && state.quarter && state.time_remaining && (() => {
+        // Format period/quarter based on sport
+        let periodLabel = '';
+
+        if (sportBadge === 'NHL') {
+          // NHL uses periods: 1st, 2nd, 3rd, OT, 2OT, etc.
+          if (state.quarter <= 3) {
+            const ordinals = ['', '1st', '2nd', '3rd'];
+            periodLabel = ordinals[state.quarter] || `${state.quarter}th`;
+          } else {
+            // Overtime periods
+            const otNum = state.quarter - 3;
+            periodLabel = otNum === 1 ? 'OT' : `${otNum}OT`;
+          }
+        } else if (sportBadge === 'MLB') {
+          // MLB uses innings with Top/Bottom
+          const inningNum = Math.ceil(state.quarter / 2);
+          const isTop = state.quarter % 2 === 1;
+          periodLabel = `${isTop ? 'Top' : 'Bot'} ${inningNum}`;
+        } else {
+          // NBA, NFL, NCAAF use quarters: Q1, Q2, Q3, Q4, OT, 2OT
+          if (state.quarter <= 4) {
+            periodLabel = `Q${state.quarter}`;
+          } else {
+            // Overtime periods
+            const otNum = state.quarter - 4;
+            periodLabel = otNum === 1 ? 'OT' : `${otNum}OT`;
+          }
+        }
+
+        return (
+          <div className={`text-base font-semibold ${textLabel} mb-3 flex items-center gap-2`}>
+            <span className="bg-red-600 text-white px-2 py-1 rounded">{periodLabel}</span>
+            <span>{state.time_remaining}</span>
+          </div>
+        );
+      })()}
 
       {/* Team Momentum Bar (NFL only, live games) */}
       {sportBadge === 'NFL' && state.status === 'live' && (state.home_team.momentum !== null || state.away_team.momentum !== null) && (
@@ -1803,10 +1905,10 @@ export function GameCard({ game }: GameCardProps) {
                         <button
                           onClick={(e) => {
                             e.preventDefault();
-                            openSportsbook(bookmakerUrl, odd.bookmaker);
+                            handleBookmakerClick(odd.bookmaker, odd, bookmakerUrl);
                           }}
                           className="inline-block hover:opacity-70 transition-opacity cursor-pointer border-0 bg-transparent p-0"
-                          title={`Visit ${odd.bookmaker}`}
+                          title={`Track bet & visit ${odd.bookmaker}`}
                         >
                           <img
                             src={bookmakerInfo.logo}
@@ -1819,10 +1921,10 @@ export function GameCard({ game }: GameCardProps) {
                         <button
                           onClick={(e) => {
                             e.preventDefault();
-                            openSportsbook(bookmakerUrl, odd.bookmaker);
+                            handleBookmakerClick(odd.bookmaker, odd, bookmakerUrl);
                           }}
                           className="inline-block hover:opacity-70 transition-opacity cursor-pointer border-0 bg-transparent p-0"
-                          title={`Visit ${odd.bookmaker}`}
+                          title={`Track bet & visit ${odd.bookmaker}`}
                         >
                           <span className={`px-2 py-0.5 rounded font-bold text-base ${bookmakerInfo.bg} ${bookmakerInfo.text}`}>
                             {bookmakerInfo.short}

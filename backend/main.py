@@ -1,5 +1,8 @@
 """FastAPI application"""
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+print("=" * 80)
+print("LOADING main.py from:", __file__)
+print("=" * 80)
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import sys
@@ -11,6 +14,7 @@ from alert_monitor import AlertMonitor, ArbitrageAlert, SteamMoveAlert, LineMove
 from live_analytics_engine import analytics_engine
 from plays_database import plays_db
 from settings_database import settings_db, BOOKMAKER_PRESETS
+from bet_grader import initialize_bet_grader
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
 import asyncio
@@ -68,6 +72,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ========== BET TRACKING ROUTER ==========
+print("DEBUG: About to import bet router...")
+from routes.bets import router as bets_router
+print(f"DEBUG: Bet router imported successfully: {bets_router}")
+app.include_router(bets_router)
+print(f"DEBUG: Bet router registered with prefix: {bets_router.prefix}")
+
 # Game tracker instance
 tracker = GameTracker()
 
@@ -90,46 +101,108 @@ class ConnectionManager:
     """Manages WebSocket connections for real-time updates"""
 
     def __init__(self):
-        self.active_connections: List[WebSocket] = []
-        self.last_broadcast_data = None
+        # Store connections with their user_id: {websocket: user_id}
+        self.active_connections: Dict[WebSocket, str] = {}
+        self.unfiltered_game_data = None  # Store raw game data before filtering
 
-    async def connect(self, websocket: WebSocket):
-        """Accept new WebSocket connection"""
+    async def connect(self, websocket: WebSocket, user_id: str = 'default'):
+        """Accept new WebSocket connection with user_id"""
         await websocket.accept()
-        self.active_connections.append(websocket)
-        logger.info(f"WebSocket connected. Total connections: {len(self.active_connections)}")
+        self.active_connections[websocket] = user_id
+        logger.info(f"WebSocket connected for user {user_id}. Total connections: {len(self.active_connections)}")
 
     def disconnect(self, websocket: WebSocket):
         """Remove WebSocket connection"""
         if websocket in self.active_connections:
-            self.active_connections.remove(websocket)
-            logger.info(f"WebSocket disconnected. Total connections: {len(self.active_connections)}")
+            user_id = self.active_connections[websocket]
+            del self.active_connections[websocket]
+            logger.info(f"WebSocket disconnected for user {user_id}. Total connections: {len(self.active_connections)}")
 
-    async def broadcast(self, message: dict):
-        """Broadcast message to all connected clients"""
-        # Store last broadcast for new connections
-        self.last_broadcast_data = message
+    def _filter_games_for_user(self, games_data: List[dict], user_id: str) -> List[dict]:
+        """Filter game odds based on user's enabled bookmakers"""
+        from settings_database import SettingsDatabase
 
-        # Send to all active connections
+        # Get user's enabled bookmakers
+        settings_db = SettingsDatabase()
+        settings = settings_db.get_settings(user_id)
+
+        if not settings:
+            # If no settings found, return games as-is
+            return games_data
+
+        enabled_bookmakers = set(settings.get('enabled_bookmakers', []))
+
+        # If no bookmakers enabled, return games with empty odds arrays
+        if not enabled_bookmakers:
+            return [{**game, 'odds': []} for game in games_data]
+
+        # Normalize bookmaker names for comparison
+        def normalize_name(name: str) -> str:
+            import re
+            normalized = re.sub(r'\s*\([^)]*\)', '', name)
+            normalized = normalized.lower()
+            normalized = re.sub(r'[^a-z0-9]', '', normalized)
+            return normalized
+
+        enabled_set = {normalize_name(b) for b in enabled_bookmakers}
+
+        # Filter odds for each game
+        filtered_games = []
+        for game in games_data:
+            filtered_odds = [
+                odd for odd in game.get('odds', [])
+                if normalize_name(odd['bookmaker']) in enabled_set
+            ]
+            filtered_game = {**game, 'odds': filtered_odds}
+            filtered_games.append(filtered_game)
+
+        return filtered_games
+
+    async def broadcast(self, unfiltered_games: List[dict]):
+        """Broadcast game data to all connected clients with per-user filtering"""
+        # Store unfiltered data for new connections
+        self.unfiltered_game_data = unfiltered_games
+
+        # Send to all active connections with user-specific filtering
         disconnected = []
-        for connection in self.active_connections:
+        for websocket, user_id in list(self.active_connections.items()):
             try:
-                await connection.send_json(message)
+                # Filter games for this specific user
+                filtered_games = self._filter_games_for_user(unfiltered_games, user_id)
+
+                message = {
+                    "type": "games_update",
+                    "timestamp": datetime.now().isoformat(),
+                    "count": len(filtered_games),
+                    "games": filtered_games
+                }
+
+                await websocket.send_json(message)
             except Exception as e:
-                logger.error(f"Error broadcasting to client: {e}")
-                disconnected.append(connection)
+                logger.error(f"Error broadcasting to user {user_id}: {e}")
+                disconnected.append(websocket)
 
         # Clean up disconnected clients
         for conn in disconnected:
             self.disconnect(conn)
 
-    async def send_initial_data(self, websocket: WebSocket):
-        """Send current game state to newly connected client"""
-        if self.last_broadcast_data:
+    async def send_initial_data(self, websocket: WebSocket, user_id: str):
+        """Send current game state to newly connected client with user-specific filtering"""
+        if self.unfiltered_game_data:
             try:
-                await websocket.send_json(self.last_broadcast_data)
+                # Filter for this specific user
+                filtered_games = self._filter_games_for_user(self.unfiltered_game_data, user_id)
+
+                message = {
+                    "type": "games_update",
+                    "timestamp": datetime.now().isoformat(),
+                    "count": len(filtered_games),
+                    "games": filtered_games
+                }
+
+                await websocket.send_json(message)
             except Exception as e:
-                logger.error(f"Error sending initial data: {e}")
+                logger.error(f"Error sending initial data to user {user_id}: {e}")
 
 # WebSocket manager instance
 ws_manager = ConnectionManager()
@@ -139,6 +212,10 @@ async def startup():
     """Start game tracking and alert monitoring on app startup"""
     logger.info("Starting NBA Live Betting API...")
     asyncio.create_task(tracker.start())
+
+    # Initialize bet grader with game tracker
+    initialize_bet_grader(tracker)
+    logger.info("Bet grader initialized")
 
     # Start alert monitoring for NBA, NFL, NHL, and Tennis
     asyncio.create_task(
@@ -153,6 +230,10 @@ async def startup():
     asyncio.create_task(broadcast_game_updates())
     logger.info("WebSocket broadcaster started (3s intervals - real-time odds pushes)")
 
+    # Start automatic bet grading task
+    asyncio.create_task(auto_grade_bets())
+    logger.info("Automatic bet grading started (5min intervals - grades completed games)")
+
 @app.on_event("shutdown")
 async def shutdown():
     """Stop tracking on shutdown"""
@@ -165,16 +246,19 @@ async def root():
 # ========== WEBSOCKET ENDPOINT ==========
 
 @app.websocket("/ws/live-odds")
-async def websocket_live_odds(websocket: WebSocket):
+async def websocket_live_odds(websocket: WebSocket, user_id: str = 'default'):
     """
     WebSocket endpoint for real-time odds updates
     Clients connect here to receive live game data pushes
+
+    Query params:
+        user_id: User ID to filter bookmakers (default: 'default')
     """
-    await ws_manager.connect(websocket)
+    await ws_manager.connect(websocket, user_id)
 
     try:
         # Send initial data immediately upon connection
-        await ws_manager.send_initial_data(websocket)
+        await ws_manager.send_initial_data(websocket, user_id)
 
         # Keep connection alive and listen for client messages
         while True:
@@ -189,9 +273,9 @@ async def websocket_live_odds(websocket: WebSocket):
 
     except WebSocketDisconnect:
         ws_manager.disconnect(websocket)
-        logger.info("Client disconnected")
+        logger.info(f"Client disconnected (user_id={user_id})")
     except Exception as e:
-        logger.error(f"WebSocket error: {e}")
+        logger.error(f"WebSocket error for user {user_id}: {e}")
         ws_manager.disconnect(websocket)
 
 # ========== WEBSOCKET BROADCASTER TASK ==========
@@ -232,7 +316,7 @@ async def broadcast_game_updates():
                                 "money_line": game.state.away_team.money_line,
                                 "momentum": game.state.away_team.momentum,
                             },
-                            "commence_time": game.state.commence_time,
+                            "commence_time": game.state.commence_time.isoformat() if hasattr(game.state.commence_time, 'isoformat') else str(game.state.commence_time),
                             "status": game.state.status,
                             "quarter": game.state.quarter,
                             "time_remaining": game.state.time_remaining,
@@ -266,18 +350,11 @@ async def broadcast_game_updates():
                     for game in games
                 ]
 
-                # Create broadcast message
-                message = {
-                    "type": "games_update",
-                    "timestamp": datetime.now().isoformat(),
-                    "count": len(games_data),
-                    "games": games_data
-                }
-
                 # Only broadcast if data changed (avoid spamming same data)
                 current_data_str = json.dumps(games_data, sort_keys=True)
                 if current_data_str != previous_data:
-                    await ws_manager.broadcast(message)
+                    # Pass unfiltered games_data to broadcast, which will filter per-user
+                    await ws_manager.broadcast(games_data)
                     logger.debug(f"Broadcasted {len(games_data)} games to {len(ws_manager.active_connections)} clients")
                     previous_data = current_data_str
 
@@ -286,6 +363,44 @@ async def broadcast_game_updates():
 
         # Wait 3 seconds before next update (much faster than 30s polling!)
         await asyncio.sleep(3)
+
+# ========== AUTOMATIC BET GRADING TASK ==========
+
+async def auto_grade_bets():
+    """
+    Background task that automatically grades active bets when games complete
+    Runs every 5 minutes to check for finished games
+    """
+    logger.info("Starting automatic bet grading task...")
+
+    while True:
+        try:
+            from bet_grader import bet_grader
+
+            if bet_grader is None:
+                logger.warning("Bet grader not initialized yet")
+                await asyncio.sleep(300)  # Wait 5 minutes
+                continue
+
+            # Grade all active bets
+            results = bet_grader.grade_active_bets()
+
+            if results['graded'] > 0:
+                logger.info(
+                    f"Auto-graded {results['graded']} bets: "
+                    f"{results['won']} won, {results['lost']} lost, {results['push']} push"
+                )
+            elif results['checked'] > 0:
+                logger.debug(f"Checked {results['checked']} active bets, none ready to grade")
+
+            if results['errors'] > 0:
+                logger.warning(f"Encountered {results['errors']} errors while grading bets")
+
+        except Exception as e:
+            logger.error(f"Error in auto-grading task: {e}", exc_info=True)
+
+        # Wait 5 minutes before next grading cycle
+        await asyncio.sleep(300)
 
 def normalize_bookmaker_name(name: str) -> str:
     """
@@ -305,7 +420,8 @@ def normalize_bookmaker_name(name: str) -> str:
 def filter_games_by_bookmakers(games: List[LiveGame], enabled_bookmakers: List[str]) -> List[LiveGame]:
     """
     Filter games to only include odds from enabled bookmakers
-    Returns games that have at least 2 enabled bookmakers for comparison
+    ALWAYS shows all upcoming games (even without odds) so cards display at all times
+    For games with odds: requires at least 2 enabled bookmakers for comparison
     """
     filtered_games = []
     # Normalize all enabled bookmakers for comparison
@@ -325,23 +441,29 @@ def filter_games_by_bookmakers(games: List[LiveGame], enabled_bookmakers: List[s
         # Filter odds to only enabled bookmakers (with normalization)
         filtered_odds = [odd for odd in game.odds if normalize_bookmaker_name(odd.bookmaker) in enabled_set]
 
-        # Only include games with at least 2 bookmakers for comparison
-        if len(filtered_odds) >= 2:
-            # Create new game object with filtered odds
-            filtered_game = game.copy(deep=True)
-            filtered_game.odds = filtered_odds
-            filtered_games.append(filtered_game)
+        # ALWAYS show all games (upcoming and live)
+        # The odds list will only contain the user's enabled bookmakers
+        # Games without matching bookmakers will simply have an empty odds array
+        filtered_game = game.copy(deep=True)
+        filtered_game.odds = filtered_odds
+        filtered_games.append(filtered_game)
 
     return filtered_games
 
 
 @app.get("/api/games", response_model=List[LiveGame])
-async def get_games(user_id: str = 'default'):
+async def get_games(user_id: str = 'default', show_all: bool = False):
     """
     Get all live games filtered by user's enabled bookmakers
-    Only returns games with at least 2 enabled bookmakers
+    Normal mode: Only returns games with at least 2 enabled bookmakers
+    show_all=True: Returns all games regardless of odds availability (for testing)
     """
     try:
+        # If show_all parameter is set, return all games (bypasses bookmaker filtering)
+        if show_all:
+            logger.info("Bypassing bookmaker filter - showing all games for odds testing")
+            return tracker.get_all_games()
+
         # Get user settings
         settings = settings_db.get_settings(user_id)
         if not settings:
@@ -417,6 +539,65 @@ class ChangePasswordRequest(BaseModel):
 
 
 # ========== AUTHENTICATION ENDPOINTS ==========
+
+@app.post("/api/auth/register")
+async def register(request: Request):
+    """
+    User registration endpoint
+    Creates new user with 7-day free trial
+    """
+    try:
+        data = await request.json()
+        full_name = data.get('full_name')
+        email = data.get('email')
+        username = data.get('username')
+        password = data.get('password')
+        
+        if not all([full_name, email, username, password]):
+            raise HTTPException(status_code=400, detail="All fields required")
+        
+        # Check if username already exists
+        users = auth.load_users()
+        if username in users:
+            raise HTTPException(status_code=400, detail="Username already exists")
+        
+        # Create user account
+        users[username] = {
+            "password": auth.hash_password(password),
+            "role": "user",
+            "created_at": datetime.now().isoformat(),
+            "full_name": full_name,
+            "email": email,
+            "trial_start": datetime.now().isoformat(),
+            "trial_days": 7
+        }
+        auth.save_users(users)
+        
+        # Create session
+        token = auth.create_session(username)
+        
+        # Create free trial subscription
+        SubscriptionDB.create_subscription(
+            user_id=username,
+            stripe_subscription_id=None,
+            stripe_customer_id=None,
+            tier="free_trial",
+            status="trialing"
+        )
+        
+        return {
+            "success": True,
+            "message": "Registration successful",
+            "token": token,
+            "username": username
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Registration error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Registration failed")
+
 
 @app.post("/api/auth/login")
 async def login(request: LoginRequest):
@@ -521,6 +702,239 @@ async def change_password(request: ChangePasswordWithTokenRequest):
     except Exception as e:
         logger.error(f"Password change error: {str(e)}")
         raise HTTPException(status_code=500, detail="Password change failed")
+
+# ========== STRIPE SUBSCRIPTION ENDPOINTS ==========
+
+from stripe_service import StripeService, handle_webhook_event
+from subscription_db import SubscriptionDB
+from fastapi import Request
+
+class CheckoutSessionRequest(BaseModel):
+    """Request model for creating checkout session"""
+    price_id: str
+    user_id: str
+    user_email: str
+
+
+class PortalSessionRequest(BaseModel):
+    """Request model for creating portal session"""
+    user_id: str
+
+
+@app.post("/api/stripe/create-checkout-session")
+async def create_checkout_session(request: CheckoutSessionRequest):
+    """
+    Create a Stripe Checkout Session for subscription
+    Redirects user to Stripe hosted checkout page
+    """
+    try:
+        # Get or create user in database
+        user = SubscriptionDB.get_user(request.user_id)
+        if not user:
+            SubscriptionDB.create_or_update_user(
+                user_id=request.user_id,
+                email=request.user_email
+            )
+            user = SubscriptionDB.get_user(request.user_id)
+
+        # Create Stripe customer if needed
+        if not user.get('stripe_customer_id'):
+            customer_id = StripeService.create_customer(
+                email=request.user_email,
+                user_id=request.user_id
+            )
+            if customer_id:
+                SubscriptionDB.create_or_update_user(
+                    user_id=request.user_id,
+                    email=request.user_email,
+                    stripe_customer_id=customer_id
+                )
+
+        # Create checkout session
+        session = StripeService.create_checkout_session(
+            price_id=request.price_id,
+            user_id=request.user_id,
+            user_email=request.user_email
+        )
+
+        return {
+            "success": True,
+            "session_id": session['session_id'],
+            "url": session['url']
+        }
+
+    except Exception as e:
+        logger.error(f"Error creating checkout session: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to create checkout session: {str(e)}")
+
+
+@app.post("/api/stripe/create-portal-session")
+async def create_portal_session(request: PortalSessionRequest):
+    """
+    Create a Stripe Customer Portal Session
+    Allows users to manage subscription, payment methods, and invoices
+    """
+    try:
+        # Get user
+        user = SubscriptionDB.get_user(request.user_id)
+        if not user or not user.get('stripe_customer_id'):
+            raise HTTPException(status_code=404, detail="No subscription found for user")
+
+        # Create portal session
+        session = StripeService.create_portal_session(
+            customer_id=user['stripe_customer_id']
+        )
+
+        return {
+            "success": True,
+            "url": session['url']
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating portal session: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to create portal session: {str(e)}")
+
+
+@app.post("/api/stripe/webhook")
+async def stripe_webhook(request: Request):
+    """
+    Handle Stripe webhook events
+    Updates subscription status in database based on Stripe events
+    """
+    try:
+        # Get raw body and signature
+        payload = await request.body()
+        sig_header = request.headers.get('stripe-signature')
+
+        if not sig_header:
+            raise HTTPException(status_code=400, detail="Missing signature header")
+
+        # Verify webhook signature
+        event = StripeService.verify_webhook_signature(payload, sig_header)
+        if not event:
+            raise HTTPException(status_code=400, detail="Invalid webhook signature")
+
+        # Process the event
+        result = handle_webhook_event(event)
+
+        if result['processed']:
+            # Update database based on event
+            if result['action'] == 'create_subscription':
+                # Create subscription in database
+                SubscriptionDB.create_subscription(
+                    user_id=result['user_id'],
+                    stripe_subscription_id=result['subscription_id'],
+                    stripe_customer_id=result['customer_id'],
+                    tier=result['tier'],
+                    status=result['status']
+                )
+
+            elif result['action'] == 'update_subscription':
+                # Update subscription
+                SubscriptionDB.update_subscription(
+                    stripe_subscription_id=result['subscription_id'],
+                    tier=result['tier'],
+                    status=result['status']
+                )
+
+            elif result['action'] == 'cancel_subscription':
+                # Cancel subscription
+                SubscriptionDB.cancel_subscription(
+                    stripe_subscription_id=result['subscription_id']
+                )
+
+        return {"received": True}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Webhook error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Webhook processing failed: {str(e)}")
+
+
+@app.get("/api/subscription/status")
+async def get_subscription_status(user_id: str):
+    """
+    Get subscription status for a user
+    Returns tier, status, and expiration date
+    """
+    try:
+        subscription = SubscriptionDB.get_subscription(user_id)
+        
+        if not subscription:
+            return {
+                "tier": "free",
+                "status": "none",
+                "features": SubscriptionDB.has_feature_access.__code__.co_consts[1]['free']
+            }
+
+        return {
+            "tier": subscription['tier'],
+            "status": subscription['status'],
+            "current_period_end": subscription.get('current_period_end'),
+            "cancel_at_period_end": bool(subscription.get('cancel_at_period_end')),
+            "trial_end": subscription.get('trial_end')
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting subscription status: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get subscription status: {str(e)}")
+
+
+@app.get("/api/subscription/features")
+async def get_subscription_features(user_id: str):
+    """
+    Get available features for user's subscription tier
+    """
+    try:
+        tier = SubscriptionDB.get_subscription_tier(user_id)
+        
+        features = {
+            'free': ['live_games_limited', 'basic_odds'],
+            'pro': [
+                'live_games_limited', 'basic_odds',
+                'all_sports', 'alerts', 'arbitrage', 'steam_moves', 'line_movements',
+                'email_notifications', 'unlimited_views'
+            ],
+            'elite': [
+                'live_games_limited', 'basic_odds',
+                'all_sports', 'alerts', 'arbitrage', 'steam_moves', 'line_movements',
+                'email_notifications', 'unlimited_views',
+                'goalie_pulls', 'api_access', 'sms_notifications', 'custom_alerts',
+                'advanced_analytics'
+            ]
+        }
+
+        return {
+            "tier": tier,
+            "features": features.get(tier, features['free'])
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting subscription features: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get subscription features: {str(e)}")
+
+
+@app.get("/api/subscription/check-access")
+async def check_feature_access(user_id: str, feature: str):
+    """
+    Check if user has access to a specific feature
+    """
+    try:
+        has_access = SubscriptionDB.has_feature_access(user_id, feature)
+
+        return {
+            "feature": feature,
+            "has_access": has_access,
+            "tier": SubscriptionDB.get_subscription_tier(user_id)
+        }
+
+    except Exception as e:
+        logger.error(f"Error checking feature access: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to check feature access: {str(e)}")
+
 
 # ========== ADMIN ENDPOINTS (User Activity Tracking) ==========
 
@@ -2371,7 +2785,7 @@ import sys
 from pathlib import Path
 
 # Add strategies directory to path
-strategies_path = Path(__file__).parent.parent.parent.parent / "backend" / "strategies"
+strategies_path = Path(__file__).parent / "strategies"
 if str(strategies_path) not in sys.path:
     sys.path.insert(0, str(strategies_path))
 
@@ -2379,14 +2793,14 @@ from halftime_tracker import HalftimeTracker
 from fatigue_detector import FatigueDetector
 from weather_integration import WeatherIntegration
 from momentum_detector import MomentumDetector
-from favorite_comeback_detector import FavoriteComeb ackDetector
+from favorite_comeback_detector import FavoriteComebackDetector
 
 # Initialize strategy instances
 halftime_tracker = HalftimeTracker()
 fatigue_detector = FatigueDetector()
 weather_integration = WeatherIntegration()
 momentum_detector = MomentumDetector(window_size_minutes=5)
-favorite_comeback_detector = FavoriteComeb ackDetector()
+favorite_comeback_detector = FavoriteComebackDetector()
 
 
 # Request models for strategy endpoints
@@ -2454,7 +2868,7 @@ class MomentumAnalysisRequest(BaseModel):
     away_score: int
 
 
-class FavoriteComeb ackRequest(BaseModel):
+class FavoriteComebackRequest(BaseModel):
     """Request model for favorite comeback analysis"""
     game_id: str
     sport: str
@@ -2778,7 +3192,7 @@ async def get_momentum_history(game_id: str):
 # ========== FAVORITE COMEBACK DETECTION ENDPOINT ==========
 
 @app.post("/api/strategies/favorite-comeback/analyze")
-async def analyze_favorite_comeback(request: FavoriteComeb ackRequest):
+async def analyze_favorite_comeback(request: FavoriteComebackRequest):
     """
     Analyze if a favorite comeback opportunity exists
 
@@ -2900,11 +3314,45 @@ async def analyze_all_strategies(
         raise HTTPException(status_code=500, detail=f"Failed to analyze all strategies: {str(e)}")
 
 
+# ========== BET GRADING ENDPOINT ==========
+
+@app.post("/api/bets/grade-now")
+async def manual_grade_bets():
+    """
+    Manually trigger bet grading for all active bets
+    Useful for testing or forcing an immediate grading cycle
+    """
+    try:
+        from bet_grader import bet_grader
+
+        if bet_grader is None:
+            raise HTTPException(status_code=503, detail="Bet grader not initialized")
+
+        # Run grading
+        results = bet_grader.grade_active_bets()
+
+        return {
+            "success": True,
+            "checked": results['checked'],
+            "graded": results['graded'],
+            "won": results['won'],
+            "lost": results['lost'],
+            "push": results['push'],
+            "errors": results['errors'],
+            "message": f"Graded {results['graded']} bets ({results['won']} won, {results['lost']} lost, {results['push']} push)",
+            "timestamp": datetime.now().isoformat()
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error manually grading bets: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to grade bets: {str(e)}")
+
+
 # Mount static files (production frontend)
 # Serve production build from ../frontend/dist
 import os.path
 frontend_dist_path = os.path.join(os.path.dirname(__file__), "../frontend/dist")
 if os.path.exists(frontend_dist_path):
     app.mount("/", StaticFiles(directory=frontend_dist_path, html=True), name="static")
-
-

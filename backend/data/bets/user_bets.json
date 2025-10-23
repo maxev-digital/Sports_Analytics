@@ -1,0 +1,27 @@
+[
+  {
+    "id": "ab8adfe2-aba7-444d-ae03-00eff82b4d9b",
+    "user_id": "dev-user",
+    "game_id": "94f35a6d58c57801c32a564d04e32270",
+    "sport": "basketball_nba",
+    "home_team": "Golden State Warriors",
+    "away_team": "Denver Nuggets",
+    "commence_time": "2025-10-24T02:10:00Z",
+    "bet_type": "total",
+    "bet_side": "OVER",
+    "stake": 125.0,
+    "odds": -110.0,
+    "bookmaker": "FanDuel",
+    "alert_id": null,
+    "confidence": "LOW",
+    "edge_percent": null,
+    "strategy": null,
+    "clicked_at": "2025-10-23T20:30:15.075147",
+    "logged_at": "2025-10-23T20:30:29.006533",
+    "status": "active",
+    "result": null,
+    "payout": null,
+    "profit_loss": null,
+    "settled_at": null
+  }
+]
