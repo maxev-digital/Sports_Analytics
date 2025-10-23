@@ -21,16 +21,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Check for existing session on mount
   useEffect(() => {
-    // Auto-login for localhost development
+    // Auto-login for localhost development (but not if user manually logged out)
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      console.log('🔓 Local development mode: Auto-login enabled');
-      setIsAuthenticated(true);
-      setUsername('dev-user');
-      setToken('dev-token');
-      localStorage.setItem('auth_token', 'dev-token');
-      localStorage.setItem('auth_username', 'dev-user');
-      setLoading(false);
-      return;
+      const manualLogout = sessionStorage.getItem('manual_logout');
+      if (!manualLogout) {
+        console.log('🔓 Local development mode: Auto-login enabled');
+        setIsAuthenticated(true);
+        setUsername('dev-user');
+        setToken('dev-token');
+        localStorage.setItem('auth_token', 'dev-token');
+        localStorage.setItem('auth_username', 'dev-user');
+        setLoading(false);
+        return;
+      } else {
+        console.log('🔒 Manual logout detected - staying logged out');
+        setLoading(false);
+        return;
+      }
     }
 
     const storedToken = localStorage.getItem('auth_token');
@@ -132,6 +139,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setToken(null);
     localStorage.removeItem('auth_token');
     localStorage.removeItem('auth_username');
+    
+    // Set flag to prevent auto-login on localhost
+    sessionStorage.setItem('manual_logout', 'true');
   };
 
   return (

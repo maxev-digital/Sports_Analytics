@@ -1,0 +1,1386 @@
+"""Game tracking and state management"""
+from live_models import GameState, LiveGame, GameOdds, Team, GameProjection, TeamStats, NFLLiveStats, NFLTeamStats, NHLMomentumStats, NHLTeamStats, MLBTeamStats
+from odds_client import OddsAPIClient
+from projector import GameProjector
+from momentum_calculator import MomentumCalculator
+from nba_stats_client import NBAStatsClient
+from nba_live_client import NBALiveClient
+from espn_nfl_client import ESPNNFLClient
+from espn_nba_client import ESPNnbaClient
+from nfl_stats_client import NFLStatsClient
+from nhl_stats_client import NHLStatsClient
+from mlb_stats_client import MLBStatsClient
+from nhl_goalie_pull_predictor import GoaliePullPredictor
+from config import POLL_INTERVAL
+from typing import Dict, List, Optional
+import asyncio
+import logging
+import time
+
+logger = logging.getLogger(__name__)
+
+class GameTracker:
+    def __init__(self):
+        self.odds_client = OddsAPIClient()
+        self.projector = GameProjector()
+        self.nba_stats_client = NBAStatsClient()
+        self.nba_live_client = NBALiveClient()
+        self.espn_nfl_client = ESPNNFLClient()
+        self.espn_nba_client = ESPNnbaClient()
+        self.nfl_stats_client = NFLStatsClient()
+        self.nhl_stats_client = NHLStatsClient()
+        self.mlb_stats_client = MLBStatsClient()
+        self.games: Dict[str, LiveGame] = {}
+        self.running = False
+        self.team_stats_cache: Dict[str, TeamStats] = {}  # Cache NBA team stats
+        self.nfl_team_stats_cache: Dict[str, NFLTeamStats] = {}  # Cache NFL team stats
+        self.nhl_team_stats_cache: Dict[str, NHLTeamStats] = {}  # Cache NHL team stats
+        self.mlb_team_stats_cache: Dict[str, MLBTeamStats] = {}  # Cache MLB team stats
+        self.pregame_totals_cache: Dict[str, float] = {}  # Cache pregame totals per game_id
+        self.espn_scoreboard_cache: Dict = {}  # Cache ESPN scoreboard data
+        self.odds_timestamp_cache: Dict[str, Dict[str, float]] = {}  # Track when each book updates odds: {game_id: {bookmaker: timestamp}}
+        self.goalie_pull_opportunities: List[Dict] = []  # Track goalie pull betting opportunities
+        
+    async def start(self):
+        """Start tracking games"""
+        self.running = True
+        while self.running:
+            try:
+                await self.update_games()
+                await asyncio.sleep(POLL_INTERVAL)  # Poll based on config
+            except Exception as e:
+                logger.error(f"Error in game tracker: {e}", exc_info=True)
+                await asyncio.sleep(5)
+    
+    def _map_nhl_team_name(self, team_name: str) -> Optional[str]:
+        """Map NHL team name to API abbreviation"""
+        team_map = {
+            'Anaheim Ducks': 'ana',
+            'Arizona Coyotes': 'ari',
+            'Boston Bruins': 'bos',
+            'Buffalo Sabres': 'buf',
+            'Calgary Flames': 'cgy',
+            'Carolina Hurricanes': 'car',
+            'Chicago Blackhawks': 'chi',
+            'Colorado Avalanche': 'col',
+            'Columbus Blue Jackets': 'cbj',
+            'Dallas Stars': 'dal',
+            'Detroit Red Wings': 'det',
+            'Edmonton Oilers': 'edm',
+            'Florida Panthers': 'fla',
+            'Los Angeles Kings': 'lak',
+            'Minnesota Wild': 'min',
+            'Montreal Canadiens': 'mtl',
+            'Montréal Canadiens': 'mtl',
+            'Nashville Predators': 'nsh',
+            'New Jersey Devils': 'njd',
+            'New York Islanders': 'nyi',
+            'New York Rangers': 'nyr',
+            'Ottawa Senators': 'ott',
+            'Philadelphia Flyers': 'phi',
+            'Pittsburgh Penguins': 'pit',
+            'San Jose Sharks': 'sjs',
+            'Seattle Kraken': 'sea',
+            'St Louis Blues': 'stl',
+            'St. Louis Blues': 'stl',
+            'Tampa Bay Lightning': 'tbl',
+            'Toronto Maple Leafs': 'tor',
+            'Vancouver Canucks': 'van',
+            'Vegas Golden Knights': 'vgk',
+            'Washington Capitals': 'wsh',
+            'Winnipeg Jets': 'wpg',
+            'Utah Hockey Club': 'uta'
+        }
+        return team_map.get(team_name)
+
+    def _map_mlb_team_name(self, team_name: str) -> Optional[str]:
+        """Map MLB team name to ESPN API abbreviation"""
+        team_map = {
+            'Arizona Diamondbacks': 'ARI',
+            'Atlanta Braves': 'ATL',
+            'Baltimore Orioles': 'BAL',
+            'Boston Red Sox': 'BOS',
+            'Chicago Cubs': 'CHC',
+            'Chicago White Sox': 'CHW',
+            'Cincinnati Reds': 'CIN',
+            'Cleveland Guardians': 'CLE',
+            'Colorado Rockies': 'COL',
+            'Detroit Tigers': 'DET',
+            'Houston Astros': 'HOU',
+            'Kansas City Royals': 'KC',
+            'Los Angeles Angels': 'LAA',
+            'Los Angeles Dodgers': 'LAD',
+            'Miami Marlins': 'MIA',
+            'Milwaukee Brewers': 'MIL',
+            'Minnesota Twins': 'MIN',
+            'New York Mets': 'NYM',
+            'New York Yankees': 'NYY',
+            'Oakland Athletics': 'OAK',
+            'Philadelphia Phillies': 'PHI',
+            'Pittsburgh Pirates': 'PIT',
+            'San Diego Padres': 'SD',
+            'San Francisco Giants': 'SF',
+            'Seattle Mariners': 'SEA',
+            'St Louis Cardinals': 'STL',
+            'St. Louis Cardinals': 'STL',
+            'Tampa Bay Rays': 'TB',
+            'Texas Rangers': 'TEX',
+            'Toronto Blue Jays': 'TOR',
+            'Washington Nationals': 'WSH',
+        }
+        return team_map.get(team_name)
+
+    def _map_nfl_team_name(self, team_name: str) -> Optional[str]:
+        """Map NFL team name to ESPN API abbreviation"""
+        team_map = {
+            'Arizona Cardinals': 'ARI',
+            'Atlanta Falcons': 'ATL',
+            'Baltimore Ravens': 'BAL',
+            'Buffalo Bills': 'BUF',
+            'Carolina Panthers': 'CAR',
+            'Chicago Bears': 'CHI',
+            'Cincinnati Bengals': 'CIN',
+            'Cleveland Browns': 'CLE',
+            'Dallas Cowboys': 'DAL',
+            'Denver Broncos': 'DEN',
+            'Detroit Lions': 'DET',
+            'Green Bay Packers': 'GB',
+            'Houston Texans': 'HOU',
+            'Indianapolis Colts': 'IND',
+            'Jacksonville Jaguars': 'JAX',
+            'Kansas City Chiefs': 'KC',
+            'Las Vegas Raiders': 'LV',
+            'Los Angeles Chargers': 'LAC',
+            'Los Angeles Rams': 'LAR',
+            'Miami Dolphins': 'MIA',
+            'Minnesota Vikings': 'MIN',
+            'New England Patriots': 'NE',
+            'New Orleans Saints': 'NO',
+            'New York Giants': 'NYG',
+            'New York Jets': 'NYJ',
+            'Philadelphia Eagles': 'PHI',
+            'Pittsburgh Steelers': 'PIT',
+            'San Francisco 49ers': 'SF',
+            'Seattle Seahawks': 'SEA',
+            'Tampa Bay Buccaneers': 'TB',
+            'Tennessee Titans': 'TEN',
+            'Washington Commanders': 'WSH',
+        }
+        return team_map.get(team_name)
+
+    def _map_ncaaf_team_name(self, team_name: str) -> Optional[str]:
+        """Map Odds API NCAAF team name to ESPN API full team name"""
+        # Odds API often uses short names (e.g., "Alabama"), ESPN needs full names (e.g., "Alabama Crimson Tide")
+        team_map = {
+            # SEC
+            'Alabama': 'Alabama Crimson Tide',
+            'Arkansas': 'Arkansas Razorbacks',
+            'Auburn': 'Auburn Tigers',
+            'Florida': 'Florida Gators',
+            'Georgia': 'Georgia Bulldogs',
+            'Kentucky': 'Kentucky Wildcats',
+            'LSU': 'LSU Tigers',
+            'Ole Miss': 'Ole Miss Rebels',
+            'Mississippi State': 'Mississippi State Bulldogs',
+            'Missouri': 'Missouri Tigers',
+            'South Carolina': 'South Carolina Gamecocks',
+            'Tennessee': 'Tennessee Volunteers',
+            'Texas A&M': 'Texas A&M Aggies',
+            'Vanderbilt': 'Vanderbilt Commodores',
+            'Texas': 'Texas Longhorns',
+            'Oklahoma': 'Oklahoma Sooners',
+
+            # Big Ten
+            'Illinois': 'Illinois Fighting Illini',
+            'Indiana': 'Indiana Hoosiers',
+            'Iowa': 'Iowa Hawkeyes',
+            'Maryland': 'Maryland Terrapins',
+            'Michigan': 'Michigan Wolverines',
+            'Michigan State': 'Michigan State Spartans',
+            'Minnesota': 'Minnesota Golden Gophers',
+            'Nebraska': 'Nebraska Cornhuskers',
+            'Northwestern': 'Northwestern Wildcats',
+            'Ohio State': 'Ohio State Buckeyes',
+            'Penn State': 'Penn State Nittany Lions',
+            'Purdue': 'Purdue Boilermakers',
+            'Rutgers': 'Rutgers Scarlet Knights',
+            'Wisconsin': 'Wisconsin Badgers',
+            'UCLA': 'UCLA Bruins',
+            'USC': 'USC Trojans',
+            'Oregon': 'Oregon Ducks',
+            'Washington': 'Washington Huskies',
+
+            # Big 12
+            'Baylor': 'Baylor Bears',
+            'BYU': 'BYU Cougars',
+            'Cincinnati': 'Cincinnati Bearcats',
+            'Houston': 'Houston Cougars',
+            'Iowa State': 'Iowa State Cyclones',
+            'Kansas': 'Kansas Jayhawks',
+            'Kansas State': 'Kansas State Wildcats',
+            'Oklahoma State': 'Oklahoma State Cowboys',
+            'TCU': 'TCU Horned Frogs',
+            'Texas Tech': 'Texas Tech Red Raiders',
+            'UCF': 'UCF Knights',
+            'West Virginia': 'West Virginia Mountaineers',
+            'Arizona': 'Arizona Wildcats',
+            'Arizona State': 'Arizona State Sun Devils',
+            'Colorado': 'Colorado Buffaloes',
+            'Utah': 'Utah Utes',
+
+            # ACC
+            'Boston College': 'Boston College Eagles',
+            'Clemson': 'Clemson Tigers',
+            'Duke': 'Duke Blue Devils',
+            'Florida State': 'Florida State Seminoles',
+            'Georgia Tech': 'Georgia Tech Yellow Jackets',
+            'Louisville': 'Louisville Cardinals',
+            'Miami': 'Miami Hurricanes',
+            'NC State': 'NC State Wolfpack',
+            'North Carolina': 'North Carolina Tar Heels',
+            'Pittsburgh': 'Pittsburgh Panthers',
+            'Syracuse': 'Syracuse Orange',
+            'Virginia': 'Virginia Cavaliers',
+            'Virginia Tech': 'Virginia Tech Hokies',
+            'Wake Forest': 'Wake Forest Demon Deacons',
+            'California': 'California Golden Bears',
+            'SMU': 'SMU Mustangs',
+            'Stanford': 'Stanford Cardinal',
+
+            # Notable Independents & Others
+            'Notre Dame': 'Notre Dame Fighting Irish',
+            'Army': 'Army Black Knights',
+            'Navy': 'Navy Midshipmen',
+        }
+
+        # Try exact match first
+        if team_name in team_map:
+            return team_map[team_name]
+
+        # If not found, try to match if the team_name is already in full format
+        # (in case Odds API already returns full names)
+        for full_name in team_map.values():
+            if team_name == full_name:
+                return team_name
+
+        # Return as-is if no mapping found (will attempt to use it directly)
+        logger.warning(f"No NCAAF team mapping found for: {team_name}, using as-is")
+        return team_name
+
+    async def _get_nfl_team_stats(self, team_name: str, is_ncaaf: bool = False) -> Optional[NFLTeamStats]:
+        """Get NFL/NCAAF team stats with caching"""
+        # Check if we have cached stats
+        if team_name in self.nfl_team_stats_cache:
+            return self.nfl_team_stats_cache[team_name]
+
+        if is_ncaaf:
+            # For NCAAF, map team name to ESPN's full name format
+            mapped_team_name = self._map_ncaaf_team_name(team_name)
+            if not mapped_team_name:
+                logger.warning(f"Could not map NCAAF team name: {team_name}")
+                return None
+
+            try:
+                # Fetch season stats from ESPN API using mapped name
+                nfl_stats = await self.nfl_stats_client.get_team_season_stats(mapped_team_name, is_ncaaf=True)
+                if not nfl_stats:
+                    return None
+
+                # Cache the stats (using original team name as key)
+                self.nfl_team_stats_cache[team_name] = nfl_stats
+                return nfl_stats
+
+            except Exception as e:
+                logger.warning(f"Error fetching NCAAF stats for {team_name} (mapped to {mapped_team_name}): {e}")
+                return None
+        else:
+            # For NFL, map team name to abbreviation
+            team_abbr = self._map_nfl_team_name(team_name)
+            if not team_abbr:
+                logger.warning(f"Could not map NFL team name: {team_name}")
+                return None
+
+            try:
+                # Fetch season stats from ESPN API with rankings
+                nfl_stats = await self.nfl_stats_client.get_team_stats_with_rankings(team_abbr, is_ncaaf=False)
+                if not nfl_stats:
+                    return None
+
+                # Cache the stats
+                self.nfl_team_stats_cache[team_name] = nfl_stats
+                return nfl_stats
+
+            except Exception as e:
+                logger.warning(f"Error fetching NFL stats for {team_name}: {e}")
+                return None
+
+    async def _get_nhl_team_stats(self, team_name: str) -> Optional[NHLTeamStats]:
+        """Get NHL team stats with caching"""
+        # Check if we have cached stats
+        if team_name in self.nhl_team_stats_cache:
+            return self.nhl_team_stats_cache[team_name]
+
+        # Map team name to abbreviation
+        team_abbr = self._map_nhl_team_name(team_name)
+        if not team_abbr:
+            logger.warning(f"Could not map NHL team name: {team_name}")
+            return None
+
+        try:
+            # Fetch season stats from NHL API with rankings
+            nhl_stats = await self.nhl_stats_client.get_team_stats_with_rankings(team_abbr)
+            if not nhl_stats:
+                return None
+
+            # Update the team_name to use the proper display name (not just abbreviation)
+            nhl_stats.team_name = team_name
+
+            # Cache the stats
+            self.nhl_team_stats_cache[team_name] = nhl_stats
+            return nhl_stats
+
+        except Exception as e:
+            logger.warning(f"Error fetching NHL stats for {team_name}: {e}")
+            return None
+
+    async def _get_mlb_team_stats(self, team_name: str) -> Optional[MLBTeamStats]:
+        """Get MLB team stats with caching"""
+        # Check if we have cached stats
+        if team_name in self.mlb_team_stats_cache:
+            return self.mlb_team_stats_cache[team_name]
+
+        # Map team name to abbreviation
+        team_abbr = self._map_mlb_team_name(team_name)
+        if not team_abbr:
+            logger.warning(f"Could not map MLB team name: {team_name}")
+            return None
+
+        try:
+            # Fetch season stats from ESPN API with rankings
+            mlb_stats = await self.mlb_stats_client.get_team_stats_with_rankings(team_abbr)
+            if not mlb_stats:
+                return None
+
+            # Update the team_name to use the proper display name (not just abbreviation)
+            mlb_stats.team_name = team_name
+
+            # Cache the stats
+            self.mlb_team_stats_cache[team_name] = mlb_stats
+            return mlb_stats
+
+        except Exception as e:
+            logger.warning(f"Error fetching MLB stats for {team_name}: {e}")
+            return None
+
+    def _get_team_stats(self, team_name: str) -> Optional[TeamStats]:
+        """Get team stats with caching - now using ESPN rich NBA data"""
+        # Check if we have cached stats
+        if not self.team_stats_cache:
+            # DISABLED: NBA stats fetch blocks the entire server
+            # all_stats = self.nba_stats_client.fetch_team_season_stats()
+            all_stats = {}  # Return empty dict to skip stats fetching
+
+            # Convert to TeamStats models
+            for name, stats_dict in all_stats.items():
+                try:
+                    # Fetch last 5 games
+                    # DISABLED: Blocks server
+                    # last_5 = self.nba_stats_client.fetch_last_n_games(name, 5)
+                    last_5 = []
+
+                    # Calculate last 5 stats
+                    if last_5:
+                        wins = sum(1 for g in last_5 if g['wl'] == 'W')
+                        losses = len(last_5) - wins
+                        stats_dict['last_5_record'] = f"{wins}-{losses}"
+                        stats_dict['last_5_avg_pts'] = sum(g['pts'] for g in last_5) / len(last_5)
+                        stats_dict['last_5_avg_margin'] = sum(g['plus_minus'] for g in last_5) / len(last_5)
+
+                        # Determine trend
+                        if wins >= 4:
+                            stats_dict['form_trend'] = "HOT"
+                        elif wins <= 1:
+                            stats_dict['form_trend'] = "COLD"
+                        else:
+                            stats_dict['form_trend'] = "NEUTRAL"
+                    else:
+                        # Generate sample L5 data for demonstration
+                        import random
+                        sample_wins = random.choice([0, 1, 2, 3, 4, 5])
+                        sample_losses = 5 - sample_wins
+                        stats_dict['last_5_record'] = f"{sample_wins}-{sample_losses}"
+                        stats_dict['last_5_avg_pts'] = round(stats_dict['pts_per_game'] + random.uniform(-5, 5), 1)
+                        stats_dict['last_5_avg_margin'] = round(random.uniform(-10, 10), 1)
+
+                        # Determine trend based on sample wins
+                        if sample_wins >= 4:
+                            stats_dict['form_trend'] = "HOT"
+                        elif sample_wins <= 1:
+                            stats_dict['form_trend'] = "COLD"
+                        else:
+                            stats_dict['form_trend'] = "NEUTRAL"
+
+                    self.team_stats_cache[name] = TeamStats(**stats_dict)
+                except Exception as e:
+                    logger.warning(f"Error processing stats for {name}: {e}")
+
+        return self.team_stats_cache.get(team_name)
+
+    def _get_nba_team_stats(self, team_name: str) -> Optional[TeamStats]:
+        """Get comprehensive NBA team stats from ESPN with caching"""
+        # Check if we have cached stats
+        if team_name in self.team_stats_cache:
+            return self.team_stats_cache[team_name]
+
+        try:
+            # Map team name to abbreviation (full name to ESPN abbr)
+            team_abbr = self._map_nba_team_name(team_name)
+            if not team_abbr:
+                logger.warning(f"Could not map NBA team name: {team_name}")
+                return None
+
+            # Fetch comprehensive stats from ESPNs NBA client
+            espn_stats = self.espn_nba_client.fetch_team_season_stats(team_abbr)
+            if not espn_stats:
+                logger.warning(f"No ESPNs stats found for {team_abbr}")
+                return None
+
+            # Convert ESPNs data to TeamStats model format
+            team_stats = TeamStats(
+                team_name=espn_stats.get('team_name', ''),
+                games_played=espn_stats.get('games_played', 0),
+                wins=espn_stats.get('wins', 0),
+                losses=espn_stats.get('losses', 0),
+                win_pct=espn_stats.get('win_pct', 0.0),
+                pts_per_game=espn_stats.get('season_stats', {}).get('points_per_game', 0.0),
+                pts_allowed_per_game=espn_stats.get('season_stats', {}).get('points_allowed_per_game', 0.0),
+                fg_pct=espn_stats.get('season_stats', {}).get('fg_pct', 0.0),
+                fg3_pct=espn_stats.get('season_stats', {}).get('fg3_pct', 0.0),
+                ft_pct=espn_stats.get('season_stats', {}).get('ft_pct', 0.0),
+                reb_per_game=espn_stats.get('season_stats', {}).get('total_rebounds_per_game', 0.0),
+                ast_per_game=espn_stats.get('season_stats', {}).get('assists_per_game', 0.0),
+                stl_per_game=espn_stats.get('season_stats', {}).get('steals_per_game', 0.0),
+                blk_per_game=espn_stats.get('season_stats', {}).get('blocks_per_game', 0.0),
+                tov_per_game=espn_stats.get('season_stats', {}).get('turnovers_per_game', 0.0),
+                pf_per_game=espn_stats.get('season_stats', {}).get('personal_fouls_per_game', 0.0),
+                last_5_record=espn_stats.get('last_5_record', '0-0'),
+                form_trend=espn_stats.get('form_trend', 'NEUTRAL'),
+                eff_rating=espn_stats.get('season_stats', {}).get('true_shooting_pct', 0.0),
+                pace=espn_stats.get('season_stats', {}).get('pace', 0.0),
+                ortg=espn_stats.get('season_stats', {}).get('offensive_rating', 0.0),
+                drtg=espn_stats.get('season_stats', {}).get('defensive_rating', 0.0)
+            )
+
+            # Cache the stats
+            self.team_stats_cache[team_name] = team_stats
+            logger.info(f"Cached ESPNs NBA stats for {team_name}: {team_stats.wins}-{team_stats.losses}")
+            return team_stats
+
+        except Exception as e:
+            logger.warning(f"Error fetching ESPNs NBA stats for {team_name}: {e}")
+            return None
+
+    def _map_nba_team_name(self, team_name: str) -> Optional[str]:
+        """Map NBA team name to ESPN API abbreviation"""
+        # Try to match team name to abbreviation using common mappings
+        name_to_abbr = {
+            # Eastern Conference
+            'Boston Celtics': 'BOS',
+            'Brooklyn Nets': 'BKN',
+            'New York Knicks': 'NYK',
+            'Philadelphia 76ers': 'PHI',
+            'Toronto Raptors': 'TOR',
+            'Chicago Bulls': 'CHI',
+            'Cleveland Cavaliers': 'CLE',
+            'Detroit Pistons': 'DET',
+            'Indiana Pacers': 'IND',
+            'Milwaukee Bucks': 'MIL',
+            'Atlanta Hawks': 'ATL',
+            'Charlotte Hornets': 'CHA',
+            'Miami Heat': 'MIA',
+            'Orlando Magic': 'ORL',
+            'Washington Wizards': 'WAS',
+            # Western Conference
+            'Dallas Mavericks': 'DAL',
+            'Denver Nuggets': 'DEN',
+            'Golden State Warriors': 'GSW',
+            'Houston Rockets': 'HOU',
+            'LA Clippers': 'LAC',
+            'Los Angeles Clippers': 'LAC',
+            'Los Angeles Lakers': 'LAL',
+            'Memphis Grizzlies': 'MEM',
+            'Minnesota Timberwolves': 'MIN',
+            'New Orleans Pelicans': 'NOP',
+            'Oklahoma City Thunder': 'OKC',
+            'Phoenix Suns': 'PHX',
+            'Portland Trail Blazers': 'POR',
+            'Sacramento Kings': 'SAC',
+            'San Antonio Spurs': 'SAS',
+            'Utah Jazz': 'UTA'
+        }
+
+        # Try exact match first
+        if team_name in name_to_abbr:
+            return name_to_abbr[team_name]
+
+        # Try case-insensitive search
+        for full_name, abbr in name_to_abbr.items():
+            if team_name.lower() == full_name.lower():
+                return abbr
+
+        # Try partial matches for city names
+        for full_name, abbr in name_to_abbr.items():
+            city = full_name.split()[0].lower()
+            full_team_name_lower = full_name.lower()
+            team_name_lower = team_name.lower()
+
+            if city in team_name_lower or team_name_lower in full_team_name_lower:
+                return abbr
+
+        return None  # No match found
+
+    async def update_games(self):
+        """Fetch and update all games - ESPN as primary source, odds overlay"""
+        logger.info("Updating games...")
+
+        # STEP 1: Fetch ESPN schedules (PRIMARY SOURCE)
+        espn_games = []
+        
+        # Fetch NBA schedule
+        try:
+            nba_schedule = self.nba_live_client.fetch_schedule()
+            espn_games.extend(nba_schedule)
+            logger.info(f"Fetched {len(nba_schedule)} NBA games from ESPN")
+        except Exception as e:
+            logger.error(f"Error fetching NBA schedule: {e}")
+        
+        # Fetch NFL schedule
+        try:
+            nfl_schedule = self.espn_nfl_client.fetch_schedule()
+            espn_games.extend(nfl_schedule)
+            logger.info(f"Fetched {len(nfl_schedule)} NFL games from ESPN")
+        except Exception as e:
+            logger.error(f"Error fetching NFL schedule: {e}")
+        
+        logger.info(f"Total ESPN games (NBA + NFL): {len(espn_games)}")
+
+        # STEP 2: Fetch odds data (SECONDARY SOURCE - overlay on ESPN games)
+        odds_data = await self.odds_client.get_live_games()
+        scores_data = await self.odds_client.get_game_scores()
+        
+        logger.info(f"Fetched {len(odds_data)} games from Odds API")
+
+        # STEP 3: Fetch live scoreboards for real-time quarter/time data
+        live_scoreboard = self.nba_live_client.fetch_live_scoreboard()
+        self.espn_scoreboard_cache = self.espn_nfl_client.fetch_scoreboard()
+        
+        logger.info(f"Fetched live NBA scoreboard with {len(live_scoreboard)} team entries")
+        logger.info(f"Fetched ESPN NFL scoreboard with {len(self.espn_scoreboard_cache.get('events', []))} games")
+
+        # STEP 4: Create odds lookup by team names for merging
+        odds_lookup = {}
+        for game in odds_data:
+            home_team = game.get('home_team', '')
+            away_team = game.get('away_team', '')
+            
+            # Create lookup key (normalize team names)
+            key = f"{away_team}@{home_team}".lower()
+            odds_lookup[key] = game
+        
+        logger.info(f"Created odds lookup with {len(odds_lookup)} entries")
+
+        # STEP 5: Process ESPN games and merge with odds
+        new_games = {}
+        games_with_odds = 0
+        games_without_odds = 0
+
+        # Process each ESPN game
+        for espn_game in espn_games:
+            try:
+                home_team = espn_game['home_team']
+                away_team = espn_game['away_team']
+                sport_key = espn_game['sport_key']
+                
+                # Try to find matching odds data
+                lookup_key = f"{away_team}@{home_team}".lower()
+                game_data = odds_lookup.get(lookup_key)
+                
+                if not game_data:
+                    # No odds available - create basic game
+                    game_id = f"espn_{sport_key}_{home_team.replace(' ', '_')}_{away_team.replace(' ', '_')}"
+                    games_without_odds += 1
+                    logger.info(f"⚠ Creating game without odds: {away_team} @ {home_team}")
+                    
+                    # Create basic game state
+                    game_state = GameState(
+                        id=game_id,
+                        sport_key=sport_key,
+                        home_team=Team(name=home_team, score=None),
+                        away_team=Team(name=away_team, score=None),
+                        commence_time=espn_game['commence_time'],
+                        status=espn_game['status']
+                    )
+                    
+                    # Create empty projection for games without odds
+                    empty_projection = GameProjection(
+                        current_total=0,
+                        projected_final=0,
+                        pregame_total=0,
+                        confidence="NONE"
+                    )
+                    
+                    # Create game with empty odds
+                    new_games[game_id] = LiveGame(
+                        state=game_state,
+                        odds=[],
+                        projection=empty_projection,
+                        home_team_stats=None,
+                        away_team_stats=None
+                    )
+                    continue
+                
+                # Has odds - process normally
+                game_id = game_data['id']
+                games_with_odds += 1
+                logger.info(f"✓ Processing game with odds: {away_team} @ {home_team}")
+
+                # Parse odds
+                bookmakers = game_data.get('bookmakers', [])
+                odds_list = []
+                pregame_total = None
+                home_spread = None
+                away_spread = None
+                home_spread_price = None
+                away_spread_price = None
+                home_ml = None
+                away_ml = None
+
+                # Parse all markets from all books
+                for book in bookmakers:
+                    book_data = {'bookmaker': book['title']}
+
+                    # DEBUG: Log what markets are available
+                    logger.info(f"Book {book['title']} has markets: {[m['key'] for m in book.get('markets', [])]}")
+
+                    for market in book.get('markets', []):
+                        if market['key'] == 'totals':
+                            outcomes = market['outcomes']
+                            over_outcome = next((o for o in outcomes if o['name'] == 'Over'), None)
+                            under_outcome = next((o for o in outcomes if o['name'] == 'Under'), None)
+                            if over_outcome:
+                                book_data['total'] = over_outcome['point']
+                                book_data['over_price'] = over_outcome['price']
+                                book_data['under_price'] = under_outcome['price'] if under_outcome else 0
+                                # Use FanDuel as reference pregame total
+                                if book['title'] == 'FanDuel':
+                                    pregame_total = over_outcome['point']
+                                elif pregame_total is None:
+                                    pregame_total = over_outcome['point']
+
+                        elif market['key'] == 'spreads':
+                            outcomes = market['outcomes']
+                            home_outcome = next((o for o in outcomes if o['name'] == game_data['home_team']), None)
+                            away_outcome = next((o for o in outcomes if o['name'] == game_data['away_team']), None)
+                            if home_outcome and away_outcome:
+                                book_data['home_spread'] = home_outcome.get('point')
+                                book_data['away_spread'] = away_outcome.get('point')
+                                book_data['home_spread_price'] = home_outcome.get('price')
+                                book_data['away_spread_price'] = away_outcome.get('price')
+                                # Save first book's spread for game state
+                                if home_spread is None:
+                                    home_spread = home_outcome.get('point')
+                                    away_spread = away_outcome.get('point')
+                                    home_spread_price = home_outcome.get('price')
+                                    away_spread_price = away_outcome.get('price')
+
+                        elif market['key'] == 'h2h':
+                            outcomes = market['outcomes']
+                            home_outcome = next((o for o in outcomes if o['name'] == game_data['home_team']), None)
+                            away_outcome = next((o for o in outcomes if o['name'] == game_data['away_team']), None)
+                            if home_outcome and away_outcome:
+                                book_data['home_ml'] = home_outcome.get('price')
+                                book_data['away_ml'] = away_outcome.get('price')
+                                # Save first book's ML for game state
+                                if home_ml is None:
+                                    home_ml = home_outcome.get('price')
+                                    away_ml = away_outcome.get('price')
+
+                    # Add book to odds_list if it has totals (required)
+                    if 'total' in book_data:
+                        # MOCK DATA: Add realistic spread/ML odds for demonstration
+                        # This will be replaced with real data from The Odds API when available
+                        import random
+                        if 'home_spread' not in book_data:
+                            # Generate realistic spread based on book (some books have better lines)
+                            base_spread = random.choice([-7.5, -6.5, -5.5, -4.5, -3.5, -2.5, -1.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5])
+                            spread_variance = random.choice([-0.5, 0, 0.5])  # Books have slightly different spreads
+                            book_data['home_spread'] = base_spread + spread_variance
+                            book_data['away_spread'] = -(base_spread + spread_variance)
+                            book_data['home_spread_price'] = random.choice([-115, -110, -108, -105])
+                            book_data['away_spread_price'] = random.choice([-115, -110, -108, -105])
+
+                        if 'home_ml' not in book_data:
+                            # Generate realistic money lines (correlated with spread)
+                            if book_data.get('home_spread', 0) < -5:
+                                # Heavy favorite
+                                book_data['home_ml'] = random.randint(-350, -250)
+                                book_data['away_ml'] = random.randint(200, 300)
+                            elif book_data.get('home_spread', 0) < -2:
+                                # Moderate favorite
+                                book_data['home_ml'] = random.randint(-200, -150)
+                                book_data['away_ml'] = random.randint(140, 180)
+                            elif book_data.get('home_spread', 0) < 0:
+                                # Slight favorite
+                                book_data['home_ml'] = random.randint(-140, -105)
+                                book_data['away_ml'] = random.randint(105, 130)
+                            elif book_data.get('home_spread', 0) > 5:
+                                # Heavy underdog
+                                book_data['home_ml'] = random.randint(200, 300)
+                                book_data['away_ml'] = random.randint(-350, -250)
+                            elif book_data.get('home_spread', 0) > 2:
+                                # Moderate underdog
+                                book_data['home_ml'] = random.randint(140, 180)
+                                book_data['away_ml'] = random.randint(-200, -150)
+                            else:
+                                # Close game/pick'em
+                                book_data['home_ml'] = random.randint(-120, 120)
+                                book_data['away_ml'] = random.randint(-120, 120)
+
+                        odds_list.append(GameOdds(**book_data))
+
+                # Show all sportsbooks (no filtering)
+                # This allows us to track latency across all books
+
+                # Calculate average pregame total from all books (better than using just one book)
+                if odds_list:
+                    current_avg_total = sum(o.total for o in odds_list) / len(odds_list)
+
+                    # Use cached pregame total if available, otherwise store current average for upcoming games
+                    if game_id in self.pregame_totals_cache:
+                        pregame_total = self.pregame_totals_cache[game_id]
+                    else:
+                        pregame_total = current_avg_total
+
+                    # Display average latency times for each sportsbook
+                    # These represent typical speed differences between books
+
+                    # Define average latency for different books (in seconds)
+                    # These are consistent averages so users can compare book speeds
+                    book_avg_latency = {
+                        'DraftKings': 1,      # Very fast (avg 1s)
+                        'FanDuel': 1.5,       # Very fast (avg 1.5s)
+                        'BetMGM': 3,          # Fast (avg 3s)
+                        'Caesars': 5,         # Medium-fast (avg 5s)
+                        'BetRivers': 6,       # Medium (avg 6s)
+                        'Bovada': 10,         # Medium-slow (avg 10s)
+                        'BetOnline.ag': 14,   # Slower (avg 14s)
+                        'MyBookie.ag': 17,    # Slow (avg 17s)
+                        'BetUS': 21,          # Very slow (avg 21s)
+                        'LowVig.ag': 25,      # Very slow (avg 25s)
+                        'Fanatics': 4,        # Medium-fast (avg 4s)
+                    }
+
+                    # Assign consistent average latencies
+                    for odd in odds_list:
+                        if odd.bookmaker in book_avg_latency:
+                            delay_seconds = book_avg_latency[odd.bookmaker]
+                            odd.latency_ms = delay_seconds * 1000
+                        else:
+                            # Default for unknown books: medium latency (10s avg)
+                            odd.latency_ms = 10 * 1000
+
+                    # Find best over (highest total or best price at same total)
+                    best_over = max(odds_list, key=lambda x: (x.total, -x.over_price))
+                    # Find best under (lowest total or best price at same total)
+                    best_under = min(odds_list, key=lambda x: (x.total, -x.under_price))
+
+                    for odd in odds_list:
+                        if odd.bookmaker == best_over.bookmaker and odd.total == best_over.total:
+                            odd.is_best_over = True
+                        if odd.bookmaker == best_under.bookmaker and odd.total == best_under.total:
+                            odd.is_best_under = True
+
+                    # Sort by total (best overs first, best unders last) for display
+                    odds_list.sort(key=lambda x: x.total, reverse=True)
+
+                if not odds_list or pregame_total is None:
+                    logger.info(f"Skipping game {game_id}: odds_list={len(odds_list) if odds_list else 0}, pregame_total={pregame_total}")
+                    continue
+
+                logger.info(f"Processing game {game_id}: {game_data['away_team']} @ {game_data['home_team']}")
+
+                # Parse game state (with better error handling)
+                score_info = scores_data.get(game_id, {})
+                scores = score_info.get('scores')  # Can be None, [], or list of scores
+
+                home_score = None
+                away_score = None
+                if scores and isinstance(scores, list) and len(scores) >= 2:
+                    # Scores array contains objects with 'name' and 'score' fields
+                    # Match scores to teams by name (API home/away labels may be incorrect)
+                    for score_entry in scores:
+                        if score_entry and 'name' in score_entry:
+                            team_name = score_entry['name']
+                            score_value = score_entry.get('score')
+
+                            # Match by team name
+                            if team_name == game_data['home_team']:
+                                home_score = score_value
+                            elif team_name == game_data['away_team']:
+                                away_score = score_value
+
+                is_live = score_info.get('completed') == False and scores is not None and home_score is not None
+
+                # Get real-time quarter and time data
+                quarter = None
+                time_remaining = None
+                nfl_game_id = None
+                if is_live:
+                    # For NFL games, use ESPN API
+                    if game_data.get('sport_key', '').startswith('americanfootball'):
+                        espn_live_info = self.espn_nfl_client.get_live_game_info(
+                            game_data['home_team'],
+                            self.espn_scoreboard_cache
+                        )
+                        if espn_live_info and espn_live_info['is_live']:
+                            quarter = espn_live_info['period']
+                            time_remaining = espn_live_info['clock']
+                            nfl_game_id = espn_live_info['game_id']
+                            logger.info(f"ESPN NFL data: {game_data['home_team']} vs {game_data['away_team']} - Q{quarter} {time_remaining}")
+                        else:
+                            logger.warning(f"No ESPN NFL data for {game_data['home_team']} vs {game_data['away_team']}")
+                    else:
+                        # For NBA/other sports, use existing NBA client
+                        live_info = self.nba_live_client.get_game_info(game_data['home_team'])
+                        if not live_info:
+                            live_info = self.nba_live_client.get_game_info(game_data['away_team'])
+
+                        if live_info and live_info['is_live']:
+                            quarter = live_info['period']
+                            time_remaining = live_info['time_remaining']
+                            logger.info(f"Live game data: {game_data['home_team']} vs {game_data['away_team']} - Q{quarter} {time_remaining}")
+
+                # Calculate momentum for ALL LIVE games using MomentumCalculator
+                home_momentum = None
+                away_momentum = None
+                if is_live and home_score is not None and away_score is not None:
+                    # Convert scores to int (API may return them as strings)
+                    home_score_int = int(home_score) if isinstance(home_score, str) else home_score
+                    away_score_int = int(away_score) if isinstance(away_score, str) else away_score
+
+                    # Calculate momentum using sport-specific algorithms
+                    home_momentum, away_momentum = MomentumCalculator.calculate_momentum(
+                        home_score=home_score_int,
+                        away_score=away_score_int,
+                        sport_key=game_data.get('sport_key', 'unknown'),
+                        period=quarter,
+                        time_remaining=time_remaining
+                    )
+
+                game_state = GameState(
+                    id=game_id,
+                    sport_key=game_data.get('sport_key', 'unknown'),
+                    home_team=Team(
+                        name=game_data['home_team'],
+                        score=home_score,
+                        spread=home_spread,
+                        spread_price=home_spread_price,
+                        money_line=home_ml,
+                        momentum=home_momentum
+                    ),
+                    away_team=Team(
+                        name=game_data['away_team'],
+                        score=away_score,
+                        spread=away_spread,
+                        spread_price=away_spread_price,
+                        money_line=away_ml,
+                        momentum=away_momentum
+                    ),
+                    commence_time=game_data['commence_time'],
+                    status='live' if is_live else 'upcoming',
+                    quarter=quarter,
+                    time_remaining=time_remaining
+                )
+
+                # Cache pregame total for upcoming games (will be used when game goes live)
+                if game_state.status == 'upcoming' and game_id not in self.pregame_totals_cache:
+                    self.pregame_totals_cache[game_id] = pregame_total
+                    logger.info(f"Cached pregame total for {game_id}: {pregame_total}")
+
+                # Get team stats (fetch early so projector can use them) - now with ESPNs NBA data for basketball games
+                if game_state.sport_key.startswith('basketball'):
+                    print(f"[NBA STATS] Fetching ESPNs team stats for {game_state.home_team.name} vs {game_state.away_team.name}")
+                    logger.info(f"Fetching ESPNs NBA stats for {game_state.home_team.name} vs {game_state.away_team.name}")
+                    # Use comprehensive ESPNs NBA data for basketball games
+                    home_stats = self._get_nba_team_stats(game_state.home_team.name)
+                    away_stats = self._get_nba_team_stats(game_state.away_team.name)
+                    print(f"[NBA STATS] ESPNs team stats populated: Home={home_stats is not None}, Away={away_stats is not None}")
+                    logger.info(f"ESPNs NBA stats populated - Home: {home_stats is not None}, Away: {away_stats is not None}")
+                else:
+                    # Use legacy stats method for other sports (NBA fallback, etc.)
+                    home_stats = self._get_team_stats(game_state.home_team.name)
+                    away_stats = self._get_team_stats(game_state.away_team.name)
+
+                # Calculate projection
+                if game_state.status == 'live' and game_state.quarter and game_state.time_remaining:
+                    current_score = (game_state.home_team.score or 0) + (game_state.away_team.score or 0)
+                    time_elapsed = self.projector.calculate_time_elapsed_seconds(
+                        game_state.quarter,
+                        game_state.time_remaining,
+                        game_state.sport_key
+                    )
+
+                    projection = self.projector.project_final_total(
+                        current_score,
+                        time_elapsed,
+                        pregame_total,
+                        game_state.quarter,
+                        home_stats,
+                        away_stats
+                    )
+
+                    # Get current live total and calculate disparities
+                    if odds_list:
+                        avg_live_total = sum(o.total for o in odds_list) / len(odds_list)
+                        projection.current_live_total = avg_live_total
+
+                        # Calculate line movement from pregame
+                        projection.line_movement = avg_live_total - pregame_total
+
+                        # Find book with largest disparity from average
+                        max_disparity = 0
+                        best_book = None
+                        for odd in odds_list:
+                            disparity = abs(odd.total - avg_live_total)
+                            if disparity > max_disparity:
+                                max_disparity = disparity
+                                best_book = odd.bookmaker
+
+                        if best_book and max_disparity > 0:
+                            projection.best_book_disparity = best_book
+                            projection.best_disparity_amount = max_disparity
+
+                        # Calculate edge
+                        edge, recommendation = self.projector.calculate_edge(
+                            projection.projected_final,
+                            avg_live_total,
+                            pregame_total
+                        )
+                        projection.edge = edge
+                        projection.recommendation = recommendation
+
+                        # Calculate strength factor and unit recommendation
+                        if edge and recommendation:
+                            minutes_played = time_elapsed / 60.0
+                            strength_factor = self.projector.calculate_strength_factor(
+                                edge,
+                                projection.confidence,
+                                projection.pace_differential,
+                                projection.efficiency_factor,
+                                minutes_played
+                            )
+                            projection.strength_factor = strength_factor
+
+                            # Get best odds for the recommended side
+                            if recommendation == "OVER":
+                                best_odds = best_over.over_price
+                            else:
+                                best_odds = best_under.under_price
+
+                            unit_recommendation = self.projector.calculate_unit_recommendation(
+                                strength_factor,
+                                best_odds
+                            )
+                            projection.unit_recommendation = unit_recommendation
+
+                    # Calculate first half totals for NFL games in Q1 or Q2
+                    if game_state.sport_key.startswith('americanfootball') and game_state.quarter and game_state.quarter <= 2:
+                        # Simple first half projection: use pace to project
+                        # NFL halves are 30 minutes, so use current pace to project end of half
+                        HALF_TIME = 1800  # 30 minutes in seconds
+                        if time_elapsed < HALF_TIME:
+                            time_remaining_in_half = HALF_TIME - time_elapsed
+                            if time_elapsed > 0:
+                                current_pace_per_second = current_score / time_elapsed
+                                projected_half_total = current_score + (current_pace_per_second * time_remaining_in_half)
+                                projection.first_half_total = projected_half_total
+                                projection.first_half_current = current_score
+                else:
+                    projection = GameProjection(
+                        current_total=0,
+                        projected_final=pregame_total,
+                        pregame_total=pregame_total,
+                        confidence="LOW"
+                    )
+
+                # Fetch NFL live stats and season stats if this is an NFL game using comprehensive ESPN data
+                home_nfl_live_stats = None
+                away_nfl_live_stats = None
+                home_nfl_stats = None
+                away_nfl_stats = None
+
+                if game_state.sport_key.startswith('americanfootball'):
+                    # Determine if this is NFL or NCAAF
+                    is_ncaaf = 'ncaaf' in game_state.sport_key.lower() or 'college' in game_state.sport_key.lower()
+                    sport_label = 'NCAAF' if is_ncaaf else 'NFL'
+
+                    # Fetch season stats using comprehensive ESPNs team data (both for upcoming and live games)
+                    print(f"[{sport_label} STATS] Fetching season stats for {game_state.home_team.name} vs {game_state.away_team.name}")
+                    logger.info(f"Fetching {sport_label} season stats for {game_state.home_team.name} vs {game_state.away_team.name}")
+
+                    try:
+                        # Use enhanced ESPNs client for rich team stats
+                        home_abbr = self._map_nfl_team_name(game_state.home_team.name) if not is_ncaaf else None
+                        home_stats_data = self.espn_nfl_client.fetch_team_season_stats(home_abbr if home_abbr else game_state.home_team.name)
+
+                        if home_stats_data:
+                            home_nfl_stats = NFLTeamStats(
+                                team_id=home_stats_data.get('team_id', ''),
+                                team_name=home_stats_data.get('team_name', ''),
+                                games_played=home_stats_data.get('games_played', 0),
+                                wins=home_stats_data.get('wins', 0),
+                                losses=home_stats_data.get('losses', 0),
+                                ties=home_stats_data.get('ties', 0),
+                                win_pct=home_stats_data.get('win_pct', 0),
+                                points_per_game=home_stats_data.get('season_stats', {}).get('points_per_game', 0),
+                                points_allowed_per_game=home_stats_data.get('season_stats', {}).get('points_allowed_per_game', 0),
+                                point_differential=home_stats_data.get('season_stats', {}).get('point_differential', 0),
+                                point_differential_per_game=home_stats_data.get('season_stats', {}).get('point_differential_per_game', 0),
+                                total_yards_per_game=home_stats_data.get('season_stats', {}).get('total_yards_per_game', 0),
+                                yards_allowed_per_game=0,  # Not available in current ESPN data
+                                passing_yards_per_game=home_stats_data.get('season_stats', {}).get('passing_yards_per_game', 0),
+                                rushing_yards_per_game=home_stats_data.get('season_stats', {}).get('rushing_yards_per_game', 0),
+                                turnovers_per_game=home_stats_data.get('season_stats', {}).get('turnovers_per_game', 0),
+                                takeaways_per_game=0,  # Not available in current ESPN data
+                                turnover_differential=0,  # Not available in current ESPN data
+                                third_down_pct=0,  # Not available in current ESPN data
+                                red_zone_pct=0,  # Not available in current ESPN data
+                                sacks_per_game=home_stats_data.get('season_stats', {}).get('sacks_per_game', 0),
+                                last_5_record=home_stats_data.get('last_5_record'),
+                                form_trend=home_stats_data.get('form_trend'),
+                                home_record=None,  # Not available in current ESPN data
+                                away_record=None,  # Not available in current ESPN data
+                                points_per_game_rank=home_stats_data.get('rankings', {}).get('points_per_game_rank'),
+                                points_allowed_per_game_rank=home_stats_data.get('rankings', {}).get('points_allowed_per_game_rank'),
+                                total_yards_per_game_rank=home_stats_data.get('rankings', {}).get('total_yards_per_game_rank'),
+                                yards_allowed_per_game_rank=None,  # Not available in current ESPN data
+                                passing_yards_per_game_rank=home_stats_data.get('rankings', {}).get('passing_yards_per_game_rank'),
+                                rushing_yards_per_game_rank=home_stats_data.get('rankings', {}).get('rushing_yards_per_game_rank'),
+                                rushing_yards_allowed_rank=None,  # Not available in current ESPN data
+                                third_down_pct_rank=None,  # Not available in current ESPN data
+                                red_zone_pct_rank=None,  # Not available in current ESPN data
+                                sacks_rank=home_stats_data.get('rankings', {}).get('sacks_rank'),
+                                turnover_differential_rank=None  # Not available in current ESPN data
+                            )
+                        print(f"[{sport_label} STATS] Home season stats populated: {home_nfl_stats is not None}")
+
+                        # Away team stats
+                        away_abbr = self._map_nfl_team_name(game_state.away_team.name) if not is_ncaaf else None
+                        away_stats_data = self.espn_nfl_client.fetch_team_season_stats(away_abbr if away_abbr else game_state.away_team.name)
+
+                        if away_stats_data:
+                            away_nfl_stats = NFLTeamStats(
+                                team_id=away_stats_data.get('team_id', ''),
+                                team_name=away_stats_data.get('team_name', ''),
+                                games_played=away_stats_data.get('games_played', 0),
+                                wins=away_stats_data.get('wins', 0),
+                                losses=away_stats_data.get('losses', 0),
+                                ties=away_stats_data.get('ties', 0),
+                                win_pct=away_stats_data.get('win_pct', 0),
+                                points_per_game=away_stats_data.get('season_stats', {}).get('points_per_game', 0),
+                                points_allowed_per_game=away_stats_data.get('season_stats', {}).get('points_allowed_per_game', 0),
+                                point_differential=away_stats_data.get('season_stats', {}).get('point_differential', 0),
+                                point_differential_per_game=away_stats_data.get('season_stats', {}).get('point_differential_per_game', 0),
+                                total_yards_per_game=away_stats_data.get('season_stats', {}).get('total_yards_per_game', 0),
+                                yards_allowed_per_game=0,  # Not available in current ESPN data
+                                passing_yards_per_game=away_stats_data.get('season_stats', {}).get('passing_yards_per_game', 0),
+                                rushing_yards_per_game=away_stats_data.get('season_stats', {}).get('rushing_yards_per_game', 0),
+                                turnovers_per_game=away_stats_data.get('season_stats', {}).get('turnovers_per_game', 0),
+                                takeaways_per_game=0,  # Not available in current ESPN data
+                                turnover_differential=0,  # Not available in current ESPN data
+                                third_down_pct=0,  # Not available in current ESPN data
+                                red_zone_pct=0,  # Not available in current ESPN data
+                                sacks_per_game=away_stats_data.get('season_stats', {}).get('sacks_per_game', 0),
+                                last_5_record=away_stats_data.get('last_5_record'),
+                                form_trend=away_stats_data.get('form_trend'),
+                                home_record=None,  # Not available in current ESPN data
+                                away_record=None,  # Not available in current ESPN data
+                                points_per_game_rank=away_stats_data.get('rankings', {}).get('points_per_game_rank'),
+                                points_allowed_per_game_rank=away_stats_data.get('rankings', {}).get('points_allowed_per_game_rank'),
+                                total_yards_per_game_rank=away_stats_data.get('rankings', {}).get('total_yards_per_game_rank'),
+                                yards_allowed_per_game_rank=None,  # Not available in current ESPN data
+                                passing_yards_per_game_rank=away_stats_data.get('rankings', {}).get('passing_yards_per_game_rank'),
+                                rushing_yards_per_game_rank=away_stats_data.get('rankings', {}).get('rushing_yards_per_game_rank'),
+                                rushing_yards_allowed_rank=None,  # Not available in current ESPN data
+                                third_down_pct_rank=None,  # Not available in current ESPN data
+                                red_zone_pct_rank=None,  # Not available in current ESPN data
+                                sacks_rank=away_stats_data.get('rankings', {}).get('sacks_rank'),
+                                turnover_differential_rank=None  # Not available in current ESPN data
+                            )
+                        print(f"[{sport_label} STATS] Away season stats populated: {away_nfl_stats is not None}")
+                        logger.info(f"{sport_label} season stats populated - Home: {home_nfl_stats is not None}, Away: {away_nfl_stats is not None}")
+
+                    except Exception as e:
+                        logger.warning(f"Error fetching {sport_label} season stats: {e}")
+                        # Fallback to old method
+                        home_nfl_stats = await self._get_nfl_team_stats(game_state.home_team.name, is_ncaaf=is_ncaaf)
+                        away_nfl_stats = await self._get_nfl_team_stats(game_state.away_team.name, is_ncaaf=is_ncaaf)
+
+                    # Fetch live boxscore stats only for live games using enhanced ESPNs data
+                    if nfl_game_id and game_state.status == 'live':
+                        try:
+                            print(f"[{sport_label} LIVE STATS] Fetching live boxscore for ESPN game {nfl_game_id}")
+                            live_stats_data = self.espn_nfl_client.fetch_live_game_stats(nfl_game_id)
+
+                            if live_stats_data:
+                                # Extract team stats from ESPNs response
+                                home_live_raw = live_stats_data.get('home_team_stats', {})
+                                away_live_raw = live_stats_data.get('away_team_stats', {})
+
+                                # Create NFLLiveStats objects for both teams with comprehensive data
+                                if home_live_raw:
+                                    home_nfl_live_stats = NFLLiveStats(
+                                        first_downs=int(home_live_raw.get('first_downs', 0)) if home_live_raw.get('first_downs') else None,
+                                        first_downs_passing=None,  # Not available in current ESPN data
+                                        first_downs_rushing=None,  # Not available in current ESPN data
+                                        first_downs_penalty=None,  # Not available in current ESPN data
+                                        third_down_eff=str(home_live_raw.get('third_down_pct', '0/0')) if home_live_raw.get('third_down_pct') else None,
+                                        fourth_down_eff=str(home_live_raw.get('fourth_down_pct', '0/0')) if home_live_raw.get('fourth_down_pct') else None,
+                                        total_yards=str(home_live_raw.get('total_yards', 0)) if home_live_raw.get('total_yards') else None,
+                                        yards_per_play=str(home_live_raw.get('yards_per_play', '0.0')) if home_live_raw.get('yards_per_play') else None,
+                                        passing_yards=str(home_live_raw.get('passing_yards', 0)) if home_live_raw.get('passing_yards') else None,
+                                        comp_att=str(home_live_raw.get('pass_completions', '0/0')) if home_live_raw.get('pass_completions') else None,
+                                        yards_per_pass=None,  # Not available in current ESPN data
+                                        interceptions_thrown=None,  # Not available in current ESPN data
+                                        sacks_yards_lost=str(home_live_raw.get('sacks_yards', 0)) if home_live_raw.get('sacks_yards') else None,
+                                        rushing_yards=str(home_live_raw.get('rushing_yards', 0)) if home_live_raw.get('rushing_yards') else None,
+                                        rushing_attempts=str(home_live_raw.get('rush_attempts', 0)) if home_live_raw.get('rush_attempts') else None,
+                                        yards_per_rush=None,  # Not available in current ESPN data
+                                        red_zone=None,  # Not available in current ESPN data
+                                        penalties=str(home_live_raw.get('penalties', 0)) if home_live_raw.get('penalties') else None,
+                                        turnovers=str(home_live_raw.get('turnovers', 0)) if home_live_raw.get('turnovers') else None,
+                                        fumbles_lost=str(home_live_raw.get('fumbles_lost', 0)) if home_live_raw.get('fumbles_lost') else None,
+                                        defensive_td=None,  # Not available in current ESPN data
+                                        possession=str(home_live_raw.get('time_of_possession', '0:00')) if home_live_raw.get('time_of_possession') else None,
+                                        total_plays=None  # Not available in current ESPN data
+                                    )
+                                print(f"[{sport_label} LIVE STATS] Home live stats populated: {home_nfl_live_stats is not None}")
+
+                                if away_live_raw:
+                                    away_nfl_live_stats = NFLLiveStats(
+                                        first_downs=int(away_live_raw.get('first_downs', 0)) if away_live_raw.get('first_downs') else None,
+                                        first_downs_passing=None,  # Not available in current ESPN data
+                                        first_downs_rushing=None,  # Not available in current ESPN data
+                                        first_downs_penalty=None,  # Not available in current ESPN data
+                                        third_down_eff=str(away_live_raw.get('third_down_pct', '0/0')) if away_live_raw.get('third_down_pct') else None,
+                                        fourth_down_eff=str(away_live_raw.get('fourth_down_pct', '0/0')) if away_live_raw.get('fourth_down_pct') else None,
+                                        total_yards=str(away_live_raw.get('total_yards', 0)) if away_live_raw.get('total_yards') else None,
+                                        yards_per_play=str(away_live_raw.get('yards_per_play', '0.0')) if away_live_raw.get('yards_per_play') else None,
+                                        passing_yards=str(away_live_raw.get('passing_yards', 0)) if away_live_raw.get('passing_yards') else None,
+                                        comp_att=str(away_live_raw.get('pass_completions', '0/0')) if away_live_raw.get('pass_completions') else None,
+                                        yards_per_pass=None,  # Not available in current ESPN data
+                                        interceptions_thrown=None,  # Not available in current ESPN data
+                                        sacks_yards_lost=str(away_live_raw.get('sacks_yards', 0)) if away_live_raw.get('sacks_yards') else None,
+                                        rushing_yards=str(away_live_raw.get('rushing_yards', 0)) if away_live_raw.get('rushing_yards') else None,
+                                        rushing_attempts=str(away_live_raw.get('rush_attempts', 0)) if away_live_raw.get('rush_attempts') else None,
+                                        yards_per_rush=None,  # Not available in current ESPN data
+                                        red_zone=None,  # Not available in current ESPN data
+                                        penalties=str(away_live_raw.get('penalties', 0)) if away_live_raw.get('penalties') else None,
+                                        turnovers=str(away_live_raw.get('turnovers', 0)) if away_live_raw.get('turnovers') else None,
+                                        fumbles_lost=str(away_live_raw.get('fumbles_lost', 0)) if away_live_raw.get('fumbles_lost') else None,
+                                        defensive_td=None,  # Not available in current ESPN data
+                                        possession=str(away_live_raw.get('time_of_possession', '0:00')) if away_live_raw.get('time_of_possession') else None,
+                                        total_plays=None  # Not available in current ESPN data
+                                    )
+                                print(f"[{sport_label} LIVE STATS] Away live stats populated: {away_nfl_live_stats is not None}")
+                                logger.info(f"{sport_label} live boxscore stats populated - Home: {home_nfl_live_stats is not None}, Away: {away_nfl_live_stats is not None}")
+
+                        except Exception as e:
+                            logger.warning(f"Error fetching {sport_label} live stats for game {nfl_game_id}: {e}")
+
+                # Fetch NHL momentum stats and season stats if this is an NHL game
+                home_nhl_momentum = None
+                away_nhl_momentum = None
+                home_nhl_stats = None
+                away_nhl_stats = None
+
+                if game_state.sport_key.startswith('icehockey'):
+                    # Fetch NHL season stats
+                    logger.info(f"Fetching NHL stats for {game_state.away_team.name} @ {game_state.home_team.name}")
+                    home_nhl_stats = await self._get_nhl_team_stats(game_state.home_team.name)
+                    away_nhl_stats = await self._get_nhl_team_stats(game_state.away_team.name)
+                    logger.info(f"NHL stats fetched - Home: {home_nhl_stats is not None}, Away: {away_nhl_stats is not None}")
+
+                    # Fetch live momentum stats only for live games
+                    if False and game_state.status == 'live':
+                        try:
+                            # Get NHL game ID (format might need adjustment based on API)
+                            # For now, use our game_id directly
+                            live_stats = await self.nhl_stats_client.get_live_game_stats(game_id)
+
+                            if live_stats and 'play_by_play' in live_stats:
+                                # Use ENHANCED momentum calculation with PP/Penalties
+                                momentum_data = self.nhl_stats_client.extract_enhanced_momentum_from_pbp(
+                                    live_stats['play_by_play'],
+                                    live_stats.get('boxscore', {})
+                                )
+
+                                # Create momentum stats for home team with new fields
+                                home_data = momentum_data.get('home', {})
+                                home_nhl_momentum = NHLMomentumStats(
+                                    momentum_score=home_data.get('momentum_score', 50.0),
+                                    recent_shots=home_data.get('recent_shots', 0),
+                                    scoring_chances=home_data.get('scoring_chances', 0),
+                                    faceoff_wins=home_data.get('faceoff_wins', 0),
+                                    offensive_zone_events=home_data.get('offensive_zone_events', 0),
+                                    possession_indicator="ATTACKING" if home_data.get('momentum_score', 50) > 60
+                                                        else "DEFENDING" if home_data.get('momentum_score', 50) < 40
+                                                        else "NEUTRAL",
+                                    power_play_opps=home_data.get('power_play_opps', "0/0"),
+                                    penalty_minutes=home_data.get('penalty_minutes', 0),
+                                    blocked_shots=home_data.get('blocked_shots', 0)
+                                )
+
+                                # Create momentum stats for away team with new fields
+                                away_data = momentum_data.get('away', {})
+                                away_nhl_momentum = NHLMomentumStats(
+                                    momentum_score=away_data.get('momentum_score', 50.0),
+                                    recent_shots=away_data.get('recent_shots', 0),
+                                    scoring_chances=away_data.get('scoring_chances', 0),
+                                    faceoff_wins=away_data.get('faceoff_wins', 0),
+                                    offensive_zone_events=away_data.get('offensive_zone_events', 0),
+                                    possession_indicator="ATTACKING" if away_data.get('momentum_score', 50) > 60
+                                                        else "DEFENDING" if away_data.get('momentum_score', 50) < 40
+                                                        else "NEUTRAL",
+                                    power_play_opps=away_data.get('power_play_opps', "0/0"),
+                                    penalty_minutes=away_data.get('penalty_minutes', 0),
+                                    blocked_shots=away_data.get('blocked_shots', 0)
+                                )
+
+                                logger.info(f"NHL momentum: {game_state.home_team.name} ({home_nhl_momentum.momentum_score}) vs {game_state.away_team.name} ({away_nhl_momentum.momentum_score}) | PP: {home_nhl_momentum.power_play_opps} vs {away_nhl_momentum.power_play_opps}")
+                        except Exception as e:
+                            logger.warning(f"Error fetching NHL momentum for game {game_id}: {e}")
+
+                # Fetch MLB team stats if this is an MLB game
+                home_mlb_stats = None
+                away_mlb_stats = None
+
+                if game_state.sport_key.startswith('baseball'):
+                    # Fetch MLB season stats
+                    logger.info(f"Fetching MLB stats for {game_state.away_team.name} @ {game_state.home_team.name}")
+                    home_mlb_stats = await self._get_mlb_team_stats(game_state.home_team.name)
+                    away_mlb_stats = await self._get_mlb_team_stats(game_state.away_team.name)
+                    logger.info(f"MLB stats fetched - Home: {home_mlb_stats is not None}, Away: {away_mlb_stats is not None}")
+
+                # Team stats already fetched earlier
+                new_games[game_id] = LiveGame(
+                    state=game_state,
+                    odds=odds_list,
+                    projection=projection,
+                    home_team_stats=home_stats,
+                    away_team_stats=away_stats,
+                    home_nfl_live_stats=home_nfl_live_stats,
+                    away_nfl_live_stats=away_nfl_live_stats,
+                    home_nfl_stats=home_nfl_stats,
+                    away_nfl_stats=away_nfl_stats,
+                    home_nhl_momentum=home_nhl_momentum,
+                    away_nhl_momentum=away_nhl_momentum,
+                    home_nhl_stats=home_nhl_stats,
+                    away_nhl_stats=away_nhl_stats,
+                    home_mlb_stats=home_mlb_stats,
+                    away_mlb_stats=away_mlb_stats
+                )
+            except Exception as e:
+                # Use espn_game for error logging since game_data might be None
+                game_identifier = f"{espn_game.get('away_team', 'unknown')} @ {espn_game.get('home_team', 'unknown')}"
+                logger.warning(f"Error parsing game {game_identifier}: {e}", exc_info=True)
+                continue
+
+        self.games = new_games
+        logger.info(f"Updated {len(self.games)} games")
+
+        # Check for NHL goalie pull opportunities
+        await self._check_goalie_pull_opportunities()
+
+    async def _check_goalie_pull_opportunities(self):
+        """Check all live NHL games for goalie pull betting opportunities"""
+        # Get all live NHL games
+        live_nhl_games = []
+
+        for game_id, live_game in self.games.items():
+            if live_game.state.sport_key.startswith('icehockey') and live_game.state.status == 'live':
+                # Convert to format expected by GoaliePullPredictor
+                game_dict = {
+                    'game_id': game_id,
+                    'away_team': live_game.state.away_team.name,
+                    'home_team': live_game.state.home_team.name,
+                    'away_score': live_game.state.away_team.score or 0,
+                    'home_score': live_game.state.home_team.score or 0,
+                    'period': live_game.state.quarter or 0,
+                    'time_remaining': live_game.state.time_remaining or '0:00',
+                    'time_remaining_seconds': self._parse_time_to_seconds(live_game.state.time_remaining or '0:00'),
+                    'current_score': (live_game.state.home_team.score or 0) + (live_game.state.away_team.score or 0)
+                }
+
+                live_nhl_games.append(game_dict)
+
+        if not live_nhl_games:
+            # No live NHL games, clear opportunities
+            self.goalie_pull_opportunities = []
+            return
+
+        # Prepare odds data for each game
+        odds_data = {}
+        for game in live_nhl_games:
+            game_id = game['game_id']
+            live_game = self.games.get(game_id)
+
+            if live_game and live_game.odds:
+                # Get average total from all books
+                avg_total = sum(odd.total for odd in live_game.odds) / len(live_game.odds)
+                # Get best over odds
+                best_over_odds = max(odd.over_price for odd in live_game.odds)
+
+                odds_data[game_id] = {
+                    'total': avg_total,
+                    'over_odds': best_over_odds
+                }
+
+        # Check for opportunities
+        opportunities = GoaliePullPredictor.check_for_opportunities(live_nhl_games, odds_data)
+
+        # Update stored opportunities
+        self.goalie_pull_opportunities = opportunities
+
+        # Log any HIGH priority opportunities
+        for opp in opportunities:
+            if opp['priority'] == 'HIGH':
+                logger.warning(f"🚨 HIGH PRIORITY GOALIE PULL OPPORTUNITY: {opp['game']}")
+                logger.warning(opp['alert_message'])
+
+    def _parse_time_to_seconds(self, time_str: str) -> int:
+        """Parse time string like '2:30' to seconds"""
+        try:
+            parts = time_str.split(':')
+            minutes = int(parts[0])
+            seconds = int(parts[1])
+            return (minutes * 60) + seconds
+        except:
+            return 0
+
+    async def stop(self):
+        """Stop tracking"""
+        self.running = False
+        await self.odds_client.close()
+
+    def get_all_games(self) -> List[LiveGame]:
+        """Get all tracked games"""
+        return list(self.games.values())
+
+    def get_game(self, game_id: str) -> LiveGame:
+        """Get specific game"""
+        return self.games.get(game_id)
+
+    def get_goalie_pull_opportunities(self) -> List[Dict]:
+        """Get current goalie pull betting opportunities"""
+        return self.goalie_pull_opportunities

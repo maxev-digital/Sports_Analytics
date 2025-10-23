@@ -1,28 +1,58 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 export function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showFireRing, setShowFireRing] = useState(false);
   const { login, error, loading } = useAuth();
   const navigate = useNavigate();
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const success = await login(username, password);
     if (success) {
-      // Redirect to home page on successful login
-      navigate('/');
+      // Trigger fire ring animation
+      setShowFireRing(true);
+      
+      // Play flame sound
+      if (audioRef.current) {
+        audioRef.current.play().catch(err => console.log('Audio play failed:', err));
+      }
+      
+      // Redirect after animation
+      setTimeout(() => {
+        navigate('/');
+      }, 1500);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-4">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-4xl font-bold text-white">
+    <div className="min-h-screen flex items-center justify-center bg-black px-4 relative overflow-hidden">
+      {/* Hidden audio element for flame sound */}
+      <audio 
+        ref={audioRef}
+        src="/flame.mp3"
+        preload="auto"
+      />
+      
+      {/* Fire Ring Animation Overlay */}
+      {showFireRing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+          <div className="fire-ring animate-fire-ring"></div>
+        </div>
+      )}
+      <div className="max-w-md w-full space-y-6">
+        <div className="text-center relative">
+          <img 
+            src="/logo2.png" 
+            alt="Max EV Sports - Bull Market Betting" 
+            className={`mx-auto h-64 w-auto mb-6 transition-all duration-500 ${showFireRing ? 'scale-110 brightness-125 drop-shadow-[0_0_30px_rgba(239,68,68,0.8)]' : 'drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)]'}`}
+          />
+          <h2 className="text-center text-4xl font-bold text-white">
             Max-EV-Bettors Only
           </h2>
           <p className="mt-2 text-center text-sm text-slate-400">
@@ -30,7 +60,7 @@ export function Login() {
           </p>
         </div>
 
-        <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 border-4 border-slate-700 rounded-lg shadow-xl p-8">
+        <div className="bg-gradient-to-br from-red-900 via-red-950 to-black border-4 border-red-800 rounded-lg shadow-xl p-8">
           <form className="space-y-6" onSubmit={handleSubmit}>
             {error && (
               <div className="bg-red-900/50 border-2 border-red-600 rounded-lg p-3 text-red-200 text-sm">
@@ -79,10 +109,10 @@ export function Login() {
                 disabled={loading}
                 className={`
                   group relative w-full flex justify-center py-3 px-4
-                  border-2 border-transparent rounded-lg text-white text-sm font-medium
+                  border-2 border-slate-700 rounded-lg text-white text-sm font-medium
                   ${loading
                     ? 'bg-slate-600 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
+                    : 'bg-black hover:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500'
                   }
                   transition-all duration-200
                 `}
@@ -102,13 +132,32 @@ export function Login() {
             </div>
           </form>
 
-          <div className="mt-6 text-center text-xs text-slate-500">
-            <p>Protected access to betting analytics and arbitrage detection</p>
+          <div className="mt-6 text-center">
+            <p className="text-xs text-slate-500 mb-4">Protected access to betting analytics and arbitrage detection</p>
+            <div className="flex items-center justify-center gap-2 text-sm">
+              <span className="text-slate-400">Don't have an account?</span>
+              <button
+                onClick={() => navigate('/signup')}
+                className="text-blue-400 hover:text-blue-300 font-semibold underline transition-colors"
+              >
+                Start 7-Day Free Trial
+              </button>
+            </div>
           </div>
         </div>
 
-        <div className="text-center text-xs text-slate-600">
-          <p>© 2025 ARB Auto Bettor™. All rights reserved.</p>
+        <div className="text-center text-xs text-slate-600 mt-4">
+          <p>© 2025 Casino Tears - MAX EV SPORTS™. All Rights Reserved.</p>
+        </div>
+
+        {/* Casino Tears Branding */}
+        <div className="text-center mt-6">
+          <p className="text-slate-400 text-sm mb-3">Brought to you by:</p>
+          <img 
+            src="/casino-tears.png" 
+            alt="Casino Tears" 
+            className="mx-auto w-64 h-auto"
+          />
         </div>
       </div>
     </div>

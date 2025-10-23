@@ -6,7 +6,7 @@ import { sportEmojis } from '../utils/sportDetection';
 export function LiveGames() {
   const [games, setGames] = useState<LiveGame[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedSport, setSelectedSport] = useState<string>('all');
+  const [selectedSport, setSelectedSport] = useState<string>('live');
 
   useEffect(() => {
     fetchGames();
@@ -18,6 +18,9 @@ export function LiveGames() {
     try {
       const response = await fetch('/api/games?user_id=default');
       const data = await response.json();
+      console.log('📊 Fetched games:', data);
+      console.log('📊 Number of games:', data.length);
+      console.log('📊 First game structure:', data[0]);
       setGames(data);
       setLoading(false);
     } catch (error) {
@@ -27,7 +30,7 @@ export function LiveGames() {
   };
 
   const sports = [
-    { key: 'all', label: 'All Sports', logo: null, emoji: null },
+    { key: 'live', label: 'All Games', logo: null, emoji: null },
     { key: 'nfl', label: 'NFL', filter: 'americanfootball_nfl', logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/nfl.png', emoji: sportEmojis.NFL },
     { key: 'ncaaf', label: 'NCAAF', filter: 'americanfootball_ncaaf', logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/ncaa.png', emoji: sportEmojis.NCAAF },
     { key: 'nba', label: 'NBA', filter: 'basketball_nba', logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/nba.png', emoji: sportEmojis.NBA },
@@ -42,8 +45,8 @@ export function LiveGames() {
     { key: 'nascar', label: 'NASCAR', filter: 'motorsport_nascar', logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/nascar.png', emoji: null },
   ];
 
-  const filteredGames = selectedSport === 'all'
-    ? games
+  const filteredGames = selectedSport === 'live'
+    ? games  // Show all games when "All Games" is selected
     : games.filter(game => {
         const sport = sports.find(s => s.key === selectedSport);
         return sport && game.state.sport_key.includes(sport.filter);
@@ -78,6 +81,12 @@ export function LiveGames() {
 
   const liveGames = filteredGames.filter(g => g.state.status === 'live');
   const upcomingGames = filteredGames.filter(g => g.state.status === 'upcoming');
+  
+  console.log('🎮 Selected sport:', selectedSport);
+  console.log('🎮 Total games:', games.length);
+  console.log('🎮 Filtered games:', filteredGames.length);
+  console.log('🎮 Live games:', liveGames.length);
+  console.log('🎮 Upcoming games:', upcomingGames.length);
 
   // For tennis, group by tournament
   const tennisGames = filteredGames.filter(g => g.state.sport_key.includes('tennis'));
@@ -93,9 +102,9 @@ export function LiveGames() {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' }}>
+    <div className="min-h-screen bg-gradient-to-br from-black via-slate-900 to-black">
       {/* Sport Filter Tabs */}
-      <div className="sticky top-0 z-10 bg-slate-900/95 backdrop-blur-sm border-b border-slate-700">
+      <div className="sticky top-0 z-10 bg-gradient-to-br from-red-900 via-red-950 to-black border-b border-red-800">
         <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex gap-2 overflow-x-auto scrollbar-hide">
             {sports.map(sport => (

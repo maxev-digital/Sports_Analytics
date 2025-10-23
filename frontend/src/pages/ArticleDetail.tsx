@@ -6974,7 +6974,7 @@ export function ArticleDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-black via-slate-900 to-black py-8">
       <div className="max-w-4xl mx-auto px-4">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm text-slate-400 mb-6">

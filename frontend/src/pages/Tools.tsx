@@ -121,7 +121,7 @@ export function Tools() {
   const activeToolData = tools.find(t => t.id === activeTool);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-black via-slate-900 to-black py-12 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-12">

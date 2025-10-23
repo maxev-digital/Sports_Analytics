@@ -113,7 +113,7 @@ export function Alerts() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-black via-slate-900 to-black flex items-center justify-center">
         <div className="text-white text-xl">Loading alerts...</div>
       </div>
     );
@@ -121,14 +121,14 @@ export function Alerts() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-black via-slate-900 to-black flex items-center justify-center">
         <div className="text-red-400 text-xl">Error: {error}</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-black via-slate-900 to-black py-8 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -159,15 +159,15 @@ export function Alerts() {
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-gradient-to-br from-green-700 via-green-800 to-green-900 border-4 border-green-600 rounded-lg p-6">
+            <div className="bg-gradient-to-br from-red-900 to-black border-4 border-red-600 rounded-lg p-6">
               <div className="text-base text-white font-bold tracking-wide mb-1">ARBITRAGE OPPORTUNITIES</div>
               <div className="text-3xl font-bold text-white">{alertsData?.arbitrage.count || 0}</div>
             </div>
-            <div className="bg-gradient-to-br from-blue-700 via-blue-800 to-blue-900 border-4 border-blue-600 rounded-lg p-6">
+            <div className="bg-gradient-to-br from-blue-900 to-slate-800 border-4 border-blue-500 rounded-lg p-6">
               <div className="text-base text-white font-bold tracking-wide mb-1">STEAM MOVES</div>
               <div className="text-3xl font-bold text-white">{alertsData?.steam_moves.count || 0}</div>
             </div>
-            <div className="bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 border-4 border-slate-600 rounded-lg p-6">
+            <div className="bg-gradient-to-br from-green-900 to-black border-4 border-green-600 rounded-lg p-6">
               <div className="text-base text-white font-bold tracking-wide mb-1">LINE MOVEMENTS</div>
               <div className="text-3xl font-bold text-white">{alertsData?.line_movements.count || 0}</div>
             </div>
@@ -228,7 +228,7 @@ export function Alerts() {
               </div>
             ) : (
               alertsData?.arbitrage.alerts.map((alert, idx) => (
-                <div key={idx} className="bg-gradient-to-br from-green-700 via-green-800 to-green-900 border-4 border-green-600 rounded-lg p-6">
+                <div key={idx} className="bg-gradient-to-br from-red-900 to-black border-4 border-red-600 rounded-lg p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <span className={`px-3 py-1 rounded-full text-xs font-bold text-white ${getSportBadgeColor(alert.sport)}`}>
@@ -299,7 +299,7 @@ export function Alerts() {
               </div>
             ) : (
               alertsData?.steam_moves.alerts.map((alert, idx) => (
-                <div key={idx} className="bg-gradient-to-br from-blue-700 via-blue-800 to-blue-900 border-4 border-blue-600 rounded-lg p-6">
+                <div key={idx} className="bg-gradient-to-br from-blue-900 to-slate-800 border-4 border-blue-500 rounded-lg p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <span className={`px-3 py-1 rounded-full text-xs font-bold text-white ${getSportBadgeColor(alert.sport)}`}>
@@ -363,7 +363,7 @@ export function Alerts() {
               </div>
             ) : (
               alertsData?.line_movements.alerts.map((alert, idx) => (
-                <div key={idx} className="bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 border-4 border-slate-600 rounded-lg p-6">
+                <div key={idx} className="bg-gradient-to-br from-green-900 to-black border-4 border-green-600 rounded-lg p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <span className={`px-3 py-1 rounded-full text-xs font-bold text-white ${getSportBadgeColor(alert.sport)}`}>

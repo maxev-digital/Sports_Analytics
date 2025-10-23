@@ -59,6 +59,26 @@ test_cors.html
 nul
 backend/nul
 
+# Database files - contains user data, never commit
+*.db
+*.sqlite
+*.sqlite3
+
+# User data and sensitive information
+users.json
+user_activity_log.json
+*_cache.json
+backend/users.json
+backend/user_activity_log.json
+backend/team_stats_cache.json
+backend/subscriptions.db
+backend/user_settings.db
+backend/plays_tracking.db
+
+# Archives and large files
+*.tar.gz
+*.zip
+
 # Data files (optional - uncomment if large)
 # backend/data/predictions/
 # backend/data/tracking/

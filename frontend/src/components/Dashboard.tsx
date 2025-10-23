@@ -8,7 +8,8 @@ type Sport = 'NBA' | 'NHL' | 'NCAAF' | 'NFL' | 'MLB' | 'ALL';
 
 export function Dashboard() {
   // Use WebSocket for real-time updates instead of polling
-  const { games: wsGames, connected: wsConnected, lastUpdate: wsLastUpdate, error: wsError } = useWebSocket();
+  // Pass 'default' as user_id to enable per-user bookmaker filtering
+  const { games: wsGames, connected: wsConnected, lastUpdate: wsLastUpdate, error: wsError } = useWebSocket('default');
 
   const [games, setGames] = useState<LiveGame[]>([]);
   const [loading, setLoading] = useState(true);
