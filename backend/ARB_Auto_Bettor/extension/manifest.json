@@ -1,0 +1,93 @@
+{
+  "manifest_version": 3,
+  "name": "ARB Auto Bettor™",
+  "version": "1.0.0",
+  "description": "Automated arbitrage betting assistant - 95% automated, 100% ToS compliant",
+  "permissions": [
+    "storage",
+    "notifications",
+    "tabs",
+    "activeTab",
+    "scripting",
+    "offscreen"
+  ],
+  "host_permissions": [
+    "http://localhost:8000/*",
+    "https://sportsbook.draftkings.com/*",
+    "https://sportsbook.fanduel.com/*",
+    "https://sports.betmgm.com/*",
+    "https://www.caesars.com/sportsbook-and-casino/*",
+    "https://www.betrivers.com/*",
+    "https://*/williamhill/*",
+    "https://fanatics.com/betting/*",
+    "https://www.mybookie.ag/*",
+    "https://www.betus.com.pa/*",
+    "https://www.betonline.ag/*",
+    "https://lowvig.ag/*",
+    "https://www.bovada.lv/*",
+    "https://*.bovada.lv/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.betus.com.pa/*"],
+      "js": [
+        "content/base/bet_finder.js",
+        "content/sportsbooks/betus.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://sportsbook.draftkings.com/*"],
+      "js": ["content_scripts/draftkings.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://sportsbook.fanduel.com/*"],
+      "js": ["content_scripts/fanduel.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://sports.betmgm.com/*"],
+      "js": ["content_scripts/betmgm.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://www.caesars.com/sportsbook-and-casino/*"],
+      "js": ["content_scripts/caesars.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://www.betrivers.com/*"],
+      "js": ["content_scripts/betrivers.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://www.bovada.lv/*", "https://*.bovada.lv/*"],
+      "js": [
+        "content/base/bet_finder.js",
+        "content/sportsbooks/bovada.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

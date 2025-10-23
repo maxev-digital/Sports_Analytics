@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Voice Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #1e293b;
+      color: white;
+    }
+    .voice-info {
+      background: #334155;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 10px 0;
+    }
+    .current {
+      background: #16a34a;
+      font-weight: bold;
+    }
+    button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button:hover {
+      background: #1d4ed8;
+    }
+  </style>
+</head>
+<body>
+  <h1>Available Voices</h1>
+  <button onclick="loadVoices()">Refresh Voices</button>
+  <button onclick="testCurrentVoice()">Test Current Voice</button>
+  <div id="voices"></div>
+
+  <script>
+    function loadVoices() {
+      const voices = window.speechSynthesis.getVoices();
+      const container = document.getElementById('voices');
+
+      // Find the preferred voice (same logic as extension)
+      const preferredVoice = voices.find(v =>
+        v.lang.startsWith('en-US') && (v.name.includes('Google') || v.name.includes('Microsoft'))
+      ) || voices.find(v => v.lang.startsWith('en'));
+
+      container.innerHTML = `
+        <div class="voice-info current">
+          <h3>✓ CURRENTLY SELECTED</h3>
+          <strong>${preferredVoice ? preferredVoice.name : 'None'}</strong><br>
+          Language: ${preferredVoice ? preferredVoice.lang : 'N/A'}<br>
+          Local: ${preferredVoice ? preferredVoice.localService : 'N/A'}
+        </div>
+        <h3>All Available Voices (${voices.length} total):</h3>
+      `;
+
+      voices.forEach((voice, i) => {
+        const isCurrent = voice === preferredVoice;
+        container.innerHTML += `
+          <div class="voice-info ${isCurrent ? 'current' : ''}">
+            <strong>${voice.name}</strong><br>
+            Language: ${voice.lang}<br>
+            Local: ${voice.localService ? 'Yes' : 'No (Cloud)'}
+            <button onclick="testVoice(${i})">Test</button>
+          </div>
+        `;
+      });
+    }
+
+    function testVoice(index) {
+      const voices = window.speechSynthesis.getVoices();
+      const utterance = new SpeechSynthesisUtterance(
+        'Arbitrage opportunity. Lakers versus Warriors. Three point five percent ROI between DraftKings and FanDuel.'
+      );
+      utterance.voice = voices[index];
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      utterance.volume = 0.5;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function testCurrentVoice() {
+      const voices = window.speechSynthesis.getVoices();
+      const preferredVoice = voices.find(v =>
+        v.lang.startsWith('en-US') && (v.name.includes('Google') || v.name.includes('Microsoft'))
+      ) || voices.find(v => v.lang.startsWith('en'));
+
+      const utterance = new SpeechSynthesisUtterance(
+        'Arbitrage opportunity. Lakers versus Warriors. Three point five percent ROI between DraftKings and FanDuel.'
+      );
+      utterance.voice = preferredVoice;
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      utterance.volume = 0.5;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    // Load voices on page load
+    if (window.speechSynthesis.onvoiceschanged !== undefined) {
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
+    setTimeout(loadVoices, 100);
+  </script>
+</body>
+</html>

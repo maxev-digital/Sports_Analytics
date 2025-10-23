@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>PNG Icon Preview - White Circle with Blue Lightning</title>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: #1e293b;
+      gap: 20px;
+      font-family: Arial, sans-serif;
+    }
+    h1 {
+      color: white;
+      margin-bottom: 20px;
+    }
+    .container {
+      display: flex;
+      gap: 40px;
+    }
+    .preview {
+      text-align: center;
+      background: #334155;
+      padding: 20px;
+      border-radius: 8px;
+    }
+    .preview h3 {
+      color: white;
+      margin-bottom: 15px;
+    }
+    .icon-box {
+      background: #475569;
+      padding: 20px;
+      border-radius: 8px;
+      display: inline-block;
+    }
+    img {
+      display: block;
+    }
+    .instructions {
+      color: white;
+      background: #16a34a;
+      padding: 20px;
+      border-radius: 8px;
+      max-width: 600px;
+      text-align: center;
+    }
+    .instructions h2 {
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>New Extension Icon: White Circle with Blue Lightning Bolt</h1>
+
+  <div class="container">
+    <div class="preview">
+      <h3>16x16 (Toolbar)</h3>
+      <div class="icon-box">
+        <img src="icon16.png" width="16" height="16">
+      </div>
+    </div>
+    <div class="preview">
+      <h3>32x32 (Small)</h3>
+      <div class="icon-box">
+        <img src="icon32.png" width="32" height="32">
+      </div>
+    </div>
+    <div class="preview">
+      <h3>48x48 (Medium)</h3>
+      <div class="icon-box">
+        <img src="icon48.png" width="48" height="48">
+      </div>
+    </div>
+    <div class="preview">
+      <h3>128x128 (Large)</h3>
+      <div class="icon-box">
+        <img src="icon128.png" width="128" height="128">
+      </div>
+    </div>
+  </div>
+
+  <div class="instructions">
+    <h2>To Apply the New Icon:</h2>
+    <p><strong>1.</strong> Go to <code>chrome://extensions/</code></p>
+    <p><strong>2.</strong> Find "ARB Auto Bettor"</p>
+    <p><strong>3.</strong> Click <strong>Remove</strong></p>
+    <p><strong>4.</strong> Click <strong>Load unpacked</strong></p>
+    <p><strong>5.</strong> Select: <code>C:\Users\nashr\backend\ARB_Auto_Bettor\extension</code></p>
+    <p style="margin-top: 15px; color: #fef08a;">The white circle with blue lightning will now appear in your toolbar!</p>
+  </div>
+</body>
+</html>

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <img src="../logo.png" alt="Max EV Sports" style="height: 40px; width: auto;">
+        <h1>SportTrader.io ARB Auto Bettor</h1>
+      </div>
+      <div class="status" id="status">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText">Connecting...</span>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat" id="statArbitrage">
+        <div class="stat-value" id="opportunityCount">0</div>
+        <div class="stat-label">Arbitrage</div>
+      </div>
+      <div class="stat" id="statSteam">
+        <div class="stat-value" id="steamCount">0</div>
+        <div class="stat-label">Steam Moves</div>
+      </div>
+      <div class="stat" id="statLines">
+        <div class="stat-value" id="lineCount">0</div>
+        <div class="stat-label">Line Moves</div>
+      </div>
+      <div class="stat" id="statGoalie">
+        <div class="stat-value" id="goalieCount">0</div>
+        <div class="stat-label">Goalie Pull</div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="arbitrage">
+        <img src="https://em-content.zobj.net/source/microsoft-teams/363/direct-hit_1f3af.png" alt="Target" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 4px;">
+        Arbitrage
+      </button>
+      <button class="tab-btn" data-tab="steam">
+        <img src="https://em-content.zobj.net/source/microsoft-teams/363/fire_1f525.png" alt="Fire" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 4px;">
+        Steam
+      </button>
+      <button class="tab-btn" data-tab="lines">
+        <img src="https://em-content.zobj.net/source/microsoft-teams/363/chart-increasing_1f4c8.png" alt="Chart" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 4px;">
+        Lines
+      </button>
+      <button class="tab-btn" data-tab="goalie">
+        <img src="https://em-content.zobj.net/source/microsoft-teams/363/ice-hockey_1f3d2.png" alt="Hockey" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 4px;">
+        Goalie Pull
+      </button>
+    </div>
+
+    <div class="tab-content active" id="arbitrage-tab">
+      <div class="opportunities" id="opportunitiesList">
+        <!-- Arbitrage opportunities will be inserted here -->
+      </div>
+    </div>
+
+    <div class="tab-content" id="steam-tab">
+      <div class="opportunities" id="steamMovesList">
+        <!-- Steam moves will be inserted here -->
+      </div>
+    </div>
+
+    <div class="tab-content" id="lines-tab">
+      <div class="opportunities" id="lineMovementsList">
+        <!-- Line movements will be inserted here -->
+      </div>
+    </div>
+
+    <div class="tab-content" id="goalie-tab">
+      <div class="opportunities" id="goaliePullList">
+        <!-- Goalie pull opportunities will be inserted here -->
+      </div>
+    </div>
+
+    <div class="controls">
+      <button id="refreshBtn" class="btn btn-primary">🔄 Refresh</button>
+      <button id="settingsBtn" class="btn btn-secondary">⚙️ Settings</button>
+    </div>
+
+    <div class="sound-controls">
+      <button id="soundToggleBtn" class="btn btn-secondary">🔊 Sound ON</button>
+      <button id="testSoundBtn" class="btn btn-secondary">🔔 Test</button>
+    </div>
+
+    <div class="sound-controls">
+      <button id="voiceToggleBtn" class="btn btn-secondary">🗣️ Voice ON</button>
+      <button id="testVoiceBtn" class="btn btn-secondary">💬 Test Voice</button>
+    </div>
+
+    <div class="footer">
+      <a href="http://localhost:5179/alerts" target="_blank">View All Alerts →</a>
+    </div>
+  </div>
+
+  <script src="../url_builder.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

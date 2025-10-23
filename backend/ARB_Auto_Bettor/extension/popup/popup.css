@@ -1,0 +1,584 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  width: 400px;
+  min-height: 500px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+  background: linear-gradient(135deg, #000000 0%, #1a0000 100%);
+  color: #f1f5f9;
+}
+
+.container {
+  padding: 16px;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #991b1b;
+}
+
+.header h1 {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #ffffff;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #6b7280;
+}
+
+.status-dot.connected {
+  background: #ef4444;
+  box-shadow: 0 0 8px #ef4444;
+}
+
+.status-dot.error {
+  background: #ef4444;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.stat {
+  background: linear-gradient(135deg, #991b1b 0%, #1a0000 100%);
+  border: 2px solid #dc2626;
+  border-radius: 8px;
+  padding: 10px 8px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.stat:hover {
+  border-color: #ef4444;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.3);
+}
+
+.stat-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-size: 10px;
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+  border-bottom: 2px solid #991b1b;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  background: transparent;
+  color: #cbd5e1;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s;
+}
+
+.tab-btn:hover {
+  color: #ffffff;
+  background: rgba(51, 65, 85, 0.5);
+}
+
+.tab-btn.active {
+  color: #ffffff;
+  border-bottom-color: #dc2626;
+  background: rgba(220, 38, 38, 0.1);
+}
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+.opportunities {
+  max-height: 300px;
+  overflow-y: auto;
+  margin-bottom: 16px;
+}
+
+.opportunity-card {
+  background: linear-gradient(135deg, #1a0000 0%, #2d0000 100%);
+  border: 2px solid #991b1b;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Sport-specific card colors - Realistic playing surfaces */
+
+/* NBA - Red gradient (matching web dashboard) */
+.opportunity-card[data-sport="NBA"] {
+  background: linear-gradient(135deg, #991b1b 0%, #1a0000 100%);
+  border: 2px solid #dc2626;
+  color: #ffffff;
+}
+
+.opportunity-card[data-sport="NBA"] .opportunity-title,
+.opportunity-card[data-sport="NBA"] .opportunity-profit,
+.opportunity-card[data-sport="NBA"] .opportunity-details {
+  color: #ffffff;
+}
+
+/* NFL - Green field with yard lines */
+.opportunity-card[data-sport="NFL"] {
+  background: linear-gradient(135deg, #2d5016 0%, #1a3d0a 100%);
+  border: 2px solid #4a7c2a;
+  color: #ffffff;
+}
+
+.opportunity-card[data-sport="NFL"] .opportunity-title,
+.opportunity-card[data-sport="NFL"] .opportunity-profit,
+.opportunity-card[data-sport="NFL"] .opportunity-details {
+  color: #ffffff;
+}
+
+/* NHL - Ice rink (light blue-white like ice) */
+.opportunity-card[data-sport="NHL"] {
+  background: linear-gradient(135deg, #d4e8f0 0%, #b8dae8 100%);
+  border: 2px solid #6b9fb8;
+  color: #000000;
+}
+
+.opportunity-card[data-sport="NHL"] .opportunity-title,
+.opportunity-card[data-sport="NHL"] .opportunity-profit,
+.opportunity-card[data-sport="NHL"] .opportunity-details {
+  color: #000000;
+}
+
+/* MLB - Dirt infield (brown/tan) */
+.opportunity-card[data-sport="MLB"] {
+  background: linear-gradient(135deg, #8b6f47 0%, #6b5434 100%);
+  border: 2px solid #a0826d;
+  color: #ffffff;
+}
+
+.opportunity-card[data-sport="MLB"] .opportunity-title,
+.opportunity-card[data-sport="MLB"] .opportunity-profit,
+.opportunity-card[data-sport="MLB"] .opportunity-details {
+  color: #ffffff;
+}
+
+/* NCAAF - Green field like NFL */
+.opportunity-card[data-sport="NCAAF"] {
+  background: linear-gradient(135deg, #2d5016 0%, #1a3d0a 100%);
+  border: 2px solid #4a7c2a;
+  color: #ffffff;
+}
+
+.opportunity-card[data-sport="NCAAF"] .opportunity-title,
+.opportunity-card[data-sport="NCAAF"] .opportunity-profit,
+.opportunity-card[data-sport="NCAAF"] .opportunity-details {
+  color: #ffffff;
+}
+
+/* SOCCER - Green pitch */
+.opportunity-card[data-sport="SOCCER"] {
+  background: linear-gradient(135deg, #2d5016 0%, #1a3d0a 100%);
+  border: 2px solid #4a7c2a;
+  color: #ffffff;
+}
+
+.opportunity-card[data-sport="SOCCER"] .opportunity-title,
+.opportunity-card[data-sport="SOCCER"] .opportunity-profit,
+.opportunity-card[data-sport="SOCCER"] .opportunity-details {
+  color: #ffffff;
+}
+
+.opportunity-card:hover {
+  border-color: #ef4444;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.3);
+}
+
+.opportunity-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.opportunity-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.opportunity-profit {
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.opportunity-details {
+  font-size: 12px;
+  color: #ffffff;
+  line-height: 1.5;
+  font-weight: 500;
+}
+
+.opportunity-books {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.book-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #ffffff;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.book-badge.book-left {
+  background: #dc2626;
+  border: 1px solid #dc2626;
+}
+
+.book-badge.book-right {
+  background: #991b1b;
+  border: 1px solid #991b1b;
+}
+
+.book-logo {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  border-radius: 2px;
+}
+
+/* Alert Timestamps */
+.alert-timestamps {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 10px;
+  color: #94a3b8;
+}
+
+.timestamp-alert,
+.timestamp-game {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.timestamp-alert {
+  color: #fca5a5;
+  font-weight: 600;
+}
+
+.timestamp-game {
+  color: #86efac;
+  font-weight: 600;
+}
+
+/* Steam Move Cards */
+.steam-card {
+  background: linear-gradient(135deg, #7f1d1d 0%, #1e293b 100%);
+  border: 2px solid #ef4444;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), 0 0 12px rgba(239, 68, 68, 0.2);
+}
+
+.steam-card:hover {
+  border-color: #f87171;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
+}
+
+.steam-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.steam-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.steam-direction {
+  font-size: 14px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.steam-direction.up {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.steam-direction.down {
+  background: #16a34a;
+  color: #ffffff;
+}
+
+.steam-details {
+  font-size: 11px;
+  color: #cbd5e1;
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.steam-stale {
+  background: rgba(34, 197, 94, 0.2);
+  border: 1px solid #16a34a;
+  border-radius: 4px;
+  padding: 8px;
+  margin-top: 8px;
+}
+
+.steam-stale-title {
+  font-size: 10px;
+  color: #22c55e;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.steam-stale-info {
+  font-size: 13px;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.steam-books-moved {
+  font-size: 10px;
+  color: #94a3b8;
+  margin-top: 4px;
+}
+
+/* Goalie Pull Cards */
+.goalie-card {
+  background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
+  border: 3px solid #ef4444;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), 0 0 16px rgba(239, 68, 68, 0.3);
+  animation: goalie-pulse 2s infinite;
+}
+
+@keyframes goalie-pulse {
+  0%, 100% {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), 0 0 16px rgba(239, 68, 68, 0.3);
+  }
+  50% {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), 0 0 24px rgba(239, 68, 68, 0.6);
+  }
+}
+
+.goalie-card:hover {
+  border-color: #f87171;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+}
+
+.goalie-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.goalie-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.goalie-alert-badge {
+  background: #dc2626;
+  color: #ffffff;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  animation: badge-flash 1.5s infinite;
+}
+
+@keyframes badge-flash {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.goalie-details {
+  font-size: 13px;
+  color: #ffffff;
+  margin-bottom: 12px;
+  line-height: 1.6;
+}
+
+.goalie-details strong {
+  color: #fca5a5;
+}
+
+.goalie-action {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.goalie-bet-btn {
+  flex: 1;
+  background: #16a34a;
+  color: #ffffff;
+  border: 2px solid #15803d;
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+  text-decoration: none;
+  display: block;
+}
+
+.goalie-bet-btn:hover {
+  background: #15803d;
+  border-color: #166534;
+  box-shadow: 0 0 12px rgba(22, 163, 74, 0.4);
+}
+
+.controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.sound-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.btn {
+  padding: 10px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background: #dc2626;
+  color: white;
+  border: 2px solid #991b1b;
+}
+
+.btn-primary:hover {
+  background: #b91c1c;
+  border-color: #7f1d1d;
+}
+
+.btn-secondary {
+  background: #1a0000;
+  color: #cbd5e1;
+  border: 2px solid #991b1b;
+}
+
+.btn-secondary:hover {
+  background: #2d0000;
+  border-color: #dc2626;
+}
+
+.footer {
+  text-align: center;
+  padding-top: 12px;
+  border-top: 2px solid #991b1b;
+}
+
+.footer a {
+  color: #ef4444;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.footer a:hover {
+  text-decoration: underline;
+  color: #fca5a5;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #ffffff;
+}
+
+.empty-state-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+}
+
+/* Better emoji rendering */
+img[alt*="emoji" i],
+img[src*="emoji" i],
+img[src*="em-content" i] {
+  display: inline-block;
+  image-rendering: crisp-edges;
+  image-rendering: -webkit-optimize-contrast;
+}

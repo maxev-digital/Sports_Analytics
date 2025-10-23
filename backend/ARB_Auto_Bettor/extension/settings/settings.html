@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>ARB Auto Bettor - Settings</title>
+  <link rel="stylesheet" href="settings.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <img src="../logo.png" alt="Max EV Sports" style="height: 48px; width: auto;">
+        <h1>⚙️ Settings</h1>
+      </div>
+      <button id="closeBtn" class="btn btn-secondary">Close</button>
+    </div>
+
+    <!-- Bankroll Management Section -->
+    <section class="settings-section">
+      <h2>💰 Bankroll Management</h2>
+
+      <div class="setting-row">
+        <label for="totalBankroll">Total Bankroll</label>
+        <div class="input-group">
+          <span class="input-prefix">$</span>
+          <input type="number" id="totalBankroll" placeholder="10000" min="0" step="100">
+        </div>
+        <span class="setting-help">Total amount across all sportsbooks</span>
+      </div>
+
+      <div class="setting-row">
+        <label for="maxBetPercentage">Max Bet Per Opportunity</label>
+        <div class="input-group">
+          <input type="number" id="maxBetPercentage" placeholder="2" min="0.1" max="10" step="0.1">
+          <span class="input-suffix">%</span>
+        </div>
+        <span class="setting-help">Maximum percentage of bankroll per bet (recommended: 1-3%)</span>
+      </div>
+
+      <div class="setting-row">
+        <label for="minProfitThreshold">Minimum Profit Threshold</label>
+        <div class="input-group">
+          <input type="number" id="minProfitThreshold" placeholder="2.0" min="0.5" max="10" step="0.1">
+          <span class="input-suffix">%</span>
+        </div>
+        <span class="setting-help">Only alert on opportunities above this profit percentage</span>
+      </div>
+
+      <div class="setting-row">
+        <label for="betSizingMethod">Bet Sizing Method</label>
+        <select id="betSizingMethod">
+          <option value="flat_percentage">Flat Percentage</option>
+          <option value="kelly">Kelly Criterion (Advanced)</option>
+          <option value="fixed_amount">Fixed Dollar Amount</option>
+        </select>
+        <span class="setting-help">How to calculate bet sizes for each opportunity</span>
+      </div>
+
+      <div class="setting-row" id="fixedAmountRow" style="display: none;">
+        <label for="fixedBetAmount">Fixed Bet Amount</label>
+        <div class="input-group">
+          <span class="input-prefix">$</span>
+          <input type="number" id="fixedBetAmount" placeholder="100" min="10" step="10">
+        </div>
+        <span class="setting-help">Total amount to bet per opportunity (split between both books)</span>
+      </div>
+    </section>
+
+    <!-- Sportsbook Balances Section -->
+    <section class="settings-section">
+      <h2>📚 Sportsbook Balances</h2>
+      <p class="section-description">Enter your current balance at each sportsbook. The extension will skip opportunities if you don't have sufficient funds.</p>
+
+      <div class="sportsbooks-grid">
+        <!-- DraftKings -->
+        <div class="sportsbook-card">
+          <div class="sportsbook-header">
+            <img src="https://www.google.com/s2/favicons?domain=draftkings.com&sz=32" class="sportsbook-logo" onerror="this.style.display='none'">
+            <h3>DraftKings</h3>
+          </div>
+          <div class="sportsbook-controls">
+            <label class="toggle-switch">
+              <input type="checkbox" id="enableDraftKings" checked>
+              <span class="toggle-slider"></span>
+            </label>
+            <div class="input-group">
+              <span class="input-prefix">$</span>
+              <input type="number" id="balanceDraftKings" placeholder="0" min="0" step="10">
+            </div>
+          </div>
+        </div>
+
+        <!-- FanDuel -->
+        <div class="sportsbook-card">
+          <div class="sportsbook-header">
+            <img src="https://www.google.com/s2/favicons?domain=fanduel.com&sz=32" class="sportsbook-logo" onerror="this.style.display='none'">
+            <h3>FanDuel</h3>
+          </div>
+          <div class="sportsbook-controls">
+            <label class="toggle-switch">
+              <input type="checkbox" id="enableFanDuel" checked>
+              <span class="toggle-slider"></span>
+            </label>
+            <div class="input-group">
+              <span class="input-prefix">$</span>
+              <input type="number" id="balanceFanDuel" placeholder="0" min="0" step="10">
+            </div>
+          </div>
+        </div>
+
+        <!-- BetMGM -->
+        <div class="sportsbook-card">
+          <div class="sportsbook-header">
+            <img src="https://www.google.com/s2/favicons?domain=betmgm.com&sz=32" class="sportsbook-logo" onerror="this.style.display='none'">
+            <h3>BetMGM</h3>
+          </div>
+          <div class="sportsbook-controls">
+            <label class="toggle-switch">
+              <input type="checkbox" id="enableBetMGM">
+              <span class="toggle-slider"></span>
+            </label>
+            <div class="input-group">
+              <span class="input-prefix">$</span>
+              <input type="number" id="balanceBetMGM" placeholder="0" min="0" step="10">
+            </div>
+          </div>
+        </div>
+
+        <!-- Caesars -->
+        <div class="sportsbook-card">
+          <div class="sportsbook-header">
+            <img src="https://www.google.com/s2/favicons?domain=caesars.com&sz=32" class="sportsbook-logo" onerror="this.style.display='none'">
+            <h3>Caesars</h3>
+          </div>
+          <div class="sportsbook-controls">
+            <label class="toggle-switch">
+              <input type="checkbox" id="enableCaesars">
+              <span class="toggle-slider"></span>
+            </label>
+            <div class="input-group">
+              <span class="input-prefix">$</span>
+              <input type="number" id="balanceCaesars" placeholder="0" min="0" step="10">
+            </div>
+          </div>
+        </div>
+
+        <!-- BetRivers -->
+        <div class="sportsbook-card">
+          <div class="sportsbook-header">
+            <img src="https://www.google.com/s2/favicons?domain=betrivers.com&sz=32" class="sportsbook-logo" onerror="this.style.display='none'">
+            <h3>BetRivers</h3>
+          </div>
+          <div class="sportsbook-controls">
+            <label class="toggle-switch">
+              <input type="checkbox" id="enableBetRivers">
+              <span class="toggle-slider"></span>
+            </label>
+            <div class="input-group">
+              <span class="input-prefix">$</span>
+              <input type="number" id="balanceBetRivers" placeholder="0" min="0" step="10">
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Auto-Bet Behavior Section -->
+    <section class="settings-section">
+      <h2>🤖 Auto-Bet Behavior</h2>
+
+      <div class="setting-row">
+        <label for="autoBetMode">Auto-Bet Mode</label>
+        <select id="autoBetMode">
+          <option value="off">Off (Manual Only)</option>
+          <option value="fill" selected>Auto-Fill Bet Slips</option>
+          <option value="highlight">Fill + Highlight Confirm Button</option>
+        </select>
+        <span class="setting-help">How the extension handles arbitrage opportunities</span>
+      </div>
+
+      <div class="setting-row">
+        <label>Skip Insufficient Funds</label>
+        <label class="toggle-switch">
+          <input type="checkbox" id="skipInsufficientFunds" checked>
+          <span class="toggle-slider"></span>
+        </label>
+        <span class="setting-help">Automatically skip opportunities if you don't have enough balance</span>
+      </div>
+
+      <div class="setting-row">
+        <label>Alert on Skipped Opportunities</label>
+        <label class="toggle-switch">
+          <input type="checkbox" id="alertOnSkipped">
+          <span class="toggle-slider"></span>
+        </label>
+        <span class="setting-help">Get notified when opportunities are skipped due to insufficient funds</span>
+      </div>
+    </section>
+
+    <!-- Alerts & Notifications Section -->
+    <section class="settings-section">
+      <h2>🔔 Alerts & Notifications</h2>
+
+      <div style="margin-bottom: 20px;">
+        <h3 style="font-size: 14px; color: #94a3b8; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px;">Alert Types</h3>
+
+        <div class="setting-row">
+          <label>
+            <img src="https://em-content.zobj.net/source/microsoft-teams/363/direct-hit_1f3af.png" alt="Target" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 6px;">
+            Arbitrage Alerts
+          </label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="enableArbitrageAlerts" checked>
+            <span class="toggle-slider"></span>
+          </label>
+          <span class="setting-help">Alert on guaranteed profit opportunities across sportsbooks</span>
+        </div>
+
+        <div class="setting-row">
+          <label>
+            <img src="https://em-content.zobj.net/source/microsoft-teams/363/fire_1f525.png" alt="Fire" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 6px;">
+            Steam Move Alerts
+          </label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="enableSteamAlerts" checked>
+            <span class="toggle-slider"></span>
+          </label>
+          <span class="setting-help">Alert when sharp money hits the market (70%+ books moving)</span>
+        </div>
+
+        <div class="setting-row">
+          <label>
+            <img src="https://em-content.zobj.net/source/microsoft-teams/363/chart-increasing_1f4c8.png" alt="Chart" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 6px;">
+            Line Movement Alerts
+          </label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="enableLineAlerts" checked>
+            <span class="toggle-slider"></span>
+          </label>
+          <span class="setting-help">Alert on significant line movements (1.5+ points)</span>
+        </div>
+
+        <div class="setting-row" style="background: rgba(239, 68, 68, 0.1); padding: 12px; border-radius: 6px; border: 2px solid #ef4444;">
+          <label style="font-weight: 700; color: #ef4444;">
+            <img src="https://em-content.zobj.net/source/microsoft-teams/363/ice-hockey_1f3d2.png" alt="Hockey" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 6px;">
+            Goalie Pull Alerts
+          </label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="enableGoalieAlerts" checked>
+            <span class="toggle-slider"></span>
+          </label>
+          <span class="setting-help" style="color: #fca5a5;">Alert when NHL teams are likely to pull goalie (3rd period, 5 min, down 2)</span>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <label>Sound Alerts</label>
+        <label class="toggle-switch">
+          <input type="checkbox" id="soundEnabled" checked>
+          <span class="toggle-slider"></span>
+        </label>
+        <span class="setting-help">Play sound when opportunities are detected</span>
+      </div>
+
+      <div class="setting-row">
+        <label>Voice Announcements</label>
+        <label class="toggle-switch">
+          <input type="checkbox" id="voiceEnabled" checked>
+          <span class="toggle-slider"></span>
+        </label>
+        <span class="setting-help">Speak opportunity details out loud</span>
+      </div>
+
+      <div class="setting-row">
+        <label for="soundVolume">Alert Volume</label>
+        <div class="slider-container">
+          <input type="range" id="soundVolume" min="0" max="100" value="50" step="1">
+          <span id="volumeValue">50%</span>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <label>Low Balance Warnings</label>
+        <label class="toggle-switch">
+          <input type="checkbox" id="lowBalanceWarnings" checked>
+          <span class="toggle-slider"></span>
+        </label>
+        <span class="setting-help">Alert when sportsbook balance is running low</span>
+      </div>
+    </section>
+
+    <!-- Save Button -->
+    <div class="footer">
+      <button id="saveBtn" class="btn btn-primary btn-large">💾 Save Settings</button>
+      <button id="resetBtn" class="btn btn-secondary">Reset to Defaults</button>
+    </div>
+
+    <div id="saveNotification" class="save-notification">Settings saved successfully!</div>
+  </div>
+
+  <script src="settings.js"></script>
+</body>
+</html>
