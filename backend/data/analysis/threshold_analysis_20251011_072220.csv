@@ -1,0 +1,7 @@
+movement,std_multiple,historical_accuracy,regression_prob,recommendation
+8,0.4,0.0,20.0,Pass - Too Common
+12,0.5,0.0,20.0,Consider - Moderate Edge
+16,0.7,0.0,20.0,Good - Strong Edge
+20,0.9,0.0,20.0,Excellent - Very Strong
+24,1.1,0.0,20.0,Max Bet - Extreme Value
+28,1.3,0.0,20.0,Max Bet - Historic Outlier

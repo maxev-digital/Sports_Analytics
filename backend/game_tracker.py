@@ -1,15 +1,20 @@
 """Game tracking and state management"""
-from live_models import GameState, LiveGame, GameOdds, Team, GameProjection, TeamStats, NFLLiveStats, NFLTeamStats, NHLMomentumStats, NHLTeamStats, MLBTeamStats
+from live_models import GameState, LiveGame, GameOdds, Team, GameProjection, TeamStats, NFLLiveStats, NFLTeamStats, NHLMomentumStats, NBAMomentumStats, NFLMomentumStats, NHLTeamStats, MLBTeamStats
 from odds_client import OddsAPIClient
 from projector import GameProjector
 from momentum_calculator import MomentumCalculator
 from nba_stats_client import NBAStatsClient
 from nba_live_client import NBALiveClient
+from nba_momentum_client import NBAMomentumClient
 from espn_nfl_client import ESPNNFLClient
 from nfl_stats_client import NFLStatsClient
+from nfl_momentum_client import NFLMomentumClient
 from nhl_stats_client import NHLStatsClient
 from mlb_stats_client import MLBStatsClient
 from nhl_goalie_pull_predictor import GoaliePullPredictor
+from strategies.favorite_comeback_detector import FavoriteComebackDetector
+from strategies.halftime_tracker import HalftimeTracker
+from strategies.momentum_detector import MomentumDetector
 from config import POLL_INTERVAL
 from typing import Dict, List, Optional
 import asyncio
@@ -24,8 +29,10 @@ class GameTracker:
         self.projector = GameProjector()
         self.nba_stats_client = NBAStatsClient()
         self.nba_live_client = NBALiveClient()
+        self.nba_momentum_client = NBAMomentumClient()
         self.espn_nfl_client = ESPNNFLClient()
         self.nfl_stats_client = NFLStatsClient()
+        self.nfl_momentum_client = NFLMomentumClient()
         self.nhl_stats_client = NHLStatsClient()
         self.mlb_stats_client = MLBStatsClient()
         self.games: Dict[str, LiveGame] = {}
@@ -38,6 +45,12 @@ class GameTracker:
         self.espn_scoreboard_cache: Dict = {}  # Cache ESPN scoreboard data
         self.odds_timestamp_cache: Dict[str, Dict[str, float]] = {}  # Track when each book updates odds: {game_id: {bookmaker: timestamp}}
         self.goalie_pull_opportunities: List[Dict] = []  # Track goalie pull betting opportunities
+        self.favorite_comeback_opportunities: List[Dict] = []  # Track NBA favorite comeback opportunities
+        self.halftime_opportunities: List[Dict] = []  # Track NBA halftime betting opportunities
+        self.momentum_opportunities: List[Dict] = []  # Track momentum surge opportunities (NHL & NBA)
+        self.favorite_comeback_detector = FavoriteComebackDetector()
+        self.halftime_tracker = HalftimeTracker()
+        self.momentum_detector = MomentumDetector()
         
     async def start(self):
         """Start tracking games"""
@@ -961,6 +974,108 @@ class GameTracker:
                         except Exception as e:
                             logger.warning(f"Error fetching NHL momentum for game {game_id}: {e}")
 
+                # Fetch NBA momentum stats for live games
+                home_nba_momentum = None
+                away_nba_momentum = None
+
+                if game_state.sport_key.startswith('basketball_nba') and game_state.status == 'live':
+                    try:
+                        # Get NBA game ID from the live client's scoreboard
+                        # The game_id format needs to match NBA API format
+                        # Try to extract NBA game ID from our game_id or scoreboard data
+
+                        # For now, log and try with the existing game_id
+                        logger.info(f"Attempting to fetch NBA momentum for game {game_id}")
+
+                        momentum_data = self.nba_momentum_client.get_live_momentum(game_id)
+
+                        if momentum_data:
+                            # Create momentum stats for home team
+                            home_data = momentum_data.get('home', {})
+                            home_nba_momentum = NBAMomentumStats(
+                                momentum_score=home_data.get('momentum_score', 50.0),
+                                points_last_5min=home_data.get('points_last_5min', 0),
+                                fg_pct_recent=home_data.get('fg_pct_recent', 0.0),
+                                offensive_rebounds=home_data.get('offensive_rebounds', 0),
+                                turnovers=home_data.get('turnovers', 0),
+                                steals=home_data.get('steals', 0),
+                                assists=home_data.get('assists', 0),
+                                possession_indicator=home_data.get('possession_indicator', 'NEUTRAL')
+                            )
+
+                            # Create momentum stats for away team
+                            away_data = momentum_data.get('away', {})
+                            away_nba_momentum = NBAMomentumStats(
+                                momentum_score=away_data.get('momentum_score', 50.0),
+                                points_last_5min=away_data.get('points_last_5min', 0),
+                                fg_pct_recent=away_data.get('fg_pct_recent', 0.0),
+                                offensive_rebounds=away_data.get('offensive_rebounds', 0),
+                                turnovers=away_data.get('turnovers', 0),
+                                steals=away_data.get('steals', 0),
+                                assists=away_data.get('assists', 0),
+                                possession_indicator=away_data.get('possession_indicator', 'NEUTRAL')
+                            )
+
+                            logger.info(f"NBA momentum: {game_state.home_team.name} ({home_nba_momentum.momentum_score}) vs {game_state.away_team.name} ({away_nba_momentum.momentum_score}) | Recent scoring: {home_nba_momentum.points_last_5min}-{away_nba_momentum.points_last_5min}")
+                    except Exception as e:
+                        logger.warning(f"Error fetching NBA momentum for game {game_id}: {e}")
+
+                # Fetch NFL/NCAAF momentum stats for live games
+                home_nfl_momentum = None
+                away_nfl_momentum = None
+                home_ncaaf_momentum = None
+                away_ncaaf_momentum = None
+
+                is_nfl = game_state.sport_key.startswith('americanfootball_nfl')
+                is_ncaaf = game_state.sport_key.startswith('americanfootball_ncaaf')
+
+                if (is_nfl or is_ncaaf) and game_state.status == 'live':
+                    try:
+                        logger.info(f"Attempting to fetch {'NFL' if is_nfl else 'NCAAF'} momentum for game {game_id}")
+
+                        momentum_data = self.nfl_momentum_client.get_live_momentum(game_id, is_college=is_ncaaf)
+
+                        if momentum_data:
+                            # Create momentum stats for home team
+                            home_data = momentum_data.get('home', {})
+                            momentum_stats_home = NFLMomentumStats(
+                                momentum_score=home_data.get('momentum_score', 50.0),
+                                yards_per_play=home_data.get('yards_per_play', 0.0),
+                                recent_yards=home_data.get('recent_yards', 0),
+                                recent_points=home_data.get('recent_points', 0),
+                                touchdowns=home_data.get('touchdowns', 0),
+                                field_goals=home_data.get('field_goals', 0),
+                                turnovers=home_data.get('turnovers', 0),
+                                red_zone_efficiency=home_data.get('red_zone_efficiency', '0/0'),
+                                drive_state=home_data.get('drive_state', 'NEUTRAL')
+                            )
+
+                            # Create momentum stats for away team
+                            away_data = momentum_data.get('away', {})
+                            momentum_stats_away = NFLMomentumStats(
+                                momentum_score=away_data.get('momentum_score', 50.0),
+                                yards_per_play=away_data.get('yards_per_play', 0.0),
+                                recent_yards=away_data.get('recent_yards', 0),
+                                recent_points=away_data.get('recent_points', 0),
+                                touchdowns=away_data.get('touchdowns', 0),
+                                field_goals=away_data.get('field_goals', 0),
+                                turnovers=away_data.get('turnovers', 0),
+                                red_zone_efficiency=away_data.get('red_zone_efficiency', '0/0'),
+                                drive_state=away_data.get('drive_state', 'NEUTRAL')
+                            )
+
+                            # Assign to correct sport
+                            if is_nfl:
+                                home_nfl_momentum = momentum_stats_home
+                                away_nfl_momentum = momentum_stats_away
+                            else:
+                                home_ncaaf_momentum = momentum_stats_home
+                                away_ncaaf_momentum = momentum_stats_away
+
+                            logger.info(f"{'NFL' if is_nfl else 'NCAAF'} momentum: {game_state.home_team.name} ({momentum_stats_home.momentum_score}) vs {game_state.away_team.name} ({momentum_stats_away.momentum_score}) | Recent points: {momentum_stats_home.recent_points}-{momentum_stats_away.recent_points}")
+                    except Exception as e:
+                        logger.warning(f"Error fetching {'NFL' if is_nfl else 'NCAAF'} momentum for game {game_id}: {e}")
+
                 # Fetch MLB team stats if this is an MLB game
                 home_mlb_stats = None
                 away_mlb_stats = None
@@ -987,6 +1102,12 @@ class GameTracker:
                     away_nhl_momentum=away_nhl_momentum,
                     home_nhl_stats=home_nhl_stats,
                     away_nhl_stats=away_nhl_stats,
+                    home_nba_momentum=home_nba_momentum,
+                    away_nba_momentum=away_nba_momentum,
+                    home_nfl_momentum=home_nfl_momentum,
+                    away_nfl_momentum=away_nfl_momentum,
+                    home_ncaaf_momentum=home_ncaaf_momentum,
+                    away_ncaaf_momentum=away_ncaaf_momentum,
                     home_mlb_stats=home_mlb_stats,
                     away_mlb_stats=away_mlb_stats
                 )
@@ -999,6 +1120,9 @@ class GameTracker:
 
         # Check for NHL goalie pull opportunities
         await self._check_goalie_pull_opportunities()
+        await self._check_favorite_comeback_opportunities()
+        await self._check_halftime_opportunities()
+        await self._check_momentum_opportunities()
 
     async def _check_goalie_pull_opportunities(self):
         """Check all live NHL games for goalie pull betting opportunities"""
@@ -1082,3 +1206,322 @@ class GameTracker:
     def get_goalie_pull_opportunities(self) -> List[Dict]:
         """Get current goalie pull betting opportunities"""
         return self.goalie_pull_opportunities
+
+    async def _check_favorite_comeback_opportunities(self):
+        """Check all live NBA games for favorite comeback opportunities"""
+        opportunities = []
+
+        # Filter for live NBA games only
+        live_nba_games = [
+            (game_id, game) for game_id, game in self.games.items()
+            if game.state.sport_key == 'basketball_nba' and game.state.status == 'live'
+        ]
+
+        for game_id, live_game in live_nba_games:
+            # Check if in valid period (Q1, Q2, Half)
+            period = live_game.state.quarter or ''
+            if period not in ['1Q', 'Q1', 'Q2', '2Q', 'Half', 'Halftime']:
+                continue
+
+            home_team = live_game.state.home_team.name
+            away_team = live_game.state.away_team.name
+            home_score = live_game.state.home_team.score or 0
+            away_score = live_game.state.away_team.score or 0
+            time_remaining = live_game.state.time_remaining or '0:00'
+
+            # Determine favorite from pregame spread (negative spread = favorite)
+            pregame_spread = None
+            current_spread = None
+            home_team_favorite = False
+
+            if live_game.odds:
+                # Get average pregame spread
+                spreads = [odd.home_line for odd in live_game.odds if odd.home_line is not None]
+                if spreads:
+                    pregame_spread = sum(spreads) / len(spreads)
+                    home_team_favorite = pregame_spread < 0
+                    current_spread = spreads[0]  # Use first available spread
+
+            if pregame_spread is None:
+                continue  # Skip if no spread data
+
+            # Get season stats from cache
+            home_season_stats = {}
+            away_season_stats = {}
+
+            # Convert team names to cache keys
+            home_cache_key = home_team
+            away_cache_key = away_team
+
+            if home_cache_key in self.team_stats_cache:
+                home_stats = self.team_stats_cache[home_cache_key]
+                home_season_stats = {
+                    'ppg': home_stats.ppg,
+                    'fg_pct': home_stats.fg_pct
+                }
+
+            if away_cache_key in self.team_stats_cache:
+                away_stats = self.team_stats_cache[away_cache_key]
+                away_season_stats = {
+                    'ppg': away_stats.ppg,
+                    'fg_pct': away_stats.fg_pct
+                }
+
+            # Analyze comeback opportunity
+            result = self.favorite_comeback_detector.analyze_comeback_opportunity(
+                game_id=game_id,
+                sport='NBA',
+                home_team=home_team,
+                away_team=away_team,
+                home_score=home_score,
+                away_score=away_score,
+                period=period,
+                time_remaining=time_remaining,
+                home_team_favorite=home_team_favorite,
+                pregame_spread=pregame_spread,
+                current_spread=current_spread,
+                home_season_stats=home_season_stats,
+                away_season_stats=away_season_stats,
+                quarter_stats={}  # TODO: Add quarter shooting stats if available
+            )
+
+            if result.get('has_opportunity'):
+                # Format for frontend
+                for opp in result.get('opportunities', []):
+                    opportunities.append({
+                        **opp,
+                        'timestamp': time.strftime('%Y-%m-%dT%H:%M:%S')
+                    })
+
+        # Update stored opportunities
+        self.favorite_comeback_opportunities = opportunities
+
+        # Log any HIGH confidence opportunities
+        for opp in opportunities:
+            if opp.get('confidence_level') == 'HIGH':
+                logger.warning(f"🔥 HIGH CONFIDENCE COMEBACK: {opp['favorite']} trailing {opp['underdog']}")
+
+    def get_favorite_comeback_opportunities(self) -> List[Dict]:
+        """Get current NBA favorite comeback betting opportunities"""
+        return self.favorite_comeback_opportunities
+
+    async def _check_halftime_opportunities(self):
+        """Check all NBA games at halftime for 2H betting opportunities"""
+        opportunities = []
+
+        # Filter for NBA games at halftime
+        halftime_nba_games = [
+            (game_id, game) for game_id, game in self.games.items()
+            if game.state.sport_key == 'basketball_nba'
+            and game.state.status == 'live'
+            and game.state.time_remaining in ['Halftime', 'Half']
+        ]
+
+        for game_id, live_game in halftime_nba_games:
+            home_team = live_game.state.home_team.name
+            away_team = live_game.state.away_team.name
+            home_score = live_game.state.home_team.score or 0
+            away_score = live_game.state.away_team.score or 0
+            time_remaining = live_game.state.time_remaining or ''
+
+            # Get pregame spread and total
+            pregame_spread = None
+            pregame_total = None
+            second_half_spread = None
+            second_half_total = None
+
+            if live_game.odds:
+                spreads = [odd.home_line for odd in live_game.odds if odd.home_line is not None]
+                totals = [odd.total for odd in live_game.odds if odd.total is not None]
+                if spreads:
+                    pregame_spread = sum(spreads) / len(spreads)
+                if totals:
+                    pregame_total = sum(totals) / len(totals)
+
+                # In a real implementation, would fetch 2H lines from odds API
+                # For now, estimate based on pregame lines
+                second_half_spread = pregame_spread
+                second_half_total = pregame_total / 2 if pregame_total else None
+
+            # Get season stats from cache
+            home_season_stats = {}
+            away_season_stats = {}
+            home_1h_stats = {}
+            away_1h_stats = {}
+
+            if home_team in self.team_stats_cache:
+                home_stats = self.team_stats_cache[home_team]
+                home_season_stats = {
+                    'team': home_team,
+                    'ppg': home_stats.ppg,
+                    'fg_pct': home_stats.fg_pct
+                }
+
+            if away_team in self.team_stats_cache:
+                away_stats = self.team_stats_cache[away_team]
+                away_season_stats = {
+                    'team': away_team,
+                    'ppg': away_stats.ppg,
+                    'fg_pct': away_stats.fg_pct
+                }
+
+            # Get rest days (simplified - would need actual schedule data)
+            home_rest_days = 1
+            away_rest_days = 1
+
+            # Analyze halftime opportunity
+            result = self.halftime_tracker.analyze_halftime_opportunity(
+                game_id=game_id,
+                sport='NBA',
+                home_team=home_team,
+                away_team=away_team,
+                home_score_1h=home_score,
+                away_score_1h=away_score,
+                time_remaining=time_remaining,
+                home_season_stats=home_season_stats,
+                away_season_stats=away_season_stats,
+                home_1h_stats=home_1h_stats,
+                away_1h_stats=away_1h_stats,
+                home_rest_days=home_rest_days,
+                away_rest_days=away_rest_days,
+                pregame_spread=pregame_spread,
+                pregame_total=pregame_total,
+                second_half_spread=second_half_spread,
+                second_half_total=second_half_total
+            )
+
+            if result.get('has_opportunity'):
+                # Format for frontend
+                for opp in result.get('opportunities', []):
+                    opportunities.append({
+                        **opp,
+                        'timestamp': time.strftime('%Y-%m-%dT%H:%M:%S')
+                    })
+
+        # Update stored opportunities
+        self.halftime_opportunities = opportunities
+
+        # Log any HIGH confidence opportunities
+        for opp in opportunities:
+            if opp.get('confidence_level') == 'HIGH':
+                logger.warning(f"⏰ HIGH CONFIDENCE HALFTIME: {opp['home_team']} vs {opp['away_team']} - {opp['bet_type']}")
+
+    def get_halftime_opportunities(self) -> List[Dict]:
+        """Get current NBA halftime betting opportunities"""
+        return self.halftime_opportunities
+
+    async def _check_momentum_opportunities(self):
+        """Check all live NHL and NBA games for momentum surge betting opportunities"""
+        opportunities = []
+
+        # Check NHL games
+        nhl_games = [
+            (game_id, game) for game_id, game in self.games.items()
+            if game.state.sport_key == 'icehockey_nhl' and game.state.status == 'live'
+        ]
+
+        for game_id, live_game in nhl_games:
+            try:
+                # Extract game details
+                home_team = live_game.state.home_team
+                away_team = live_game.state.away_team
+                home_score = live_game.state.home_score or 0
+                away_score = live_game.state.away_score or 0
+                period = live_game.state.period or "1st"
+                time_remaining = live_game.state.time_remaining or "20:00"
+
+                # Get momentum stats (from live_game.state if available)
+                home_momentum = None
+                away_momentum = None
+                if hasattr(live_game.state, 'home_momentum') and live_game.state.home_momentum:
+                    home_momentum = live_game.state.home_momentum.dict() if hasattr(live_game.state.home_momentum, 'dict') else live_game.state.home_momentum
+                if hasattr(live_game.state, 'away_momentum') and live_game.state.away_momentum:
+                    away_momentum = live_game.state.away_momentum.dict() if hasattr(live_game.state.away_momentum, 'dict') else live_game.state.away_momentum
+
+                # Get season stats from cache
+                home_season_stats = self.nhl_team_stats_cache.get(home_team)
+                away_season_stats = self.nhl_team_stats_cache.get(away_team)
+
+                # Analyze momentum
+                result = self.momentum_detector.analyze_nhl_momentum(
+                    game_id=game_id,
+                    sport='icehockey_nhl',
+                    home_team=home_team,
+                    away_team=away_team,
+                    home_score=home_score,
+                    away_score=away_score,
+                    period=period,
+                    time_remaining=time_remaining,
+                    home_momentum=home_momentum,
+                    away_momentum=away_momentum,
+                    home_season_stats=home_season_stats.dict() if home_season_stats else None,
+                    away_season_stats=away_season_stats.dict() if away_season_stats else None,
+                )
+
+                if result.get('has_opportunity'):
+                    opportunities.extend(result['opportunities'])
+
+            except Exception as e:
+                logger.error(f"Error analyzing NHL momentum for {game_id}: {e}", exc_info=True)
+
+        # Check NBA games
+        nba_games = [
+            (game_id, game) for game_id, game in self.games.items()
+            if game.state.sport_key == 'basketball_nba' and game.state.status == 'live'
+        ]
+
+        for game_id, live_game in nba_games:
+            try:
+                # Extract game details
+                home_team = live_game.state.home_team
+                away_team = live_game.state.away_team
+                home_score = live_game.state.home_score or 0
+                away_score = live_game.state.away_score or 0
+                quarter = live_game.state.period or "1st"
+                time_remaining = live_game.state.time_remaining or "12:00"
+
+                # Get momentum stats (from live_game.state if available)
+                home_momentum = None
+                away_momentum = None
+                if hasattr(live_game.state, 'home_momentum') and live_game.state.home_momentum:
+                    home_momentum = live_game.state.home_momentum.dict() if hasattr(live_game.state.home_momentum, 'dict') else live_game.state.home_momentum
+                if hasattr(live_game.state, 'away_momentum') and live_game.state.away_momentum:
+                    away_momentum = live_game.state.away_momentum.dict() if hasattr(live_game.state.away_momentum, 'dict') else live_game.state.away_momentum
+
+                # Get season stats from cache
+                home_season_stats = self.team_stats_cache.get(home_team)
+                away_season_stats = self.team_stats_cache.get(away_team)
+
+                # Analyze momentum
+                result = self.momentum_detector.analyze_nba_momentum(
+                    game_id=game_id,
+                    sport='basketball_nba',
+                    home_team=home_team,
+                    away_team=away_team,
+                    home_score=home_score,
+                    away_score=away_score,
+                    quarter=quarter,
+                    time_remaining=time_remaining,
+                    home_momentum=home_momentum,
+                    away_momentum=away_momentum,
+                    home_season_stats=home_season_stats.dict() if home_season_stats else None,
+                    away_season_stats=away_season_stats.dict() if away_season_stats else None,
+                )
+
+                if result.get('has_opportunity'):
+                    opportunities.extend(result['opportunities'])
+
+            except Exception as e:
+                logger.error(f"Error analyzing NBA momentum for {game_id}: {e}", exc_info=True)
+
+        # Update stored opportunities
+        self.momentum_opportunities = opportunities
+
+        # Log any HIGH confidence opportunities
+        for opp in opportunities:
+            if opp.get('confidence_level') == 'HIGH':
+                logger.warning(f"🔥 HIGH CONFIDENCE MOMENTUM: {opp['momentum_team']} ({opp['sport']}) - Score {opp['momentum_score']}/100")
+
+    def get_momentum_opportunities(self) -> List[Dict]:
+        """Get current momentum surge betting opportunities"""
+        return self.momentum_opportunities

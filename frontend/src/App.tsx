@@ -18,6 +18,7 @@ import { MultiSport } from './pages/MultiSport';
 import { Odds } from './pages/Odds';
 import { Settings } from './pages/Settings';
 import { StrategySettings } from './pages/StrategySettings';
+import SoundPreview from './pages/SoundPreview';
 
 function App() {
   return (
@@ -49,6 +50,7 @@ function App() {
                   <Route path="/learn/:articleId" element={<ArticleDetail />} />
                   <Route path="/getting-started" element={<GettingStarted />} />
                   <Route path="/pricing" element={<Pricing />} />
+                  <Route path="/sound-preview" element={<SoundPreview />} />
                 </Routes>
               </div>
             }

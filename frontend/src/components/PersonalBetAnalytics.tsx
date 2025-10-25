@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { addStakeToBet, deleteBet } from '../utils/betTracking';
+import { addStakeToBet, deleteBet, addManualBet } from '../utils/betTracking';
+import { useAuth } from '../contexts/AuthContext';
 
 interface PersonalBetAnalyticsProps {
   stats: any;
@@ -9,6 +10,21 @@ interface PersonalBetAnalyticsProps {
   onRefresh: () => void;
 }
 
+interface ManualBetForm {
+  sport: string;
+  homeTeam: string;
+  awayTeam: string;
+  commenceTime: string;
+  betType: 'spread' | 'total' | 'moneyline' | 'prop';
+  betSide: string;
+  odds: string;
+  stake: string;
+  bookmaker: string;
+  confidence: 'HIGH' | 'MEDIUM' | 'LOW' | '';
+  edgePercent: string;
+  notes: string;
+}
+
 export function PersonalBetAnalytics({
   stats,
   pendingBets,
@@ -16,7 +32,23 @@ export function PersonalBetAnalytics({
   settledBets,
   onRefresh
 }: PersonalBetAnalyticsProps) {
+  const { username } = useAuth();
   const [stakes, setStakes] = useState<Record<string, string>>({});
+  const [showManualEntry, setShowManualEntry] = useState(false);
+  const [manualBetForm, setManualBetForm] = useState<ManualBetForm>({
+    sport: 'NBA',
+    homeTeam: '',
+    awayTeam: '',
+    commenceTime: new Date().toISOString().slice(0, 16),
+    betType: 'spread',
+    betSide: '',
+    odds: '',
+    stake: '',
+    bookmaker: '',
+    confidence: '',
+    edgePercent: '',
+    notes: ''
+  });
 
   const handleAddStake = async (betId: string) => {
     const stakeAmount = parseFloat(stakes[betId] || '0');
@@ -39,6 +71,61 @@ export function PersonalBetAnalytics({
     }
   };
 
+  const handleManualBetSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!username) {
+      alert('You must be logged in to add a bet');
+      return;
+    }
+
+    // Validate required fields
+    if (!manualBetForm.homeTeam || !manualBetForm.awayTeam || !manualBetForm.betSide ||
+        !manualBetForm.odds || !manualBetForm.stake || !manualBetForm.bookmaker) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    const result = await addManualBet({
+      userId: username,
+      sport: manualBetForm.sport,
+      homeTeam: manualBetForm.homeTeam,
+      awayTeam: manualBetForm.awayTeam,
+      commenceTime: manualBetForm.commenceTime,
+      betType: manualBetForm.betType,
+      betSide: manualBetForm.betSide,
+      odds: parseFloat(manualBetForm.odds),
+      stake: parseFloat(manualBetForm.stake),
+      bookmaker: manualBetForm.bookmaker,
+      confidence: manualBetForm.confidence || undefined,
+      edgePercent: manualBetForm.edgePercent ? parseFloat(manualBetForm.edgePercent) : undefined,
+      notes: manualBetForm.notes || undefined,
+    });
+
+    if (result) {
+      // Reset form and close modal
+      setManualBetForm({
+        sport: 'NBA',
+        homeTeam: '',
+        awayTeam: '',
+        commenceTime: new Date().toISOString().slice(0, 16),
+        betType: 'spread',
+        betSide: '',
+        odds: '',
+        stake: '',
+        bookmaker: '',
+        confidence: '',
+        edgePercent: '',
+        notes: ''
+      });
+      setShowManualEntry(false);
+      onRefresh();
+      alert('Bet added successfully!');
+    } else {
+      alert('Failed to add bet. Please try again.');
+    }
+  };
+
   // Show loading state if no stats yet
   if (!stats) {
     return (
@@ -50,6 +137,244 @@ export function PersonalBetAnalytics({
 
   return (
     <div>
+      {/* Manual Entry Button */}
+      <div className="mb-6 flex justify-end">
+        <button
+          onClick={() => setShowManualEntry(true)}
+          className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold rounded-lg shadow-lg hover:shadow-blue-600/50 transition-all border-2 border-blue-500"
+        >
+          <span className="text-2xl">📖</span>
+          Manual Bet Entry
+        </button>
+      </div>
+
+      {/* Manual Entry Modal */}
+      {showManualEntry && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 border-4 border-blue-600 rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                <span className="text-3xl">📖</span>
+                Manual Bet Entry
+              </h2>
+              <button
+                onClick={() => setShowManualEntry(false)}
+                className="text-slate-400 hover:text-white text-2xl font-bold"
+              >
+                ×
+              </button>
+            </div>
+
+            <form onSubmit={handleManualBetSubmit} className="space-y-4">
+              {/* Sport Selection */}
+              <div>
+                <label className="block text-sm font-semibold text-slate-300 mb-2">
+                  Sport *
+                </label>
+                <select
+                  value={manualBetForm.sport}
+                  onChange={(e) => setManualBetForm({ ...manualBetForm, sport: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                  required
+                >
+                  <option value="NBA">NBA</option>
+                  <option value="NFL">NFL</option>
+                  <option value="NHL">NHL</option>
+                  <option value="MLB">MLB</option>
+                  <option value="NCAAB">NCAAB</option>
+                  <option value="NCAAF">NCAAF</option>
+                </select>
+              </div>
+
+              {/* Teams */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2">
+                    Away Team *
+                  </label>
+                  <input
+                    type="text"
+                    value={manualBetForm.awayTeam}
+                    onChange={(e) => setManualBetForm({ ...manualBetForm, awayTeam: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                    placeholder="e.g., Lakers"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2">
+                    Home Team *
+                  </label>
+                  <input
+                    type="text"
+                    value={manualBetForm.homeTeam}
+                    onChange={(e) => setManualBetForm({ ...manualBetForm, homeTeam: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                    placeholder="e.g., Warriors"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Game Time */}
+              <div>
+                <label className="block text-sm font-semibold text-slate-300 mb-2">
+                  Game Time *
+                </label>
+                <input
+                  type="datetime-local"
+                  value={manualBetForm.commenceTime}
+                  onChange={(e) => setManualBetForm({ ...manualBetForm, commenceTime: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                  required
+                />
+              </div>
+
+              {/* Bet Type and Side */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2">
+                    Bet Type *
+                  </label>
+                  <select
+                    value={manualBetForm.betType}
+                    onChange={(e) => setManualBetForm({ ...manualBetForm, betType: e.target.value as any })}
+                    className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                    required
+                  >
+                    <option value="spread">Spread</option>
+                    <option value="total">Total</option>
+                    <option value="moneyline">Moneyline</option>
+                    <option value="prop">Prop</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2">
+                    Bet Side *
+                  </label>
+                  <input
+                    type="text"
+                    value={manualBetForm.betSide}
+                    onChange={(e) => setManualBetForm({ ...manualBetForm, betSide: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                    placeholder="e.g., OVER 220.5, Lakers -5.5"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Odds, Stake, Bookmaker */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2">
+                    Odds *
+                  </label>
+                  <input
+                    type="number"
+                    step="1"
+                    value={manualBetForm.odds}
+                    onChange={(e) => setManualBetForm({ ...manualBetForm, odds: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                    placeholder="-110"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2">
+                    Stake ($) *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={manualBetForm.stake}
+                    onChange={(e) => setManualBetForm({ ...manualBetForm, stake: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                    placeholder="100.00"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2">
+                    Bookmaker *
+                  </label>
+                  <input
+                    type="text"
+                    value={manualBetForm.bookmaker}
+                    onChange={(e) => setManualBetForm({ ...manualBetForm, bookmaker: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                    placeholder="DraftKings"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Optional: Confidence and Edge */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2">
+                    Confidence (Optional)
+                  </label>
+                  <select
+                    value={manualBetForm.confidence}
+                    onChange={(e) => setManualBetForm({ ...manualBetForm, confidence: e.target.value as any })}
+                    className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                  >
+                    <option value="">None</option>
+                    <option value="HIGH">HIGH</option>
+                    <option value="MEDIUM">MEDIUM</option>
+                    <option value="LOW">LOW</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2">
+                    Edge % (Optional)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={manualBetForm.edgePercent}
+                    onChange={(e) => setManualBetForm({ ...manualBetForm, edgePercent: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                    placeholder="5.2"
+                  />
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div>
+                <label className="block text-sm font-semibold text-slate-300 mb-2">
+                  Notes (Optional)
+                </label>
+                <textarea
+                  value={manualBetForm.notes}
+                  onChange={(e) => setManualBetForm({ ...manualBetForm, notes: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                  rows={3}
+                  placeholder="Any additional notes about this bet..."
+                />
+              </div>
+
+              {/* Submit Buttons */}
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="submit"
+                  className="flex-1 px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-all"
+                >
+                  Add Bet
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowManualEntry(false)}
+                  className="px-6 py-3 bg-slate-600 hover:bg-slate-700 text-white font-semibold rounded-lg transition-all"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Overall Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div className="bg-gradient-to-br from-green-900 via-green-700 to-green-900 border-4 border-green-700 rounded-lg p-6 hover:shadow-lg hover:shadow-green-600/20 hover:border-green-600 transition-all">

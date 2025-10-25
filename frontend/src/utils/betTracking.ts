@@ -167,3 +167,56 @@ export async function getUserBettingStats(userId: string) {
     return null;
   }
 }
+
+/**
+ * Manually add a bet entry with all details
+ */
+export async function addManualBet(params: {
+  userId: string;
+  sport: string;
+  homeTeam: string;
+  awayTeam: string;
+  commenceTime: string;
+  betType: 'spread' | 'total' | 'moneyline' | 'prop';
+  betSide: string;
+  odds: number;
+  stake: number;
+  bookmaker: string;
+  confidence?: 'HIGH' | 'MEDIUM' | 'LOW';
+  edgePercent?: number;
+  notes?: string;
+}): Promise<UserBet | null> {
+  try {
+    const response = await fetch('/api/bets/manual-entry', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        user_id: params.userId,
+        sport: params.sport,
+        home_team: params.homeTeam,
+        away_team: params.awayTeam,
+        commence_time: params.commenceTime,
+        bet_type: params.betType,
+        bet_side: params.betSide,
+        odds: params.odds,
+        stake: params.stake,
+        bookmaker: params.bookmaker,
+        confidence: params.confidence,
+        edge_percent: params.edgePercent,
+        notes: params.notes,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error('Failed to add manual bet:', await response.text());
+      return null;
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error adding manual bet:', error);
+    return null;
+  }
+}

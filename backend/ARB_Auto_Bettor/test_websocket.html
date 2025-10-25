@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        #status {
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .connected {
+            background: #10B981;
+            color: white;
+        }
+        .disconnected {
+            background: #EF4444;
+            color: white;
+        }
+        .connecting {
+            background: #F59E0B;
+            color: white;
+        }
+        #messages {
+            border: 1px solid #ccc;
+            padding: 20px;
+            height: 400px;
+            overflow-y: scroll;
+            background: #f5f5f5;
+        }
+        .message {
+            padding: 10px;
+            margin: 5px 0;
+            background: white;
+            border-left: 4px solid #3B82F6;
+        }
+    </style>
+</head>
+<body>
+    <h1>ARB Auto Bettor™ WebSocket Test</h1>
+
+    <div id="status" class="connecting">Connecting to WebSocket...</div>
+
+    <h2>Messages:</h2>
+    <div id="messages"></div>
+
+    <script>
+        const messagesDiv = document.getElementById('messages');
+        const statusDiv = document.getElementById('status');
+
+        function addMessage(msg) {
+            const div = document.createElement('div');
+            div.className = 'message';
+            div.textContent = JSON.stringify(msg, null, 2);
+            messagesDiv.appendChild(div);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function updateStatus(status, text) {
+            statusDiv.className = status;
+            statusDiv.textContent = text;
+        }
+
+        // Connect to WebSocket
+        console.log('Connecting to ws://localhost:8000/ws');
+        const ws = new WebSocket('ws://localhost:8000/ws');
+
+        ws.onopen = () => {
+            console.log('✅ WebSocket connected');
+            updateStatus('connected', '✅ Connected to WebSocket');
+            addMessage({ type: 'system', message: 'WebSocket connection established' });
+
+            // Subscribe to arbitrage channel
+            ws.send(JSON.stringify({
+                type: 'subscribe',
+                channel: 'arbitrage_alerts'
+            }));
+        };
+
+        ws.onmessage = (event) => {
+            console.log('📨 Message received:', event.data);
+            try {
+                const data = JSON.parse(event.data);
+                addMessage(data);
+
+                if (data.type === 'opportunities_update') {
+                    updateStatus('connected', `✅ Connected - ${data.opportunities.length} opportunities`);
+                }
+            } catch (error) {
+                console.error('Error parsing message:', error);
+                addMessage({ type: 'error', message: error.toString() });
+            }
+        };
+
+        ws.onerror = (error) => {
+            console.error('❌ WebSocket error:', error);
+            updateStatus('disconnected', '❌ WebSocket Error');
+            addMessage({ type: 'error', message: 'WebSocket error occurred' });
+        };
+
+        ws.onclose = () => {
+            console.log('WebSocket closed');
+            updateStatus('disconnected', '❌ Disconnected');
+            addMessage({ type: 'system', message: 'WebSocket connection closed' });
+        };
+    </script>
+</body>
+</html>

@@ -24,6 +24,7 @@ import json
 from datetime import datetime
 from dotenv import load_dotenv
 import auth  # Authentication module
+from brevo_crm import sync_signup_to_brevo  # Brevo CRM integration
 
 # Betting ensemble temporarily disabled to avoid import conflicts
 # from backend.models.ensemble.betting_ensemble import BettingEnsemble, GameData, EnsemblePrediction
@@ -94,6 +95,17 @@ alert_monitor = AlertMonitor(odds_api_key=os.getenv('ODDS_API_KEY', ''))
 #     min_confidence=0.50
 # )
 betting_ensemble = None
+
+# ========== PROPS CACHE ==========
+# In-memory cache for player props (production-ready caching)
+props_cache = {
+    'nba': {'props': [], 'count': 0, 'last_updated': None},
+    'nfl': {'props': [], 'count': 0, 'last_updated': None},
+    'nhl': {'props': [], 'count': 0, 'last_updated': None},
+    'mlb': {'props': [], 'count': 0, 'last_updated': None},
+    'ncaab': {'props': [], 'count': 0, 'last_updated': None},
+    'ncaaf': {'props': [], 'count': 0, 'last_updated': None}
+}
 
 # ========== WEBSOCKET CONNECTION MANAGER ==========
 
@@ -233,6 +245,10 @@ async def startup():
     # Start automatic bet grading task
     asyncio.create_task(auto_grade_bets())
     logger.info("Automatic bet grading started (5min intervals - grades completed games)")
+
+    # Start props cache refresh task (production-ready caching)
+    asyncio.create_task(refresh_props_cache())
+    logger.info("Props cache refresh started (5min intervals - background refresh for instant API responses)")
 
 @app.on_event("shutdown")
 async def shutdown():
@@ -563,7 +579,7 @@ async def register(request: Request):
         
         # Create user account
         users[username] = {
-            "password": auth.hash_password(password),
+            "password_hash": auth.hash_password(password),
             "role": "user",
             "created_at": datetime.now().isoformat(),
             "full_name": full_name,
@@ -584,7 +600,22 @@ async def register(request: Request):
             tier="free_trial",
             status="trialing"
         )
-        
+
+        # Sync new user signup to Brevo CRM
+        try:
+            trial_start = users[username]["trial_start"]
+            sync_signup_to_brevo(
+                email=email,
+                full_name=full_name,
+                username=username,
+                trial_start=trial_start,
+                trial_days=7
+            )
+            logger.info(f"Successfully synced new signup to Brevo: {email}")
+        except Exception as brevo_error:
+            # Don't fail registration if Brevo sync fails
+            logger.error(f"Failed to sync to Brevo (non-critical): {brevo_error}")
+
         return {
             "success": True,
             "message": "Registration successful",
@@ -1076,6 +1107,34 @@ async def get_goalie_pull_opportunities():
         "opportunities": opportunities
     }
 
+
+@app.get("/api/favorite-comeback-opportunities")
+async def get_favorite_comeback_opportunities():
+    """Get all current NBA favorite comeback betting opportunities"""
+    opportunities = tracker.get_favorite_comeback_opportunities()
+    return {
+        "count": len(opportunities),
+        "opportunities": opportunities
+    }
+
+@app.get("/api/halftime-opportunities")
+async def get_halftime_opportunities():
+    """Get all current NBA halftime betting opportunities (2H spread and total)"""
+    opportunities = tracker.get_halftime_opportunities()
+    return {
+        "count": len(opportunities),
+        "opportunities": opportunities
+    }
+
+@app.get("/api/momentum-opportunities")
+async def get_momentum_opportunities():
+    """Get all current momentum surge betting opportunities (NHL & NBA)"""
+    opportunities = tracker.get_momentum_opportunities()
+    return {
+        "count": len(opportunities),
+        "opportunities": opportunities
+    }
+
 # ========== ALERT ENDPOINTS ==========
 
 @app.get("/api/alerts/arbitrage")
@@ -1380,16 +1439,108 @@ async def get_alert_performance():
         }
     }
 
-# ========== PROPS ENDPOINTS ==========
+# ========== PROPS CACHING SYSTEM ==========
 
-@app.get("/api/props/{sport}")
-async def get_player_props(sport: str):
-    """Get player props for a specific sport from The Odds API"""
+async def fetch_props_for_sport(sport: str, odds_api_sport: str) -> dict:
+    """
+    Fetch player props for a specific sport from The Odds API
+    This function is used by the background refresh task
+    """
     import requests
 
     api_key = os.getenv('ODDS_API_KEY', '')
+    url = f'https://api.the-odds-api.com/v4/sports/{odds_api_sport}/events'
 
-    # Map frontend sport names to Odds API sport keys
+    try:
+        # Get events
+        events_response = requests.get(url, params={
+            'apiKey': api_key,
+            'dateFormat': 'iso'
+        }, timeout=10)
+
+        if events_response.status_code != 200:
+            logger.error(f"[PROPS CACHE] Failed to fetch {sport} events: {events_response.status_code}")
+            return {'props': [], 'count': 0}
+
+        events = events_response.json()
+        if not events:
+            logger.info(f"[PROPS CACHE] No {sport} events available")
+            return {'props': [], 'count': 0}
+
+        all_props = []
+
+        # Sport-specific prop markets
+        markets_by_sport = {
+            'basketball_nba': 'player_points,player_rebounds,player_assists,player_threes',
+            'americanfootball_nfl': 'player_pass_tds,player_rush_yds,player_receptions',
+            'icehockey_nhl': 'player_shots_on_goal,player_goals,player_blocked_shots,player_hits',
+            'baseball_mlb': 'player_hits,player_home_runs,player_strikeouts',
+            'basketball_ncaab': 'player_points,player_rebounds,player_assists',
+            'americanfootball_ncaaf': 'player_pass_tds,player_rush_yds,player_receptions'
+        }
+
+        prop_markets = markets_by_sport.get(odds_api_sport, 'player_points,player_rebounds,player_assists')
+        major_books = ['DraftKings', 'FanDuel', 'BetMGM', 'Caesars', 'PointsBet']
+
+        # Fetch props for all available games (production: fetch all, not just 1)
+        for event in events[:5]:  # Limit to 5 games for API quota management
+            event_id = event['id']
+            props_url = f'https://api.the-odds-api.com/v4/sports/{odds_api_sport}/events/{event_id}/odds'
+
+            props_response = requests.get(props_url, params={
+                'apiKey': api_key,
+                'regions': 'us',
+                'markets': prop_markets,
+                'oddsFormat': 'american',
+                'dateFormat': 'iso'
+            }, timeout=10)
+
+            if props_response.status_code != 200:
+                continue
+
+            event_data = props_response.json()
+
+            for bookmaker in event_data.get('bookmakers', []):
+                if bookmaker.get('title') not in major_books:
+                    continue
+
+                for market in bookmaker.get('markets', []):
+                    for outcome in market.get('outcomes', []):
+                        outcome_name = outcome.get('name', '')
+                        player_name = outcome.get('description', 'Unknown')
+
+                        if outcome_name in ['Over', 'Under']:
+                            display_name = f"{player_name} {outcome_name}"
+                        else:
+                            display_name = player_name
+
+                        prop = {
+                            'event_id': event_id,
+                            'home_team': event['home_team'],
+                            'away_team': event['away_team'],
+                            'commence_time': event['commence_time'],
+                            'player_name': display_name,
+                            'prop_type': market['key'],
+                            'line': outcome.get('point'),
+                            'odds': outcome.get('price'),
+                            'bookmaker': bookmaker['title'],
+                            'last_update': bookmaker.get('last_update', event.get('commence_time'))
+                        }
+                        all_props.append(prop)
+
+        logger.info(f"[PROPS CACHE] Fetched {len(all_props)} props for {sport}")
+        return {'props': all_props, 'count': len(all_props)}
+
+    except Exception as e:
+        logger.error(f"[PROPS CACHE] Error fetching {sport} props: {str(e)}")
+        return {'props': [], 'count': 0}
+
+
+async def refresh_props_cache():
+    """
+    Background task to refresh props cache every 5 minutes
+    Production-ready: runs continuously in the background
+    """
     sport_map = {
         'nba': 'basketball_nba',
         'nfl': 'americanfootball_nfl',
@@ -1399,128 +1550,116 @@ async def get_player_props(sport: str):
         'ncaaf': 'americanfootball_ncaaf'
     }
 
-    odds_api_sport = sport_map.get(sport.lower(), sport)
+    while True:
+        try:
+            logger.info("[PROPS CACHE] Starting refresh cycle...")
 
-    # Fetch player props from The Odds API
-    url = f'https://api.the-odds-api.com/v4/sports/{odds_api_sport}/events'
+            for sport, odds_api_sport in sport_map.items():
+                props_data = await fetch_props_for_sport(sport, odds_api_sport)
+                props_cache[sport] = {
+                    'props': props_data['props'],
+                    'count': props_data['count'],
+                    'last_updated': datetime.now().isoformat()
+                }
+
+            logger.info("[PROPS CACHE] Refresh complete. Sleeping for 5 minutes...")
+            await asyncio.sleep(300)  # 5 minutes
+
+        except Exception as e:
+            logger.error(f"[PROPS CACHE] Error in refresh cycle: {str(e)}")
+            await asyncio.sleep(60)  # Retry after 1 minute on error
+
+
+# ========== PROPS ENDPOINTS ==========
+
+@app.get("/api/props/{sport}")
+async def get_player_props(sport: str):
+    """
+    Get player props for a specific sport (from cache)
+    Production-ready: Returns cached data instantly with background refresh
+    """
+    sport_lower = sport.lower()
+
+    # Return cached data instantly
+    if sport_lower in props_cache:
+        cached_data = props_cache[sport_lower]
+        return {
+            "sport": sport,
+            "count": cached_data['count'],
+            "props": cached_data['props'],
+            "last_updated": cached_data['last_updated'],
+            "cached": True
+        }
+    else:
+        return {
+            "sport": sport,
+            "count": 0,
+            "props": [],
+            "error": "Invalid sport",
+            "cached": False
+        }
+
+
+# ========== ADVANCED PLAYER PROPS ENDPOINTS (WITH PROJECTIONS & EDGES) ==========
+
+@app.get("/api/player-props/nba/edges")
+async def get_nba_props_with_edges(min_edge_pct: float = 5.0):
+    """
+    Get NBA player props with advanced projections and edge analysis
+
+    Args:
+        min_edge_pct: Minimum edge percentage to filter (default 5.0%)
+
+    Returns:
+        PlayerPropsResponse with props that have calculated edges
+    """
+    from nba_props_manager import NBAPropsManager
+    from player_props_client import PlayerPropsClient
 
     try:
-        # First get events
-        events_response = requests.get(url, params={
-            'apiKey': api_key,
-            'dateFormat': 'iso'
-        })
+        logger.info(f"Fetching NBA props with edges (min_edge: {min_edge_pct}%)")
 
-        if events_response.status_code != 200:
-            logger.error(f"Failed to fetch events: {events_response.status_code}")
-            return {"error": "Failed to fetch events", "props": []}
+        # Get upcoming NBA games
+        props_client = PlayerPropsClient()
+        url = f"{props_client.base_url}/sports/basketball_nba/events"
 
-        events = events_response.json()
-        all_props = []
-
-        logger.info(f"Found {len(events)} events for {odds_api_sport}")
-
-        # For each event, fetch player props
-        for event in events[:5]:  # Limit to first 5 games to save API calls
-            event_id = event['id']
-            props_url = f'https://api.the-odds-api.com/v4/sports/{odds_api_sport}/events/{event_id}/odds'
-
-            props_response = requests.get(props_url, params={
-                'apiKey': api_key,
-                'regions': 'us',
-                'markets': 'player_points,player_rebounds,player_assists,player_threes,player_pass_tds,player_rush_yds,player_receptions',
-                'oddsFormat': 'american',
+        import httpx
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.get(url, params={
+                'apiKey': os.getenv('ODDS_API_KEY', ''),
                 'dateFormat': 'iso'
             })
 
-            if props_response.status_code == 200:
-                event_data = props_response.json()
-                logger.info(f"Event {event['home_team']} vs {event['away_team']}: {len(event_data.get('bookmakers', []))} bookmakers")
+            if response.status_code != 200:
+                raise HTTPException(status_code=500, detail="Failed to fetch NBA games")
 
-                # Process bookmakers and outcomes
-                for bookmaker in event_data.get('bookmakers', []):
-                    markets = bookmaker.get('markets', [])
-                    logger.info(f"Bookmaker {bookmaker['title']}: {len(markets)} markets")
-                    for market in markets:
-                        logger.info(f"Market type: {market['key']}, outcomes: {len(market.get('outcomes', []))}")
-                        for outcome in market.get('outcomes', []):
-                            prop = {
-                                'event_id': event_id,
-                                'home_team': event['home_team'],
-                                'away_team': event['away_team'],
-                                'commence_time': event['commence_time'],
-                                'player_name': outcome.get('description', 'Unknown'),
-                                'prop_type': market['key'],
-                                'line': outcome.get('point'),
-                                'odds': outcome.get('price'),
-                                'bookmaker': bookmaker['title'],
-                                'last_update': bookmaker['last_update']
-                            }
-                            all_props.append(prop)
-            else:
-                logger.error(f"Failed to fetch props for event {event_id}: {props_response.status_code}")
+            games = response.json()
 
-        logger.info(f"Fetched {len(all_props)} props for {sport}")
+            # Limit to next 5 games to avoid excessive API calls
+            upcoming_games = games[:5]
 
-        # If no props found, add sample data for demonstration
-        if len(all_props) == 0 and len(events) > 0:
-            logger.info("No props available from API, generating sample data for demonstration")
-            sample_props = []
-            for event in events[:3]:
-                # Sample player props for demonstration
-                players = [
-                    {"name": "LeBron James", "pts": 25.5, "reb": 7.5, "ast": 7.5},
-                    {"name": "Stephen Curry", "pts": 27.5, "reb": 5.5, "ast": 6.5},
-                    {"name": "Kevin Durant", "pts": 28.5, "reb": 6.5, "ast": 5.5},
-                ] if sport == 'nba' else [
-                    {"name": "Patrick Mahomes", "yds": 275.5, "tds": 2.5, "rec": None},
-                    {"name": "Travis Kelce", "rec": 5.5, "yds": 65.5, "tds": 0.5},
-                ] if sport == 'nfl' else []
+            logger.info(f"Found {len(upcoming_games)} upcoming NBA games")
 
-                for player in players:
-                    for prop_type, line in player.items():
-                        if prop_type == 'name' or line is None:
-                            continue
-                        for book, odds_over, odds_under in [
-                            ('DraftKings', -110, -110),
-                            ('FanDuel', -105, -115),
-                            ('BetMGM', -108, -112),
-                            ('Caesars', -110, -110)
-                        ]:
-                            sample_props.extend([
-                                {
-                                    'event_id': event['id'],
-                                    'home_team': event['home_team'],
-                                    'away_team': event['away_team'],
-                                    'commence_time': event['commence_time'],
-                                    'player_name': f"{player['name']} Over",
-                                    'prop_type': f'player_{prop_type}',
-                                    'line': line,
-                                    'odds': odds_over,
-                                    'bookmaker': book,
-                                    'last_update': event['commence_time']
-                                },
-                                {
-                                    'event_id': event['id'],
-                                    'home_team': event['home_team'],
-                                    'away_team': event['away_team'],
-                                    'commence_time': event['commence_time'],
-                                    'player_name': f"{player['name']} Under",
-                                    'prop_type': f'player_{prop_type}',
-                                    'line': line,
-                                    'odds': odds_under,
-                                    'bookmaker': book,
-                                    'last_update': event['commence_time']
-                                }
-                            ])
-            all_props = sample_props
-            logger.info(f"Generated {len(sample_props)} sample props")
+        # Initialize props manager and get props with edges
+        props_manager = NBAPropsManager()
+        props_response = await props_manager.get_nba_props_with_edges(
+            games=upcoming_games,
+            min_edge_pct=min_edge_pct
+        )
 
-        return {"sport": sport, "count": len(all_props), "props": all_props}
+        # Clean up
+        await props_manager.close()
+
+        logger.info(
+            f"Returning {props_response.total_props} props "
+            f"({props_response.total_strong_bets} strong, {props_response.total_moderate_bets} moderate)"
+        )
+
+        return props_response
 
     except Exception as e:
-        logger.error(f"Error fetching props: {str(e)}")
-        return {"error": str(e), "props": []}
+        logger.error(f"Error fetching NBA props with edges: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ========== ENSEMBLE BETTING ENGINE ENDPOINTS ==========
@@ -2792,14 +2931,14 @@ if str(strategies_path) not in sys.path:
 from halftime_tracker import HalftimeTracker
 from fatigue_detector import FatigueDetector
 from weather_integration import WeatherIntegration
-from momentum_detector import MomentumDetector
+from strategies.momentum_detector import MomentumDetector
 from favorite_comeback_detector import FavoriteComebackDetector
 
 # Initialize strategy instances
 halftime_tracker = HalftimeTracker()
 fatigue_detector = FatigueDetector()
 weather_integration = WeatherIntegration()
-momentum_detector = MomentumDetector(window_size_minutes=5)
+momentum_detector = MomentumDetector()
 favorite_comeback_detector = FavoriteComebackDetector()
 
 
@@ -3356,3 +3495,4 @@ import os.path
 frontend_dist_path = os.path.join(os.path.dirname(__file__), "../frontend/dist")
 if os.path.exists(frontend_dist_path):
     app.mount("/", StaticFiles(directory=frontend_dist_path, html=True), name="static")
+ 

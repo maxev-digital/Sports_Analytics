@@ -5,6 +5,7 @@ from typing import List, Optional
 from models.user_bet import (
     UserBet,
     CreateBetRequest,
+    ManualBetRequest,
     AddStakeRequest,
     SettleBetRequest
 )
@@ -35,6 +36,45 @@ async def track_bookmaker_click(request: CreateBetRequest):
 
         # Create new pending bet
         bet = bet_storage.create_bet(request)
+        return bet
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/manual-entry", response_model=UserBet)
+async def create_manual_bet(request: ManualBetRequest):
+    """
+    Manually add a complete bet entry with all details including stake.
+    Creates an active bet immediately (not pending).
+    """
+    try:
+        # Generate a unique game_id for manual entries
+        game_id = f"manual_{request.sport}_{request.away_team}_{request.home_team}_{request.commence_time}".replace(" ", "_")
+
+        # Create a CreateBetRequest first (without stake)
+        create_request = CreateBetRequest(
+            user_id=request.user_id,
+            game_id=game_id,
+            sport=request.sport,
+            home_team=request.home_team,
+            away_team=request.away_team,
+            commence_time=request.commence_time,
+            bet_type=request.bet_type,
+            bet_side=request.bet_side,
+            odds=request.odds,
+            bookmaker=request.bookmaker,
+            confidence=request.confidence,
+            edge_percent=request.edge_percent,
+            strategy="Manual Entry"
+        )
+
+        # Create the bet
+        bet = bet_storage.create_bet(create_request)
+
+        # Immediately add stake to make it active
+        bet = bet_storage.add_stake(bet.id, request.stake)
+
         return bet
 
     except Exception as e:

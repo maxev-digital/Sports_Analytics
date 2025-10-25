@@ -1,0 +1,365 @@
+Rank,Team,Conference,AdjTempo
+1,Duke 1,ACC,66.0
+2,Houston 1,B12,61.9
+3,Florida 1,SEC,70.1
+4,Auburn 1,SEC,68.2
+5,Tennessee 2,SEC,63.7
+6,Alabama 2,SEC,75.3
+7,Michigan St. 2,B10,67.5
+8,Gonzaga 8,WCC,70.5
+9,Texas Tech 3,B12,66.1
+10,Maryland 4,B10,69.6
+11,Iowa St. 3,B12,68.8
+12,Wisconsin 3,B10,68.0
+13,Arizona 4,B12,70.3
+14,St. John's 2,BE,70.0
+15,Purdue 4,B10,65.1
+16,Kentucky 3,SEC,70.9
+17,Illinois 6,B10,71.5
+18,Texas A&M 4,SEC,66.8
+19,Missouri 6,SEC,68.6
+20,UCLA 7,B10,65.0
+21,Michigan 5,B10,70.1
+22,Mississippi 6,SEC,68.1
+23,Clemson 5,ACC,64.6
+24,Kansas 7,B12,68.6
+25,Saint Mary's 7,WCC,61.7
+26,BYU 6,B12,67.6
+27,Oregon 5,B10,68.1
+28,Louisville 8,ACC,69.1
+29,Marquette 7,BE,67.7
+30,Baylor 9,B12,64.6
+31,North Carolina 11,ACC,70.7
+32,Connecticut 8,BE,64.0
+33,Mississippi St. 8,SEC,68.3
+34,VCU 11,A10,66.3
+35,Creighton 9,BE,67.3
+36,Arkansas 10,SEC,69.4
+37,Ohio St.,B10,67.3
+38,Georgia 9,SEC,66.7
+39,UC San Diego 12,BW,65.8
+40,Oklahoma 9,SEC,68.8
+41,New Mexico 10,MWC,72.5
+42,Colorado St. 12,MWC,66.0
+43,Xavier 11,BE,69.2
+44,Northwestern,B10,65.2
+45,Indiana,B10,68.2
+46,Nebraska,B10,67.8
+47,Texas 11,SEC,67.6
+48,Vanderbilt 10,SEC,69.5
+49,Boise St.,MWC,66.0
+50,SMU,ACC,68.9
+51,San Diego St. 11,MWC,66.3
+52,Drake 11,MVC,59.4
+53,West Virginia,B12,64.3
+54,Memphis 5,Amer,71.0
+55,Cincinnati,B12,66.1
+56,Villanova,BE,63.4
+57,USC,B10,68.6
+58,Penn St.,B10,70.1
+59,Santa Clara,WCC,69.2
+60,McNeese 12,Slnd,65.9
+61,Utah St. 10,MWC,67.6
+62,Iowa,B10,69.8
+63,Pittsburgh,ACC,66.5
+64,Liberty 12,CUSA,65.6
+65,Kansas St.,B12,67.1
+66,San Francisco,WCC,68.1
+67,UCF,B12,72.2
+68,UC Irvine,BW,69.3
+69,South Carolina,SEC,65.5
+70,Rutgers,B10,68.9
+71,North Texas,Amer,61.0
+72,Wake Forest,ACC,67.3
+73,Arizona St.,B12,68.9
+74,Yale 13,Ivy,67.7
+75,Butler,BE,68.0
+76,Utah,B12,69.1
+77,Dayton,A10,66.2
+78,Nevada,MWC,64.0
+79,George Mason,A10,64.9
+80,Oregon St.,WCC,63.9
+81,Stanford,ACC,66.3
+82,High Point 13,BSth,66.5
+83,Minnesota,B10,62.9
+84,Arkansas St.,SB,70.2
+85,Saint Joseph's,A10,68.2
+86,TCU,B12,66.7
+87,Colorado,B12,68.0
+88,LSU,SEC,68.2
+89,Lipscomb 14,ASun,66.2
+90,Georgetown,BE,68.5
+91,Florida St.,ACC,69.7
+92,Bradley,MVC,65.9
+93,UNLV,MWC,66.0
+94,Chattanooga,SC,66.8
+95,Troy 14,SB,66.5
+96,Providence,BE,66.5
+97,Oklahoma St.,B12,72.0
+98,Notre Dame,ACC,64.9
+99,UAB,Amer,69.5
+100,Akron 13,MAC,71.7
+101,Grand Canyon 13,WAC,71.4
+102,Northern Iowa,MVC,65.4
+103,Georgia Tech,ACC,68.9
+104,Washington,B10,67.9
+105,UNC Wilmington 14,CAA,65.9
+106,Virginia,ACC,61.3
+107,Loyola Chicago,A10,67.1
+108,Jacksonville St.,CUSA,65.1
+109,South Alabama,SB,63.3
+110,California,ACC,67.7
+111,Kent St.,MAC,66.7
+112,Utah Valley,WAC,68.4
+113,North Alabama,ASun,66.9
+114,Wofford 15,SC,64.3
+115,Syracuse,ACC,68.4
+116,Florida Atlantic,Amer,69.0
+117,CSUN,BW,72.5
+118,Samford,SC,71.1
+119,Middle Tennessee,CUSA,68.5
+120,Washington St.,WCC,70.8
+121,Saint Louis,A10,67.8
+122,DePaul,BE,67.4
+123,St. Bonaventure,A10,64.8
+124,Belmont,MVC,70.7
+125,N.C. State,ACC,65.5
+126,Northern Colorado,BSky,68.9
+127,Louisiana Tech,CUSA,64.7
+128,George Washington,A10,67.4
+129,Cornell,Ivy,71.1
+130,St. Thomas,Sum,68.1
+131,Kennesaw St.,CUSA,70.5
+132,Illinois St.,MVC,66.2
+133,Robert Morris 15,Horz,68.1
+134,New Mexico St.,CUSA,65.1
+135,North Dakota St.,Sum,65.1
+136,Wichita St.,Amer,68.9
+137,South Dakota St.,Sum,69.2
+138,Murray St.,MVC,65.0
+139,Furman,SC,66.1
+140,Duquesne,A10,65.4
+141,Milwaukee,Horz,68.9
+142,East Tennessee St.,SC,65.3
+143,UNC Greensboro,SC,64.0
+144,Tulane,Amer,67.1
+145,Seattle,WAC,66.2
+146,Miami OH,MAC,69.2
+147,Davidson,A10,66.1
+148,UC Santa Barbara,BW,65.7
+149,Bryant 15,AE,72.7
+150,Texas A&M Corpus Chris,Slnd,67.6
+151,Radford,BSth,63.0
+152,Towson,CAA,63.8
+153,Charleston,CAA,70.2
+154,Cleveland St.,Horz,65.6
+155,Loyola Marymount,WCC,67.4
+156,Purdue Fort Wayne,Horz,70.0
+157,Rhode Island,A10,70.6
+158,Lamar,Slnd,65.6
+159,UC Riverside,BW,67.3
+160,James Madison,SB,65.1
+161,Western Kentucky,CUSA,71.9
+162,UTEP,CUSA,69.0
+163,Montana 14,BSky,67.3
+164,Virginia Tech,ACC,65.3
+165,Nebraska Omaha 15,Sum,67.7
+166,Winthrop,BSth,72.9
+167,Nicholls,Slnd,68.3
+168,Marshall,SB,68.9
+169,San Jose St.,MWC,66.7
+170,Appalachian St.,SB,63.4
+171,Illinois Chicago,MVC,69.3
+172,Cal Baptist,WAC,65.9
+173,Temple,Amer,68.9
+174,Oakland,Horz,64.1
+175,Sam Houston St.,CUSA,67.8
+176,East Carolina,Amer,66.8
+177,Princeton,Ivy,66.7
+178,Norfolk St. 16,MEAC,66.5
+179,Florida Gulf Coast,ASun,65.5
+180,Central Connecticut,NEC,66.0
+181,Boston College,ACC,66.9
+182,Cal Poly,BW,74.7
+183,Drexel,CAA,63.2
+184,Merrimack,MAAC,64.7
+185,Wyoming,MWC,64.8
+186,Southeastern Louisiana,Slnd,67.1
+187,Eastern Kentucky,ASun,67.8
+188,Rice,Amer,65.5
+189,Montana St.,BSky,66.1
+190,Southern Illinois,MVC,68.1
+191,UTSA,Amer,70.1
+192,South Carolina St.,MEAC,69.4
+193,Miami FL,ACC,67.7
+194,Texas St.,SB,66.2
+195,Ohio,MAC,70.5
+196,South Florida,Amer,68.5
+197,Indiana St.,MVC,72.4
+198,Central Michigan,MAC,67.4
+199,Youngstown St.,Horz,69.4
+200,Jacksonville,ASun,67.8
+201,UNC Asheville,BSth,68.4
+202,Southeast Missouri,OVC,69.1
+203,Dartmouth,Ivy,71.2
+204,Seton Hall,BE,64.7
+205,Valparaiso,MVC,68.2
+206,Elon,CAA,65.5
+207,Portland St.,BSky,68.7
+208,Brown,Ivy,66.0
+209,Northeastern,CAA,67.6
+210,Longwood,BSth,69.2
+211,Idaho St.,BSky,66.2
+212,Queens,ASun,68.7
+213,Quinnipiac,MAAC,71.8
+214,Wright St.,Horz,67.7
+215,Hampton,CAA,65.7
+216,Pepperdine,WCC,69.3
+217,SIUE 16,OVC,66.2
+218,Hofstra,CAA,63.8
+219,Maine,AE,66.2
+220,Campbell,CAA,66.1
+221,Abilene Christian,WAC,69.6
+222,Massachusetts,A10,70.5
+223,Northwestern St.,Slnd,64.2
+224,Incarnate Word,Slnd,65.0
+225,Little Rock,OVC,67.2
+226,Bucknell,PL,67.5
+227,Hawaii,BW,66.1
+228,UT Arlington,WAC,67.8
+229,La Salle,A10,68.8
+230,Northern Kentucky,Horz,66.3
+231,Southern,SWAC,68.7
+232,William & Mary,CAA,71.5
+233,Presbyterian,BSth,64.5
+234,UT Rio Grande Valley,Slnd,70.6
+235,Delaware,CAA,70.6
+236,Toledo,MAC,68.2
+237,Fordham,A10,69.7
+238,Kansas City,Sum,64.7
+239,Missouri St.,MVC,64.0
+240,South Dakota,Sum,74.9
+241,Manhattan,MAAC,67.9
+242,Vermont,AE,62.6
+243,Mount St. Mary's 16,MAAC,67.8
+244,UMass Lowell,AE,68.8
+245,Cal St. Bakersfield,BW,66.2
+246,Jackson St.,SWAC,68.5
+247,Richmond,A10,63.9
+248,American 16,PL,63.8
+249,Georgia Southern,SB,69.6
+250,UC Davis,BW,67.2
+251,Northern Arizona,BSky,67.0
+252,Tennessee St.,OVC,70.6
+253,Siena,MAAC,67.4
+254,Evansville,MVC,67.0
+255,FIU,CUSA,68.6
+256,Harvard,Ivy,65.8
+257,Charlotte,Amer,65.0
+258,Mercer,SC,71.3
+259,Fresno St.,MWC,70.8
+260,Iona,MAAC,68.3
+261,Colgate,PL,67.4
+262,Georgia St.,SB,69.2
+263,Sacred Heart,MAAC,70.4
+264,Gardner Webb,BSth,69.2
+265,North Dakota,Sum,69.2
+266,North Florida,ASun,72.4
+267,Tulsa,Amer,66.4
+268,Monmouth,CAA,67.3
+269,Alabama St. 16,SWAC,68.1
+270,Portland,WCC,68.5
+271,Stephen F. Austin,Slnd,67.6
+272,Houston Christian,Slnd,65.0
+273,Marist,MAAC,64.3
+274,Ball St.,MAC,66.6
+275,Albany,AE,67.7
+276,Navy,PL,67.2
+277,Eastern Michigan,MAC,67.4
+278,Texas Southern,SWAC,70.1
+279,Columbia,Ivy,70.9
+280,Austin Peay,ASun,66.3
+281,Idaho,BSky,66.5
+282,Old Dominion,SB,66.2
+283,Lehigh,PL,67.5
+284,Pacific,WCC,66.6
+285,LIU,NEC,65.0
+286,Bethune Cookman,SWAC,69.2
+287,VMI,SC,68.4
+288,Tarleton St.,WAC,65.7
+289,Bowling Green,MAC,68.9
+290,Western Michigan,MAC,68.0
+291,Lafayette,PL,66.3
+292,Tennessee Martin,OVC,66.5
+293,Southern Miss,SB,71.0
+294,Penn,Ivy,67.1
+295,Eastern Washington,BSky,67.1
+296,Southern Utah,WAC,69.1
+297,San Diego,WCC,71.3
+298,Saint Peter's,MAAC,64.1
+299,UMBC,AE,70.6
+300,Weber St.,BSky,65.8
+301,Utah Tech,WAC,67.6
+302,Charleston Southern,BSth,67.5
+303,Tennessee Tech,OVC,68.0
+304,Boston University,PL,63.3
+305,Loyola MD,PL,66.8
+306,Fairleigh Dickinson,NEC,69.4
+307,Delaware St.,MEAC,70.5
+308,Long Beach St.,BW,64.3
+309,Saint Francis 16,NEC,67.1
+310,Air Force,MWC,64.6
+311,Denver,Sum,66.7
+312,IU Indy,Horz,65.0
+313,Louisiana,SB,66.4
+314,Howard,MEAC,70.2
+315,Rider,MAAC,65.0
+316,Eastern Illinois,OVC,66.4
+317,Florida A&M,SWAC,67.4
+318,Army,PL,68.0
+319,Grambling St.,SWAC,64.0
+320,Binghamton,AE,65.9
+321,Holy Cross,PL,66.2
+322,Niagara,MAAC,65.3
+323,Stonehill,NEC,65.2
+324,North Carolina Central,MEAC,67.0
+325,Alcorn St.,SWAC,64.9
+326,East Texas A&M,Slnd,67.5
+327,Lindenwood,OVC,69.8
+328,Morehead St.,OVC,64.2
+329,Coastal Carolina,SB,63.4
+330,Oral Roberts,Sum,67.5
+331,Morgan St.,MEAC,70.6
+332,Green Bay,Horz,69.1
+333,Stony Brook,CAA,64.6
+334,Fairfield,MAAC,66.2
+335,Southern Indiana,OVC,67.2
+336,North Carolina A&T,CAA,69.2
+337,Detroit Mercy,Horz,67.2
+338,Western Carolina,SC,70.6
+339,Buffalo,MAC,70.9
+340,USC Upstate,BSth,72.9
+341,New Orleans,Slnd,69.4
+342,Mercyhurst,NEC,64.9
+343,Northern Illinois,MAC,69.1
+344,Louisiana Monroe,SB,67.9
+345,Western Illinois,OVC,64.5
+346,Wagner,NEC,60.5
+347,Bellarmine,ASun,66.4
+348,Sacramento St.,BSky,65.8
+349,Central Arkansas,ASun,66.6
+350,West Georgia,ASun,68.2
+351,Cal St. Fullerton,BW,68.3
+352,Stetson,ASun,67.8
+353,NJIT,AE,66.7
+354,Le Moyne,NEC,68.8
+355,The Citadel,SC,64.8
+356,New Hampshire,AE,67.6
+357,Prairie View A&M,SWAC,70.4
+358,Maryland Eastern Shore,MEAC,65.8
+359,Canisius,MAAC,66.4
+360,Alabama A&M,SWAC,71.2
+361,Coppin St.,MEAC,68.0
+362,Chicago St.,NEC,68.5
+363,Arkansas Pine Bluff,SWAC,71.6
+364,Mississippi Valley St.,SWAC,65.0

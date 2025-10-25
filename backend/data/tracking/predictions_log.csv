@@ -1,0 +1,19 @@
+prediction_id,date_predicted,game_date,game_time,away_team,home_team,predicted_total,market_total,edge,recommendation,confidence,bet_placed
+2025-10-21_Houston_Rockets_Oklahoma_City_Thunder,2025-10-09 14:31:22,2025-10-21,07:30 PM,Houston Rockets,Oklahoma City Thunder,244.9,227.0,17.9,OVER,HIGH,YES
+2025-10-21_Golden_State_Warriors_Los_Angeles_Lakers,2025-10-09 14:31:22,2025-10-21,10:00 PM,Golden State Warriors,Los Angeles Lakers,231.6,225.5,6.1,OVER,HIGH,YES
+2025-10-22_Miami_Heat_Orlando_Magic,2025-10-09 14:31:22,2025-10-22,07:10 PM,Miami Heat,Orlando Magic,223.5,211.0,12.5,OVER,HIGH,YES
+2025-10-22_Brooklyn_Nets_Charlotte_Hornets,2025-10-09 14:31:22,2025-10-22,07:10 PM,Brooklyn Nets,Charlotte Hornets,209.9,221.5,11.6,UNDER,HIGH,YES
+2025-10-22_Minnesota_Timberwolves_Portland_Trail_Blazers,2025-10-09 14:31:22,2025-10-22,10:10 PM,Minnesota Timberwolves,Portland Trail Blazers,229.2,218.5,10.7,OVER,HIGH,YES
+2025-10-22_Cleveland_Cavaliers_New_York_Knicks,2025-10-09 14:31:22,2025-10-22,07:10 PM,Cleveland Cavaliers,New York Knicks,239.4,229.5,9.9,OVER,HIGH,YES
+2025-10-22_New_Orleans_Pelicans_Memphis_Grizzlies,2025-10-09 14:31:22,2025-10-22,08:10 PM,New Orleans Pelicans,Memphis Grizzlies,227.8,234.0,6.2,UNDER,HIGH,YES
+2025-10-22_Toronto_Raptors_Atlanta_Hawks,2025-10-09 14:31:22,2025-10-22,07:40 PM,Toronto Raptors,Atlanta Hawks,227.8,233.5,5.7,UNDER,HIGH,YES
+2025-10-22_Washington_Wizards_Milwaukee_Bucks,2025-10-09 14:31:22,2025-10-22,08:10 PM,Washington Wizards,Milwaukee Bucks,220.7,226.0,5.3,UNDER,HIGH,YES
+2025-10-22_Sacramento_Kings_Phoenix_Suns,2025-10-09 14:31:22,2025-10-22,10:10 PM,Sacramento Kings,Phoenix Suns,223.8,228.5,4.7,UNDER,MEDIUM,YES
+2025-10-22_Philadelphia_76ers_Boston_Celtics,2025-10-09 14:31:22,2025-10-22,07:40 PM,Philadelphia 76ers,Boston Celtics,226.6,222.5,4.1,OVER,MEDIUM,YES
+2025-10-22_San_Antonio_Spurs_Dallas_Mavericks,2025-10-09 14:31:22,2025-10-22,09:40 PM,San Antonio Spurs,Dallas Mavericks,224.6,225.5,0.9,UNDER,NONE,NO
+2025-10-22_Detroit_Pistons_Chicago_Bulls,2025-10-09 14:31:22,2025-10-22,08:10 PM,Detroit Pistons,Chicago Bulls,233.4,233.5,0.1,UNDER,NONE,NO
+2025-10-23_Oklahoma_City_Thunder_Indiana_Pacers,2025-10-17 17:21:38,2025-10-23,07:40 PM,Oklahoma City Thunder,Indiana Pacers,244.2,226.5,17.7,OVER,HIGH,YES
+2025-10-23_Denver_Nuggets_Golden_State_Warriors,2025-10-17 17:21:38,2025-10-23,10:10 PM,Denver Nuggets,Golden State Warriors,236.7,233.5,3.2,OVER,MEDIUM,YES
+2025-10-24_Boston_Celtics_New_York_Knicks,2025-10-17 17:21:38,2025-10-24,07:30 PM,Boston Celtics,New York Knicks,234.8,226.5,8.3,OVER,HIGH,YES
+2025-10-27_Cleveland_Cavaliers_Detroit_Pistons,2025-10-17 17:21:38,2025-10-27,07:00 PM,Cleveland Cavaliers,Detroit Pistons,240.6,228.5,12.1,OVER,HIGH,YES
+2025-10-27_Denver_Nuggets_Minnesota_Timberwolves,2025-10-17 17:21:38,2025-10-27,09:30 PM,Denver Nuggets,Minnesota Timberwolves,236.1,229.5,6.6,OVER,HIGH,YES

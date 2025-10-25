@@ -127,6 +127,29 @@ export interface NHLMomentumStats {
   blocked_shots?: number | null;  // Shots blocked (defensive metric)
 }
 
+export interface NBAMomentumStats {
+  momentum_score: number;  // 0-100 scale (higher = more momentum)
+  points_last_5min: number;  // Points scored in last ~5 minutes
+  fg_pct_recent: number;  // Field goal % in recent possessions
+  offensive_rebounds: number;  // Offensive rebounds (second chance points)
+  turnovers: number;  // Turnovers in recent play
+  steals: number;  // Steals forced
+  assists: number;  // Assists in recent play
+  possession_indicator?: string | null;  // "ATTACKING", "DEFENDING", "NEUTRAL"
+}
+
+export interface NFLMomentumStats {
+  momentum_score: number;  // 0-100 scale (higher = more momentum)
+  yards_per_play: number;  // Average yards per play on recent drives
+  recent_yards: number;  // Total yards gained on recent drives
+  recent_points: number;  // Points scored on recent drives
+  touchdowns: number;  // TDs on recent drives
+  field_goals: number;  // Field goals on recent drives
+  turnovers: number;  // Turnovers on recent drives
+  red_zone_efficiency: string;  // "2/3" format (scores/trips)
+  drive_state?: string | null;  // "ATTACKING", "DEFENDING", "NEUTRAL"
+}
+
 export interface NHLTeamStats {
   team_id: string;
   team_name: string;
@@ -260,6 +283,12 @@ export interface LiveGame {
   away_nhl_momentum: NHLMomentumStats | null;
   home_nhl_stats: NHLTeamStats | null;
   away_nhl_stats: NHLTeamStats | null;
+  home_nba_momentum: NBAMomentumStats | null;
+  away_nba_momentum: NBAMomentumStats | null;
+  home_nfl_momentum: NFLMomentumStats | null;
+  away_nfl_momentum: NFLMomentumStats | null;
+  home_ncaaf_momentum: NFLMomentumStats | null;
+  away_ncaaf_momentum: NFLMomentumStats | null;
   home_mlb_stats: MLBTeamStats | null;
   away_mlb_stats: MLBTeamStats | null;
 }
