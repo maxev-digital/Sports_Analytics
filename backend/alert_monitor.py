@@ -41,8 +41,8 @@ class ArbitrageAlert:
     book_b: str
     odds_a: float
     odds_b: float
-    side_a: str  # 'Over', 'Under', team name, etc.
-    side_b: str  # 'Over', 'Under', team name, etc.
+    side_a: str = ''  # 'Over', 'Under', team name, etc.
+    side_b: str = ''  # 'Over', 'Under', team name, etc.
     point_a: Optional[float] = None  # Point value for spreads/totals (e.g., 5.5, -3.5)
     point_b: Optional[float] = None  # Point value for spreads/totals (e.g., 5.5, 3.5)
     profit_percent: float = 0.0
