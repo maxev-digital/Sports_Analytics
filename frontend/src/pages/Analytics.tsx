@@ -23,7 +23,7 @@ interface PerformanceData {
     avg_profit: number;
     total_profit: number;
   };
-  line_movements: {
+  middles: {
     total_alerts: number;
     successful_alerts: number;
     failed_alerts: number;
@@ -147,15 +147,15 @@ export function Analytics() {
   // Calculate aggregate stats
   const totalAlerts = performanceData.arbitrage.total_alerts +
                       performanceData.steam_moves.total_alerts +
-                      performanceData.line_movements.total_alerts;
+                      performanceData.middles.total_alerts;
 
   const totalProfit = performanceData.arbitrage.total_profit +
                       performanceData.steam_moves.total_profit +
-                      performanceData.line_movements.total_profit;
+                      performanceData.middles.total_profit;
 
   const totalSuccess = performanceData.arbitrage.successful_alerts +
                        performanceData.steam_moves.successful_alerts +
-                       performanceData.line_movements.successful_alerts;
+                       performanceData.middles.successful_alerts;
 
   const overallWinRate = totalAlerts > 0 ? (totalSuccess / totalAlerts) * 100 : 0;
 
@@ -293,16 +293,16 @@ export function Analytics() {
               <div className="bg-gradient-to-br from-slate-900 via-slate-700 to-slate-900 rounded-lg p-4 border-4 border-slate-700">
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-slate-300 font-semibold">Line Movements</span>
-                  <span className="text-white font-bold">${performanceData.line_movements.total_profit.toFixed(2)}</span>
+                  <span className="text-white font-bold">${performanceData.middles.total_profit.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-xs text-slate-400">
-                  <span>{performanceData.line_movements.total_alerts} alerts</span>
-                  <span>Avg: ${performanceData.line_movements.avg_profit.toFixed(2)}/alert</span>
+                  <span>{performanceData.middles.total_alerts} alerts</span>
+                  <span>Avg: ${performanceData.middles.avg_profit.toFixed(2)}/alert</span>
                 </div>
                 <div className="mt-2 bg-slate-800 rounded-lg h-2">
                   <div
                     className="bg-gradient-to-br from-slate-500 via-slate-700 to-slate-900 h-2 rounded"
-                    style={{ width: `${(performanceData.line_movements.total_profit / totalProfit) * 100}%` }}
+                    style={{ width: `${(performanceData.middles.total_profit / totalProfit) * 100}%` }}
                   ></div>
                 </div>
               </div>
@@ -364,19 +364,19 @@ export function Analytics() {
                   <div>
                     <div className="text-white font-semibold mb-1">Line Movements</div>
                     <div className="text-xs text-slate-400">
-                      {performanceData.line_movements.successful_alerts} wins / {performanceData.line_movements.failed_alerts} losses / {performanceData.line_movements.pending_alerts} pending
+                      {performanceData.middles.successful_alerts} wins / {performanceData.middles.failed_alerts} losses / {performanceData.middles.pending_alerts} pending
                     </div>
                   </div>
                   <div className="text-3xl font-bold text-white">
-                    {performanceData.line_movements.win_rate.toFixed(1)}%
+                    {performanceData.middles.win_rate.toFixed(1)}%
                   </div>
                 </div>
                 <div className="bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 rounded-lg h-3">
                   <div
                     className="bg-gradient-to-r from-slate-600 to-slate-500 h-3 rounded-lg flex items-center justify-end pr-2"
-                    style={{ width: `${performanceData.line_movements.win_rate}%` }}
+                    style={{ width: `${performanceData.middles.win_rate}%` }}
                   >
-                    <span className="text-[10px] text-white font-bold">{performanceData.line_movements.win_rate.toFixed(0)}%</span>
+                    <span className="text-[10px] text-white font-bold">{performanceData.middles.win_rate.toFixed(0)}%</span>
                   </div>
                 </div>
               </div>
@@ -470,17 +470,17 @@ export function Analytics() {
                     stroke="#a855f7"
                     strokeWidth="20"
                     fill="none"
-                    strokeDasharray={`${(performanceData.line_movements.total_alerts / totalAlerts) * 440} 440`}
+                    strokeDasharray={`${(performanceData.middles.total_alerts / totalAlerts) * 440} 440`}
                   />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <div className="text-3xl font-bold text-purple-400">
-                    {((performanceData.line_movements.total_alerts / totalAlerts) * 100).toFixed(0)}%
+                    {((performanceData.middles.total_alerts / totalAlerts) * 100).toFixed(0)}%
                   </div>
                   <div className="text-xs text-slate-400">Lines</div>
                 </div>
               </div>
-              <div className="mt-3 text-sm text-slate-300">{performanceData.line_movements.total_alerts} alerts</div>
+              <div className="mt-3 text-sm text-slate-300">{performanceData.middles.total_alerts} alerts</div>
             </div>
           </div>
         </div>
