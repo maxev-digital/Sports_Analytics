@@ -1,7 +1,7 @@
 """NBA Live Scoreboard Client for real-time game clock data"""
 from nba_api.live.nba.endpoints import scoreboard
 import logging
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 import re
 
 logger = logging.getLogger(__name__)
@@ -60,6 +60,66 @@ class NBALiveClient:
         except Exception as e:
             logger.error(f"Error fetching live scoreboard: {e}", exc_info=True)
             return {}
+
+    def fetch_schedule(self) -> List[Dict]:
+        """
+        Fetch NBA schedule for upcoming and live games
+        
+        Returns list of games with:
+        - home_team: str
+        - away_team: str
+        - commence_time: str (ISO format)
+        - status: str ('upcoming' or 'live')
+        - game_id: str
+        """
+        try:
+            sb = scoreboard.ScoreBoard()
+            data = sb.get_dict()
+            
+            games = []
+            for game in data.get('scoreboard', {}).get('games', []):
+                try:
+                    home_team = game.get('homeTeam', {})
+                    away_team = game.get('awayTeam', {})
+                    
+                    home_city = home_team.get('teamCity', '')
+                    home_name = home_team.get('teamName', '')
+                    away_city = away_team.get('teamCity', '')
+                    away_name = away_team.get('teamName', '')
+                    
+                    # Create full team names
+                    home_full = f"{home_city} {home_name}".strip()
+                    away_full = f"{away_city} {away_name}".strip()
+                    
+                    # Get game status
+                    game_status = game.get('gameStatus', 0)  # 1=not started, 2=live, 3=final
+                    
+                    # Skip completed games
+                    if game_status == 3:
+                        continue
+                    
+                    # Get commence time
+                    commence_time = game.get('gameTimeUTC', '')
+                    
+                    games.append({
+                        'home_team': home_full,
+                        'away_team': away_full,
+                        'commence_time': commence_time,
+                        'status': 'live' if game_status == 2 else 'upcoming',
+                        'game_id': game.get('gameId'),
+                        'sport_key': 'basketball_nba'
+                    })
+                    
+                except Exception as e:
+                    logger.warning(f"Error parsing NBA game: {e}")
+                    continue
+            
+            logger.info(f"Fetched {len(games)} NBA games from schedule")
+            return games
+            
+        except Exception as e:
+            logger.error(f"Error fetching NBA schedule: {e}", exc_info=True)
+            return []
 
     def parse_game_clock(self, clock_string: str) -> str:
         """

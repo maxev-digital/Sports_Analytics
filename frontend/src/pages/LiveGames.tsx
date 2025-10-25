@@ -6,7 +6,7 @@ import { sportEmojis } from '../utils/sportDetection';
 export function LiveGames() {
   const [games, setGames] = useState<LiveGame[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedSport, setSelectedSport] = useState<string>('all');
+  const [selectedSport, setSelectedSport] = useState<string>('live');
 
   useEffect(() => {
     fetchGames();
@@ -18,6 +18,9 @@ export function LiveGames() {
     try {
       const response = await fetch('/api/games?user_id=default');
       const data = await response.json();
+      console.log('📊 Fetched games:', data);
+      console.log('📊 Number of games:', data.length);
+      console.log('📊 First game structure:', data[0]);
       setGames(data);
       setLoading(false);
     } catch (error) {
@@ -27,7 +30,7 @@ export function LiveGames() {
   };
 
   const sports = [
-    { key: 'all', label: 'All Sports', logo: null, emoji: null },
+    { key: 'live', label: 'All Games', logo: null, emoji: null },
     { key: 'nfl', label: 'NFL', filter: 'americanfootball_nfl', logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/nfl.png', emoji: sportEmojis.NFL },
     { key: 'ncaaf', label: 'NCAAF', filter: 'americanfootball_ncaaf', logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/ncaa.png', emoji: sportEmojis.NCAAF },
     { key: 'nba', label: 'NBA', filter: 'basketball_nba', logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/nba.png', emoji: sportEmojis.NBA },
@@ -42,15 +45,53 @@ export function LiveGames() {
     { key: 'nascar', label: 'NASCAR', filter: 'motorsport_nascar', logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/nascar.png', emoji: null },
   ];
 
-  const filteredGames = selectedSport === 'all'
-    ? games
+  const filteredGames = selectedSport === 'live'
+    ? games  // Show all games when "All Games" is selected
     : games.filter(game => {
         const sport = sports.find(s => s.key === selectedSport);
         return sport && game.state.sport_key.includes(sport.filter);
       });
 
+  // Check if current selection is tennis (ATP or WTA)
+  const isTennisSelected = selectedSport === 'atp' || selectedSport === 'wta' ||
+    (selectedSport === 'all' && filteredGames.some(g => g.state.sport_key.includes('tennis')));
+
+  // Group tennis games by tournament
+  const groupTennisByTournament = (games: LiveGame[]) => {
+    const grouped: Record<string, LiveGame[]> = {};
+    games.forEach(game => {
+      const tournament = game.state.tournament || 'Other Matches';
+      if (!grouped[tournament]) {
+        grouped[tournament] = [];
+      }
+      grouped[tournament].push(game);
+    });
+
+    // Sort each tournament group: live games first, then by commence_time
+    Object.keys(grouped).forEach(tournament => {
+      grouped[tournament].sort((a, b) => {
+        if (a.state.status === 'live' && b.state.status !== 'live') return -1;
+        if (a.state.status !== 'live' && b.state.status === 'live') return 1;
+        return new Date(a.state.commence_time).getTime() - new Date(b.state.commence_time).getTime();
+      });
+    });
+
+    return grouped;
+  };
+
   const liveGames = filteredGames.filter(g => g.state.status === 'live');
   const upcomingGames = filteredGames.filter(g => g.state.status === 'upcoming');
+  
+  console.log('🎮 Selected sport:', selectedSport);
+  console.log('🎮 Total games:', games.length);
+  console.log('🎮 Filtered games:', filteredGames.length);
+  console.log('🎮 Live games:', liveGames.length);
+  console.log('🎮 Upcoming games:', upcomingGames.length);
+
+  // For tennis, group by tournament
+  const tennisGames = filteredGames.filter(g => g.state.sport_key.includes('tennis'));
+  const tennisByTournament = groupTennisByTournament(tennisGames);
+  const isShowingOnlyTennis = (selectedSport === 'atp' || selectedSport === 'wta') && tennisGames.length > 0;
 
   if (loading) {
     return (
@@ -61,9 +102,9 @@ export function LiveGames() {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' }}>
+    <div className="min-h-screen bg-gradient-to-br from-black via-slate-900 to-black">
       {/* Sport Filter Tabs */}
-      <div className="sticky top-0 z-10 bg-slate-900/95 backdrop-blur-sm border-b border-slate-700">
+      <div className="sticky top-0 z-10 bg-gradient-to-br from-red-900 via-red-950 to-black border-b border-red-800">
         <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex gap-2 overflow-x-auto scrollbar-hide">
             {sports.map(sport => (
@@ -92,37 +133,73 @@ export function LiveGames() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-6">
-        {/* Live Games Section */}
-        {liveGames.length > 0 && (
-          <div className="mb-8">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                <h2 className="text-2xl font-bold text-slate-100">Live Games</h2>
-              </div>
-              <span className="text-sm text-slate-400">({liveGames.length})</span>
-            </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {liveGames.map((game) => (
-                <GameCard key={game.state.id} game={game} />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Upcoming Games Section */}
-        {upcomingGames.length > 0 && (
+        {/* Tennis Tournament View */}
+        {isShowingOnlyTennis && Object.keys(tennisByTournament).length > 0 ? (
           <div>
-            <div className="flex items-center gap-3 mb-4">
-              <h2 className="text-2xl font-bold text-slate-100">Upcoming Games</h2>
-              <span className="text-sm text-slate-400">({upcomingGames.length})</span>
-            </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {upcomingGames.map((game) => (
-                <GameCard key={game.state.id} game={game} />
-              ))}
-            </div>
+            {Object.entries(tennisByTournament).map(([tournament, tournamentGames]) => (
+              <div key={tournament} className="mb-8">
+                {/* Tournament Header */}
+                <div className="flex items-center gap-3 mb-4">
+                  <img
+                    src="https://em-content.zobj.net/source/microsoft-teams/363/tennis_1f3be.png"
+                    alt="Tennis"
+                    className="w-8 h-8"
+                    style={{ imageRendering: 'crisp-edges' }}
+                  />
+                  <h2 className="text-2xl font-bold text-slate-100">{tournament}</h2>
+                  <span className="text-sm text-slate-400">({tournamentGames.length} matches)</span>
+                  {tournamentGames.some(g => g.state.status === 'live') && (
+                    <div className="flex items-center gap-1.5 ml-2">
+                      <div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse"></div>
+                      <span className="text-xs text-red-400 font-semibold">LIVE</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Tournament Matches */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {tournamentGames.map((game) => (
+                    <GameCard key={game.state.id} game={game} />
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
+        ) : (
+          <>
+            {/* Live Games Section (Non-Tennis) */}
+            {liveGames.length > 0 && (
+              <div className="mb-8">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                    <h2 className="text-2xl font-bold text-slate-100">Live Games</h2>
+                  </div>
+                  <span className="text-sm text-slate-400">({liveGames.length})</span>
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {liveGames.map((game) => (
+                    <GameCard key={game.state.id} game={game} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Upcoming Games Section (Non-Tennis) */}
+            {upcomingGames.length > 0 && (
+              <div>
+                <div className="flex items-center gap-3 mb-4">
+                  <h2 className="text-2xl font-bold text-slate-100">Upcoming Games</h2>
+                  <span className="text-sm text-slate-400">({upcomingGames.length})</span>
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {upcomingGames.map((game) => (
+                    <GameCard key={game.state.id} game={game} />
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         {/* No Games Message */}

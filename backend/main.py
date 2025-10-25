@@ -1,5 +1,8 @@
 """FastAPI application"""
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+print("=" * 80)
+print("LOADING main.py from:", __file__)
+print("=" * 80)
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import sys
@@ -11,6 +14,7 @@ from alert_monitor import AlertMonitor, ArbitrageAlert, SteamMoveAlert, LineMove
 from live_analytics_engine import analytics_engine
 from plays_database import plays_db
 from settings_database import settings_db, BOOKMAKER_PRESETS
+from bet_grader import initialize_bet_grader
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
 import asyncio
@@ -20,6 +24,7 @@ import json
 from datetime import datetime
 from dotenv import load_dotenv
 import auth  # Authentication module
+from brevo_crm import sync_signup_to_brevo  # Brevo CRM integration
 
 # Betting ensemble temporarily disabled to avoid import conflicts
 # from backend.models.ensemble.betting_ensemble import BettingEnsemble, GameData, EnsemblePrediction
@@ -68,6 +73,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ========== BET TRACKING ROUTER ==========
+print("DEBUG: About to import bet router...")
+from routes.bets import router as bets_router
+print(f"DEBUG: Bet router imported successfully: {bets_router}")
+app.include_router(bets_router)
+print(f"DEBUG: Bet router registered with prefix: {bets_router.prefix}")
+
 # Game tracker instance
 tracker = GameTracker()
 
@@ -84,52 +96,125 @@ alert_monitor = AlertMonitor(odds_api_key=os.getenv('ODDS_API_KEY', ''))
 # )
 betting_ensemble = None
 
+# ========== PROPS CACHE ==========
+# In-memory cache for player props (production-ready caching)
+props_cache = {
+    'nba': {'props': [], 'count': 0, 'last_updated': None},
+    'nfl': {'props': [], 'count': 0, 'last_updated': None},
+    'nhl': {'props': [], 'count': 0, 'last_updated': None},
+    'mlb': {'props': [], 'count': 0, 'last_updated': None},
+    'ncaab': {'props': [], 'count': 0, 'last_updated': None},
+    'ncaaf': {'props': [], 'count': 0, 'last_updated': None}
+}
+
 # ========== WEBSOCKET CONNECTION MANAGER ==========
 
 class ConnectionManager:
     """Manages WebSocket connections for real-time updates"""
 
     def __init__(self):
-        self.active_connections: List[WebSocket] = []
-        self.last_broadcast_data = None
+        # Store connections with their user_id: {websocket: user_id}
+        self.active_connections: Dict[WebSocket, str] = {}
+        self.unfiltered_game_data = None  # Store raw game data before filtering
 
-    async def connect(self, websocket: WebSocket):
-        """Accept new WebSocket connection"""
+    async def connect(self, websocket: WebSocket, user_id: str = 'default'):
+        """Accept new WebSocket connection with user_id"""
         await websocket.accept()
-        self.active_connections.append(websocket)
-        logger.info(f"WebSocket connected. Total connections: {len(self.active_connections)}")
+        self.active_connections[websocket] = user_id
+        logger.info(f"WebSocket connected for user {user_id}. Total connections: {len(self.active_connections)}")
 
     def disconnect(self, websocket: WebSocket):
         """Remove WebSocket connection"""
         if websocket in self.active_connections:
-            self.active_connections.remove(websocket)
-            logger.info(f"WebSocket disconnected. Total connections: {len(self.active_connections)}")
+            user_id = self.active_connections[websocket]
+            del self.active_connections[websocket]
+            logger.info(f"WebSocket disconnected for user {user_id}. Total connections: {len(self.active_connections)}")
 
-    async def broadcast(self, message: dict):
-        """Broadcast message to all connected clients"""
-        # Store last broadcast for new connections
-        self.last_broadcast_data = message
+    def _filter_games_for_user(self, games_data: List[dict], user_id: str) -> List[dict]:
+        """Filter game odds based on user's enabled bookmakers"""
+        from settings_database import SettingsDatabase
 
-        # Send to all active connections
+        # Get user's enabled bookmakers
+        settings_db = SettingsDatabase()
+        settings = settings_db.get_settings(user_id)
+
+        if not settings:
+            # If no settings found, return games as-is
+            return games_data
+
+        enabled_bookmakers = set(settings.get('enabled_bookmakers', []))
+
+        # If no bookmakers enabled, return games with empty odds arrays
+        if not enabled_bookmakers:
+            return [{**game, 'odds': []} for game in games_data]
+
+        # Normalize bookmaker names for comparison
+        def normalize_name(name: str) -> str:
+            import re
+            normalized = re.sub(r'\s*\([^)]*\)', '', name)
+            normalized = normalized.lower()
+            normalized = re.sub(r'[^a-z0-9]', '', normalized)
+            return normalized
+
+        enabled_set = {normalize_name(b) for b in enabled_bookmakers}
+
+        # Filter odds for each game
+        filtered_games = []
+        for game in games_data:
+            filtered_odds = [
+                odd for odd in game.get('odds', [])
+                if normalize_name(odd['bookmaker']) in enabled_set
+            ]
+            filtered_game = {**game, 'odds': filtered_odds}
+            filtered_games.append(filtered_game)
+
+        return filtered_games
+
+    async def broadcast(self, unfiltered_games: List[dict]):
+        """Broadcast game data to all connected clients with per-user filtering"""
+        # Store unfiltered data for new connections
+        self.unfiltered_game_data = unfiltered_games
+
+        # Send to all active connections with user-specific filtering
         disconnected = []
-        for connection in self.active_connections:
+        for websocket, user_id in list(self.active_connections.items()):
             try:
-                await connection.send_json(message)
+                # Filter games for this specific user
+                filtered_games = self._filter_games_for_user(unfiltered_games, user_id)
+
+                message = {
+                    "type": "games_update",
+                    "timestamp": datetime.now().isoformat(),
+                    "count": len(filtered_games),
+                    "games": filtered_games
+                }
+
+                await websocket.send_json(message)
             except Exception as e:
-                logger.error(f"Error broadcasting to client: {e}")
-                disconnected.append(connection)
+                logger.error(f"Error broadcasting to user {user_id}: {e}")
+                disconnected.append(websocket)
 
         # Clean up disconnected clients
         for conn in disconnected:
             self.disconnect(conn)
 
-    async def send_initial_data(self, websocket: WebSocket):
-        """Send current game state to newly connected client"""
-        if self.last_broadcast_data:
+    async def send_initial_data(self, websocket: WebSocket, user_id: str):
+        """Send current game state to newly connected client with user-specific filtering"""
+        if self.unfiltered_game_data:
             try:
-                await websocket.send_json(self.last_broadcast_data)
+                # Filter for this specific user
+                filtered_games = self._filter_games_for_user(self.unfiltered_game_data, user_id)
+
+                message = {
+                    "type": "games_update",
+                    "timestamp": datetime.now().isoformat(),
+                    "count": len(filtered_games),
+                    "games": filtered_games
+                }
+
+                await websocket.send_json(message)
             except Exception as e:
-                logger.error(f"Error sending initial data: {e}")
+                logger.error(f"Error sending initial data to user {user_id}: {e}")
 
 # WebSocket manager instance
 ws_manager = ConnectionManager()
@@ -140,10 +225,14 @@ async def startup():
     logger.info("Starting NBA Live Betting API...")
     asyncio.create_task(tracker.start())
 
-    # Start alert monitoring for NBA, NFL, and NHL
+    # Initialize bet grader with game tracker
+    initialize_bet_grader(tracker)
+    logger.info("Bet grader initialized")
+
+    # Start alert monitoring for NBA, NFL, NHL, and Tennis
     asyncio.create_task(
         alert_monitor.start_monitoring(
-            sports=['basketball_nba', 'americanfootball_nfl', 'icehockey_nhl'],
+            sports=['basketball_nba', 'americanfootball_nfl', 'icehockey_nhl', 'tennis_atp', 'tennis_wta'],
             interval_seconds=10
         )
     )
@@ -152,6 +241,14 @@ async def startup():
     # Start WebSocket broadcaster for real-time updates
     asyncio.create_task(broadcast_game_updates())
     logger.info("WebSocket broadcaster started (3s intervals - real-time odds pushes)")
+
+    # Start automatic bet grading task
+    asyncio.create_task(auto_grade_bets())
+    logger.info("Automatic bet grading started (5min intervals - grades completed games)")
+
+    # Start props cache refresh task (production-ready caching)
+    asyncio.create_task(refresh_props_cache())
+    logger.info("Props cache refresh started (5min intervals - background refresh for instant API responses)")
 
 @app.on_event("shutdown")
 async def shutdown():
@@ -165,16 +262,19 @@ async def root():
 # ========== WEBSOCKET ENDPOINT ==========
 
 @app.websocket("/ws/live-odds")
-async def websocket_live_odds(websocket: WebSocket):
+async def websocket_live_odds(websocket: WebSocket, user_id: str = 'default'):
     """
     WebSocket endpoint for real-time odds updates
     Clients connect here to receive live game data pushes
+
+    Query params:
+        user_id: User ID to filter bookmakers (default: 'default')
     """
-    await ws_manager.connect(websocket)
+    await ws_manager.connect(websocket, user_id)
 
     try:
         # Send initial data immediately upon connection
-        await ws_manager.send_initial_data(websocket)
+        await ws_manager.send_initial_data(websocket, user_id)
 
         # Keep connection alive and listen for client messages
         while True:
@@ -189,9 +289,9 @@ async def websocket_live_odds(websocket: WebSocket):
 
     except WebSocketDisconnect:
         ws_manager.disconnect(websocket)
-        logger.info("Client disconnected")
+        logger.info(f"Client disconnected (user_id={user_id})")
     except Exception as e:
-        logger.error(f"WebSocket error: {e}")
+        logger.error(f"WebSocket error for user {user_id}: {e}")
         ws_manager.disconnect(websocket)
 
 # ========== WEBSOCKET BROADCASTER TASK ==========
@@ -232,7 +332,7 @@ async def broadcast_game_updates():
                                 "money_line": game.state.away_team.money_line,
                                 "momentum": game.state.away_team.momentum,
                             },
-                            "commence_time": game.state.commence_time,
+                            "commence_time": game.state.commence_time.isoformat() if hasattr(game.state.commence_time, 'isoformat') else str(game.state.commence_time),
                             "status": game.state.status,
                             "quarter": game.state.quarter,
                             "time_remaining": game.state.time_remaining,
@@ -266,18 +366,11 @@ async def broadcast_game_updates():
                     for game in games
                 ]
 
-                # Create broadcast message
-                message = {
-                    "type": "games_update",
-                    "timestamp": datetime.now().isoformat(),
-                    "count": len(games_data),
-                    "games": games_data
-                }
-
                 # Only broadcast if data changed (avoid spamming same data)
                 current_data_str = json.dumps(games_data, sort_keys=True)
                 if current_data_str != previous_data:
-                    await ws_manager.broadcast(message)
+                    # Pass unfiltered games_data to broadcast, which will filter per-user
+                    await ws_manager.broadcast(games_data)
                     logger.debug(f"Broadcasted {len(games_data)} games to {len(ws_manager.active_connections)} clients")
                     previous_data = current_data_str
 
@@ -286,6 +379,44 @@ async def broadcast_game_updates():
 
         # Wait 3 seconds before next update (much faster than 30s polling!)
         await asyncio.sleep(3)
+
+# ========== AUTOMATIC BET GRADING TASK ==========
+
+async def auto_grade_bets():
+    """
+    Background task that automatically grades active bets when games complete
+    Runs every 5 minutes to check for finished games
+    """
+    logger.info("Starting automatic bet grading task...")
+
+    while True:
+        try:
+            from bet_grader import bet_grader
+
+            if bet_grader is None:
+                logger.warning("Bet grader not initialized yet")
+                await asyncio.sleep(300)  # Wait 5 minutes
+                continue
+
+            # Grade all active bets
+            results = bet_grader.grade_active_bets()
+
+            if results['graded'] > 0:
+                logger.info(
+                    f"Auto-graded {results['graded']} bets: "
+                    f"{results['won']} won, {results['lost']} lost, {results['push']} push"
+                )
+            elif results['checked'] > 0:
+                logger.debug(f"Checked {results['checked']} active bets, none ready to grade")
+
+            if results['errors'] > 0:
+                logger.warning(f"Encountered {results['errors']} errors while grading bets")
+
+        except Exception as e:
+            logger.error(f"Error in auto-grading task: {e}", exc_info=True)
+
+        # Wait 5 minutes before next grading cycle
+        await asyncio.sleep(300)
 
 def normalize_bookmaker_name(name: str) -> str:
     """
@@ -305,7 +436,8 @@ def normalize_bookmaker_name(name: str) -> str:
 def filter_games_by_bookmakers(games: List[LiveGame], enabled_bookmakers: List[str]) -> List[LiveGame]:
     """
     Filter games to only include odds from enabled bookmakers
-    Returns games that have at least 2 enabled bookmakers for comparison
+    ALWAYS shows all upcoming games (even without odds) so cards display at all times
+    For games with odds: requires at least 2 enabled bookmakers for comparison
     """
     filtered_games = []
     # Normalize all enabled bookmakers for comparison
@@ -325,23 +457,29 @@ def filter_games_by_bookmakers(games: List[LiveGame], enabled_bookmakers: List[s
         # Filter odds to only enabled bookmakers (with normalization)
         filtered_odds = [odd for odd in game.odds if normalize_bookmaker_name(odd.bookmaker) in enabled_set]
 
-        # Only include games with at least 2 bookmakers for comparison
-        if len(filtered_odds) >= 2:
-            # Create new game object with filtered odds
-            filtered_game = game.copy(deep=True)
-            filtered_game.odds = filtered_odds
-            filtered_games.append(filtered_game)
+        # ALWAYS show all games (upcoming and live)
+        # The odds list will only contain the user's enabled bookmakers
+        # Games without matching bookmakers will simply have an empty odds array
+        filtered_game = game.copy(deep=True)
+        filtered_game.odds = filtered_odds
+        filtered_games.append(filtered_game)
 
     return filtered_games
 
 
 @app.get("/api/games", response_model=List[LiveGame])
-async def get_games(user_id: str = 'default'):
+async def get_games(user_id: str = 'default', show_all: bool = False):
     """
     Get all live games filtered by user's enabled bookmakers
-    Only returns games with at least 2 enabled bookmakers
+    Normal mode: Only returns games with at least 2 enabled bookmakers
+    show_all=True: Returns all games regardless of odds availability (for testing)
     """
     try:
+        # If show_all parameter is set, return all games (bypasses bookmaker filtering)
+        if show_all:
+            logger.info("Bypassing bookmaker filter - showing all games for odds testing")
+            return tracker.get_all_games()
+
         # Get user settings
         settings = settings_db.get_settings(user_id)
         if not settings:
@@ -417,6 +555,80 @@ class ChangePasswordRequest(BaseModel):
 
 
 # ========== AUTHENTICATION ENDPOINTS ==========
+
+@app.post("/api/auth/register")
+async def register(request: Request):
+    """
+    User registration endpoint
+    Creates new user with 7-day free trial
+    """
+    try:
+        data = await request.json()
+        full_name = data.get('full_name')
+        email = data.get('email')
+        username = data.get('username')
+        password = data.get('password')
+        
+        if not all([full_name, email, username, password]):
+            raise HTTPException(status_code=400, detail="All fields required")
+        
+        # Check if username already exists
+        users = auth.load_users()
+        if username in users:
+            raise HTTPException(status_code=400, detail="Username already exists")
+        
+        # Create user account
+        users[username] = {
+            "password_hash": auth.hash_password(password),
+            "role": "user",
+            "created_at": datetime.now().isoformat(),
+            "full_name": full_name,
+            "email": email,
+            "trial_start": datetime.now().isoformat(),
+            "trial_days": 7
+        }
+        auth.save_users(users)
+        
+        # Create session
+        token = auth.create_session(username)
+        
+        # Create free trial subscription
+        SubscriptionDB.create_subscription(
+            user_id=username,
+            stripe_subscription_id=None,
+            stripe_customer_id=None,
+            tier="free_trial",
+            status="trialing"
+        )
+
+        # Sync new user signup to Brevo CRM
+        try:
+            trial_start = users[username]["trial_start"]
+            sync_signup_to_brevo(
+                email=email,
+                full_name=full_name,
+                username=username,
+                trial_start=trial_start,
+                trial_days=7
+            )
+            logger.info(f"Successfully synced new signup to Brevo: {email}")
+        except Exception as brevo_error:
+            # Don't fail registration if Brevo sync fails
+            logger.error(f"Failed to sync to Brevo (non-critical): {brevo_error}")
+
+        return {
+            "success": True,
+            "message": "Registration successful",
+            "token": token,
+            "username": username
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Registration error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Registration failed")
+
 
 @app.post("/api/auth/login")
 async def login(request: LoginRequest):
@@ -521,6 +733,239 @@ async def change_password(request: ChangePasswordWithTokenRequest):
     except Exception as e:
         logger.error(f"Password change error: {str(e)}")
         raise HTTPException(status_code=500, detail="Password change failed")
+
+# ========== STRIPE SUBSCRIPTION ENDPOINTS ==========
+
+from stripe_service import StripeService, handle_webhook_event
+from subscription_db import SubscriptionDB
+from fastapi import Request
+
+class CheckoutSessionRequest(BaseModel):
+    """Request model for creating checkout session"""
+    price_id: str
+    user_id: str
+    user_email: str
+
+
+class PortalSessionRequest(BaseModel):
+    """Request model for creating portal session"""
+    user_id: str
+
+
+@app.post("/api/stripe/create-checkout-session")
+async def create_checkout_session(request: CheckoutSessionRequest):
+    """
+    Create a Stripe Checkout Session for subscription
+    Redirects user to Stripe hosted checkout page
+    """
+    try:
+        # Get or create user in database
+        user = SubscriptionDB.get_user(request.user_id)
+        if not user:
+            SubscriptionDB.create_or_update_user(
+                user_id=request.user_id,
+                email=request.user_email
+            )
+            user = SubscriptionDB.get_user(request.user_id)
+
+        # Create Stripe customer if needed
+        if not user.get('stripe_customer_id'):
+            customer_id = StripeService.create_customer(
+                email=request.user_email,
+                user_id=request.user_id
+            )
+            if customer_id:
+                SubscriptionDB.create_or_update_user(
+                    user_id=request.user_id,
+                    email=request.user_email,
+                    stripe_customer_id=customer_id
+                )
+
+        # Create checkout session
+        session = StripeService.create_checkout_session(
+            price_id=request.price_id,
+            user_id=request.user_id,
+            user_email=request.user_email
+        )
+
+        return {
+            "success": True,
+            "session_id": session['session_id'],
+            "url": session['url']
+        }
+
+    except Exception as e:
+        logger.error(f"Error creating checkout session: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to create checkout session: {str(e)}")
+
+
+@app.post("/api/stripe/create-portal-session")
+async def create_portal_session(request: PortalSessionRequest):
+    """
+    Create a Stripe Customer Portal Session
+    Allows users to manage subscription, payment methods, and invoices
+    """
+    try:
+        # Get user
+        user = SubscriptionDB.get_user(request.user_id)
+        if not user or not user.get('stripe_customer_id'):
+            raise HTTPException(status_code=404, detail="No subscription found for user")
+
+        # Create portal session
+        session = StripeService.create_portal_session(
+            customer_id=user['stripe_customer_id']
+        )
+
+        return {
+            "success": True,
+            "url": session['url']
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating portal session: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to create portal session: {str(e)}")
+
+
+@app.post("/api/stripe/webhook")
+async def stripe_webhook(request: Request):
+    """
+    Handle Stripe webhook events
+    Updates subscription status in database based on Stripe events
+    """
+    try:
+        # Get raw body and signature
+        payload = await request.body()
+        sig_header = request.headers.get('stripe-signature')
+
+        if not sig_header:
+            raise HTTPException(status_code=400, detail="Missing signature header")
+
+        # Verify webhook signature
+        event = StripeService.verify_webhook_signature(payload, sig_header)
+        if not event:
+            raise HTTPException(status_code=400, detail="Invalid webhook signature")
+
+        # Process the event
+        result = handle_webhook_event(event)
+
+        if result['processed']:
+            # Update database based on event
+            if result['action'] == 'create_subscription':
+                # Create subscription in database
+                SubscriptionDB.create_subscription(
+                    user_id=result['user_id'],
+                    stripe_subscription_id=result['subscription_id'],
+                    stripe_customer_id=result['customer_id'],
+                    tier=result['tier'],
+                    status=result['status']
+                )
+
+            elif result['action'] == 'update_subscription':
+                # Update subscription
+                SubscriptionDB.update_subscription(
+                    stripe_subscription_id=result['subscription_id'],
+                    tier=result['tier'],
+                    status=result['status']
+                )
+
+            elif result['action'] == 'cancel_subscription':
+                # Cancel subscription
+                SubscriptionDB.cancel_subscription(
+                    stripe_subscription_id=result['subscription_id']
+                )
+
+        return {"received": True}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Webhook error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Webhook processing failed: {str(e)}")
+
+
+@app.get("/api/subscription/status")
+async def get_subscription_status(user_id: str):
+    """
+    Get subscription status for a user
+    Returns tier, status, and expiration date
+    """
+    try:
+        subscription = SubscriptionDB.get_subscription(user_id)
+        
+        if not subscription:
+            return {
+                "tier": "free",
+                "status": "none",
+                "features": SubscriptionDB.has_feature_access.__code__.co_consts[1]['free']
+            }
+
+        return {
+            "tier": subscription['tier'],
+            "status": subscription['status'],
+            "current_period_end": subscription.get('current_period_end'),
+            "cancel_at_period_end": bool(subscription.get('cancel_at_period_end')),
+            "trial_end": subscription.get('trial_end')
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting subscription status: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get subscription status: {str(e)}")
+
+
+@app.get("/api/subscription/features")
+async def get_subscription_features(user_id: str):
+    """
+    Get available features for user's subscription tier
+    """
+    try:
+        tier = SubscriptionDB.get_subscription_tier(user_id)
+        
+        features = {
+            'free': ['live_games_limited', 'basic_odds'],
+            'pro': [
+                'live_games_limited', 'basic_odds',
+                'all_sports', 'alerts', 'arbitrage', 'steam_moves', 'line_movements',
+                'email_notifications', 'unlimited_views'
+            ],
+            'elite': [
+                'live_games_limited', 'basic_odds',
+                'all_sports', 'alerts', 'arbitrage', 'steam_moves', 'line_movements',
+                'email_notifications', 'unlimited_views',
+                'goalie_pulls', 'api_access', 'sms_notifications', 'custom_alerts',
+                'advanced_analytics'
+            ]
+        }
+
+        return {
+            "tier": tier,
+            "features": features.get(tier, features['free'])
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting subscription features: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get subscription features: {str(e)}")
+
+
+@app.get("/api/subscription/check-access")
+async def check_feature_access(user_id: str, feature: str):
+    """
+    Check if user has access to a specific feature
+    """
+    try:
+        has_access = SubscriptionDB.has_feature_access(user_id, feature)
+
+        return {
+            "feature": feature,
+            "has_access": has_access,
+            "tier": SubscriptionDB.get_subscription_tier(user_id)
+        }
+
+    except Exception as e:
+        logger.error(f"Error checking feature access: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to check feature access: {str(e)}")
+
 
 # ========== ADMIN ENDPOINTS (User Activity Tracking) ==========
 
@@ -657,6 +1102,34 @@ async def get_all_user_stats(token: str):
 async def get_goalie_pull_opportunities():
     """Get all current NHL goalie pull betting opportunities"""
     opportunities = tracker.get_goalie_pull_opportunities()
+    return {
+        "count": len(opportunities),
+        "opportunities": opportunities
+    }
+
+
+@app.get("/api/favorite-comeback-opportunities")
+async def get_favorite_comeback_opportunities():
+    """Get all current NBA favorite comeback betting opportunities"""
+    opportunities = tracker.get_favorite_comeback_opportunities()
+    return {
+        "count": len(opportunities),
+        "opportunities": opportunities
+    }
+
+@app.get("/api/halftime-opportunities")
+async def get_halftime_opportunities():
+    """Get all current NBA halftime betting opportunities (2H spread and total)"""
+    opportunities = tracker.get_halftime_opportunities()
+    return {
+        "count": len(opportunities),
+        "opportunities": opportunities
+    }
+
+@app.get("/api/momentum-opportunities")
+async def get_momentum_opportunities():
+    """Get all current momentum surge betting opportunities (NHL & NBA)"""
+    opportunities = tracker.get_momentum_opportunities()
     return {
         "count": len(opportunities),
         "opportunities": opportunities
@@ -966,16 +1439,108 @@ async def get_alert_performance():
         }
     }
 
-# ========== PROPS ENDPOINTS ==========
+# ========== PROPS CACHING SYSTEM ==========
 
-@app.get("/api/props/{sport}")
-async def get_player_props(sport: str):
-    """Get player props for a specific sport from The Odds API"""
+async def fetch_props_for_sport(sport: str, odds_api_sport: str) -> dict:
+    """
+    Fetch player props for a specific sport from The Odds API
+    This function is used by the background refresh task
+    """
     import requests
 
     api_key = os.getenv('ODDS_API_KEY', '')
+    url = f'https://api.the-odds-api.com/v4/sports/{odds_api_sport}/events'
 
-    # Map frontend sport names to Odds API sport keys
+    try:
+        # Get events
+        events_response = requests.get(url, params={
+            'apiKey': api_key,
+            'dateFormat': 'iso'
+        }, timeout=10)
+
+        if events_response.status_code != 200:
+            logger.error(f"[PROPS CACHE] Failed to fetch {sport} events: {events_response.status_code}")
+            return {'props': [], 'count': 0}
+
+        events = events_response.json()
+        if not events:
+            logger.info(f"[PROPS CACHE] No {sport} events available")
+            return {'props': [], 'count': 0}
+
+        all_props = []
+
+        # Sport-specific prop markets
+        markets_by_sport = {
+            'basketball_nba': 'player_points,player_rebounds,player_assists,player_threes',
+            'americanfootball_nfl': 'player_pass_tds,player_rush_yds,player_receptions',
+            'icehockey_nhl': 'player_shots_on_goal,player_goals,player_blocked_shots,player_hits',
+            'baseball_mlb': 'player_hits,player_home_runs,player_strikeouts',
+            'basketball_ncaab': 'player_points,player_rebounds,player_assists',
+            'americanfootball_ncaaf': 'player_pass_tds,player_rush_yds,player_receptions'
+        }
+
+        prop_markets = markets_by_sport.get(odds_api_sport, 'player_points,player_rebounds,player_assists')
+        major_books = ['DraftKings', 'FanDuel', 'BetMGM', 'Caesars', 'PointsBet']
+
+        # Fetch props for all available games (production: fetch all, not just 1)
+        for event in events[:5]:  # Limit to 5 games for API quota management
+            event_id = event['id']
+            props_url = f'https://api.the-odds-api.com/v4/sports/{odds_api_sport}/events/{event_id}/odds'
+
+            props_response = requests.get(props_url, params={
+                'apiKey': api_key,
+                'regions': 'us',
+                'markets': prop_markets,
+                'oddsFormat': 'american',
+                'dateFormat': 'iso'
+            }, timeout=10)
+
+            if props_response.status_code != 200:
+                continue
+
+            event_data = props_response.json()
+
+            for bookmaker in event_data.get('bookmakers', []):
+                if bookmaker.get('title') not in major_books:
+                    continue
+
+                for market in bookmaker.get('markets', []):
+                    for outcome in market.get('outcomes', []):
+                        outcome_name = outcome.get('name', '')
+                        player_name = outcome.get('description', 'Unknown')
+
+                        if outcome_name in ['Over', 'Under']:
+                            display_name = f"{player_name} {outcome_name}"
+                        else:
+                            display_name = player_name
+
+                        prop = {
+                            'event_id': event_id,
+                            'home_team': event['home_team'],
+                            'away_team': event['away_team'],
+                            'commence_time': event['commence_time'],
+                            'player_name': display_name,
+                            'prop_type': market['key'],
+                            'line': outcome.get('point'),
+                            'odds': outcome.get('price'),
+                            'bookmaker': bookmaker['title'],
+                            'last_update': bookmaker.get('last_update', event.get('commence_time'))
+                        }
+                        all_props.append(prop)
+
+        logger.info(f"[PROPS CACHE] Fetched {len(all_props)} props for {sport}")
+        return {'props': all_props, 'count': len(all_props)}
+
+    except Exception as e:
+        logger.error(f"[PROPS CACHE] Error fetching {sport} props: {str(e)}")
+        return {'props': [], 'count': 0}
+
+
+async def refresh_props_cache():
+    """
+    Background task to refresh props cache every 5 minutes
+    Production-ready: runs continuously in the background
+    """
     sport_map = {
         'nba': 'basketball_nba',
         'nfl': 'americanfootball_nfl',
@@ -985,128 +1550,116 @@ async def get_player_props(sport: str):
         'ncaaf': 'americanfootball_ncaaf'
     }
 
-    odds_api_sport = sport_map.get(sport.lower(), sport)
+    while True:
+        try:
+            logger.info("[PROPS CACHE] Starting refresh cycle...")
 
-    # Fetch player props from The Odds API
-    url = f'https://api.the-odds-api.com/v4/sports/{odds_api_sport}/events'
+            for sport, odds_api_sport in sport_map.items():
+                props_data = await fetch_props_for_sport(sport, odds_api_sport)
+                props_cache[sport] = {
+                    'props': props_data['props'],
+                    'count': props_data['count'],
+                    'last_updated': datetime.now().isoformat()
+                }
+
+            logger.info("[PROPS CACHE] Refresh complete. Sleeping for 5 minutes...")
+            await asyncio.sleep(300)  # 5 minutes
+
+        except Exception as e:
+            logger.error(f"[PROPS CACHE] Error in refresh cycle: {str(e)}")
+            await asyncio.sleep(60)  # Retry after 1 minute on error
+
+
+# ========== PROPS ENDPOINTS ==========
+
+@app.get("/api/props/{sport}")
+async def get_player_props(sport: str):
+    """
+    Get player props for a specific sport (from cache)
+    Production-ready: Returns cached data instantly with background refresh
+    """
+    sport_lower = sport.lower()
+
+    # Return cached data instantly
+    if sport_lower in props_cache:
+        cached_data = props_cache[sport_lower]
+        return {
+            "sport": sport,
+            "count": cached_data['count'],
+            "props": cached_data['props'],
+            "last_updated": cached_data['last_updated'],
+            "cached": True
+        }
+    else:
+        return {
+            "sport": sport,
+            "count": 0,
+            "props": [],
+            "error": "Invalid sport",
+            "cached": False
+        }
+
+
+# ========== ADVANCED PLAYER PROPS ENDPOINTS (WITH PROJECTIONS & EDGES) ==========
+
+@app.get("/api/player-props/nba/edges")
+async def get_nba_props_with_edges(min_edge_pct: float = 5.0):
+    """
+    Get NBA player props with advanced projections and edge analysis
+
+    Args:
+        min_edge_pct: Minimum edge percentage to filter (default 5.0%)
+
+    Returns:
+        PlayerPropsResponse with props that have calculated edges
+    """
+    from nba_props_manager import NBAPropsManager
+    from player_props_client import PlayerPropsClient
 
     try:
-        # First get events
-        events_response = requests.get(url, params={
-            'apiKey': api_key,
-            'dateFormat': 'iso'
-        })
+        logger.info(f"Fetching NBA props with edges (min_edge: {min_edge_pct}%)")
 
-        if events_response.status_code != 200:
-            logger.error(f"Failed to fetch events: {events_response.status_code}")
-            return {"error": "Failed to fetch events", "props": []}
+        # Get upcoming NBA games
+        props_client = PlayerPropsClient()
+        url = f"{props_client.base_url}/sports/basketball_nba/events"
 
-        events = events_response.json()
-        all_props = []
-
-        logger.info(f"Found {len(events)} events for {odds_api_sport}")
-
-        # For each event, fetch player props
-        for event in events[:5]:  # Limit to first 5 games to save API calls
-            event_id = event['id']
-            props_url = f'https://api.the-odds-api.com/v4/sports/{odds_api_sport}/events/{event_id}/odds'
-
-            props_response = requests.get(props_url, params={
-                'apiKey': api_key,
-                'regions': 'us',
-                'markets': 'player_points,player_rebounds,player_assists,player_threes,player_pass_tds,player_rush_yds,player_receptions',
-                'oddsFormat': 'american',
+        import httpx
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.get(url, params={
+                'apiKey': os.getenv('ODDS_API_KEY', ''),
                 'dateFormat': 'iso'
             })
 
-            if props_response.status_code == 200:
-                event_data = props_response.json()
-                logger.info(f"Event {event['home_team']} vs {event['away_team']}: {len(event_data.get('bookmakers', []))} bookmakers")
+            if response.status_code != 200:
+                raise HTTPException(status_code=500, detail="Failed to fetch NBA games")
 
-                # Process bookmakers and outcomes
-                for bookmaker in event_data.get('bookmakers', []):
-                    markets = bookmaker.get('markets', [])
-                    logger.info(f"Bookmaker {bookmaker['title']}: {len(markets)} markets")
-                    for market in markets:
-                        logger.info(f"Market type: {market['key']}, outcomes: {len(market.get('outcomes', []))}")
-                        for outcome in market.get('outcomes', []):
-                            prop = {
-                                'event_id': event_id,
-                                'home_team': event['home_team'],
-                                'away_team': event['away_team'],
-                                'commence_time': event['commence_time'],
-                                'player_name': outcome.get('description', 'Unknown'),
-                                'prop_type': market['key'],
-                                'line': outcome.get('point'),
-                                'odds': outcome.get('price'),
-                                'bookmaker': bookmaker['title'],
-                                'last_update': bookmaker['last_update']
-                            }
-                            all_props.append(prop)
-            else:
-                logger.error(f"Failed to fetch props for event {event_id}: {props_response.status_code}")
+            games = response.json()
 
-        logger.info(f"Fetched {len(all_props)} props for {sport}")
+            # Limit to next 5 games to avoid excessive API calls
+            upcoming_games = games[:5]
 
-        # If no props found, add sample data for demonstration
-        if len(all_props) == 0 and len(events) > 0:
-            logger.info("No props available from API, generating sample data for demonstration")
-            sample_props = []
-            for event in events[:3]:
-                # Sample player props for demonstration
-                players = [
-                    {"name": "LeBron James", "pts": 25.5, "reb": 7.5, "ast": 7.5},
-                    {"name": "Stephen Curry", "pts": 27.5, "reb": 5.5, "ast": 6.5},
-                    {"name": "Kevin Durant", "pts": 28.5, "reb": 6.5, "ast": 5.5},
-                ] if sport == 'nba' else [
-                    {"name": "Patrick Mahomes", "yds": 275.5, "tds": 2.5, "rec": None},
-                    {"name": "Travis Kelce", "rec": 5.5, "yds": 65.5, "tds": 0.5},
-                ] if sport == 'nfl' else []
+            logger.info(f"Found {len(upcoming_games)} upcoming NBA games")
 
-                for player in players:
-                    for prop_type, line in player.items():
-                        if prop_type == 'name' or line is None:
-                            continue
-                        for book, odds_over, odds_under in [
-                            ('DraftKings', -110, -110),
-                            ('FanDuel', -105, -115),
-                            ('BetMGM', -108, -112),
-                            ('Caesars', -110, -110)
-                        ]:
-                            sample_props.extend([
-                                {
-                                    'event_id': event['id'],
-                                    'home_team': event['home_team'],
-                                    'away_team': event['away_team'],
-                                    'commence_time': event['commence_time'],
-                                    'player_name': f"{player['name']} Over",
-                                    'prop_type': f'player_{prop_type}',
-                                    'line': line,
-                                    'odds': odds_over,
-                                    'bookmaker': book,
-                                    'last_update': event['commence_time']
-                                },
-                                {
-                                    'event_id': event['id'],
-                                    'home_team': event['home_team'],
-                                    'away_team': event['away_team'],
-                                    'commence_time': event['commence_time'],
-                                    'player_name': f"{player['name']} Under",
-                                    'prop_type': f'player_{prop_type}',
-                                    'line': line,
-                                    'odds': odds_under,
-                                    'bookmaker': book,
-                                    'last_update': event['commence_time']
-                                }
-                            ])
-            all_props = sample_props
-            logger.info(f"Generated {len(sample_props)} sample props")
+        # Initialize props manager and get props with edges
+        props_manager = NBAPropsManager()
+        props_response = await props_manager.get_nba_props_with_edges(
+            games=upcoming_games,
+            min_edge_pct=min_edge_pct
+        )
 
-        return {"sport": sport, "count": len(all_props), "props": all_props}
+        # Clean up
+        await props_manager.close()
+
+        logger.info(
+            f"Returning {props_response.total_props} props "
+            f"({props_response.total_strong_bets} strong, {props_response.total_moderate_bets} moderate)"
+        )
+
+        return props_response
 
     except Exception as e:
-        logger.error(f"Error fetching props: {str(e)}")
-        return {"error": str(e), "props": []}
+        logger.error(f"Error fetching NBA props with edges: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ========== ENSEMBLE BETTING ENGINE ENDPOINTS ==========
@@ -2364,11 +2917,582 @@ async def websocket_endpoint(websocket: WebSocket):
             active_websocket_connections.remove(websocket)
         raise  # Re-raise to see full error
 
+# ========== STRATEGY ENDPOINTS (PHASE 1 - LIVE BETTING STRATEGIES) ==========
+
+# Import strategy modules
+import sys
+from pathlib import Path
+
+# Add strategies directory to path
+strategies_path = Path(__file__).parent / "strategies"
+if str(strategies_path) not in sys.path:
+    sys.path.insert(0, str(strategies_path))
+
+from halftime_tracker import HalftimeTracker
+from fatigue_detector import FatigueDetector
+from weather_integration import WeatherIntegration
+from strategies.momentum_detector import MomentumDetector
+from favorite_comeback_detector import FavoriteComebackDetector
+
+# Initialize strategy instances
+halftime_tracker = HalftimeTracker()
+fatigue_detector = FatigueDetector()
+weather_integration = WeatherIntegration()
+momentum_detector = MomentumDetector()
+favorite_comeback_detector = FavoriteComebackDetector()
+
+
+# Request models for strategy endpoints
+class HalftimeUpdateRequest(BaseModel):
+    """Request model for halftime/period updates"""
+    game_id: str
+    sport: str
+    period: str
+    time_remaining: str
+    home_score: int
+    away_score: int
+    home_team: str
+    away_team: str
+
+
+class FatigueAnalysisRequest(BaseModel):
+    """Request model for fatigue analysis"""
+    home_team: str
+    away_team: str
+    sport: str
+    game_date: str  # ISO format
+    home_miles_traveled: Optional[float] = 0.0
+    away_miles_traveled: Optional[float] = 0.0
+    home_time_zones: Optional[int] = 0
+    away_time_zones: Optional[int] = 0
+
+
+class WeatherUpdateRequest(BaseModel):
+    """Request model for weather updates"""
+    game_id: str
+    location: str
+    temperature: Optional[float] = None
+    precipitation: Optional[str] = None  # 'none', 'rain', 'snow'
+    wind_speed: Optional[float] = None
+    wind_direction: Optional[str] = None
+    humidity: Optional[float] = None
+    conditions: Optional[str] = None
+
+
+class WeatherAnalysisRequest(BaseModel):
+    """Request model for weather impact analysis"""
+    game_id: str
+    sport: str
+    home_team: str
+    away_team: str
+    current_total: Optional[float] = None
+
+
+class MomentumEventRequest(BaseModel):
+    """Request model for adding momentum events"""
+    game_id: str
+    event_type: str
+    team: str  # 'home' or 'away'
+    value: float = 1.0
+    metadata: Optional[Dict[str, Any]] = None
+
+
+class MomentumAnalysisRequest(BaseModel):
+    """Request model for momentum analysis"""
+    game_id: str
+    sport: str
+    home_team: str
+    away_team: str
+    home_score: int
+    away_score: int
+
+
+class FavoriteComebackRequest(BaseModel):
+    """Request model for favorite comeback analysis"""
+    game_id: str
+    sport: str
+    home_team: str
+    away_team: str
+    home_score: int
+    away_score: int
+    period: str
+    time_remaining: str
+    home_team_favorite: bool
+    pregame_spread: float
+    current_spread: Optional[float] = None
+    home_season_stats: Optional[Dict[str, Any]] = None
+    away_season_stats: Optional[Dict[str, Any]] = None
+    quarter_stats: Optional[Dict[str, Any]] = None
+
+
+# ========== HALFTIME/PERIOD TRACKING ENDPOINTS ==========
+
+@app.post("/api/strategies/halftime/update")
+async def update_halftime_state(request: HalftimeUpdateRequest):
+    """
+    Update game state for halftime/period tracking
+
+    Analyzes period transitions and generates betting opportunities
+    for halftime adjustments and period-specific bets
+    """
+    try:
+        from datetime import datetime
+
+        analysis = halftime_tracker.update_game_state(
+            game_id=request.game_id,
+            sport=request.sport,
+            period=request.period,
+            time_remaining=request.time_remaining,
+            home_score=request.home_score,
+            away_score=request.away_score,
+            home_team=request.home_team,
+            away_team=request.away_team
+        )
+
+        return {
+            "success": True,
+            "analysis": analysis
+        }
+
+    except Exception as e:
+        logger.error(f"Error updating halftime state: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to update halftime state: {str(e)}")
+
+
+@app.get("/api/strategies/halftime/history/{game_id}")
+async def get_halftime_history(game_id: str):
+    """
+    Get period history for a game
+
+    Returns all period-by-period data and transitions
+    """
+    try:
+        history = halftime_tracker.get_period_history(game_id)
+
+        return {
+            "success": True,
+            "game_id": game_id,
+            "period_count": len(history),
+            "history": history
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting halftime history: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get halftime history: {str(e)}")
+
+
+# ========== FATIGUE DETECTION ENDPOINTS ==========
+
+@app.post("/api/strategies/fatigue/analyze")
+async def analyze_fatigue(request: FatigueAnalysisRequest):
+    """
+    Analyze schedule fatigue for both teams
+
+    Detects back-to-back games, rest day differentials, and travel impact
+    Generates betting opportunities based on fatigue mismatches
+    """
+    try:
+        from datetime import datetime
+
+        game_date = datetime.fromisoformat(request.game_date)
+
+        analysis = fatigue_detector.analyze_fatigue(
+            home_team=request.home_team,
+            away_team=request.away_team,
+            sport=request.sport,
+            game_date=game_date,
+            home_miles_traveled=request.home_miles_traveled,
+            away_miles_traveled=request.away_miles_traveled,
+            home_time_zones=request.home_time_zones,
+            away_time_zones=request.away_time_zones
+        )
+
+        return {
+            "success": True,
+            "analysis": analysis
+        }
+
+    except Exception as e:
+        logger.error(f"Error analyzing fatigue: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to analyze fatigue: {str(e)}")
+
+
+@app.post("/api/strategies/fatigue/schedule/{team_name}")
+async def update_team_schedule(team_name: str, sport: str, games: List[Dict[str, Any]]):
+    """
+    Update team schedule for fatigue tracking
+
+    Provide list of games with date, location, opponent for accurate rest day calculation
+    """
+    try:
+        from datetime import datetime
+
+        # Convert date strings to datetime objects
+        for game in games:
+            if isinstance(game.get('date'), str):
+                game['date'] = datetime.fromisoformat(game['date'])
+
+        fatigue_detector.update_team_schedule(
+            team_name=team_name,
+            sport=sport,
+            games=games
+        )
+
+        return {
+            "success": True,
+            "message": f"Schedule updated for {team_name}",
+            "game_count": len(games)
+        }
+
+    except Exception as e:
+        logger.error(f"Error updating team schedule: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to update team schedule: {str(e)}")
+
+
+# ========== WEATHER INTEGRATION ENDPOINTS ==========
+
+@app.post("/api/strategies/weather/update")
+async def update_weather(request: WeatherUpdateRequest):
+    """
+    Update weather conditions for a game
+
+    Provide current weather data for outdoor sports (NFL, NCAAF, MLB, MLS, Golf)
+    """
+    try:
+        weather_data = weather_integration.update_weather(
+            game_id=request.game_id,
+            location=request.location,
+            temperature=request.temperature,
+            precipitation=request.precipitation,
+            wind_speed=request.wind_speed,
+            wind_direction=request.wind_direction,
+            humidity=request.humidity,
+            conditions=request.conditions
+        )
+
+        return {
+            "success": True,
+            "weather": weather_data
+        }
+
+    except Exception as e:
+        logger.error(f"Error updating weather: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to update weather: {str(e)}")
+
+
+@app.post("/api/strategies/weather/analyze")
+async def analyze_weather_impact(request: WeatherAnalysisRequest):
+    """
+    Analyze weather impact on betting opportunities
+
+    Generates recommendations based on rain, snow, wind, temperature
+    Historical data: Rain -12% passing (NFL), Wind >10mph affects scoring (MLB)
+    """
+    try:
+        analysis = weather_integration.analyze_weather_impact(
+            game_id=request.game_id,
+            sport=request.sport,
+            home_team=request.home_team,
+            away_team=request.away_team,
+            current_total=request.current_total
+        )
+
+        return {
+            "success": True,
+            "analysis": analysis
+        }
+
+    except Exception as e:
+        logger.error(f"Error analyzing weather impact: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to analyze weather impact: {str(e)}")
+
+
+@app.get("/api/strategies/weather/{game_id}")
+async def get_weather(game_id: str):
+    """Get cached weather data for a game"""
+    try:
+        weather = weather_integration.get_weather(game_id)
+
+        if not weather:
+            raise HTTPException(status_code=404, detail="No weather data found for this game")
+
+        return {
+            "success": True,
+            "weather": weather
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting weather: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get weather: {str(e)}")
+
+
+# ========== MOMENTUM DETECTION ENDPOINTS ==========
+
+@app.post("/api/strategies/momentum/event")
+async def add_momentum_event(request: MomentumEventRequest):
+    """
+    Add a game event for momentum tracking
+
+    Event types: score, shot, turnover, possession, penalty, hit, save
+    Tracks events over 5-minute sliding window
+    """
+    try:
+        momentum_detector.add_event(
+            game_id=request.game_id,
+            event_type=request.event_type,
+            team=request.team,
+            value=request.value,
+            metadata=request.metadata
+        )
+
+        return {
+            "success": True,
+            "message": "Event added to momentum tracker"
+        }
+
+    except Exception as e:
+        logger.error(f"Error adding momentum event: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to add momentum event: {str(e)}")
+
+
+@app.post("/api/strategies/momentum/analyze")
+async def analyze_momentum(request: MomentumAnalysisRequest):
+    """
+    Analyze current momentum and generate betting opportunities
+
+    Detects:
+    - Momentum shifts (Corsi >60% in NHL, 8-0 runs in NBA)
+    - Scoring runs and streaks
+    - Comeback opportunities
+
+    Historical performance: Momentum teams cover 57-63% ATS (NBA)
+    """
+    try:
+        analysis = momentum_detector.calculate_momentum(
+            game_id=request.game_id,
+            sport=request.sport,
+            home_team=request.home_team,
+            away_team=request.away_team,
+            home_score=request.home_score,
+            away_score=request.away_score
+        )
+
+        return {
+            "success": True,
+            "analysis": analysis
+        }
+
+    except Exception as e:
+        logger.error(f"Error analyzing momentum: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to analyze momentum: {str(e)}")
+
+
+@app.get("/api/strategies/momentum/current/{game_id}")
+async def get_current_momentum(game_id: str):
+    """Get current momentum state for a game"""
+    try:
+        momentum = momentum_detector.get_current_momentum(game_id)
+
+        if not momentum:
+            raise HTTPException(status_code=404, detail="No momentum data found for this game")
+
+        return {
+            "success": True,
+            "momentum": momentum
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting current momentum: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get current momentum: {str(e)}")
+
+
+@app.get("/api/strategies/momentum/history/{game_id}")
+async def get_momentum_history(game_id: str):
+    """Get momentum history for a game"""
+    try:
+        history = momentum_detector.get_momentum_history(game_id)
+
+        return {
+            "success": True,
+            "game_id": game_id,
+            "history_count": len(history),
+            "history": history
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting momentum history: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get momentum history: {str(e)}")
+
+
+# ========== FAVORITE COMEBACK DETECTION ENDPOINT ==========
+
+@app.post("/api/strategies/favorite-comeback/analyze")
+async def analyze_favorite_comeback(request: FavoriteComebackRequest):
+    """
+    Analyze if a favorite comeback opportunity exists
+
+    Detects when favorites trail underdogs after hot starts and are
+    likely to regress to their true talent level.
+
+    Historical data:
+    - Favorites trailing after Q1: 58% cover 2H spread
+    - Favorites trailing at halftime: 60.3% ATS in 2H (2005-2023)
+    """
+    try:
+        analysis = favorite_comeback_detector.analyze_comeback_opportunity(
+            game_id=request.game_id,
+            sport=request.sport,
+            home_team=request.home_team,
+            away_team=request.away_team,
+            home_score=request.home_score,
+            away_score=request.away_score,
+            period=request.period,
+            time_remaining=request.time_remaining,
+            home_team_favorite=request.home_team_favorite,
+            pregame_spread=request.pregame_spread,
+            current_spread=request.current_spread,
+            home_season_stats=request.home_season_stats,
+            away_season_stats=request.away_season_stats,
+            quarter_stats=request.quarter_stats
+        )
+
+        return {
+            "success": True,
+            "analysis": analysis
+        }
+
+    except Exception as e:
+        logger.error(f"Error analyzing favorite comeback: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to analyze favorite comeback: {str(e)}")
+
+
+# ========== COMBINED STRATEGY ANALYSIS ENDPOINT ==========
+
+@app.post("/api/strategies/analyze-all")
+async def analyze_all_strategies(
+    game_id: str,
+    sport: str,
+    home_team: str,
+    away_team: str,
+    home_score: int,
+    away_score: int,
+    period: Optional[str] = None,
+    time_remaining: Optional[str] = None,
+    game_date: Optional[str] = None
+):
+    """
+    Run all strategy analyses for a game
+
+    Combines:
+    - Halftime/period analysis
+    - Fatigue detection
+    - Weather impact
+    - Momentum detection
+
+    Returns comprehensive betting opportunities from all strategies
+    """
+    try:
+        all_opportunities = []
+
+        # Halftime analysis (if period info available)
+        if period and time_remaining:
+            halftime_analysis = halftime_tracker.update_game_state(
+                game_id=game_id,
+                sport=sport,
+                period=period,
+                time_remaining=time_remaining,
+                home_score=home_score,
+                away_score=away_score,
+                home_team=home_team,
+                away_team=away_team
+            )
+            all_opportunities.extend(halftime_analysis.get('opportunities', []))
+
+        # Momentum analysis (if we have event data)
+        momentum_analysis = momentum_detector.calculate_momentum(
+            game_id=game_id,
+            sport=sport,
+            home_team=home_team,
+            away_team=away_team,
+            home_score=home_score,
+            away_score=away_score
+        )
+        if momentum_analysis.get('has_momentum_data', True):
+            all_opportunities.extend(momentum_analysis.get('opportunities', []))
+
+        # Weather analysis (if outdoor sport and weather data available)
+        if sport in ['NFL', 'NCAAF', 'MLB', 'MLS', 'PGA', 'NCAAG']:
+            weather_analysis = weather_integration.analyze_weather_impact(
+                game_id=game_id,
+                sport=sport,
+                home_team=home_team,
+                away_team=away_team,
+                current_total=None
+            )
+            if weather_analysis.get('has_weather_data', False):
+                all_opportunities.extend(weather_analysis.get('opportunities', []))
+
+        # Sort opportunities by edge percentage (highest first)
+        all_opportunities.sort(key=lambda x: x.get('edge_percentage', 0), reverse=True)
+
+        return {
+            "success": True,
+            "game_id": game_id,
+            "sport": sport,
+            "opportunity_count": len(all_opportunities),
+            "opportunities": all_opportunities,
+            "timestamp": datetime.now().isoformat()
+        }
+
+    except Exception as e:
+        logger.error(f"Error analyzing all strategies: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to analyze all strategies: {str(e)}")
+
+
+# ========== BET GRADING ENDPOINT ==========
+
+@app.post("/api/bets/grade-now")
+async def manual_grade_bets():
+    """
+    Manually trigger bet grading for all active bets
+    Useful for testing or forcing an immediate grading cycle
+    """
+    try:
+        from bet_grader import bet_grader
+
+        if bet_grader is None:
+            raise HTTPException(status_code=503, detail="Bet grader not initialized")
+
+        # Run grading
+        results = bet_grader.grade_active_bets()
+
+        return {
+            "success": True,
+            "checked": results['checked'],
+            "graded": results['graded'],
+            "won": results['won'],
+            "lost": results['lost'],
+            "push": results['push'],
+            "errors": results['errors'],
+            "message": f"Graded {results['graded']} bets ({results['won']} won, {results['lost']} lost, {results['push']} push)",
+            "timestamp": datetime.now().isoformat()
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error manually grading bets: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to grade bets: {str(e)}")
+
+
 # Mount static files (production frontend)
 # Serve production build from ../frontend/dist
 import os.path
 frontend_dist_path = os.path.join(os.path.dirname(__file__), "../frontend/dist")
 if os.path.exists(frontend_dist_path):
     app.mount("/", StaticFiles(directory=frontend_dist_path, html=True), name="static")
-
-
+ 

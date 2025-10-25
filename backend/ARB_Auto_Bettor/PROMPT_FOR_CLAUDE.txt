@@ -1,0 +1,21 @@
+I want to update my sports betting dashboard to match the visual design from my Chrome extension.
+
+Key changes needed:
+1. Add sport-specific gradient backgrounds to game cards (NBA=blue, NFL=green, NHL=orange, MLB=purple, NCAAF=red, SOCCER=cyan)
+2. Add Microsoft Fluent Emoji icons for each sport (basketball 🏀, football 🏈, hockey 🏒, baseball ⚾, soccer ⚽)
+3. Apply gradient backgrounds to all cards instead of solid colors
+4. Add box shadows for depth (0 4px 6px rgba(0, 0, 0, 0.3))
+5. Update empty states with emoji icons
+6. Add hover effects with glow and slight transform
+
+Reference file with full design system:
+C:\Users\nashr\backend\ARB_Auto_Bettor\DESIGN_SYSTEM.md
+
+Main files to update:
+- C:\Users\nashr\backend\scrapers\nba\frontend\src\components\GameCard.tsx
+- C:\Users\nashr\backend\scrapers\nba\frontend\src\components\Dashboard.tsx
+- C:\Users\nashr\backend\scrapers\nba\frontend\src\index.css
+
+Please read the DESIGN_SYSTEM.md file and apply these visual improvements to the main website, maintaining the existing React + Tailwind CSS approach.
+
+The game cards should automatically detect the sport from game.state.sport_key and apply the correct gradient/color/emoji.

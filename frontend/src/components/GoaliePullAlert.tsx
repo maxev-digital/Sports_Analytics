@@ -77,219 +77,230 @@ export const GoaliePullAlerts: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
+  const formatTimeRemaining = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center p-4">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="bg-slate-800 border-4 border-slate-700 rounded-lg p-12 text-center">
+        <div className="text-slate-400 text-lg">Loading NHL goalie pull opportunities...</div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-        <p className="text-red-800 dark:text-red-200 text-sm">Error: {error}</p>
+      <div className="bg-red-900/50 border-4 border-red-600 rounded-lg p-6">
+        <p className="text-red-200 font-bold">Error: {error}</p>
       </div>
     );
   }
 
   if (opportunities.length === 0) {
     return (
-      <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-        <p className="text-gray-600 dark:text-gray-400 text-sm text-center">
-          No goalie pull opportunities at this time. Monitoring live NHL games...
-        </p>
+      <div className="bg-slate-800 border-4 border-slate-700 rounded-lg p-12 text-center">
+        <div className="text-slate-400 text-lg mb-2">No NHL goalie pull opportunities detected</div>
+        <div className="text-slate-500 text-sm">Monitoring live NHL games every 10 seconds...</div>
+        <div className="text-slate-600 text-xs mt-4">
+          Opportunities appear when teams are trailing by 1-2 goals in the 3rd period
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
-          🚨 NHL Goalie Pull Alerts
-        </h3>
-        <span className="text-xs text-gray-500 dark:text-gray-400">
-          {opportunities.length} {opportunities.length === 1 ? 'opportunity' : 'opportunities'}
-        </span>
-      </div>
-
+    <div className="space-y-6">
       {opportunities.map((opp) => {
         const isEarlyWarning = opp.prediction.alert_type === 'EARLY_WARNING';
+        const isHighPriority = opp.priority === 'HIGH';
 
         return (
-        <div
-          key={opp.game_id}
-          className={`border-2 rounded-lg p-4 ${
-            isEarlyWarning
-              ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-500 dark:border-blue-600'
-              : opp.priority === 'HIGH'
-              ? 'bg-red-50 dark:bg-red-900/20 border-red-500 dark:border-red-600'
-              : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-500 dark:border-yellow-600'
-          }`}
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center space-x-2">
-              <span
-                className={`px-2 py-1 rounded text-xs font-bold ${
-                  isEarlyWarning
-                    ? 'bg-blue-600 text-white'
-                    : opp.priority === 'HIGH'
-                    ? 'bg-red-600 text-white'
-                    : 'bg-yellow-600 text-white'
-                }`}
-              >
-                {isEarlyWarning ? '⏰ EARLY WARNING' : `${opp.priority} PRIORITY`}
-              </span>
-              <span className="text-xs text-gray-500 dark:text-gray-400">
-                {new Date(opp.timestamp).toLocaleTimeString()}
-              </span>
+          <div
+            key={opp.game_id}
+            className={`rounded-lg p-6 border-4 ${
+              isEarlyWarning
+                ? 'bg-gradient-to-br from-blue-900 via-blue-700 to-blue-900 border-blue-500'
+                : isHighPriority
+                ? 'bg-gradient-to-br from-red-900 via-red-700 to-red-900 border-red-500 shadow-lg shadow-red-600/30'
+                : 'bg-gradient-to-br from-yellow-900 via-yellow-700 to-yellow-900 border-yellow-500'
+            }`}
+          >
+            {/* Alert Header */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <span
+                  className={`px-4 py-2 rounded-lg font-bold text-white text-sm tracking-wide ${
+                    isEarlyWarning
+                      ? 'bg-blue-600 border-2 border-blue-400'
+                      : isHighPriority
+                      ? 'bg-red-600 border-2 border-red-400 animate-pulse'
+                      : 'bg-yellow-600 border-2 border-yellow-400'
+                  }`}
+                >
+                  {isEarlyWarning ? '⏰ EARLY WARNING' : `🚨 ${opp.priority} PRIORITY`}
+                </span>
+                <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-500 text-white border-2 border-blue-300">
+                  NHL
+                </span>
+              </div>
+              <div className="text-right">
+                <div className="text-xs text-slate-300">
+                  {new Date(opp.timestamp).toLocaleTimeString()}
+                </div>
+              </div>
             </div>
-          </div>
 
-          {/* Game Info */}
-          <div className="mb-3">
-            <h4 className="font-bold text-gray-900 dark:text-gray-100 text-lg">
-              {opp.game}
-            </h4>
-            <div className="flex items-center space-x-4 text-sm text-gray-700 dark:text-gray-300 mt-1">
-              <span>Score: {opp.score}</span>
-              <span>•</span>
-              <span>Time: {opp.time_remaining}</span>
+            {/* Game Info */}
+            <div className="bg-black/40 border-4 border-slate-700 rounded-lg p-4 mb-4">
+              <h4 className="font-bold text-white text-2xl mb-2">
+                {opp.game}
+              </h4>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-slate-400">Score:</span>
+                  <span className="ml-2 font-bold text-white text-lg">{opp.score}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400">Time Remaining:</span>
+                  <span className="ml-2 font-bold text-white text-lg">{opp.time_remaining}</span>
+                </div>
+              </div>
             </div>
-          </div>
 
-          {/* Prediction Details */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-3 mb-3">
-            <h5 className="font-semibold text-gray-900 dark:text-gray-100 mb-2 flex items-center">
-              📊 Prediction
-            </h5>
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div>
-                <span className="text-gray-600 dark:text-gray-400">Trailing Team:</span>
-                <span className="ml-2 font-semibold text-gray-900 dark:text-gray-100">
-                  {opp.prediction.trailing_team}
-                </span>
-              </div>
-              <div>
-                <span className="text-gray-600 dark:text-gray-400">Coach:</span>
-                <span className="ml-2 font-semibold text-gray-900 dark:text-gray-100">
-                  {opp.prediction.coach}
-                </span>
-              </div>
-              <div>
-                <span className="text-gray-600 dark:text-gray-400">Pull in:</span>
-                <span className="ml-2 font-bold text-red-600 dark:text-red-400">
-                  ~{opp.prediction.time_until_pull}s
-                </span>
-              </div>
-              <div>
-                <span className="text-gray-600 dark:text-gray-400">Analytics:</span>
-                <span className="ml-2 font-semibold text-gray-900 dark:text-gray-100">
-                  {opp.prediction.analytics_rating}/10
-                </span>
-              </div>
-              <div className="col-span-2">
-                <span className="text-gray-600 dark:text-gray-400">Confidence:</span>
-                <div className="flex items-center mt-1">
-                  <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2 mr-2">
-                    <div
-                      className="bg-green-600 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${opp.prediction.confidence * 100}%` }}
-                    />
+            {/* Prediction Details */}
+            <div className="bg-black/40 border-4 border-slate-700 rounded-lg p-4 mb-4">
+              <h5 className="font-bold text-white mb-3 text-lg flex items-center gap-2">
+                📊 GOALIE PULL PREDICTION
+              </h5>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-slate-800/70 rounded-lg p-3">
+                  <div className="text-xs text-slate-400 mb-1">TRAILING TEAM</div>
+                  <div className="font-bold text-white">{opp.prediction.trailing_team}</div>
+                </div>
+                <div className="bg-slate-800/70 rounded-lg p-3">
+                  <div className="text-xs text-slate-400 mb-1">COACH</div>
+                  <div className="font-bold text-white">{opp.prediction.coach}</div>
+                </div>
+                <div className="bg-slate-800/70 rounded-lg p-3">
+                  <div className="text-xs text-slate-400 mb-1">PULL EXPECTED IN</div>
+                  <div className="font-bold text-red-400 text-xl">
+                    {formatTimeRemaining(opp.prediction.time_until_pull)}
                   </div>
-                  <span className="font-semibold text-gray-900 dark:text-gray-100">
+                </div>
+                <div className="bg-slate-800/70 rounded-lg p-3">
+                  <div className="text-xs text-slate-400 mb-1">ANALYTICS RATING</div>
+                  <div className="font-bold text-white text-xl">
+                    {opp.prediction.analytics_rating.toFixed(1)}/10
+                  </div>
+                </div>
+              </div>
+
+              {/* Confidence Bar */}
+              <div className="mt-4">
+                <div className="flex items-center justify-between text-xs text-slate-400 mb-2">
+                  <span>CONFIDENCE</span>
+                  <span className="font-bold text-white">
                     {(opp.prediction.confidence * 100).toFixed(0)}%
                   </span>
                 </div>
+                <div className="bg-slate-800 rounded-full h-3 border-2 border-slate-600">
+                  <div
+                    className="bg-gradient-to-r from-green-600 to-green-400 h-full rounded-full transition-all duration-300"
+                    style={{ width: `${opp.prediction.confidence * 100}%` }}
+                  />
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Betting Recommendation */}
-          {isEarlyWarning ? (
-            <div className="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-500 dark:border-blue-600 rounded-lg p-3">
-              <h5 className="font-bold text-blue-900 dark:text-blue-100 mb-2 flex items-center text-lg">
-                🎯 PREPARE YOUR BETTING BOOKS NOW
-              </h5>
-              <p className="text-blue-800 dark:text-blue-200 text-sm mb-3">
-                Possible empty net goal pending. Get ready to bet OVER {opp.ev_analysis.current_total} when goalie pull becomes imminent.
-              </p>
-              <div className="grid grid-cols-2 gap-3 text-sm mb-3">
-                <div>
-                  <span className="text-blue-700 dark:text-blue-300">Current Odds:</span>
-                  <span className="ml-2 font-bold text-blue-900 dark:text-blue-100">
-                    {opp.ev_analysis.current_odds > 0 ? '+' : ''}
-                    {opp.ev_analysis.current_odds}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-blue-700 dark:text-blue-300">Win Probability:</span>
-                  <span className="ml-2 font-bold text-blue-900 dark:text-blue-100">
-                    {(opp.ev_analysis.probability_over_hits * 100).toFixed(1)}%
-                  </span>
-                </div>
-                <div>
-                  <span className="text-blue-700 dark:text-blue-300">Expected Edge:</span>
-                  <span className="ml-2 font-bold text-blue-900 dark:text-blue-100">
-                    {opp.ev_analysis.expected_value_percentage >= 0 ? '+' : ''}
-                    {opp.ev_analysis.expected_value_percentage.toFixed(1)}%
-                  </span>
-                </div>
-                <div>
-                  <span className="text-blue-700 dark:text-blue-300">Time Until Pull:</span>
-                  <span className="ml-2 font-bold text-blue-900 dark:text-blue-100">
-                    ~{opp.prediction.time_until_pull}s
-                  </span>
-                </div>
-              </div>
-              <div className="bg-blue-100 dark:bg-blue-900/40 border border-blue-300 dark:border-blue-700 rounded p-2">
-                <p className="text-blue-900 dark:text-blue-100 font-semibold text-xs text-center">
-                  ⏰ STANDBY - Watch for imminent alert when it's time to place bet
+            {/* Betting Recommendation */}
+            {isEarlyWarning ? (
+              <div className="bg-gradient-to-br from-blue-700 via-blue-600 to-blue-700 border-4 border-blue-400 rounded-lg p-5">
+                <h5 className="font-bold text-white mb-3 text-xl flex items-center gap-2">
+                  🎯 PREPARE YOUR BETTING BOOKS NOW
+                </h5>
+                <p className="text-white text-sm mb-4 leading-relaxed">
+                  Possible empty net goal pending. Get ready to bet <span className="font-bold text-yellow-300">OVER {opp.ev_analysis.current_total}</span> when goalie pull becomes imminent.
                 </p>
+
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div className="bg-blue-900/60 rounded-lg p-3 border-2 border-blue-500">
+                    <div className="text-xs text-blue-200 mb-1">CURRENT ODDS</div>
+                    <div className="font-bold text-white text-xl">
+                      {opp.ev_analysis.current_odds > 0 ? '+' : ''}
+                      {opp.ev_analysis.current_odds}
+                    </div>
+                  </div>
+                  <div className="bg-blue-900/60 rounded-lg p-3 border-2 border-blue-500">
+                    <div className="text-xs text-blue-200 mb-1">WIN PROBABILITY</div>
+                    <div className="font-bold text-white text-xl">
+                      {(opp.ev_analysis.probability_over_hits * 100).toFixed(1)}%
+                    </div>
+                  </div>
+                  <div className="bg-blue-900/60 rounded-lg p-3 border-2 border-blue-500">
+                    <div className="text-xs text-blue-200 mb-1">EXPECTED EDGE</div>
+                    <div className="font-bold text-green-400 text-xl">
+                      +{opp.ev_analysis.edge_percentage.toFixed(1)}%
+                    </div>
+                  </div>
+                  <div className="bg-blue-900/60 rounded-lg p-3 border-2 border-blue-500">
+                    <div className="text-xs text-blue-200 mb-1">PULL IN</div>
+                    <div className="font-bold text-yellow-300 text-xl">
+                      {formatTimeRemaining(opp.prediction.time_until_pull)}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-blue-800 border-3 border-blue-500 rounded-lg p-3">
+                  <p className="text-white font-bold text-center text-sm">
+                    ⏰ STANDBY - Watch for imminent alert when it's time to place bet
+                  </p>
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="bg-green-50 dark:bg-green-900/20 border-2 border-green-500 dark:border-green-600 rounded-lg p-3">
-              <h5 className="font-bold text-green-900 dark:text-green-100 mb-2 flex items-center text-lg">
-                💰 BET NOW - OVER {opp.ev_analysis.current_total}
-              </h5>
-              <div className="grid grid-cols-2 gap-3 text-sm mb-3">
-                <div>
-                  <span className="text-green-700 dark:text-green-300">Current Odds:</span>
-                  <span className="ml-2 font-bold text-green-900 dark:text-green-100">
-                    {opp.ev_analysis.current_odds > 0 ? '+' : ''}
-                    {opp.ev_analysis.current_odds}
-                  </span>
+            ) : (
+              <div className="bg-gradient-to-br from-green-700 via-green-600 to-green-700 border-4 border-green-400 rounded-lg p-5">
+                <h5 className="font-bold text-white mb-3 text-2xl flex items-center gap-2">
+                  💰 BET NOW - OVER {opp.ev_analysis.current_total}
+                </h5>
+
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div className="bg-green-900/60 rounded-lg p-3 border-2 border-green-500">
+                    <div className="text-xs text-green-200 mb-1">CURRENT ODDS</div>
+                    <div className="font-bold text-white text-xl">
+                      {opp.ev_analysis.current_odds > 0 ? '+' : ''}
+                      {opp.ev_analysis.current_odds}
+                    </div>
+                  </div>
+                  <div className="bg-green-900/60 rounded-lg p-3 border-2 border-green-500">
+                    <div className="text-xs text-green-200 mb-1">WIN PROBABILITY</div>
+                    <div className="font-bold text-white text-xl">
+                      {(opp.ev_analysis.probability_over_hits * 100).toFixed(1)}%
+                    </div>
+                  </div>
+                  <div className="bg-green-900/60 rounded-lg p-3 border-2 border-green-500">
+                    <div className="text-xs text-green-200 mb-1">EDGE</div>
+                    <div className="font-bold text-yellow-300 text-xl">
+                      +{opp.ev_analysis.edge_percentage.toFixed(1)}%
+                    </div>
+                  </div>
+                  <div className="bg-green-900/60 rounded-lg p-3 border-2 border-green-500">
+                    <div className="text-xs text-green-200 mb-1">EXPECTED VALUE</div>
+                    <div className="font-bold text-yellow-300 text-xl">
+                      +{opp.ev_analysis.expected_value_percentage.toFixed(1)}%
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <span className="text-green-700 dark:text-green-300">Win Probability:</span>
-                  <span className="ml-2 font-bold text-green-900 dark:text-green-100">
-                    {(opp.ev_analysis.probability_over_hits * 100).toFixed(1)}%
-                  </span>
-                </div>
-                <div>
-                  <span className="text-green-700 dark:text-green-300">Edge:</span>
-                  <span className="ml-2 font-bold text-green-900 dark:text-green-100">
-                    +{opp.ev_analysis.edge_percentage.toFixed(1)}%
-                  </span>
-                </div>
-                <div>
-                  <span className="text-green-700 dark:text-green-300">Expected Value:</span>
-                  <span className="ml-2 font-bold text-green-900 dark:text-green-100">
-                    +{opp.ev_analysis.expected_value_percentage.toFixed(1)}%
-                  </span>
+
+                <div className="bg-yellow-500 border-3 border-yellow-300 rounded-lg p-4 animate-pulse">
+                  <p className="text-black font-bold text-center text-lg">
+                    ⏰ BET IMMEDIATELY! Odds will shift to -110 or worse after goalie is pulled.
+                  </p>
                 </div>
               </div>
-              <div className="bg-green-100 dark:bg-green-900/40 border border-green-300 dark:border-green-700 rounded p-2">
-                <p className="text-green-900 dark:text-green-100 font-semibold text-xs text-center">
-                  ⏰ BET IMMEDIATELY! Odds will shift to -110 or worse after goalie is pulled.
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
         );
       })}
     </div>

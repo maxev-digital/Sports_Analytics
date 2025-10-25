@@ -4,6 +4,8 @@ import { detectSport, getSportEmoji, getSportGradientClasses, getSportBorderClas
 import { BOOKMAKERS } from '../data/bookmakers';
 import { openSportsbook } from '../utils/deepLinking';
 import { getGameSpecificUrl } from '../utils/gameUrls';
+import { trackBetClick } from '../utils/betTracking';
+import { useAuth } from '../contexts/AuthContext';
 
 interface GameCardProps {
   game: LiveGame;
@@ -114,13 +116,81 @@ const getBookmakerInfoFallback = (bookmaker: string) => {
 };
 
 export function GameCard({ game }: GameCardProps) {
-  const { state, odds, projection, home_team_stats, away_team_stats, home_nfl_live_stats, away_nfl_live_stats, home_nfl_stats, away_nfl_stats, home_nhl_momentum, away_nhl_momentum, home_nhl_stats, away_nhl_stats } = game;
+  const { state, odds, projection, home_team_stats, away_team_stats, home_nfl_live_stats, away_nfl_live_stats, home_nfl_stats, away_nfl_stats, home_nhl_momentum, away_nhl_momentum, home_nhl_stats, away_nhl_stats, home_nba_momentum, away_nba_momentum, home_nfl_momentum, away_nfl_momentum, home_ncaaf_momentum, away_ncaaf_momentum } = game;
+
+  // Get username for bet tracking
+  const { username } = useAuth();
 
   // Stats view toggle: 'stats' (raw stats), 'rankings' (ranks only), 'combined' (stats + ranks)
   const [statsView, setStatsView] = useState<'stats' | 'rankings' | 'combined'>('stats');
 
   // Market type toggle: 'spread', 'moneyline', 'totals'
   const [selectedMarket, setSelectedMarket] = useState<'spread' | 'moneyline' | 'totals'>('totals');
+
+  // Handle bet tracking when bookmaker is clicked
+  const handleBookmakerClick = async (bookmakerName: string, odd: any, bookmakerUrl: string) => {
+    // Only track bet if user is logged in
+    if (!username) {
+      openSportsbook(bookmakerUrl, bookmakerName);
+      return;
+    }
+
+    // Determine bet details based on selected market and projection recommendation
+    let betType: 'spread' | 'total' | 'moneyline' | 'prop' = 'total';
+    let betSide = '';
+    let betOdds = 0;
+
+    if (selectedMarket === 'totals') {
+      betType = 'total';
+      // Use projection recommendation if available, otherwise default to OVER
+      if (projection.recommendation === 'OVER') {
+        betSide = 'OVER';
+        betOdds = odd.over_price;
+      } else if (projection.recommendation === 'UNDER') {
+        betSide = 'UNDER';
+        betOdds = odd.under_price;
+      } else {
+        // Default to OVER if no recommendation
+        betSide = 'OVER';
+        betOdds = odd.over_price;
+      }
+    } else if (selectedMarket === 'spread') {
+      betType = 'spread';
+      // Default to home team spread, but use projection if available
+      betSide = `${state.home_team.name} ${odd.home_spread > 0 ? '+' : ''}${odd.home_spread}`;
+      betOdds = odd.home_spread_price;
+    } else if (selectedMarket === 'moneyline') {
+      betType = 'moneyline';
+      // Default to home team ML
+      betSide = state.home_team.name;
+      betOdds = odd.home_ml;
+    }
+
+    // Track the bet click
+    try {
+      await trackBetClick({
+        userId: username,
+        gameId: state.id,
+        sport: state.sport_key,
+        homeTeam: state.home_team.name,
+        awayTeam: state.away_team.name,
+        commenceTime: state.commence_time,
+        betType,
+        betSide,
+        odds: betOdds,
+        bookmaker: bookmakerName,
+        confidence: projection.confidence as 'HIGH' | 'MEDIUM' | 'LOW' | undefined,
+        edgePercent: projection.edge ? Math.abs(projection.edge) : undefined,
+      });
+
+      console.log(`✅ Bet tracked: ${betSide} at ${betOdds} via ${bookmakerName}`);
+    } catch (error) {
+      console.error('Failed to track bet:', error);
+    }
+
+    // Open sportsbook
+    openSportsbook(bookmakerUrl, bookmakerName);
+  };
 
   // Helper function to get rank color (green for top 10, yellow for 11-20, white for 21+)
   const getRankColor = (rank: number) => {
@@ -351,21 +421,28 @@ export function GameCard({ game }: GameCardProps) {
   // Sport-specific styling
   const isNHL = sport === 'NHL';
   const isNBA = sport === 'NBA';
+  const isTennis = sport === 'TENNIS';
 
-  // Card background: NHL=ice with blue tint, NBA=wood court with gradient, others=gradient
-  const cardBackground = isNHL ? 'bg-gradient-to-br from-blue-200 via-cyan-100 to-blue-200' : isNBA ? 'bg-gradient-to-br from-[#8B5A2B] via-[#A0522D] to-[#704214]' : sportGradient;
-  const cardBorder = isNHL ? 'border-red-600 border-4' : isNBA ? 'border-amber-800 border-4' : `border-2 ${sportBorder}`;
-  const cardRounding = isNHL ? 'rounded-3xl' : isNBA ? 'rounded-2xl' : 'rounded-lg';
+  // Card background: NHL=ice with blue tint, Tennis=deep yellow, NBA=blue gradient, others=gradient
+  const cardBackground = isNHL ? 'bg-gradient-to-br from-blue-200 via-cyan-100 to-blue-200'
+    : isTennis ? 'bg-gradient-to-br from-yellow-600 to-yellow-700'
+    : isNBA ? 'bg-gradient-to-br from-blue-900 to-slate-800'
+    : sportGradient;
+  const cardBorder = isNHL ? 'border-red-600 border-4'
+    : isTennis ? 'border-2 border-yellow-400'
+    : isNBA ? 'border-2 border-blue-500'
+    : `border-2 ${sportBorder}`;
+  const cardRounding = isNHL ? 'rounded-3xl' : isNBA ? 'rounded-lg' : 'rounded-lg';
 
   // Text colors
-  const textPrimary = (isNHL || isNBA) ? 'text-black' : 'text-white';
-  const textSecondary = (isNHL || isNBA) ? 'text-black font-bold' : 'text-slate-300';
-  const textTertiary = (isNHL || isNBA) ? 'text-black font-bold' : 'text-slate-400';
-  const textLabel = (isNHL || isNBA) ? 'text-black font-semibold' : 'text-slate-400';
-  const textValue = (isNHL || isNBA) ? 'text-black font-bold' : 'text-slate-200';
-  const textHeader = (isNHL || isNBA) ? 'text-black font-bold' : 'text-slate-100';
-  const textMuted = (isNHL || isNBA) ? 'text-gray-700' : 'text-slate-500';
-  const dividerClass = (isNHL || isNBA) ? '' : 'border-t border-slate-700';
+  const textPrimary = (isNHL || isTennis) ? 'text-black' : 'text-white';
+  const textSecondary = (isNHL || isTennis) ? 'text-black font-bold' : 'text-slate-300';
+  const textTertiary = (isNHL || isTennis) ? 'text-black font-bold' : 'text-slate-400';
+  const textLabel = (isNHL || isTennis) ? 'text-black font-semibold' : 'text-slate-400';
+  const textValue = (isNHL || isTennis) ? 'text-black font-bold' : 'text-slate-200';
+  const textHeader = (isNHL || isTennis) ? 'text-black font-bold' : 'text-slate-100';
+  const textMuted = (isNHL || isTennis) ? 'text-gray-700' : 'text-slate-500';
+  const dividerClass = (isNHL || isTennis) ? '' : 'border-t border-slate-700';
 
   return (
     <div className={`${cardBackground} ${cardRounding} p-4 ${cardBorder} hover:shadow-lg transition-shadow relative overflow-hidden`}>
@@ -409,91 +486,6 @@ export function GameCard({ game }: GameCardProps) {
           {/* Bottom goal crease */}
           <div className="absolute w-24 h-14 border-[4px] border-blue-600 border-b-0 rounded-t-full transform -translate-x-1/2" style={{ left: '50%', bottom: '4%' }}></div>
         </div>
-      )}
-
-      {/* Basketball Court (NBA only) - Wood texture with court lines */}
-      {isNBA && (
-        <>
-          {/* Wood grain texture overlay */}
-          <div className="absolute inset-0 pointer-events-none opacity-20"
-               style={{
-                 backgroundImage: `
-                   repeating-linear-gradient(
-                     90deg,
-                     rgba(139, 69, 19, 0.1) 0px,
-                     rgba(160, 82, 45, 0.2) 2px,
-                     rgba(139, 69, 19, 0.1) 4px,
-                     rgba(160, 82, 45, 0.2) 6px,
-                     rgba(139, 69, 19, 0.1) 8px
-                   ),
-                   linear-gradient(
-                     180deg,
-                     rgba(160, 82, 45, 0.3) 0%,
-                     rgba(139, 69, 19, 0.1) 50%,
-                     rgba(160, 82, 45, 0.3) 100%
-                   )
-                 `
-               }}
-          ></div>
-
-          {/* Court lines overlay */}
-          <div className="absolute inset-0 pointer-events-none opacity-25">
-            {/* Baselines (top and bottom) */}
-            <div className="absolute left-0 right-0 h-1 bg-white" style={{ top: '8%' }}></div>
-            <div className="absolute left-0 right-0 h-1 bg-white" style={{ bottom: '8%' }}></div>
-
-            {/* Half-court line */}
-            <div className="absolute left-0 right-0 h-1 bg-white" style={{ top: '50%' }}></div>
-
-            {/* Sidelines (left and right) */}
-            <div className="absolute top-0 bottom-0 w-0.5 bg-white" style={{ left: '5%' }}></div>
-            <div className="absolute top-0 bottom-0 w-0.5 bg-white" style={{ right: '5%' }}></div>
-
-            {/* Center circle */}
-            <div className="absolute left-1/2 w-20 h-20 border-2 border-white rounded-full transform -translate-x-1/2 -translate-y-1/2" style={{ top: '50%' }}></div>
-            <div className="absolute left-1/2 w-2 h-2 bg-white rounded-full transform -translate-x-1/2 -translate-y-1/2" style={{ top: '50%' }}></div>
-
-            {/* Top 3-point arc */}
-            <svg className="absolute left-1/2 transform -translate-x-1/2" style={{ top: '8%', width: '45%', height: '25%' }} viewBox="0 0 100 60">
-              <path d="M 10,0 Q 50,55 90,0" fill="none" stroke="white" strokeWidth="1.5"/>
-            </svg>
-
-            {/* Bottom 3-point arc */}
-            <svg className="absolute left-1/2 transform -translate-x-1/2" style={{ bottom: '8%', width: '45%', height: '25%' }} viewBox="0 0 100 60">
-              <path d="M 10,60 Q 50,5 90,60" fill="none" stroke="white" strokeWidth="1.5"/>
-            </svg>
-
-            {/* Top paint/key (free throw lane) */}
-            <div className="absolute border-2 border-white" style={{
-              left: '40%',
-              width: '20%',
-              top: '8%',
-              height: '18%'
-            }}>
-              {/* Free throw circle (top half) */}
-              <div className="absolute left-1/2 w-16 h-8 border-2 border-white border-b-0 rounded-t-full transform -translate-x-1/2" style={{ bottom: '-1px' }}></div>
-            </div>
-
-            {/* Bottom paint/key (free throw lane) */}
-            <div className="absolute border-2 border-white" style={{
-              left: '40%',
-              width: '20%',
-              bottom: '8%',
-              height: '18%'
-            }}>
-              {/* Free throw circle (bottom half) */}
-              <div className="absolute left-1/2 w-16 h-8 border-2 border-white border-t-0 rounded-b-full transform -translate-x-1/2" style={{ top: '-1px' }}></div>
-            </div>
-
-            {/* Restricted area arcs (under basket) */}
-            <svg className="absolute left-1/2 transform -translate-x-1/2" style={{ top: '8%', width: '8%', height: '8%' }} viewBox="0 0 40 40">
-              <path d="M 5,0 Q 20,35 35,0" fill="none" stroke="white" strokeWidth="1.5"/>
-            </svg>
-            <svg className="absolute left-1/2 transform -translate-x-1/2" style={{ bottom: '8%', width: '8%', height: '8%' }} viewBox="0 0 40 40">
-              <path d="M 5,40 Q 20,5 35,40" fill="none" stroke="white" strokeWidth="1.5"/>
-            </svg>
-          </div>
-        </>
       )}
 
       {/* Header */}
@@ -570,15 +562,47 @@ export function GameCard({ game }: GameCardProps) {
         </div>
       </div>
 
-      {/* Game Status */}
-      {state.status === 'live' && state.quarter && state.time_remaining && (
-        <div className={`text-base ${textLabel} mb-3`}>
-          Q{state.quarter} - {state.time_remaining}
-        </div>
-      )}
+      {/* Game Status - Period/Quarter/Inning Display */}
+      {state.status === 'live' && state.quarter && state.time_remaining && (() => {
+        // Format period/quarter based on sport
+        let periodLabel = '';
 
-      {/* Team Momentum Bar (NFL only, live games) */}
-      {sportBadge === 'NFL' && state.status === 'live' && (state.home_team.momentum !== null || state.away_team.momentum !== null) && (
+        if (sportBadge === 'NHL') {
+          // NHL uses periods: 1st, 2nd, 3rd, OT, 2OT, etc.
+          if (state.quarter <= 3) {
+            const ordinals = ['', '1st', '2nd', '3rd'];
+            periodLabel = ordinals[state.quarter] || `${state.quarter}th`;
+          } else {
+            // Overtime periods
+            const otNum = state.quarter - 3;
+            periodLabel = otNum === 1 ? 'OT' : `${otNum}OT`;
+          }
+        } else if (sportBadge === 'MLB') {
+          // MLB uses innings with Top/Bottom
+          const inningNum = Math.ceil(state.quarter / 2);
+          const isTop = state.quarter % 2 === 1;
+          periodLabel = `${isTop ? 'Top' : 'Bot'} ${inningNum}`;
+        } else {
+          // NBA, NFL, NCAAF use quarters: Q1, Q2, Q3, Q4, OT, 2OT
+          if (state.quarter <= 4) {
+            periodLabel = `Q${state.quarter}`;
+          } else {
+            // Overtime periods
+            const otNum = state.quarter - 4;
+            periodLabel = otNum === 1 ? 'OT' : `${otNum}OT`;
+          }
+        }
+
+        return (
+          <div className={`text-base font-semibold ${textLabel} mb-3 flex items-center gap-2`}>
+            <span className="bg-red-600 text-white px-2 py-1 rounded">{periodLabel}</span>
+            <span>{state.time_remaining}</span>
+          </div>
+        );
+      })()}
+
+      {/* Team Momentum Bar (NBA only, live games) */}
+      {sportBadge === 'NBA' && state.status === 'live' && (state.home_team.momentum !== null || state.away_team.momentum !== null) && (
         <div className="mb-3">
           <div className={`text-base ${textLabel} mb-1`}>Game Momentum</div>
           <div className="flex items-center gap-2">
@@ -612,6 +636,364 @@ export function GameCard({ game }: GameCardProps) {
           </div>
         </div>
       )}
+
+      {/* NBA Momentum Stats (NBA only, live games) */}
+      {sportBadge === 'NBA' && state.status === 'live' && (away_nba_momentum || home_nba_momentum) && (
+        <div className="mb-3 border border-blue-600/30 bg-blue-900/10 rounded p-2">
+          <div className="text-base text-blue-400 font-semibold mb-2">Recent Momentum (Last ~5 Min)</div>
+          <div className="grid grid-cols-2 gap-3 text-base">
+            {/* Away Team Momentum */}
+            <div>
+              <div className={`${textLabel} font-semibold mb-1`}>{state.away_team.name.split(' ').pop()}</div>
+              {away_nba_momentum && (
+                <>
+                  <div className="flex justify-between mb-0.5">
+                    <span className={`${textLabel}`}>Momentum:</span>
+                    <span className={`font-semibold ${
+                      away_nba_momentum.momentum_score > 60 ? 'text-green-400' :
+                      away_nba_momentum.momentum_score < 40 ? 'text-red-400' : `${textSecondary}`
+                    }`}>{away_nba_momentum.momentum_score.toFixed(1)}</span>
+                  </div>
+                  <div className="flex justify-between mb-0.5">
+                    <span className={`${textLabel}`}>Points:</span>
+                    <span className={
+                      home_nba_momentum && away_nba_momentum.points_last_5min > home_nba_momentum.points_last_5min
+                        ? 'text-green-400'
+                        : `${textSecondary}`
+                    }>{away_nba_momentum.points_last_5min}</span>
+                  </div>
+                  <div className="flex justify-between mb-0.5">
+                    <span className={`${textLabel}`}>FG%:</span>
+                    <span className={
+                      home_nba_momentum && away_nba_momentum.fg_pct_recent > home_nba_momentum.fg_pct_recent
+                        ? 'text-green-400'
+                        : `${textSecondary}`
+                    }>{away_nba_momentum.fg_pct_recent.toFixed(1)}%</span>
+                  </div>
+                  <div className="flex justify-between mb-0.5">
+                    <span className={`${textLabel}`}>Off Reb:</span>
+                    <span className={
+                      home_nba_momentum && away_nba_momentum.offensive_rebounds > home_nba_momentum.offensive_rebounds
+                        ? 'text-green-400'
+                        : `${textSecondary}`
+                    }>{away_nba_momentum.offensive_rebounds}</span>
+                  </div>
+                  <div className="flex justify-between mb-0.5">
+                    <span className={`${textLabel}`}>Turnovers:</span>
+                    <span className={
+                      home_nba_momentum && away_nba_momentum.turnovers < home_nba_momentum.turnovers
+                        ? 'text-green-400'
+                        : `${textSecondary}`
+                    }>{away_nba_momentum.turnovers}</span>
+                  </div>
+                  <div className="flex justify-between mb-0.5">
+                    <span className={`${textLabel}`}>Steals:</span>
+                    <span className={
+                      home_nba_momentum && away_nba_momentum.steals > home_nba_momentum.steals
+                        ? 'text-green-400'
+                        : `${textSecondary}`
+                    }>{away_nba_momentum.steals}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className={`${textLabel}`}>Assists:</span>
+                    <span className={
+                      home_nba_momentum && away_nba_momentum.assists > home_nba_momentum.assists
+                        ? 'text-green-400'
+                        : `${textSecondary}`
+                    }>{away_nba_momentum.assists}</span>
+                  </div>
+                  {away_nba_momentum.possession_indicator && (
+                    <div className="mt-1">
+                      <span className={`text-sm px-2 py-0.5 rounded ${
+                        away_nba_momentum.possession_indicator === 'ATTACKING' ? 'bg-green-900 text-green-200' :
+                        away_nba_momentum.possession_indicator === 'DEFENDING' ? 'bg-red-900 text-red-200' :
+                        'bg-slate-700 ${textSecondary}'
+                      }`}>
+                        {away_nba_momentum.possession_indicator}
+                      </span>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Home Team Momentum */}
+            <div>
+              <div className={`${textLabel} font-semibold mb-1`}>{state.home_team.name.split(' ').pop()}</div>
+              {home_nba_momentum && (
+                <>
+                  <div className="flex justify-between mb-0.5">
+                    <span className={`${textLabel}`}>Momentum:</span>
+                    <span className={`font-semibold ${
+                      home_nba_momentum.momentum_score > 60 ? 'text-green-400' :
+                      home_nba_momentum.momentum_score < 40 ? 'text-red-400' : `${textSecondary}`
+                    }`}>{home_nba_momentum.momentum_score.toFixed(1)}</span>
+                  </div>
+                  <div className="flex justify-between mb-0.5">
+                    <span className={`${textLabel}`}>Points:</span>
+                    <span className={
+                      away_nba_momentum && home_nba_momentum.points_last_5min > away_nba_momentum.points_last_5min
+                        ? 'text-green-400'
+                        : `${textSecondary}`
+                    }>{home_nba_momentum.points_last_5min}</span>
+                  </div>
+                  <div className="flex justify-between mb-0.5">
+                    <span className={`${textLabel}`}>FG%:</span>
+                    <span className={
+                      away_nba_momentum && home_nba_momentum.fg_pct_recent > away_nba_momentum.fg_pct_recent
+                        ? 'text-green-400'
+                        : `${textSecondary}`
+                    }>{home_nba_momentum.fg_pct_recent.toFixed(1)}%</span>
+                  </div>
+                  <div className="flex justify-between mb-0.5">
+                    <span className={`${textLabel}`}>Off Reb:</span>
+                    <span className={
+                      away_nba_momentum && home_nba_momentum.offensive_rebounds > away_nba_momentum.offensive_rebounds
+                        ? 'text-green-400'
+                        : `${textSecondary}`
+                    }>{home_nba_momentum.offensive_rebounds}</span>
+                  </div>
+                  <div className="flex justify-between mb-0.5">
+                    <span className={`${textLabel}`}>Turnovers:</span>
+                    <span className={
+                      away_nba_momentum && home_nba_momentum.turnovers < away_nba_momentum.turnovers
+                        ? 'text-green-400'
+                        : `${textSecondary}`
+                    }>{home_nba_momentum.turnovers}</span>
+                  </div>
+                  <div className="flex justify-between mb-0.5">
+                    <span className={`${textLabel}`}>Steals:</span>
+                    <span className={
+                      away_nba_momentum && home_nba_momentum.steals > away_nba_momentum.steals
+                        ? 'text-green-400'
+                        : `${textSecondary}`
+                    }>{home_nba_momentum.steals}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className={`${textLabel}`}>Assists:</span>
+                    <span className={
+                      away_nba_momentum && home_nba_momentum.assists > away_nba_momentum.assists
+                        ? 'text-green-400'
+                        : `${textSecondary}`
+                    }>{home_nba_momentum.assists}</span>
+                  </div>
+                  {home_nba_momentum.possession_indicator && (
+                    <div className="mt-1">
+                      <span className={`text-sm px-2 py-0.5 rounded ${
+                        home_nba_momentum.possession_indicator === 'ATTACKING' ? 'bg-green-900 text-green-200' :
+                        home_nba_momentum.possession_indicator === 'DEFENDING' ? 'bg-red-900 text-red-200' :
+                        'bg-slate-700 ${textSecondary}'
+                      }`}>
+                        {home_nba_momentum.possession_indicator}
+                      </span>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* NFL/NCAAF Momentum Bar (football only, live games) */}
+      {(sportBadge === 'NFL' || sportBadge === 'NCAAF') && state.status === 'live' && ((home_nfl_momentum || away_nfl_momentum) || (home_ncaaf_momentum || away_ncaaf_momentum)) && (() => {
+        const footballMomentum = sportBadge === 'NFL'
+          ? { home: home_nfl_momentum, away: away_nfl_momentum }
+          : { home: home_ncaaf_momentum, away: away_ncaaf_momentum };
+
+        if (!footballMomentum.home && !footballMomentum.away) return null;
+
+        return (
+          <>
+            {/* Momentum Bar */}
+            <div className="mb-3">
+              <div className={`text-base ${textLabel} mb-1`}>Game Momentum</div>
+              <div className="flex items-center gap-2">
+                <span className={`text-base ${textLabel} w-12`}>{state.away_team.name.split(' ').pop()}</span>
+                <div className="flex-1 h-3 bg-slate-700 rounded-full overflow-hidden relative">
+                  {(() => {
+                    const awayMomentum = footballMomentum.away?.momentum_score || 50;
+                    const homeMomentum = footballMomentum.home?.momentum_score || 50;
+                    const awayPercent = (awayMomentum / (awayMomentum + homeMomentum)) * 100;
+                    const homePercent = 100 - awayPercent;
+
+                    return (
+                      <>
+                        <div
+                          className="absolute left-0 top-0 h-full transition-all"
+                          style={{ width: `${awayPercent}%`, backgroundColor: awayTeamColors.primary }}
+                        />
+                        <div
+                          className="absolute right-0 top-0 h-full transition-all"
+                          style={{ width: `${homePercent}%`, backgroundColor: homeTeamColors.primary }}
+                        />
+                        <div className="absolute left-1/2 top-0 h-full w-0.5 bg-white/30" style={{ transform: 'translateX(-50%)' }} />
+                      </>
+                    );
+                  })()}
+                </div>
+                <span className={`text-base ${textLabel} w-12 text-right`}>{state.home_team.name.split(' ').pop()}</span>
+              </div>
+            </div>
+
+            {/* Momentum Stats Panel */}
+            <div className="mb-3 border border-orange-600/30 bg-orange-900/10 rounded p-2">
+              <div className="text-base text-orange-400 font-semibold mb-2">Recent Momentum (Last ~6 Drives)</div>
+              <div className="grid grid-cols-2 gap-3 text-base">
+                {/* Away Team Momentum */}
+                <div>
+                  <div className={`${textLabel} font-semibold mb-1`}>{state.away_team.name.split(' ').pop()}</div>
+                  {footballMomentum.away && (
+                    <>
+                      <div className="flex justify-between mb-0.5">
+                        <span className={`${textLabel}`}>Momentum:</span>
+                        <span className={`font-semibold ${
+                          footballMomentum.away.momentum_score > 60 ? 'text-green-400' :
+                          footballMomentum.away.momentum_score < 40 ? 'text-red-400' : `${textSecondary}`
+                        }`}>{footballMomentum.away.momentum_score.toFixed(1)}</span>
+                      </div>
+                      <div className="flex justify-between mb-0.5">
+                        <span className={`${textLabel}`}>Yds/Play:</span>
+                        <span className={
+                          footballMomentum.home && footballMomentum.away.yards_per_play > footballMomentum.home.yards_per_play
+                            ? 'text-green-400'
+                            : `${textSecondary}`
+                        }>{footballMomentum.away.yards_per_play.toFixed(1)}</span>
+                      </div>
+                      <div className="flex justify-between mb-0.5">
+                        <span className={`${textLabel}`}>Yards:</span>
+                        <span className={
+                          footballMomentum.home && footballMomentum.away.recent_yards > footballMomentum.home.recent_yards
+                            ? 'text-green-400'
+                            : `${textSecondary}`
+                        }>{footballMomentum.away.recent_yards}</span>
+                      </div>
+                      <div className="flex justify-between mb-0.5">
+                        <span className={`${textLabel}`}>Points:</span>
+                        <span className={
+                          footballMomentum.home && footballMomentum.away.recent_points > footballMomentum.home.recent_points
+                            ? 'text-green-400'
+                            : `${textSecondary}`
+                        }>{footballMomentum.away.recent_points}</span>
+                      </div>
+                      <div className="flex justify-between mb-0.5">
+                        <span className={`${textLabel}`}>TDs:</span>
+                        <span className={
+                          footballMomentum.home && footballMomentum.away.touchdowns > footballMomentum.home.touchdowns
+                            ? 'text-green-400'
+                            : `${textSecondary}`
+                        }>{footballMomentum.away.touchdowns}</span>
+                      </div>
+                      <div className="flex justify-between mb-0.5">
+                        <span className={`${textLabel}`}>FGs:</span>
+                        <span className={`${textSecondary}`}>{footballMomentum.away.field_goals}</span>
+                      </div>
+                      <div className="flex justify-between mb-0.5">
+                        <span className={`${textLabel}`}>Turnovers:</span>
+                        <span className={
+                          footballMomentum.home && footballMomentum.away.turnovers < footballMomentum.home.turnovers
+                            ? 'text-green-400'
+                            : `${textSecondary}`
+                        }>{footballMomentum.away.turnovers}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className={`${textLabel}`}>Red Zone:</span>
+                        <span className={`${textSecondary}`}>{footballMomentum.away.red_zone_efficiency}</span>
+                      </div>
+                      {footballMomentum.away.drive_state && (
+                        <div className="mt-1">
+                          <span className={`text-sm px-2 py-0.5 rounded ${
+                            footballMomentum.away.drive_state === 'ATTACKING' ? 'bg-green-900 text-green-200' :
+                            footballMomentum.away.drive_state === 'DEFENDING' ? 'bg-red-900 text-red-200' :
+                            'bg-slate-700 ${textSecondary}'
+                          }`}>
+                            {footballMomentum.away.drive_state}
+                          </span>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+
+                {/* Home Team Momentum */}
+                <div>
+                  <div className={`${textLabel} font-semibold mb-1`}>{state.home_team.name.split(' ').pop()}</div>
+                  {footballMomentum.home && (
+                    <>
+                      <div className="flex justify-between mb-0.5">
+                        <span className={`${textLabel}`}>Momentum:</span>
+                        <span className={`font-semibold ${
+                          footballMomentum.home.momentum_score > 60 ? 'text-green-400' :
+                          footballMomentum.home.momentum_score < 40 ? 'text-red-400' : `${textSecondary}`
+                        }`}>{footballMomentum.home.momentum_score.toFixed(1)}</span>
+                      </div>
+                      <div className="flex justify-between mb-0.5">
+                        <span className={`${textLabel}`}>Yds/Play:</span>
+                        <span className={
+                          footballMomentum.away && footballMomentum.home.yards_per_play > footballMomentum.away.yards_per_play
+                            ? 'text-green-400'
+                            : `${textSecondary}`
+                        }>{footballMomentum.home.yards_per_play.toFixed(1)}</span>
+                      </div>
+                      <div className="flex justify-between mb-0.5">
+                        <span className={`${textLabel}`}>Yards:</span>
+                        <span className={
+                          footballMomentum.away && footballMomentum.home.recent_yards > footballMomentum.away.recent_yards
+                            ? 'text-green-400'
+                            : `${textSecondary}`
+                        }>{footballMomentum.home.recent_yards}</span>
+                      </div>
+                      <div className="flex justify-between mb-0.5">
+                        <span className={`${textLabel}`}>Points:</span>
+                        <span className={
+                          footballMomentum.away && footballMomentum.home.recent_points > footballMomentum.away.recent_points
+                            ? 'text-green-400'
+                            : `${textSecondary}`
+                        }>{footballMomentum.home.recent_points}</span>
+                      </div>
+                      <div className="flex justify-between mb-0.5">
+                        <span className={`${textLabel}`}>TDs:</span>
+                        <span className={
+                          footballMomentum.away && footballMomentum.home.touchdowns > footballMomentum.away.touchdowns
+                            ? 'text-green-400'
+                            : `${textSecondary}`
+                        }>{footballMomentum.home.touchdowns}</span>
+                      </div>
+                      <div className="flex justify-between mb-0.5">
+                        <span className={`${textLabel}`}>FGs:</span>
+                        <span className={`${textSecondary}`}>{footballMomentum.home.field_goals}</span>
+                      </div>
+                      <div className="flex justify-between mb-0.5">
+                        <span className={`${textLabel}`}>Turnovers:</span>
+                        <span className={
+                          footballMomentum.away && footballMomentum.home.turnovers < footballMomentum.away.turnovers
+                            ? 'text-green-400'
+                            : `${textSecondary}`
+                        }>{footballMomentum.home.turnovers}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className={`${textLabel}`}>Red Zone:</span>
+                        <span className={`${textSecondary}`}>{footballMomentum.home.red_zone_efficiency}</span>
+                      </div>
+                      {footballMomentum.home.drive_state && (
+                        <div className="mt-1">
+                          <span className={`text-sm px-2 py-0.5 rounded ${
+                            footballMomentum.home.drive_state === 'ATTACKING' ? 'bg-green-900 text-green-200' :
+                            footballMomentum.home.drive_state === 'DEFENDING' ? 'bg-red-900 text-red-200' :
+                            'bg-slate-700 ${textSecondary}'
+                          }`}>
+                            {footballMomentum.home.drive_state}
+                          </span>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          </>
+        );
+      })()}
 
       {/* Live Betting Lines (All Sports, Live Games) */}
       {state.status === 'live' && (state.away_team.money_line || state.home_team.money_line || state.away_team.spread || state.home_team.spread) && (
@@ -1881,10 +2263,10 @@ export function GameCard({ game }: GameCardProps) {
                         <button
                           onClick={(e) => {
                             e.preventDefault();
-                            openSportsbook(bookmakerUrl, odd.bookmaker);
+                            handleBookmakerClick(odd.bookmaker, odd, bookmakerUrl);
                           }}
                           className="inline-block hover:opacity-70 transition-opacity cursor-pointer border-0 bg-transparent p-0"
-                          title={`Visit ${odd.bookmaker}`}
+                          title={`Track bet & visit ${odd.bookmaker}`}
                         >
                           <img
                             src={bookmakerInfo.logo}
@@ -1897,10 +2279,10 @@ export function GameCard({ game }: GameCardProps) {
                         <button
                           onClick={(e) => {
                             e.preventDefault();
-                            openSportsbook(bookmakerUrl, odd.bookmaker);
+                            handleBookmakerClick(odd.bookmaker, odd, bookmakerUrl);
                           }}
                           className="inline-block hover:opacity-70 transition-opacity cursor-pointer border-0 bg-transparent p-0"
-                          title={`Visit ${odd.bookmaker}`}
+                          title={`Track bet & visit ${odd.bookmaker}`}
                         >
                           <span className={`px-2 py-0.5 rounded font-bold text-base ${bookmakerInfo.bg} ${bookmakerInfo.text}`}>
                             {bookmakerInfo.short}

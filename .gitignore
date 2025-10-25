@@ -59,6 +59,71 @@ test_cors.html
 nul
 backend/nul
 
+# Database files - contains user data, never commit
+*.db
+*.sqlite
+*.sqlite3
+
+# User data and sensitive information
+users.json
+user_activity_log.json
+*_cache.json
+backend/users.json
+backend/user_activity_log.json
+backend/team_stats_cache.json
+backend/subscriptions.db
+backend/user_settings.db
+backend/plays_tracking.db
+
+# Archives and large files
+*.tar.gz
+*.zip
+
 # Data files (optional - uncomment if large)
 # backend/data/predictions/
 # backend/data/tracking/
+backend/scrapers/nba/
+
+# Unused sound effects (for future use)
+frontend/public/bet-placed.mp3
+frontend/public/buzzer-quarter.mp3
+frontend/public/buzzer.mp3
+frontend/public/calculate.mp3
+frontend/public/cash-register.mp3
+frontend/public/checkout.mp3
+frontend/public/click.mp3
+frontend/public/coins.mp3
+frontend/public/data-ping.mp3
+frontend/public/final-whistle.mp3
+frontend/public/game-start.mp3
+frontend/public/goal.mp3
+frontend/public/graduate.mp3
+frontend/public/horn.mp3
+frontend/public/level-up.mp3
+frontend/public/lightbulb.mp3
+frontend/public/line-move.mp3
+frontend/public/lock.mp3
+frontend/public/loss.mp3
+frontend/public/notification.mp3
+frontend/public/page-turn.mp3
+frontend/public/power-up.mp3
+frontend/public/push.mp3
+frontend/public/save.mp3
+frontend/public/scan.mp3
+frontend/public/siren.mp3
+frontend/public/sport-switch.mp3
+frontend/public/success-chime.mp3
+frontend/public/success.mp3
+frontend/public/swish.mp3
+frontend/public/swoosh.mp3
+frontend/public/tick.mp3
+frontend/public/toggle-off.mp3
+frontend/public/toggle-on.mp3
+frontend/public/tool-select.mp3
+frontend/public/unlock.mp3
+frontend/public/upgrade.mp3
+frontend/public/victory.mp3
+frontend/public/whistle-nfl.mp3
+frontend/public/whistle.mp3
+frontend/public/whoosh.mp3
+frontend/public/win.mp3

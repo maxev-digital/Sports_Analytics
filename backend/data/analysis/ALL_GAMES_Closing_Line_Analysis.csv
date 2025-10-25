@@ -1,0 +1,397 @@
+Date,Home_Team,Away_Team,Closing_Total,Num_Books,Actual_Total,Deviation,Abs_Deviation,Within_5,Within_10,Within_15,Within_20
+2023-11-06,Oregon Ducks,Georgia Bulldogs,141.0,1,153,12.0,12.0,False,False,True,True
+2023-11-06,UConn Huskies,Northern Arizona Lumberjacks,140.9,7,147,6.099999999999994,6.099999999999994,False,True,True,True
+2023-11-06,Purdue Boilermakers,Samford Bulldogs,143.5,7,143,-0.5,0.5,True,True,True,True
+2023-11-06,Tennessee Volunteers,Tennessee Tech Golden Eagles,134.5,7,122,-12.5,12.5,False,False,True,True
+2023-11-07,Bowling Green Falcons,Chicago St Cougars,146.5,1,111,-35.5,35.5,False,False,False,False
+2023-11-07,Colgate Raiders,Brown Bears,146.0,1,142,-4.0,4.0,True,True,True,True
+2023-11-07,Bucknell Bison,Delaware Blue Hens,141.0,1,135,-6.0,6.0,False,True,True,True
+2023-11-07,Rhode Island Rams,Central Connecticut St Blue Devils,135.5,1,151,15.5,15.5,False,False,False,True
+2023-11-07,Charleston Cougars,Iona Gaels,150.0,2,140,-10.0,10.0,False,True,True,True
+2023-11-07,Charlotte 49ers,Maine Black Bears,131.0,2,121,-10.0,10.0,False,True,True,True
+2023-11-07,Clemson Tigers,Winthrop Eagles,146.5,1,112,-34.5,34.5,False,False,False,False
+2023-11-07,Duquesne Dukes,Cleveland St Vikings,142.0,4,156,14.0,14.0,False,False,True,True
+2023-11-07,Providence Friars,Columbia Lions,144.8,4,137,-7.800000000000011,7.800000000000011,False,True,True,True
+2023-11-07,Dayton Flyers,SIU-Edwardsville Cougars,135.1,5,110,-25.099999999999994,25.099999999999994,False,False,False,False
+2023-11-07,Penn State Nittany Lions,Delaware St Hornets,140.6,5,124,-16.599999999999994,16.599999999999994,False,False,False,True
+2023-11-07,Siena Saints,Holy Cross Crusaders,138.5,1,144,5.5,5.5,False,True,True,True
+2023-11-07,Louisville Cardinals,UMBC Retrievers,143.5,1,187,43.5,43.5,False,False,False,False
+2023-11-07,Marshall Thundering Herd,Queens University Royals,157.5,1,162,4.5,4.5,True,True,True,True
+2023-11-07,Miami Hurricanes,NJIT Highlanders,144.0,1,161,17.0,17.0,False,False,False,True
+2023-11-07,West Virginia Mountaineers,Missouri St Bears,135.9,7,126,-9.900000000000006,9.900000000000006,False,True,True,True
+2023-11-07,NC State Wolfpack,The Citadel Bulldogs,145.2,5,131,-14.199999999999989,14.199999999999989,False,False,True,True
+2023-11-07,Syracuse Orange,New Hampshire Wildcats,139.8,2,155,15.199999999999989,15.199999999999989,False,False,False,True
+2023-11-07,Notre Dame Fighting Irish,Niagara Purple Eagles,129.8,4,133,3.1999999999999886,3.1999999999999886,True,True,True,True
+2023-11-07,Western Michigan Broncos,North Dakota St Bison,141.1,4,156,14.900000000000006,14.900000000000006,False,False,True,True
+2023-11-07,Ohio State Buckeyes,Oakland Golden Grizzlies,144.3,7,152,7.699999999999989,7.699999999999989,False,True,True,True
+2023-11-07,Rutgers Scarlet Knights,Princeton Tigers,137.5,4,129,-8.5,8.5,False,True,True,True
+2023-11-07,Villanova Wildcats,American Eagles,140.9,4,153,12.099999999999994,12.099999999999994,False,False,True,True
+2023-11-07,Belmont Bruins,Georgia St Panthers,145.0,4,176,31.0,31.0,False,False,False,False
+2023-11-07,Bryant Bulldogs,Manhattan Jaspers,145.0,1,120,-25.0,25.0,False,False,False,False
+2023-11-07,Colorado Buffaloes,Towson Tigers,139.1,7,132,-7.099999999999994,7.099999999999994,False,True,True,True
+2023-11-07,Lehigh Mountain Hawks,Cornell Big Red,155.0,1,162,7.0,7.0,False,True,True,True
+2023-11-07,Fordham Rams,Wagner Seahawks,129.8,2,132,2.1999999999999886,2.1999999999999886,True,True,True,True
+2023-11-07,Georgia Tech Yellow Jackets,Georgia Southern Eagles,138.4,5,146,7.599999999999994,7.599999999999994,False,True,True,True
+2023-11-07,Wichita St Shockers,Lipscomb Bisons,145.0,1,135,-10.0,10.0,False,True,True,True
+2023-11-07,Temple Owls,Maryland-Eastern Shore Hawks,134.5,1,150,15.5,15.5,False,False,False,True
+2023-11-07,Vermont Catamounts,Merrimack Warriors,131.0,1,122,-9.0,9.0,False,True,True,True
+2023-11-07,Seton Hall Pirates,Saint Peter's Peacocks,126.1,4,129,2.9000000000000057,2.9000000000000057,True,True,True,True
+2023-11-07,Alabama Crimson Tide,Morehead St Eagles,143.2,7,178,34.80000000000001,34.80000000000001,False,False,False,False
+2023-11-07,Arkansas Razorbacks,Alcorn St Braves,145.0,5,152,7.0,7.0,False,True,True,True
+2023-11-07,Wisconsin Badgers,Arkansas St Red Wolves,135.2,4,181,45.80000000000001,45.80000000000001,False,False,False,False
+2023-11-07,Arkansas-Little Rock Trojans,Texas State Bobcats,141.2,4,137,-4.199999999999989,4.199999999999989,True,True,True,True
+2023-11-07,Missouri Tigers,Arkansas-Pine Bluff Golden Lions,149.5,1,180,30.5,30.5,False,False,False,False
+2023-11-07,Army Knights,Marist Red Foxes,136.5,1,126,-10.5,10.5,False,False,True,True
+2023-11-07,Minnesota Golden Gophers,Bethune-Cookman Wildcats,139.8,2,140,0.1999999999999886,0.1999999999999886,True,True,True,True
+2023-11-07,Northwestern Wildcats,Binghamton Bearcats,135.8,2,133,-2.800000000000012,2.800000000000012,True,True,True,True
+2023-11-07,Boston College Eagles,Fairfield Stags,132.5,4,159,26.5,26.5,False,False,False,False
+2023-11-07,Northeastern Huskies,Boston Univ. Terriers,131.2,2,125,-6.199999999999989,6.199999999999989,False,True,True,True
+2023-11-07,UAB Blazers,Bradley Braves,140.2,4,144,3.8000000000000114,3.8000000000000114,True,True,True,True
+2023-11-07,Butler Bulldogs,Eastern Michigan Eagles,141.5,4,149,7.5,7.5,False,True,True,True
+2023-11-07,Campbell Fighting Camels,Navy Midshipmen,131.0,1,107,-24.0,24.0,False,False,False,False
+2023-11-07,Tulsa Golden Hurricane,Central Arkansas Bears,149.5,2,123,-26.5,26.5,False,False,False,False
+2023-11-07,Oklahoma Sooners,Central Michigan Chippewas,136.5,4,148,11.5,11.5,False,False,True,True
+2023-11-07,Illinois Fighting Illini,Eastern Illinois Panthers,141.6,5,132,-9.599999999999994,9.599999999999994,False,True,True,True
+2023-11-07,Wake Forest Demon Deacons,Elon Phoenix,142.0,4,179,37.0,37.0,False,False,False,False
+2023-11-07,Evansville Purple Aces,Miami (OH) RedHawks,142.4,5,136,-6.400000000000006,6.400000000000006,False,True,True,True
+2023-11-07,Florida Gators,Loyola (MD) Greyhounds,141.0,2,166,25.0,25.0,False,False,False,False
+2023-11-07,UCF Knights,Florida Int'l Golden Panthers,139.5,2,147,7.5,7.5,False,True,True,True
+2023-11-07,George Washington Colonials,Stonehill Skyhawks,144.8,2,133,-11.800000000000011,11.800000000000011,False,False,True,True
+2023-11-07,Iowa State Cyclones,Green Bay Phoenix,133.1,5,129,-4.099999999999994,4.099999999999994,True,True,True,True
+2023-11-07,Texas Longhorns,Incarnate Word Cardinals,144.7,5,144,-0.6999999999999886,0.6999999999999886,True,True,True,True
+2023-11-07,Memphis Tigers,Jackson St Tigers,147.5,1,171,23.5,23.5,False,False,False,False
+2023-11-07,Kansas Jayhawks,North Carolina Central Eagles,142.4,5,155,12.599999999999994,12.599999999999994,False,False,True,True
+2023-11-07,Kentucky Wildcats,New Mexico St Aggies,141.9,7,132,-9.900000000000006,9.900000000000006,False,True,True,True
+2023-11-07,LSU Tigers,Miss Valley St Delta Devils,138.0,5,166,28.0,28.0,False,False,False,False
+2023-11-07,Nebraska Cornhuskers,Lindenwood Lions,142.5,5,136,-6.5,6.5,False,True,True,True
+2023-11-07,UT-Arlington Mavericks,Oral Roberts Golden Eagles,144.7,5,146,1.3000000000000114,1.3000000000000114,True,True,True,True
+2023-11-07,Xavier Musketeers,Robert Morris Colonials,143.6,5,140,-3.5999999999999943,3.5999999999999943,True,True,True,True
+2023-11-07,Saint Louis Billikens,Southern Indiana Screaming Eagles,147.5,4,138,-9.5,9.5,False,True,True,True
+2023-11-07,UTSA Roadrunners,Western Illinois Leathernecks,144.5,2,146,1.5,1.5,True,True,True,True
+2023-11-07,Michigan St Spartans,James Madison Dukes,143.5,6,155,11.5,11.5,False,False,True,True
+2023-11-07,Louisiana Ragin' Cajuns,Youngstown St Penguins,149.5,2,134,-15.5,15.5,False,False,False,True
+2023-11-07,Marquette Golden Eagles,Northern Illinois Huskies,148.2,4,162,13.800000000000011,13.800000000000011,False,False,True,True
+2023-11-07,Middle Tennessee Blue Raiders,Northern Kentucky Norse,133.5,2,131,-2.5,2.5,True,True,True,True
+2023-11-07,Oklahoma St Cowboys,Abilene Christian Wildcats,140.9,4,123,-17.900000000000006,17.900000000000006,False,False,False,True
+2023-11-07,BYU Cougars,Houston Baptist Huskies,153.0,1,173,20.0,20.0,False,False,False,True
+2023-11-07,Cincinnati Bearcats,UIC Flames,142.1,4,127,-15.099999999999994,15.099999999999994,False,False,False,True
+2023-11-07,Duke Blue Devils,Dartmouth Big Green,140.8,7,146,5.199999999999989,5.199999999999989,False,True,True,True
+2023-11-07,Grand Canyon Antelopes,SE Missouri St Redhawks,143.5,4,155,11.5,11.5,False,False,True,True
+2023-11-07,Tulane Green Wave,Nicholls St Colonels,157.0,1,172,15.0,15.0,False,False,True,True
+2023-11-07,TCU Horned Frogs,Southern Jaguars,141.2,2,183,41.80000000000001,41.80000000000001,False,False,False,False
+2023-11-07,South Dakota St Jackrabbits,Akron Zips,141.1,4,156,14.900000000000006,14.900000000000006,False,False,True,True
+2023-11-07,Air Force Falcons,Portland St Vikings,139.5,4,117,-22.5,22.5,False,False,False,False
+2023-11-07,Arizona Wildcats,Morgan St Bears,155.1,5,181,25.90000000000001,25.90000000000001,False,False,False,False
+2023-11-07,Utah Utes,Eastern Washington Eagles,142.8,4,167,24.19999999999999,24.19999999999999,False,False,False,False
+2023-11-07,New Mexico Lobos,Texas Southern Tigers,152.2,2,135,-17.19999999999999,17.19999999999999,False,False,False,True
+2023-11-07,Colorado St Rams,Louisiana Tech Bulldogs,140.8,4,154,13.199999999999989,13.199999999999989,False,False,True,True
+2023-11-07,San Diego St Aztecs,CSU Fullerton Titans,131.4,7,140,8.599999999999994,8.599999999999994,False,True,True,True
+2023-11-07,Portland Pilots,Long Beach St 49ers,157.7,7,151,-6.699999999999989,6.699999999999989,False,True,True,True
+2023-11-07,Stanford Cardinal,CSU Northridge Matadors,141.9,4,167,25.099999999999994,25.099999999999994,False,False,False,False
+2023-11-07,Washington St Cougars,Idaho Vandals,137.7,5,143,5.300000000000011,5.300000000000011,False,True,True,True
+2023-11-07,Washington Huskies,Bellarmine Knights,139.0,2,148,9.0,9.0,False,True,True,True
+2023-11-16,Vermont Catamounts,Charleston Cougars,145.7,14,137,-8.699999999999989,8.699999999999989,False,True,True,True
+2023-11-16,North Texas Mean Green,St. John's Red Storm,137.1,14,105,-32.099999999999994,32.099999999999994,False,False,False,False
+2023-11-16,Wyoming Cowboys,Saint Louis Billikens,150.0,14,148,-2.0,2.0,True,True,True,True
+2023-11-16,LSU Tigers,Dayton Flyers,133.8,14,137,3.1999999999999886,3.1999999999999886,True,True,True,True
+2023-11-16,Coastal Carolina Chanticleers,Wichita St Shockers,144.5,14,163,18.5,18.5,False,False,False,True
+2023-11-16,Air Force Falcons,Lindenwood Lions,129.1,14,134,4.900000000000006,4.900000000000006,True,True,True,True
+2023-11-16,Towson Tigers,Houston Cougars,127.5,14,114,-13.5,13.5,False,False,True,True
+2023-11-16,St. Bonaventure Bonnies,Oklahoma St Cowboys,135.7,14,130,-5.699999999999989,5.699999999999989,False,True,True,True
+2023-11-17,American Eagles,NJIT Highlanders,137.0,10,160,23.0,23.0,False,False,False,False
+2023-11-17,Boston Univ. Terriers,Bryant Bulldogs,137.9,9,174,36.1,36.1,False,False,False,False
+2023-11-17,UCF Knights,CSU Fullerton Titans,142.3,13,116,-26.30000000000001,26.30000000000001,False,False,False,False
+2023-11-17,Liberty Flames,Furman Paladins,145.2,13,162,16.80000000000001,16.80000000000001,False,False,False,True
+2023-11-17,Indiana Hoosiers,Wright St Raiders,152.0,13,169,17.0,17.0,False,False,False,True
+2023-11-17,North Florida Ospreys,Presbyterian Blue Hose,145.8,10,150,4.199999999999989,4.199999999999989,True,True,True,True
+2023-11-17,Virginia Cavaliers,Texas Southern Tigers,130.2,8,95,-35.19999999999999,35.19999999999999,False,False,False,False
+2023-11-17,UAB Blazers,Alcorn St Braves,152.5,10,157,4.5,4.5,True,True,True,True
+2023-11-17,Southern Illinois Salukis,Chicago St Cougars,131.1,10,126,-5.099999999999994,5.099999999999994,False,True,True,True
+2023-11-17,Tulsa Golden Hurricane,Jackson St Tigers,144.9,10,124,-20.90000000000001,20.90000000000001,False,False,False,False
+2023-11-17,South Alabama Jaguars,Nicholls St Colonels,140.1,8,199,58.900000000000006,58.900000000000006,False,False,False,False
+2023-11-17,Notre Dame Fighting Irish,Auburn Tigers,145.3,14,142,-3.300000000000012,3.300000000000012,True,True,True,True
+2023-11-17,Minnesota Golden Gophers,Missouri Tigers,147.6,14,138,-9.599999999999994,9.599999999999994,False,True,True,True
+2023-11-17,New Mexico Lobos,UT-Arlington Mavericks,148.4,14,162,13.599999999999994,13.599999999999994,False,False,True,True
+2023-11-17,Omaha Mavericks,William & Mary Tribe,146.1,12,172,25.90000000000001,25.90000000000001,False,False,False,False
+2023-11-17,Wake Forest Demon Deacons,Utah Utes,150.9,13,147,-3.9000000000000057,3.9000000000000057,True,True,True,True
+2023-11-17,Montana Grizzlies,North Dakota St Bison,137.1,14,147,9.900000000000006,9.900000000000006,False,True,True,True
+2023-11-17,California Golden Bears,Montana St Bobcats,142.0,14,123,-19.0,19.0,False,False,False,True
+2023-12-01,Liberty Flames,Charleston Cougars,146.8,6,143,-3.8000000000000114,3.8000000000000114,True,True,True,True
+2023-12-01,Xavier Musketeers,Houston Cougars,138.6,14,126,-12.599999999999994,12.599999999999994,False,False,True,True
+2023-12-02,Bethune-Cookman Wildcats,Incarnate Word Cardinals,148.4,9,178,29.599999999999994,29.599999999999994,False,False,False,False
+2023-12-02,Brown Bears,Bryant Bulldogs,147.1,10,135,-12.099999999999994,12.099999999999994,False,False,True,True
+2023-12-02,Canisius Golden Griffins,Quinnipiac Bobcats,150.8,14,166,15.199999999999989,15.199999999999989,False,False,False,True
+2023-12-02,Fairfield Stags,Iona Gaels,147.2,14,145,-2.1999999999999886,2.1999999999999886,True,True,True,True
+2023-12-02,South Carolina Gamecocks,George Washington Colonials,149.7,14,156,6.300000000000011,6.300000000000011,False,True,True,True
+2023-12-02,Georgia Bulldogs,Mercer Bears,138.9,14,149,10.099999999999994,10.099999999999994,False,False,True,True
+2023-12-02,Indiana Hoosiers,Maryland Terrapins,137.5,13,118,-19.5,19.5,False,False,False,True
+2023-12-02,Manhattan Jaspers,Mt. St. Mary's Mountaineers,135.4,14,149,13.599999999999994,13.599999999999994,False,False,True,True
+2023-12-02,Niagara Purple Eagles,Saint Peter's Peacocks,124.0,14,139,15.0,15.0,False,False,True,True
+2023-12-02,VCU Rams,Norfolk St Spartans,135.8,9,123,-12.800000000000011,12.800000000000011,False,False,True,True
+2023-12-02,Siena Saints,Rider Broncs,132.5,14,132,-0.5,0.5,True,True,True,True
+2023-12-02,West Virginia Mountaineers,St. John's Red Storm,147.5,14,152,4.5,4.5,True,True,True,True
+2023-12-02,Arkansas-Little Rock Trojans,Arkansas St Red Wolves,160.3,14,143,-17.30000000000001,17.30000000000001,False,False,False,True
+2023-12-02,LSU Tigers,SE Louisiana Lions,146.2,10,139,-7.199999999999989,7.199999999999989,False,True,True,True
+2023-12-02,South Dakota St Jackrabbits,Towson Tigers,131.7,14,109,-22.69999999999999,22.69999999999999,False,False,False,False
+2023-12-02,DePaul Blue Demons,Iowa State Cyclones,139.0,14,179,40.0,40.0,False,False,False,False
+2023-12-02,Troy Trojans,SIU-Edwardsville Cougars,143.1,13,143,-0.0999999999999943,0.0999999999999943,True,True,True,True
+2023-12-02,BYU Cougars,Fresno St Bulldogs,143.2,13,141,-2.1999999999999886,2.1999999999999886,True,True,True,True
+2023-12-02,CSU Fullerton Titans,North Dakota Fighting Hawks,141.5,14,118,-23.5,23.5,False,False,False,False
+2023-12-02,Kansas Jayhawks,UConn Huskies,148.5,14,134,-14.5,14.5,False,False,True,True
+2023-12-02,Northwestern Wildcats,Purdue Boilermakers,136.6,14,180,43.400000000000006,43.400000000000006,False,False,False,False
+2023-12-02,Portland Pilots,Wyoming Cowboys,149.9,14,151,1.0999999999999943,1.0999999999999943,True,True,True,True
+2023-12-16,Penn State Nittany Lions,Georgia Tech Yellow Jackets,146.8,12,163,16.19999999999999,16.19999999999999,False,False,False,True
+2023-12-16,Texas Longhorns,LSU Tigers,142.3,12,181,38.69999999999999,38.69999999999999,False,False,False,False
+2023-12-16,Miami Hurricanes,La Salle Explorers,153.3,12,161,7.699999999999989,7.699999999999989,False,True,True,True
+2023-12-16,Indiana Hoosiers,Kansas Jayhawks,146.5,12,146,-0.5,0.5,True,True,True,True
+2023-12-16,Rutgers Scarlet Knights,LIU Sharks,137.3,9,144,6.699999999999989,6.699999999999989,False,True,True,True
+2023-12-16,Niagara Purple Eagles,NJIT Highlanders,141.0,9,170,29.0,29.0,False,False,False,False
+2023-12-16,Providence Friars,Sacred Heart Pioneers,141.9,9,142,0.0999999999999943,0.0999999999999943,True,True,True,True
+2023-12-16,Drexel Dragons,Albany Great Danes,138.1,9,123,-15.099999999999994,15.099999999999994,False,False,False,True
+2023-12-16,Michigan St Spartans,Baylor Bears,144.4,12,152,7.599999999999994,7.599999999999994,False,True,True,True
+2023-12-16,Bryant Bulldogs,Towson Tigers,132.8,7,194,61.19999999999999,61.19999999999999,False,False,False,False
+2023-12-16,Le Moyne Dolphins,Dartmouth Big Green,137.9,7,134,-3.9000000000000057,3.9000000000000057,True,True,True,True
+2023-12-16,Mercer Bears,Florida Gulf Coast Eagles,134.2,9,135,0.8000000000000114,0.8000000000000114,True,True,True,True
+2023-12-16,Hampton Pirates,James Madison Dukes,162.8,10,159,-3.8000000000000114,3.8000000000000114,True,True,True,True
+2023-12-16,Hofstra Pride,Norfolk St Spartans,139.7,8,132,-7.699999999999989,7.699999999999989,False,True,True,True
+2023-12-16,Presbyterian Blue Hose,Kennesaw St Owls,157.2,9,178,20.80000000000001,20.80000000000001,False,False,False,False
+2023-12-16,Monmouth Hawks,Rider Broncs,143.0,12,148,5.0,5.0,True,True,True,True
+2023-12-16,Tulane Green Wave,Southern Jaguars,160.5,9,186,25.5,25.5,False,False,False,False
+2023-12-16,VCU Rams,Temple Owls,137.3,11,165,27.69999999999999,27.69999999999999,False,False,False,False
+2023-12-16,UIC Flames,Western Michigan Broncos,135.6,12,157,21.40000000000001,21.40000000000001,False,False,False,False
+2023-12-16,Notre Dame Fighting Irish,Georgetown Hoyas,138.7,12,140,1.3000000000000114,1.3000000000000114,True,True,True,True
+2023-12-16,Michigan Wolverines,Eastern Michigan Eagles,145.9,11,149,3.0999999999999943,3.0999999999999943,True,True,True,True
+2023-12-16,Houston Cougars,Texas A&M Aggies,130.6,11,136,5.400000000000006,5.400000000000006,False,True,True,True
+2023-12-16,Western Kentucky Hilltoppers,Austin Peay Governors,143.4,9,129,-14.400000000000006,14.400000000000006,False,False,True,True
+2023-12-16,Samford Bulldogs,Belmont Bruins,168.0,12,192,24.0,24.0,False,False,False,False
+2023-12-16,Memphis Tigers,Clemson Tigers,151.0,12,156,5.0,5.0,True,True,True,True
+2023-12-16,Georgia Southern Eagles,UNC Wilmington Seahawks,143.1,12,159,15.900000000000006,15.900000000000006,False,False,False,True
+2023-12-16,Tulsa Golden Hurricane,Missouri St Bears,142.0,12,145,3.0,3.0,True,True,True,True
+2023-12-16,Northwestern St Demons,Rice Owls,153.3,9,127,-26.30000000000001,26.30000000000001,False,False,False,False
+2023-12-16,Ohio State Buckeyes,UCLA Bruins,133.5,11,127,-6.5,6.5,False,True,True,True
+2023-12-16,Bucknell Bison,Radford Highlanders,134.5,8,133,-1.5,1.5,True,True,True,True
+2023-12-16,St. John's Red Storm,Fordham Rams,148.2,10,132,-16.19999999999999,16.19999999999999,False,False,False,True
+2023-12-16,Bellarmine Knights,Evansville Purple Aces,140.5,9,131,-9.5,9.5,False,True,True,True
+2023-12-16,Valparaiso Beacons,Chicago St Cougars,136.0,9,125,-11.0,11.0,False,False,True,True
+2023-12-16,St. Bonaventure Bonnies,Florida Atlantic Owls,148.0,12,118,-30.0,30.0,False,False,False,False
+2023-12-16,South Florida Bulls,Loyola (Chi) Ramblers,143.5,12,141,-2.5,2.5,True,True,True,True
+2023-12-16,Murray St Racers,SE Louisiana Lions,146.1,9,116,-30.099999999999994,30.099999999999994,False,False,False,False
+2023-12-16,Tennessee Tech Golden Eagles,North Alabama Lions,146.1,9,137,-9.099999999999994,9.099999999999994,False,True,True,True
+2023-12-16,Northern Arizona Lumberjacks,Southern Utah Thunderbirds,149.6,12,150,0.4000000000000057,0.4000000000000057,True,True,True,True
+2023-12-16,Utah State Aggies,San Francisco Dons,139.7,12,107,-32.69999999999999,32.69999999999999,False,False,False,False
+2023-12-16,Utah Utes,Utah Valley Wolverines,142.7,12,138,-4.699999999999989,4.699999999999989,True,True,True,True
+2023-12-16,Virginia Tech Hokies,Vermont Catamounts,138.4,8,124,-14.400000000000006,14.400000000000006,False,False,True,True
+2023-12-16,Purdue Boilermakers,Arizona Wildcats,159.6,12,176,16.400000000000006,16.400000000000006,False,False,False,True
+2023-12-16,Delaware Blue Hens,Rhode Island Rams,145.3,12,123,-22.30000000000001,22.30000000000001,False,False,False,False
+2023-12-16,Iowa Hawkeyes,Florida A&M Rattlers,152.3,9,140,-12.300000000000011,12.300000000000011,False,False,True,True
+2023-12-16,UT-Arlington Mavericks,Air Force Falcons,131.0,12,149,18.0,18.0,False,False,False,True
+2023-12-16,DePaul Blue Demons,Northwestern Wildcats,141.7,12,102,-39.69999999999999,39.69999999999999,False,False,False,False
+2023-12-16,Georgia Bulldogs,High Point Panthers,150.6,9,124,-26.599999999999994,26.599999999999994,False,False,False,False
+2023-12-16,Arkansas Razorbacks,Lipscomb Bisons,153.5,9,135,-18.5,18.5,False,False,False,True
+2023-12-16,South Carolina Gamecocks,Charleston Southern Buccaneers,133.6,9,142,8.400000000000006,8.400000000000006,False,True,True,True
+2023-12-16,George Mason Patriots,Loyola (MD) Greyhounds,135.2,8,116,-19.19999999999999,19.19999999999999,False,False,False,True
+2023-12-16,Virginia Cavaliers,Northeastern Huskies,127.2,10,110,-17.200000000000003,17.200000000000003,False,False,False,True
+2023-12-16,Massachusetts Minutemen,West Virginia Mountaineers,146.1,10,166,19.90000000000001,19.90000000000001,False,False,False,True
+2023-12-17,Fort Wayne Mastodons,Bethune-Cookman Wildcats,154.6,9,149,-5.599999999999994,5.599999999999994,False,True,True,True
+2023-12-17,Richmond Spiders,Charlotte 49ers,133.7,11,120,-13.699999999999989,13.699999999999989,False,False,True,True
+2023-12-17,Cincinnati Bearcats,Dayton Flyers,139.8,11,150,10.199999999999989,10.199999999999989,False,False,True,True
+2023-12-17,Marshall Thundering Herd,UNC Greensboro Spartans,154.6,12,137,-17.599999999999994,17.599999999999994,False,False,False,True
+2023-12-17,Wichita St Shockers,Southern Illinois Salukis,141.7,12,137,-4.699999999999989,4.699999999999989,True,True,True,True
+2023-12-17,Texas Tech Red Raiders,Vanderbilt Commodores,140.5,12,130,-10.5,10.5,False,False,True,True
+2023-12-17,Xavier Musketeers,Winthrop Eagles,154.3,9,134,-20.30000000000001,20.30000000000001,False,False,False,False
+2023-12-17,Alabama A&M Bulldogs,Chattanooga Mocs,150.2,9,160,9.800000000000011,9.800000000000011,False,True,True,True
+2023-12-17,Creighton Bluejays,Alabama Crimson Tide,165.9,12,167,1.0999999999999943,1.0999999999999943,True,True,True,True
+2023-12-17,Florida St Seminoles,SMU Mustangs,147.0,11,125,-22.0,22.0,False,False,False,False
+2023-12-17,Saint Louis Billikens,Louisiana Tech Bulldogs,141.5,12,149,7.5,7.5,False,True,True,True
+2023-12-17,TCU Horned Frogs,Arizona St Sun Devils,152.0,11,138,-14.0,14.0,False,False,True,True
+2023-12-17,BYU Cougars,Georgia St Panthers,149.5,11,140,-9.5,9.5,False,True,True,True
+2023-12-17,Oklahoma Sooners,Green Bay Phoenix,135.4,12,128,-7.400000000000006,7.400000000000006,False,True,True,True
+2023-12-17,Utah Tech Trailblazers,North Dakota Fighting Hawks,140.8,10,141,0.1999999999999886,0.1999999999999886,True,True,True,True
+2023-12-17,Wyoming Cowboys,Weber State Wildcats,133.9,11,155,21.099999999999994,21.099999999999994,False,False,False,False
+2023-12-17,Grand Canyon Antelopes,Portland Pilots,154.4,10,154,-0.4000000000000057,0.4000000000000057,True,True,True,True
+2023-12-17,North Carolina A&T Aggies,Texas Southern Tigers,145.1,9,164,18.90000000000001,18.90000000000001,False,False,False,True
+2023-12-17,Tennessee Volunteers,NC State Wolfpack,149.2,10,149,-0.1999999999999886,0.1999999999999886,True,True,True,True
+2023-12-31,Green Bay Phoenix,Robert Morris Colonials,137.2,12,139,1.8000000000000114,1.8000000000000114,True,True,True,True
+2023-12-31,Iowa State Cyclones,New Hampshire Wildcats,149.9,9,155,5.099999999999994,5.099999999999994,False,True,True,True
+2023-12-31,Colorado Buffaloes,Washington St Cougars,142.2,12,141,-1.1999999999999886,1.1999999999999886,True,True,True,True
+2023-12-31,Youngstown St Penguins,Oakland Golden Grizzlies,150.2,12,169,18.80000000000001,18.80000000000001,False,False,False,True
+2023-12-31,Mississippi St Bulldogs,Bethune-Cookman Wildcats,140.6,9,147,6.400000000000006,6.400000000000006,False,True,True,True
+2023-12-31,Milwaukee Panthers,Wright St Raiders,165.8,12,174,8.199999999999989,8.199999999999989,False,True,True,True
+2023-12-31,Oklahoma Sooners,Monmouth Hawks,144.6,11,128,-16.599999999999994,16.599999999999994,False,False,False,True
+2023-12-31,South Dakota St Jackrabbits,North Dakota Fighting Hawks,146.6,12,141,-5.599999999999994,5.599999999999994,False,True,True,True
+2023-12-31,Oklahoma St Cowboys,South Carolina St Bulldogs,146.2,9,156,9.800000000000011,9.800000000000011,False,True,True,True
+2023-12-31,South Dakota Coyotes,Omaha Mavericks,155.2,12,118,-37.19999999999999,37.19999999999999,False,False,False,False
+2023-12-31,Lindenwood Lions,Southern Indiana Screaming Eagles,139.6,12,139,-0.5999999999999943,0.5999999999999943,True,True,True,True
+2023-12-31,Stanford Cardinal,Arizona Wildcats,161.6,12,182,20.40000000000001,20.40000000000001,False,False,False,False
+2023-12-31,SE Missouri St Redhawks,Morehead St Eagles,144.7,12,125,-19.69999999999999,19.69999999999999,False,False,False,True
+2023-12-31,NJIT Highlanders,Morgan St Bears,153.4,8,122,-31.40000000000001,31.40000000000001,False,False,False,False
+2023-12-31,SIU-Edwardsville Cougars,Western Illinois Leathernecks,134.0,11,156,22.0,22.0,False,False,False,False
+2023-12-31,Denver Pioneers,Oral Roberts Golden Eagles,158.4,12,175,16.599999999999994,16.599999999999994,False,False,False,True
+2023-12-31,Utah Utes,Washington Huskies,153.1,12,185,31.90000000000001,31.90000000000001,False,False,False,False
+2024-01-01,California Golden Bears,Arizona St Sun Devils,149.0,12,140,-9.0,9.0,False,True,True,True
+2024-01-10,Nevada Wolf Pack,Air Force Falcons,132.7,12,146,13.300000000000011,13.300000000000011,False,False,True,True
+2024-01-15,Canisius Golden Griffins,Fairfield Stags,146.0,13,151,5.0,5.0,True,True,True,True
+2024-01-15,Michigan Wolverines,Ohio State Buckeyes,146.9,13,138,-8.900000000000006,8.900000000000006,False,True,True,True
+2024-01-15,Niagara Purple Eagles,Siena Saints,141.2,12,181,39.80000000000001,39.80000000000001,False,False,False,False
+2024-01-15,Wagner Seahawks,Stonehill Skyhawks,131.2,10,118,-13.199999999999989,13.199999999999989,False,False,True,True
+2024-01-15,Harvard Crimson,Brown Bears,140.1,12,146,5.900000000000006,5.900000000000006,False,True,True,True
+2024-01-15,Cornell Big Red,Pennsylvania Quakers,159.5,13,137,-22.5,22.5,False,False,False,False
+2024-01-15,Princeton Tigers,Dartmouth Big Green,134.7,11,134,-0.6999999999999886,0.6999999999999886,True,True,True,True
+2024-01-15,George Washington Colonials,George Mason Patriots,144.4,12,137,-7.400000000000006,7.400000000000006,False,True,True,True
+2024-01-15,Marquette Golden Eagles,Villanova Wildcats,142.8,13,161,18.19999999999999,18.19999999999999,False,False,False,True
+2024-01-15,Texas Southern Tigers,Miss Valley St Delta Devils,126.5,11,154,27.5,27.5,False,False,False,False
+2024-01-15,Central Connecticut St Blue Devils,Merrimack Warriors,129.2,10,145,15.800000000000011,15.800000000000011,False,False,False,True
+2024-01-15,Minnesota Golden Gophers,Iowa Hawkeyes,158.6,13,163,4.400000000000006,4.400000000000006,True,True,True,True
+2024-01-16,Loyola (MD) Greyhounds,American Eagles,136.2,11,118,-18.19999999999999,18.19999999999999,False,False,False,True
+2024-01-16,Boston College Eagles,Notre Dame Fighting Irish,135.7,12,122,-13.699999999999989,13.699999999999989,False,False,True,True
+2024-01-16,Stetson Hatters,Chicago St Cougars,138.5,11,147,8.5,8.5,False,True,True,True
+2024-01-16,Yale Bulldogs,Columbia Lions,145.5,13,159,13.5,13.5,False,False,True,True
+2024-01-16,Le Moyne Dolphins,Sacred Heart Pioneers,144.9,9,153,8.099999999999994,8.099999999999994,False,True,True,True
+2024-01-16,Alabama St Hornets,Alabama A&M Bulldogs,139.4,11,115,-24.40000000000001,24.40000000000001,False,False,False,False
+2024-01-16,Bethune-Cookman Wildcats,Southern Jaguars,147.3,11,137,-10.300000000000011,10.300000000000011,False,False,True,True
+2024-01-16,Northwestern St Demons,Houston Baptist Huskies,152.5,11,133,-19.5,19.5,False,False,False,True
+2024-01-16,Nicholls St Colonels,New Orleans Privateers,149.4,10,153,3.5999999999999943,3.5999999999999943,True,True,True,True
+2024-01-16,Florida A&M Rattlers,Grambling St Tigers,132.5,11,173,40.5,40.5,False,False,False,False
+2024-01-16,Hampton Pirates,North Carolina A&T Aggies,151.8,13,161,9.199999999999989,9.199999999999989,False,True,True,True
+2024-01-25,Furman Paladins,Samford Bulldogs,168.8,13,126,-42.80000000000001,42.80000000000001,False,False,False,False
+2024-01-30,Tennessee Volunteers,South Carolina Gamecocks,136.4,13,122,-14.400000000000006,14.400000000000006,False,False,True,True
+2024-01-31,Eastern Michigan Eagles,Akron Zips,136.7,13,123,-13.699999999999989,13.699999999999989,False,False,True,True
+2024-01-31,Ball State Cardinals,Bowling Green Falcons,149.0,13,153,4.0,4.0,True,True,True,True
+2024-01-31,Boston College Eagles,Syracuse Orange,149.0,12,155,6.0,6.0,False,True,True,True
+2024-01-31,Ohio Bobcats,Buffalo Bulls,148.8,13,161,12.199999999999989,12.199999999999989,False,False,True,True
+2024-01-31,Central Michigan Chippewas,Northern Illinois Huskies,144.6,13,161,16.400000000000006,16.400000000000006,False,False,False,True
+2024-01-31,Dayton Flyers,George Washington Colonials,146.0,12,144,-2.0,2.0,True,True,True,True
+2024-01-31,Ohio State Buckeyes,Illinois Fighting Illini,149.9,13,162,12.099999999999994,12.099999999999994,False,False,True,True
+2024-01-31,Indiana Hoosiers,Iowa Hawkeyes,158.9,12,142,-16.900000000000006,16.900000000000006,False,False,False,True
+2024-01-31,Kent State Golden Flashes,Miami (OH) RedHawks,144.5,13,138,-6.5,6.5,False,True,True,True
+2024-01-31,Villanova Wildcats,Marquette Golden Eagles,143.3,13,165,21.69999999999999,21.69999999999999,False,False,False,False
+2024-01-31,St. Bonaventure Bonnies,VCU Rams,137.3,13,129,-8.300000000000011,8.300000000000011,False,True,True,True
+2024-01-31,TCU Horned Frogs,Texas Tech Red Raiders,148.7,13,163,14.300000000000011,14.300000000000011,False,False,True,True
+2024-01-31,Toledo Rockets,Western Michigan Broncos,155.5,13,151,-4.5,4.5,True,True,True,True
+2024-01-31,Murray St Racers,Illinois St Redbirds,131.7,13,120,-11.699999999999989,11.699999999999989,False,False,True,True
+2024-01-31,Kansas St Wildcats,Oklahoma Sooners,138.2,13,126,-12.199999999999989,12.199999999999989,False,False,True,True
+2024-01-31,Loyola (Chi) Ramblers,Saint Louis Billikens,147.0,13,139,-8.0,8.0,False,True,True,True
+2024-01-31,Lindenwood Lions,SE Missouri St Redhawks,139.5,10,120,-19.5,19.5,False,False,False,True
+2024-01-31,Air Force Falcons,Wyoming Cowboys,137.0,13,155,18.0,18.0,False,False,False,True
+2024-01-31,Clemson Tigers,Louisville Cardinals,149.6,13,134,-15.599999999999994,15.599999999999994,False,False,False,True
+2024-01-31,Colorado St Rams,San Diego St Aztecs,141.2,13,150,8.800000000000011,8.800000000000011,False,True,True,True
+2024-01-31,DePaul Blue Demons,Seton Hall Pirates,139.3,10,111,-28.30000000000001,28.30000000000001,False,False,False,False
+2024-01-31,Kansas Jayhawks,Oklahoma St Cowboys,145.6,13,137,-8.599999999999994,8.599999999999994,False,True,True,True
+2024-01-31,NC State Wolfpack,Miami Hurricanes,153.5,13,142,-11.5,11.5,False,False,True,True
+2024-01-31,Michigan St Spartans,Michigan Wolverines,145.6,13,143,-2.5999999999999943,2.5999999999999943,True,True,True,True
+2024-01-31,Utah State Aggies,San José St Spartans,149.8,13,143,-6.800000000000011,6.800000000000011,False,True,True,True
+2024-01-31,UNLV Rebels,Fresno St Bulldogs,141.3,13,147,5.699999999999989,5.699999999999989,False,True,True,True
+2024-01-31,Gonzaga Bulldogs,Loyola Marymount Lions,152.4,13,150,-2.4000000000000057,2.4000000000000057,True,True,True,True
+2024-02-09,Charleston Cougars,North Carolina A&T Aggies,157.2,13,128,-29.19999999999999,29.19999999999999,False,False,False,False
+2024-02-14,Army Knights,Boston Univ. Terriers,124.5,8,115,-9.5,9.5,False,True,True,True
+2024-02-14,Penn State Nittany Lions,Michigan St Spartans,144.3,13,152,7.699999999999989,7.699999999999989,False,True,True,True
+2024-02-14,UNC Asheville Bulldogs,Presbyterian Blue Hose,149.4,9,140,-9.400000000000006,9.400000000000006,False,True,True,True
+2024-02-14,Youngstown St Penguins,Robert Morris Colonials,149.1,13,164,14.900000000000006,14.900000000000006,False,False,True,True
+2024-02-15,Navy Midshipmen,American Eagles,132.4,9,101,-31.40000000000001,31.40000000000001,False,False,False,False
+2024-02-15,Charleston Southern Buccaneers,Gardner-Webb Bulldogs,143.3,9,162,18.69999999999999,18.69999999999999,False,False,False,True
+2024-02-15,Eastern Kentucky Colonels,Chicago St Cougars,142.0,9,159,17.0,17.0,False,False,False,True
+2024-02-15,Clemson Tigers,Miami Hurricanes,151.1,13,137,-14.099999999999994,14.099999999999994,False,False,True,True
+2024-02-15,Cleveland St Vikings,Milwaukee Panthers,156.2,13,139,-17.19999999999999,17.19999999999999,False,False,False,True
+2024-02-15,Colgate Raiders,Holy Cross Crusaders,141.2,8,140,-1.1999999999999886,1.1999999999999886,True,True,True,True
+2024-02-15,Fort Wayne Mastodons,Oakland Golden Grizzlies,151.9,13,134,-17.900000000000006,17.900000000000006,False,False,False,True
+2024-02-15,Furman Paladins,VMI Keydets,165.3,13,137,-28.30000000000001,28.30000000000001,False,False,False,False
+2024-02-15,Notre Dame Fighting Irish,Georgia Tech Yellow Jackets,132.5,13,113,-19.5,19.5,False,False,False,True
+2024-02-15,Green Bay Phoenix,Northern Kentucky Norse,138.4,13,115,-23.40000000000001,23.40000000000001,False,False,False,False
+2024-02-15,Kennesaw St Owls,Jacksonville Dolphins,153.9,9,127,-26.90000000000001,26.90000000000001,False,False,False,False
+2024-02-15,Lafayette Leopards,Loyola (MD) Greyhounds,125.6,9,143,17.400000000000006,17.400000000000006,False,False,False,True
+2024-02-15,Richmond Spiders,Massachusetts Minutemen,143.8,13,128,-15.800000000000011,15.800000000000011,False,False,False,True
+2024-02-15,Mercer Bears,Wofford Terriers,136.6,13,133,-3.5999999999999943,3.5999999999999943,True,True,True,True
+2024-02-15,Seton Hall Pirates,Xavier Musketeers,145.2,10,158,12.800000000000011,12.800000000000011,False,False,True,True
+2024-02-15,South Florida Bulls,Tulsa Golden Hurricane,148.4,13,119,-29.40000000000001,29.40000000000001,False,False,False,False
+2024-02-15,The Citadel Bulldogs,UNC Greensboro Spartans,136.0,13,137,1.0,1.0,True,True,True,True
+2024-02-15,Queens University Royals,North Florida Ospreys,164.1,9,172,7.900000000000006,7.900000000000006,False,True,True,True
+2024-02-15,Belmont Bruins,Southern Illinois Salukis,145.7,13,150,4.300000000000011,4.300000000000011,True,True,True,True
+2024-02-15,Bradley Braves,UIC Flames,140.7,13,158,17.30000000000001,17.30000000000001,False,False,False,True
+2024-02-15,Fordham Rams,St. Bonaventure Bonnies,142.0,12,152,10.0,10.0,False,True,True,True
+2024-02-15,Murray St Racers,Missouri St Bears,137.4,13,154,16.599999999999994,16.599999999999994,False,False,False,True
+2024-02-15,Valparaiso Beacons,Northern Iowa Panthers,143.2,13,153,9.800000000000011,9.800000000000011,False,True,True,True
+2024-02-15,Auburn Tigers,South Carolina Gamecocks,137.5,13,162,24.5,24.5,False,False,False,False
+2024-02-15,Maryland Terrapins,Iowa Hawkeyes,145.6,13,144,-1.5999999999999943,1.5999999999999943,True,True,True,True
+2024-02-15,Arizona St Sun Devils,Oregon St Beavers,136.9,13,140,3.0999999999999943,3.0999999999999943,True,True,True,True
+2024-02-15,Arkansas Razorbacks,Tennessee Volunteers,151.3,13,155,3.6999999999999886,3.6999999999999886,True,True,True,True
+2024-02-15,DePaul Blue Demons,UConn Huskies,141.3,13,166,24.69999999999999,24.69999999999999,False,False,False,False
+2024-02-15,Samford Bulldogs,Western Carolina Catamounts,156.5,13,150,-6.5,6.5,False,True,True,True
+2024-02-15,Wyoming Cowboys,Utah State Aggies,151.9,13,160,8.099999999999994,8.099999999999994,False,True,True,True
+2024-02-15,Fresno St Bulldogs,UNLV Rebels,137.9,12,132,-5.900000000000006,5.900000000000006,False,True,True,True
+2024-02-29,Binghamton Bearcats,Maine Black Bears,132.8,8,150,17.19999999999999,17.19999999999999,False,False,False,True
+2024-02-29,Ohio State Buckeyes,Nebraska Cornhuskers,144.5,14,147,2.5,2.5,True,True,True,True
+2024-03-01,Albany Great Danes,New Hampshire Wildcats,163.9,8,158,-5.900000000000006,5.900000000000006,False,True,True,True
+2024-03-01,Charleston Cougars,Campbell Fighting Camels,155.0,14,169,14.0,14.0,False,False,True,True
+2024-03-01,Central Connecticut St Blue Devils,LIU Sharks,141.9,8,142,0.0999999999999943,0.0999999999999943,True,True,True,True
+2024-03-01,Delaware Blue Hens,Northeastern Huskies,142.5,14,140,-2.5,2.5,True,True,True,True
+2024-03-01,Drexel Dragons,Stony Brook Seawolves,139.3,13,176,36.69999999999999,36.69999999999999,False,False,False,False
+2024-03-01,East Carolina Pirates,Memphis Tigers,145.9,14,140,-5.900000000000006,5.900000000000006,False,True,True,True
+2024-03-01,Elon Phoenix,William & Mary Tribe,142.6,14,147,4.400000000000006,4.400000000000006,True,True,True,True
+2024-03-01,Gardner-Webb Bulldogs,Longwood Lancers,147.8,9,141,-6.800000000000011,6.800000000000011,False,True,True,True
+2024-03-01,Hampton Pirates,Monmouth Hawks,153.7,11,120,-33.69999999999999,33.69999999999999,False,False,False,False
+2024-03-01,UNC Wilmington Seahawks,Hofstra Pride,143.2,13,127,-16.19999999999999,16.19999999999999,False,False,False,True
+2024-03-01,Jacksonville St Gamecocks,UTEP Miners,133.9,14,137,3.0999999999999943,3.0999999999999943,True,True,True,True
+2024-03-01,Le Moyne Dolphins,Wagner Seahawks,131.5,8,126,-5.5,5.5,False,True,True,True
+2024-03-01,Morehead St Eagles,SE Missouri St Redhawks,140.1,13,133,-7.099999999999994,7.099999999999994,False,True,True,True
+2024-03-01,NJIT Highlanders,UMBC Retrievers,151.4,7,139,-12.400000000000006,12.400000000000006,False,False,True,True
+2024-03-01,North Carolina A&T Aggies,Towson Tigers,129.5,14,142,12.5,12.5,False,False,True,True
+2024-03-01,Stonehill Skyhawks,Sacred Heart Pioneers,144.0,9,130,-14.0,14.0,False,False,True,True
+2024-03-01,North Dakota Fighting Hawks,South Dakota St Jackrabbits,149.1,14,134,-15.099999999999994,15.099999999999994,False,False,False,True
+2024-03-01,South Dakota Coyotes,North Dakota St Bison,148.4,14,156,7.599999999999994,7.599999999999994,False,True,True,True
+2024-03-01,Southern Utah Thunderbirds,Abilene Christian Wildcats,153.9,14,145,-8.900000000000006,8.900000000000006,False,True,True,True
+2024-03-01,Western Illinois Leathernecks,Eastern Illinois Panthers,134.5,14,118,-16.5,16.5,False,False,False,True
+2024-03-01,Southern Indiana Screaming Eagles,Lindenwood Lions,143.4,14,113,-30.40000000000001,30.40000000000001,False,False,False,False
+2024-03-01,Rutgers Scarlet Knights,Michigan Wolverines,137.3,11,134,-3.300000000000012,3.300000000000012,True,True,True,True
+2024-03-01,Utah Utes,Stanford Cardinal,155.5,14,158,2.5,2.5,True,True,True,True
+2024-03-01,Arkansas-Little Rock Trojans,Tennessee St Tigers,146.7,14,114,-32.69999999999999,32.69999999999999,False,False,False,False
+2024-03-01,Eastern Washington Eagles,Montana Grizzlies,155.9,13,168,12.099999999999994,12.099999999999994,False,False,True,True
+2024-03-01,Idaho State Bengals,Northern Arizona Lumberjacks,140.0,14,180,40.0,40.0,False,False,False,False
+2024-03-01,Idaho Vandals,Montana St Bobcats,142.2,14,110,-32.19999999999999,32.19999999999999,False,False,False,False
+2024-03-01,Liberty Flames,New Mexico St Aggies,136.0,14,141,5.0,5.0,True,True,True,True
+2024-03-01,Portland Pilots,Santa Clara Broncos,154.7,14,155,0.3000000000000113,0.3000000000000113,True,True,True,True
+2024-03-01,Utah Tech Trailblazers,Tarleton State Texans,143.4,14,159,15.599999999999994,15.599999999999994,False,False,False,True
+2024-03-01,Long Beach St 49ers,CSU Fullerton Titans,147.9,14,147,-0.9000000000000057,0.9000000000000057,True,True,True,True
+2024-03-01,Loyola Marymount Lions,San Diego Toreros,147.4,14,158,10.599999999999994,10.599999999999994,False,False,True,True
+2024-03-01,Seattle Redhawks,UT-Arlington Mavericks,146.1,13,144,-2.0999999999999943,2.0999999999999943,True,True,True,True
+2024-03-01,Washington Huskies,UCLA Bruins,138.5,13,171,32.5,32.5,False,False,False,False
+2024-03-01,Washington St Cougars,USC Trojans,138.0,13,147,9.0,9.0,False,True,True,True
+2024-03-01,San Francisco Dons,Gonzaga Bulldogs,154.3,13,154,-0.3000000000000113,0.3000000000000113,True,True,True,True
+2024-03-15,Purdue Boilermakers,Michigan St Spartans,143.1,14,129,-14.099999999999994,14.099999999999994,False,False,True,True
+2024-03-15,South Florida Bulls,East Carolina Pirates,136.7,14,140,3.300000000000012,3.300000000000012,True,True,True,True
+2024-03-15,Tennessee Volunteers,Mississippi St Bulldogs,142.1,14,129,-13.099999999999994,13.099999999999994,False,False,True,True
+2024-03-15,Northwestern Wildcats,Wisconsin Badgers,137.1,14,131,-6.099999999999994,6.099999999999994,False,True,True,True
+2024-03-15,Grambling St Tigers,Bethune-Cookman Wildcats,126.8,8,118,-8.799999999999997,8.799999999999997,False,True,True,True
+2024-03-15,Western Kentucky Hilltoppers,Middle Tennessee Blue Raiders,147.1,11,139,-8.099999999999994,8.099999999999994,False,True,True,True
+2024-03-15,Auburn Tigers,South Carolina Gamecocks,142.0,14,141,-1.0,1.0,True,True,True,True
+2024-03-15,UAB Blazers,Wichita St Shockers,146.4,14,132,-14.400000000000006,14.400000000000006,False,False,True,True
+2024-03-15,Bowling Green Falcons,Kent State Golden Flashes,139.7,13,133,-6.699999999999989,6.699999999999989,False,True,True,True
+2024-03-15,Norfolk St Spartans,Howard Bison,136.3,12,154,17.69999999999999,17.69999999999999,False,False,False,True
+2024-03-15,Illinois Fighting Illini,Ohio State Buckeyes,153.0,14,151,-2.0,2.0,True,True,True,True
+2024-03-15,Quinnipiac Bobcats,Saint Peter's Peacocks,136.9,5,122,-14.900000000000006,14.900000000000006,False,False,True,True
+2024-03-15,Houston Cougars,Texas Tech Red Raiders,131.3,13,141,9.699999999999989,9.699999999999989,False,True,True,True
+2024-03-15,Kentucky Wildcats,Texas A&M Aggies,159.6,13,184,24.40000000000001,24.40000000000001,False,False,False,False
+2024-03-15,Florida Atlantic Owls,North Texas Mean Green,137.5,9,148,10.5,10.5,False,False,True,True
+2024-03-15,Akron Zips,Ohio Bobcats,140.8,7,127,-13.800000000000011,13.800000000000011,False,False,True,True
+2024-03-16,Marquette Golden Eagles,Providence Friars,137.2,10,147,9.800000000000011,9.800000000000011,False,True,True,True
+2024-03-16,Arizona Wildcats,Oregon Ducks,155.4,14,126,-29.40000000000001,29.40000000000001,False,False,False,False
+2024-03-16,North Carolina Central Eagles,Delaware St Hornets,137.7,9,129,-8.699999999999989,8.699999999999989,False,True,True,True
+2024-03-16,Fairfield Stags,Marist Red Foxes,133.1,4,126,-7.099999999999994,7.099999999999994,False,True,True,True
+2024-03-16,Nebraska Cornhuskers,Indiana Hoosiers,146.1,6,159,12.900000000000006,12.900000000000006,False,False,True,True
+2024-03-16,Grand Canyon Antelopes,Seattle Redhawks,138.9,10,152,13.099999999999994,13.099999999999994,False,False,True,True
+2024-03-16,Alabama Crimson Tide,Florida Gators,170.8,10,190,19.19999999999999,19.19999999999999,False,False,False,True
+2024-03-16,Utah State Aggies,San Diego St Aztecs,136.9,14,156,19.099999999999994,19.099999999999994,False,False,False,True
+2024-03-16,Virginia Cavaliers,NC State Wolfpack,121.2,10,138,16.799999999999997,16.799999999999997,False,False,False,True
+2024-03-16,Iowa State Cyclones,Baylor Bears,133.6,10,138,4.400000000000006,4.400000000000006,True,True,True,True
+2024-03-16,Texas Southern Tigers,Alabama A&M Bulldogs,135.5,13,137,1.5,1.5,True,True,True,True
+2024-03-16,Washington St Cougars,Colorado Buffaloes,137.8,10,110,-27.80000000000001,27.80000000000001,False,False,False,False
+2024-03-16,Tarleton State Texans,UT-Arlington Mavericks,144.8,10,171,26.19999999999999,26.19999999999999,False,False,False,False
+2024-03-20,Montana St Bobcats,Grambling St Tigers,134.2,12,169,34.80000000000001,34.80000000000001,False,False,False,False
+2024-03-20,Indiana St Sycamores,SMU Mustangs,153.0,1,193,40.0,40.0,False,False,False,False
+2024-03-21,Wake Forest Demon Deacons,Appalachian St Mountaineers,139.0,1,163,24.0,24.0,False,False,False,False
+2024-03-21,Bradley Braves,Loyola (Chi) Ramblers,133.0,1,136,3.0,3.0,True,True,True,True
+2024-03-21,Cincinnati Bearcats,San Francisco Dons,137.0,1,145,8.0,8.0,False,True,True,True
+2024-03-21,Villanova Wildcats,VCU Rams,118.5,1,131,12.5,12.5,False,False,True,True
+2024-03-21,Boise State Broncos,Colorado Buffaloes,138.6,12,113,-25.599999999999994,25.599999999999994,False,False,False,False
+2024-03-26,Tarleton State Texans,Fort Wayne Mastodons,151.6,8,145,-6.599999999999994,6.599999999999994,False,True,True,True
+2024-03-30,UConn Huskies,Illinois Fighting Illini,155.2,14,129,-26.19999999999999,26.19999999999999,False,False,False,False
+2024-03-31,Alabama Crimson Tide,Clemson Tigers,164.5,14,171,6.5,6.5,False,True,True,True

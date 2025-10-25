@@ -1,7 +1,53 @@
 import { useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 
 export function Pricing() {
+  const { username, isAuthenticated } = useAuth();
+  const [loading, setLoading] = useState<string | null>(null);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
+
+  // Stripe Price IDs (from backend .env)
+  const STRIPE_PRICE_IDS = {
+    pro: 'price_1QR5WiGp5HWb2tPk7YVf5xHa',
+    elite: 'price_1QR5WrGp5HWb2tPkZtZGc4rL',
+  };
+
+  const handleSubscribe = async (tier: 'pro' | 'elite') => {
+    if (!isAuthenticated || !username) {
+      alert('Please log in to subscribe');
+      return;
+    }
+
+    setLoading(tier);
+
+    try {
+      const response = await fetch('http://localhost:8000/api/stripe/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          price_id: STRIPE_PRICE_IDS[tier],
+          user_id: username,
+          user_email: `${username}@example.com`, // Replace with actual email from user profile
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        // Redirect to Stripe checkout
+        window.location.href = data.url;
+      } else {
+        alert(data.detail || 'Failed to create checkout session');
+        setLoading(null);
+      }
+    } catch (error) {
+      console.error('Checkout error:', error);
+      alert('Network error. Please try again.');
+      setLoading(null);
+    }
+  };
 
   const plans = [
     {
@@ -222,7 +268,7 @@ export function Pricing() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-black via-slate-900 to-black py-12 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-16">
@@ -359,7 +405,17 @@ export function Pricing() {
               </div>
 
               <button
-                className={`w-full py-3 rounded-lg font-bold text-xs mb-5 transition-all ${
+                onClick={() => {
+                  if (plan.name === 'Pro') {
+                    handleSubscribe('pro');
+                  } else if (plan.name === 'Elite') {
+                    handleSubscribe('elite');
+                  } else {
+                    alert(`${plan.name} tier coming soon!`);
+                  }
+                }}
+                disabled={loading === 'pro' || loading === 'elite'}
+                className={`w-full py-3 rounded-lg font-bold text-xs mb-5 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
                   plan.exclusive
                     ? 'bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white shadow-lg shadow-red-600/30'
                     : plan.popular
@@ -373,7 +429,7 @@ export function Pricing() {
                     : 'bg-slate-700 hover:bg-slate-600 text-slate-200'
                 }`}
               >
-                {plan.cta}
+                {loading === plan.name.toLowerCase() ? 'Loading...' : plan.cta}
               </button>
 
               <div className="space-y-2 flex-grow">
@@ -417,7 +473,7 @@ export function Pricing() {
           <h2 className="text-2xl font-bold text-slate-100 mb-6 text-center">
             Premium Add-Ons
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
             <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
               <h3 className="text-lg font-bold text-slate-100 mb-2">API Access</h3>
               <div className="text-3xl font-bold text-slate-100 mb-3">$29<span className="text-sm text-slate-400">/month</span></div>
@@ -427,17 +483,6 @@ export function Pricing() {
                 <li>• Real-time odds data</li>
                 <li>• Historical data access</li>
                 <li>• Webhook support</li>
-              </ul>
-            </div>
-            <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
-              <h3 className="text-lg font-bold text-slate-100 mb-2">White Label</h3>
-              <div className="text-3xl font-bold text-slate-100 mb-3">$199<span className="text-sm text-slate-400">/month</span></div>
-              <p className="text-sm text-slate-300 mb-4">Remove branding and customize the platform for your business.</p>
-              <ul className="space-y-2 text-xs text-slate-400">
-                <li>• Custom domain</li>
-                <li>• Your logo & branding</li>
-                <li>• Custom color scheme</li>
-                <li>• Priority support</li>
               </ul>
             </div>
             <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">

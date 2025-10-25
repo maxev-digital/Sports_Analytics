@@ -8,7 +8,8 @@ type Sport = 'NBA' | 'NHL' | 'NCAAF' | 'NFL' | 'MLB' | 'ALL';
 
 export function Dashboard() {
   // Use WebSocket for real-time updates instead of polling
-  const { games: wsGames, connected: wsConnected, lastUpdate: wsLastUpdate, error: wsError } = useWebSocket();
+  // Pass 'default' as user_id to enable per-user bookmaker filtering
+  const { games: wsGames, connected: wsConnected, lastUpdate: wsLastUpdate, error: wsError } = useWebSocket('default');
 
   const [games, setGames] = useState<LiveGame[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,8 +24,8 @@ export function Dashboard() {
   useEffect(() => {
     // Create audio element with your custom audio file
     // Place your audio file in the public folder and reference it like this:
-    // For example: public/sounds/alert.mp3
-    const audio = new Audio('/sounds/alert.mp3');
+    // For example: public/alert-bell.mp3
+    const audio = new Audio('/alert-bell.mp3');
     audioRef.current = audio;
 
     return () => {

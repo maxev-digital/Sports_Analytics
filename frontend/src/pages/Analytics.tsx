@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
-import { sportEmojis } from '../utils/sportDetection';
+import { sportEmojis, uiEmojis } from '../utils/sportDetection';
+import { useAuth } from '../contexts/AuthContext';
+import { getUserBets, getUserBettingStats, getPendingBets, addStakeToBet, deleteBet } from '../utils/betTracking';
+import { PersonalBetAnalytics } from '../components/PersonalBetAnalytics';
 
 interface PerformanceData {
   arbitrage: {
@@ -51,9 +54,22 @@ interface LiveArbitrage {
 }
 
 export function Analytics() {
+  const { username } = useAuth();
+
+  // Tab state: 'system' or 'personal'
+  const [activeTab, setActiveTab] = useState<'system' | 'personal'>('system');
+
+  // System Analytics State
   const [performanceData, setPerformanceData] = useState<PerformanceData | null>(null);
   const [recentAlerts, setRecentAlerts] = useState<LiveArbitrage[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Personal Bet Analytics State
+  const [personalStats, setPersonalStats] = useState<any>(null);
+  const [pendingBets, setPendingBets] = useState<any[]>([]);
+  const [activeBets, setActiveBets] = useState<any[]>([]);
+  const [settledBets, setSettledBets] = useState<any[]>([]);
+  const [personalLoading, setPersonalLoading] = useState(true);
 
   // Fetch performance data
   useEffect(() => {
@@ -87,6 +103,37 @@ export function Analytics() {
     return () => clearInterval(interval);
   }, []);
 
+  // Fetch personal bet data
+  useEffect(() => {
+    if (!username) return;
+
+    const fetchPersonalData = async () => {
+      try {
+        const [stats, pending, active, settled] = await Promise.all([
+          getUserBettingStats(username),
+          getPendingBets(username),
+          getUserBets(username, 'active'),
+          getUserBets(username, undefined) // Get all to filter settled
+        ]);
+
+        setPersonalStats(stats);
+        setPendingBets(pending);
+        setActiveBets(active);
+        // Filter settled bets (won, lost, push)
+        setSettledBets(settled.filter((b: any) => ['won', 'lost', 'push'].includes(b.status)));
+        setPersonalLoading(false);
+      } catch (error) {
+        console.error('Error fetching personal bet data:', error);
+        setPersonalLoading(false);
+      }
+    };
+
+    fetchPersonalData();
+    const interval = setInterval(fetchPersonalData, 30000); // Refresh every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [username]);
+
   if (loading || !performanceData) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-12 px-4">
@@ -114,77 +161,11 @@ export function Analytics() {
 
   const avgROI = totalAlerts > 0 ? (totalProfit / (totalAlerts * 100)) * 100 : 0; // Assuming $100 avg stake
 
-  // Sport breakdown (simulated based on alert types)
-  const sportStats = [
-    {
-      sport: 'NBA',
-      alerts: Math.floor(totalAlerts * 0.25),
-      profit: totalProfit * 0.28,
-      winRate: 86.2,
-      logo: 'https://cdn.ssref.net/req/202410311/tlogo/bbr/NBA.png',
-      hasLogo: true
-    },
-    {
-      sport: 'NFL',
-      alerts: Math.floor(totalAlerts * 0.22),
-      profit: totalProfit * 0.26,
-      winRate: 84.8,
-      logo: 'https://cdn.ssref.net/req/202410311/tlogo/pfr/NFL.png',
-      hasLogo: true
-    },
-    {
-      sport: 'NHL',
-      alerts: Math.floor(totalAlerts * 0.18),
-      profit: totalProfit * 0.18,
-      winRate: 82.1,
-      logo: 'https://cdn.ssref.net/req/202410311/tlogo/hr/NHL.png',
-      hasLogo: true
-    },
-    {
-      sport: 'MLB',
-      alerts: Math.floor(totalAlerts * 0.15),
-      profit: totalProfit * 0.12,
-      winRate: 79.5,
-      logo: 'https://cdn.ssref.net/req/202410311/tlogo/br/MLB.png',
-      hasLogo: true
-    },
-    {
-      sport: 'NCAAF',
-      alerts: Math.floor(totalAlerts * 0.12),
-      profit: totalProfit * 0.10,
-      winRate: 78.3,
-      emoji: '🏈',
-      hasLogo: false
-    },
-    {
-      sport: 'NCAAB',
-      alerts: Math.floor(totalAlerts * 0.08),
-      profit: totalProfit * 0.06,
-      winRate: 76.8,
-      emoji: '🏀',
-      hasLogo: false
-    }
-  ];
 
-  // Bookmaker analysis (simulated top performers)
-  const bookmakerStats = [
-    { book: 'DraftKings', opportunities: 342, avgProfit: 2.8, winRate: 88.2 },
-    { book: 'FanDuel', opportunities: 318, avgProfit: 2.5, winRate: 85.9 },
-    { book: 'BetMGM', opportunities: 276, avgProfit: 2.3, winRate: 84.1 },
-    { book: 'Caesars', opportunities: 251, avgProfit: 2.1, winRate: 82.7 }
-  ];
 
-  // Time-based patterns (simulated hourly performance)
-  const hourlyPerformance = [
-    { time: '9AM-12PM', alerts: 187, profit: 428.50, winRate: 83.4 },
-    { time: '12PM-3PM', alerts: 245, profit: 612.30, winRate: 86.1 },
-    { time: '3PM-6PM', alerts: 312, profit: 758.90, winRate: 87.8 },
-    { time: '6PM-9PM', alerts: 401, profit: 942.20, winRate: 88.5 },
-    { time: '9PM-12AM', alerts: 289, profit: 651.40, winRate: 85.2 }
-  ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-black via-slate-900 to-black py-12 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -194,9 +175,39 @@ export function Analytics() {
           </p>
         </div>
 
-        {/* MODULE 1: Overall Performance Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-gradient-to-br from-green-900 via-green-700 to-green-900 border-4 border-green-700 rounded-lg p-6 hover:shadow-lg hover:shadow-green-600/20 hover:border-green-600 transition-all">
+        {/* Tab Toggle */}
+        <div className="flex gap-4 mb-8">
+          <button
+            onClick={() => setActiveTab('system')}
+            className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-lg transition-all ${
+              activeTab === 'system'
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+                : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-slate-100'
+            }`}
+          >
+            <img src={uiEmojis.chart} alt="" className="w-6 h-6" style={{ imageRendering: 'crisp-edges' }} />
+            System Alerts
+          </button>
+          <button
+            onClick={() => setActiveTab('personal')}
+            className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-lg transition-all ${
+              activeTab === 'personal'
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+                : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-slate-100'
+            }`}
+          >
+            <img src={uiEmojis.dollar} alt="" className="w-6 h-6" style={{ imageRendering: 'crisp-edges' }} />
+            My Bets
+          </button>
+        </div>
+
+        {/* Conditional Rendering based on Active Tab */}
+        {activeTab === 'system' ? (
+          <>
+            {/* SYSTEM ANALYTICS VIEW */}
+            {/* MODULE 1: Overall Performance Overview */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="bg-gradient-to-br from-green-900 via-slate-900 to-black border-4 border-green-700 rounded-lg p-6 hover:shadow-lg hover:shadow-green-600/20 hover:border-green-600 transition-all">
             <div className="flex items-center justify-between mb-3">
               <div className="text-sm text-white font-bold tracking-wide">TOTAL PROFIT</div>
             </div>
@@ -206,7 +217,7 @@ export function Analytics() {
             <div className="text-xs text-green-300/60">{totalAlerts} total alerts tracked</div>
           </div>
 
-          <div className="bg-gradient-to-br from-blue-900 via-blue-700 to-blue-900 border-4 border-blue-700 rounded-lg p-6 hover:shadow-lg hover:shadow-blue-600/20 hover:border-blue-600 transition-all">
+          <div className="bg-gradient-to-br from-blue-900 to-slate-900 border-4 border-blue-500 rounded-lg p-6 hover:shadow-lg hover:shadow-blue-600/20 hover:border-blue-600 transition-all">
             <div className="flex items-center justify-between mb-3">
               <div className="text-sm text-white font-bold tracking-wide">WIN RATE</div>
             </div>
@@ -240,7 +251,7 @@ export function Analytics() {
         {/* MODULE 2: ROI and Profit Tracking + MODULE 3: Win Rate by Alert Type */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* Module 2: ROI Breakdown */}
-          <div className="bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 border-4 border-slate-700 rounded-lg p-6">
+          <div className="bg-gradient-to-br from-green-900 via-slate-900 to-black border-4 border-green-700 rounded-lg p-6">
             <h3 className="text-xl font-bold text-white mb-5 tracking-wide">
               PROFIT BY ALERT TYPE
             </h3>
@@ -299,7 +310,7 @@ export function Analytics() {
           </div>
 
           {/* Module 3: Win Rate Breakdown */}
-          <div className="bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 border-4 border-slate-700 rounded-lg p-6">
+          <div className="bg-gradient-to-br from-blue-900 to-slate-900 border-4 border-blue-500 rounded-lg p-6">
             <h3 className="text-xl font-bold text-white mb-5 tracking-wide">
               WIN RATE ANALYSIS
             </h3>
@@ -374,7 +385,7 @@ export function Analytics() {
         </div>
 
         {/* MODULE 4: Alert Distribution Chart */}
-        <div className="bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 border-4 border-slate-700 rounded-lg p-6 mb-8">
+        <div className="bg-gradient-to-br from-red-900 via-slate-900 to-black border-4 border-red-700 rounded-lg p-6 mb-8">
           <h3 className="text-xl font-bold text-white mb-5 tracking-wide">
             ALERT VOLUME DISTRIBUTION
           </h3>
@@ -474,224 +485,79 @@ export function Analytics() {
           </div>
         </div>
 
-        {/* MODULE 5: Profit Trends + MODULE 6: Recent High-Value Alerts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* Module 5: Profit Trends */}
-          <div className="bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 border-4 border-slate-700 rounded-lg p-6">
-            <h3 className="text-xl font-bold text-white mb-5 tracking-wide">
-              CUMULATIVE PROFIT TREND
-            </h3>
-            <div className="space-y-3">
-              {[
-                { period: 'Last 7 Days', profit: totalProfit * 0.15, color: 'bg-green-500' },
-                { period: 'Last 14 Days', profit: totalProfit * 0.28, color: 'bg-blue-500' },
-                { period: 'Last 30 Days', profit: totalProfit * 0.52, color: 'bg-purple-500' },
-                { period: 'All Time', profit: totalProfit, color: 'bg-amber-500' }
-              ].map((item) => (
-                <div key={item.period} className="bg-gradient-to-br from-slate-900 via-slate-700 to-slate-900 rounded-lg p-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-slate-300 text-sm">{item.period}</span>
-                    <span className="text-white font-bold">${item.profit.toFixed(2)}</span>
-                  </div>
-                  <div className="bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 rounded-lg h-2">
-                    <div
-                      className={`${item.color} h-2 rounded`}
-                      style={{ width: `${(item.profit / totalProfit) * 100}%` }}
-                    ></div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Module 6: Recent High-Value Alerts */}
-          <div className="bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 border-4 border-slate-700 rounded-lg p-6">
-            <h3 className="text-xl font-bold text-white mb-5 tracking-wide">
-              TOP ACTIVE OPPORTUNITIES
-            </h3>
-            <div className="space-y-3">
-              {recentAlerts.length > 0 ? (
-                recentAlerts.map((alert, idx) => (
-                  <div key={idx} className="bg-gradient-to-br from-green-900 via-green-700 to-green-900 border-4 border-green-700 rounded-lg p-3">
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <div className="text-sm font-semibold text-white mb-1">
-                          {alert.away_team} @ {alert.home_team}
-                        </div>
-                        <div className="text-xs text-slate-400">
-                          {alert.sport.toUpperCase()} • {alert.market_type}
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-green-400 font-bold text-lg">
-                          +{alert.profit_percent.toFixed(2)}%
-                        </div>
-                        <div className="text-xs text-slate-400">
-                          ${alert.guaranteed_profit.toFixed(2)}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex gap-2 text-xs">
-                      <span className="bg-slate-800/70 px-2 py-1 rounded-lg text-slate-300">
-                        {alert.book_a}: {alert.odds_a > 0 ? '+' : ''}{alert.odds_a}
-                      </span>
-                      <span className="bg-slate-800/70 px-2 py-1 rounded-lg text-slate-300">
-                        {alert.book_b}: {alert.odds_b > 0 ? '+' : ''}{alert.odds_b}
-                      </span>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center text-slate-400 py-8">
-                  No active arbitrage opportunities at the moment
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* MODULE 7: Sport-by-Sport Breakdown */}
-        <div className="bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 border-4 border-slate-700 rounded-lg p-6 mb-8">
+        {/* MODULE 6: Recent High-Value Alerts */}
+        <div className="bg-gradient-to-br from-red-900 via-slate-900 to-black border-4 border-red-700 rounded-lg p-6 mb-8">
           <h3 className="text-xl font-bold text-white mb-5 tracking-wide">
-            PERFORMANCE BY SPORT
+            TOP ACTIVE OPPORTUNITIES
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {sportStats.map((sport) => (
-              <div key={sport.sport} className="bg-gradient-to-br from-slate-900 via-slate-700 to-slate-900 rounded-lg p-4 border-4 border-slate-700 hover:border-blue-600 transition-all">
-                <div className="text-center mb-3">
-                  <div className="flex justify-center mb-2">
-                    {sport.hasLogo ? (
-                      <img
-                        src={sport.logo}
-                        alt={`${sport.sport} logo`}
-                        className="w-8 h-8 object-contain"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                        }}
-                      />
-                    ) : (
-                      <span className="text-slate-500 font-bold">{sport.sport}</span>
-                    )}
-                  </div>
-                  <div className="text-lg font-bold text-white">{sport.sport}</div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-400">Alerts:</span>
-                    <span className="text-white font-semibold">{sport.alerts}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-400">Profit:</span>
-                    <span className="text-green-400 font-semibold">${sport.profit.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-400">Win Rate:</span>
-                    <span className="text-blue-400 font-semibold">{sport.winRate}%</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* MODULE 8: Bookmaker Success Analysis */}
-        <div className="bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 border-4 border-slate-700 rounded-lg p-6 mb-8">
-          <h3 className="text-xl font-bold text-white mb-5 tracking-wide">
-            TOP PERFORMING BOOKMAKERS
-          </h3>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-slate-700">
-                  <th className="text-left py-3 px-4 text-slate-300 font-semibold">Bookmaker</th>
-                  <th className="text-right py-3 px-4 text-slate-300 font-semibold">Opportunities</th>
-                  <th className="text-right py-3 px-4 text-slate-300 font-semibold">Avg Profit</th>
-                  <th className="text-right py-3 px-4 text-slate-300 font-semibold">Win Rate</th>
-                  <th className="text-right py-3 px-4 text-slate-300 font-semibold">Rating</th>
-                </tr>
-              </thead>
-              <tbody>
-                {bookmakerStats.map((book, idx) => (
-                  <tr key={book.book} className="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors">
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-2">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                          idx === 0 ? 'bg-amber-600 text-white' :
-                          idx === 1 ? 'bg-slate-400 text-white' :
-                          idx === 2 ? 'bg-amber-700 text-white' : 'bg-slate-700 text-slate-300'
-                        }`}>
-                          {idx + 1}
-                        </div>
-                        <span className="text-white font-semibold">{book.book}</span>
+          <div className="space-y-3">
+            {recentAlerts.length > 0 ? (
+              recentAlerts.map((alert, idx) => (
+                <div key={idx} className="bg-gradient-to-br from-green-900 via-green-700 to-green-900 border-4 border-green-700 rounded-lg p-3">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <div className="text-sm font-semibold text-white mb-1">
+                        {alert.away_team} @ {alert.home_team}
                       </div>
-                    </td>
-                    <td className="text-right py-3 px-4 text-white font-semibold">{book.opportunities}</td>
-                    <td className="text-right py-3 px-4 text-green-400 font-semibold">${book.avgProfit.toFixed(2)}</td>
-                    <td className="text-right py-3 px-4">
-                      <span className="text-blue-400 font-semibold">{book.winRate}%</span>
-                    </td>
-                    <td className="text-right py-3 px-4">
-                      <div className="flex justify-end gap-0.5">
-                        {[...Array(5)].map((_, i) => (
-                          <span key={i} className={i < Math.floor(book.winRate / 20) ? 'text-amber-400' : 'text-slate-600'}>
-                            ★
-                          </span>
-                        ))}
+                      <div className="text-xs text-slate-400">
+                        {alert.sport.toUpperCase()} • {alert.market_type}
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* MODULE 9: Time-based Performance Patterns */}
-        <div className="bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 border-4 border-slate-700 rounded-lg p-6">
-          <h3 className="text-xl font-bold text-white mb-5 tracking-wide">
-            PERFORMANCE BY TIME OF DAY
-          </h3>
-          <div className="space-y-4">
-            {hourlyPerformance.map((period) => (
-              <div key={period.time} className="bg-gradient-to-br from-slate-900 via-slate-700 to-slate-900 rounded-lg p-4">
-                <div className="flex justify-between items-center mb-3">
-                  <div className="text-white font-semibold">{period.time}</div>
-                  <div className="flex gap-6">
-                    <div className="text-right">
-                      <div className="text-xs text-slate-400">Alerts</div>
-                      <div className="text-white font-bold">{period.alerts}</div>
                     </div>
                     <div className="text-right">
-                      <div className="text-xs text-slate-400">Profit</div>
-                      <div className="text-green-400 font-bold">${period.profit.toFixed(2)}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-xs text-slate-400">Win Rate</div>
-                      <div className="text-blue-400 font-bold">{period.winRate}%</div>
+                      <div className="text-green-400 font-bold text-lg">
+                        +{alert.profit_percent.toFixed(2)}%
+                      </div>
+                      <div className="text-xs text-slate-400">
+                        ${alert.guaranteed_profit.toFixed(2)}
+                      </div>
                     </div>
                   </div>
+                  <div className="flex gap-2 text-xs">
+                    <span className="bg-slate-800/70 px-2 py-1 rounded-lg text-slate-300">
+                      {alert.book_a}: {alert.odds_a > 0 ? '+' : ''}{alert.odds_a}
+                    </span>
+                    <span className="bg-slate-800/70 px-2 py-1 rounded-lg text-slate-300">
+                      {alert.book_b}: {alert.odds_b > 0 ? '+' : ''}{alert.odds_b}
+                    </span>
+                  </div>
                 </div>
-                <div className="bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 rounded-lg h-3">
-                  <div
-                    className="bg-gradient-to-r from-blue-600 to-blue-500 h-3 rounded-lg transition-all"
-                    style={{ width: `${(period.alerts / 401) * 100}%` }}
-                  ></div>
-                </div>
+              ))
+            ) : (
+              <div className="text-center text-slate-400 py-8">
+                No active arbitrage opportunities at the moment
               </div>
-            ))}
-          </div>
-          <div className="mt-5 bg-blue-900 border-4 border-blue-700 rounded-lg p-4">
-            <div className="flex items-start gap-3">
-              <div>
-                <div className="text-blue-300 font-semibold mb-1">Peak Performance Window</div>
-                <div className="text-sm text-slate-300">
-                  Most profitable alerts occur between 6PM-9PM EST (prime game time).
-                  Win rate peaks at 88.5% during this window with 401 total opportunities.
-                </div>
-              </div>
-            </div>
+            )}
           </div>
         </div>
+
+
+
+        </>
+      ) : (
+          /* PERSONAL BET ANALYTICS VIEW */
+          <PersonalBetAnalytics
+            stats={personalStats}
+            pendingBets={pendingBets}
+            activeBets={activeBets}
+            settledBets={settledBets}
+            onRefresh={() => {
+              // Re-fetch personal data when user adds stake or deletes bet
+              if (username) {
+                Promise.all([
+                  getUserBettingStats(username),
+                  getPendingBets(username),
+                  getUserBets(username, 'active'),
+                  getUserBets(username, undefined)
+                ]).then(([stats, pending, active, settled]) => {
+                  setPersonalStats(stats);
+                  setPendingBets(pending);
+                  setActiveBets(active);
+                  setSettledBets(settled.filter((b: any) => ['won', 'lost', 'push'].includes(b.status)));
+                });
+              }
+            }}
+          />
+        )}
       </div>
     </div>
   );

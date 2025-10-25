@@ -1,0 +1,1185 @@
+# ☁️ Cloud Deployment Guide - Production-Ready Setup
+
+## 📋 Table of Contents
+1. [AWS Deployment (Recommended)](#aws-deployment)
+2. [DigitalOcean Deployment (Budget Option)](#digitalocean-deployment)
+3. [Database Setup (RDS vs Self-Hosted)](#database-setup)
+4. [Domain & SSL Configuration](#domain-ssl)
+5. [CI/CD Pipeline](#cicd-pipeline)
+6. [Monitoring & Alerts](#monitoring)
+7. [Scaling Strategy](#scaling)
+8. [Cost Breakdown](#cost-breakdown)
+
+---
+
+## 🚀 AWS Deployment (Recommended for Scale)
+
+### Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      Route 53 (DNS)                         │
+│                   yourdomain.com                            │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│              CloudFront (CDN) + ACM (SSL)                   │
+│              https://api.yourdomain.com                     │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│          Application Load Balancer (ALB)                    │
+│          Distributes traffic across EC2 instances           │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌──────────────────────┬──────────────────────────────────────┐
+│   EC2 Auto Scaling   │   EC2 Auto Scaling                   │
+│   Group (Backend)    │   Group (WebSocket)                  │
+│   t3.medium × 2-4    │   t3.small × 2                       │
+└──────────────────────┴──────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│         RDS PostgreSQL (Multi-AZ for HA)                    │
+│         db.t3.medium with automated backups                 │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│              ElastiCache Redis (Session Store)              │
+│              cache.t3.micro × 1                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Step 1: Create AWS Account & Initial Setup
+
+```bash
+# Install AWS CLI
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install
+
+# Configure AWS CLI
+aws configure
+# AWS Access Key ID: [Your Key]
+# AWS Secret Access Key: [Your Secret]
+# Default region: us-east-1
+# Default output format: json
+
+# Install Terraform (Infrastructure as Code)
+wget https://releases.hashicorp.com/terraform/1.6.0/terraform_1.6.0_linux_amd64.zip
+unzip terraform_1.6.0_linux_amd64.zip
+sudo mv terraform /usr/local/bin/
+```
+
+---
+
+### Step 2: Terraform Infrastructure Setup
+
+#### File: `infrastructure/aws/main.tf`
+
+```hcl
+# Terraform configuration for AWS deployment
+
+terraform {
+  required_version = ">= 1.0"
+  
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+  
+  backend "s3" {
+    bucket = "betting-automation-terraform-state"
+    key    = "prod/terraform.tfstate"
+    region = "us-east-1"
+  }
+}
+
+provider "aws" {
+  region = var.aws_region
+}
+
+# Variables
+variable "aws_region" {
+  default = "us-east-1"
+}
+
+variable "environment" {
+  default = "production"
+}
+
+variable "app_name" {
+  default = "betting-automation"
+}
+
+# VPC Configuration
+resource "aws_vpc" "main" {
+  cidr_block           = "10.0.0.0/16"
+  enable_dns_hostnames = true
+  enable_dns_support   = true
+  
+  tags = {
+    Name        = "${var.app_name}-vpc"
+    Environment = var.environment
+  }
+}
+
+# Public Subnets (for Load Balancer)
+resource "aws_subnet" "public_1" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = "10.0.1.0/24"
+  availability_zone       = "${var.aws_region}a"
+  map_public_ip_on_launch = true
+  
+  tags = {
+    Name = "${var.app_name}-public-1"
+  }
+}
+
+resource "aws_subnet" "public_2" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = "10.0.2.0/24"
+  availability_zone       = "${var.aws_region}b"
+  map_public_ip_on_launch = true
+  
+  tags = {
+    Name = "${var.app_name}-public-2"
+  }
+}
+
+# Private Subnets (for EC2 instances)
+resource "aws_subnet" "private_1" {
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = "10.0.10.0/24"
+  availability_zone = "${var.aws_region}a"
+  
+  tags = {
+    Name = "${var.app_name}-private-1"
+  }
+}
+
+resource "aws_subnet" "private_2" {
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = "10.0.11.0/24"
+  availability_zone = "${var.aws_region}b"
+  
+  tags = {
+    Name = "${var.app_name}-private-2"
+  }
+}
+
+# Internet Gateway
+resource "aws_internet_gateway" "main" {
+  vpc_id = aws_vpc.main.id
+  
+  tags = {
+    Name = "${var.app_name}-igw"
+  }
+}
+
+# NAT Gateway (for private subnets to access internet)
+resource "aws_eip" "nat" {
+  domain = "vpc"
+}
+
+resource "aws_nat_gateway" "main" {
+  allocation_id = aws_eip.nat.id
+  subnet_id     = aws_subnet.public_1.id
+  
+  tags = {
+    Name = "${var.app_name}-nat"
+  }
+}
+
+# Route Tables
+resource "aws_route_table" "public" {
+  vpc_id = aws_vpc.main.id
+  
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.main.id
+  }
+  
+  tags = {
+    Name = "${var.app_name}-public-rt"
+  }
+}
+
+resource "aws_route_table" "private" {
+  vpc_id = aws_vpc.main.id
+  
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.main.id
+  }
+  
+  tags = {
+    Name = "${var.app_name}-private-rt"
+  }
+}
+
+# Route Table Associations
+resource "aws_route_table_association" "public_1" {
+  subnet_id      = aws_subnet.public_1.id
+  route_table_id = aws_route_table.public.id
+}
+
+resource "aws_route_table_association" "public_2" {
+  subnet_id      = aws_subnet.public_2.id
+  route_table_id = aws_route_table.public.id
+}
+
+resource "aws_route_table_association" "private_1" {
+  subnet_id      = aws_subnet.private_1.id
+  route_table_id = aws_route_table.private.id
+}
+
+resource "aws_route_table_association" "private_2" {
+  subnet_id      = aws_subnet.private_2.id
+  route_table_id = aws_route_table.private.id
+}
+
+# Security Groups
+resource "aws_security_group" "alb" {
+  name        = "${var.app_name}-alb-sg"
+  description = "Security group for Application Load Balancer"
+  vpc_id      = aws_vpc.main.id
+  
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  
+  tags = {
+    Name = "${var.app_name}-alb-sg"
+  }
+}
+
+resource "aws_security_group" "ec2" {
+  name        = "${var.app_name}-ec2-sg"
+  description = "Security group for EC2 instances"
+  vpc_id      = aws_vpc.main.id
+  
+  ingress {
+    from_port       = 8000
+    to_port         = 8000
+    protocol        = "tcp"
+    security_groups = [aws_security_group.alb.id]
+  }
+  
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]  # Restrict this in production
+  }
+  
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  
+  tags = {
+    Name = "${var.app_name}-ec2-sg"
+  }
+}
+
+resource "aws_security_group" "rds" {
+  name        = "${var.app_name}-rds-sg"
+  description = "Security group for RDS PostgreSQL"
+  vpc_id      = aws_vpc.main.id
+  
+  ingress {
+    from_port       = 5432
+    to_port         = 5432
+    protocol        = "tcp"
+    security_groups = [aws_security_group.ec2.id]
+  }
+  
+  tags = {
+    Name = "${var.app_name}-rds-sg"
+  }
+}
+
+# RDS PostgreSQL
+resource "aws_db_subnet_group" "main" {
+  name       = "${var.app_name}-db-subnet-group"
+  subnet_ids = [aws_subnet.private_1.id, aws_subnet.private_2.id]
+  
+  tags = {
+    Name = "${var.app_name}-db-subnet-group"
+  }
+}
+
+resource "aws_db_instance" "postgres" {
+  identifier     = "${var.app_name}-postgres"
+  engine         = "postgres"
+  engine_version = "15.4"
+  instance_class = "db.t3.medium"
+  
+  allocated_storage     = 100
+  max_allocated_storage = 500
+  storage_type          = "gp3"
+  storage_encrypted     = true
+  
+  db_name  = "betting_automation"
+  username = "admin"
+  password = var.db_password  # Set via terraform.tfvars
+  
+  multi_az               = true
+  db_subnet_group_name   = aws_db_subnet_group.main.name
+  vpc_security_group_ids = [aws_security_group.rds.id]
+  
+  backup_retention_period = 7
+  backup_window          = "03:00-04:00"
+  maintenance_window     = "Mon:04:00-Mon:05:00"
+  
+  skip_final_snapshot = false
+  final_snapshot_identifier = "${var.app_name}-final-snapshot"
+  
+  enabled_cloudwatch_logs_exports = ["postgresql", "upgrade"]
+  
+  tags = {
+    Name        = "${var.app_name}-postgres"
+    Environment = var.environment
+  }
+}
+
+# Application Load Balancer
+resource "aws_lb" "main" {
+  name               = "${var.app_name}-alb"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.alb.id]
+  subnets            = [aws_subnet.public_1.id, aws_subnet.public_2.id]
+  
+  enable_deletion_protection = true
+  
+  tags = {
+    Name        = "${var.app_name}-alb"
+    Environment = var.environment
+  }
+}
+
+# Target Group
+resource "aws_lb_target_group" "backend" {
+  name     = "${var.app_name}-backend-tg"
+  port     = 8000
+  protocol = "HTTP"
+  vpc_id   = aws_vpc.main.id
+  
+  health_check {
+    path                = "/health"
+    healthy_threshold   = 2
+    unhealthy_threshold = 10
+    timeout             = 5
+    interval            = 30
+    matcher             = "200"
+  }
+  
+  stickiness {
+    type            = "lb_cookie"
+    cookie_duration = 86400
+    enabled         = true
+  }
+  
+  tags = {
+    Name = "${var.app_name}-backend-tg"
+  }
+}
+
+# ALB Listener (HTTP)
+resource "aws_lb_listener" "http" {
+  load_balancer_arn = aws_lb.main.arn
+  port              = 80
+  protocol          = "HTTP"
+  
+  default_action {
+    type = "redirect"
+    
+    redirect {
+      port        = "443"
+      protocol    = "HTTPS"
+      status_code = "HTTP_301"
+    }
+  }
+}
+
+# ALB Listener (HTTPS)
+resource "aws_lb_listener" "https" {
+  load_balancer_arn = aws_lb.main.arn
+  port              = 443
+  protocol          = "HTTPS"
+  ssl_policy        = "ELBSecurityPolicy-2016-08"
+  certificate_arn   = aws_acm_certificate.main.arn
+  
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.backend.arn
+  }
+}
+
+# Launch Template for EC2
+resource "aws_launch_template" "backend" {
+  name_prefix   = "${var.app_name}-backend-"
+  image_id      = "ami-0c55b159cbfafe1f0"  # Amazon Linux 2023
+  instance_type = "t3.medium"
+  
+  vpc_security_group_ids = [aws_security_group.ec2.id]
+  
+  user_data = base64encode(templatefile("${path.module}/user_data.sh", {
+    db_host     = aws_db_instance.postgres.endpoint
+    db_name     = aws_db_instance.postgres.db_name
+    db_user     = aws_db_instance.postgres.username
+    db_password = var.db_password
+  }))
+  
+  tag_specifications {
+    resource_type = "instance"
+    
+    tags = {
+      Name        = "${var.app_name}-backend"
+      Environment = var.environment
+    }
+  }
+}
+
+# Auto Scaling Group
+resource "aws_autoscaling_group" "backend" {
+  name                = "${var.app_name}-backend-asg"
+  vpc_zone_identifier = [aws_subnet.private_1.id, aws_subnet.private_2.id]
+  target_group_arns   = [aws_lb_target_group.backend.arn]
+  
+  min_size         = 2
+  max_size         = 10
+  desired_capacity = 2
+  
+  health_check_type         = "ELB"
+  health_check_grace_period = 300
+  
+  launch_template {
+    id      = aws_launch_template.backend.id
+    version = "$Latest"
+  }
+  
+  tag {
+    key                 = "Name"
+    value               = "${var.app_name}-backend"
+    propagate_at_launch = true
+  }
+}
+
+# Auto Scaling Policies
+resource "aws_autoscaling_policy" "scale_up" {
+  name                   = "${var.app_name}-scale-up"
+  autoscaling_group_name = aws_autoscaling_group.backend.name
+  adjustment_type        = "ChangeInCapacity"
+  scaling_adjustment     = 1
+  cooldown               = 300
+}
+
+resource "aws_autoscaling_policy" "scale_down" {
+  name                   = "${var.app_name}-scale-down"
+  autoscaling_group_name = aws_autoscaling_group.backend.name
+  adjustment_type        = "ChangeInCapacity"
+  scaling_adjustment     = -1
+  cooldown               = 300
+}
+
+# CloudWatch Alarms for Auto Scaling
+resource "aws_cloudwatch_metric_alarm" "cpu_high" {
+  alarm_name          = "${var.app_name}-cpu-high"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "CPUUtilization"
+  namespace           = "AWS/EC2"
+  period              = 120
+  statistic           = "Average"
+  threshold           = 70
+  
+  dimensions = {
+    AutoScalingGroupName = aws_autoscaling_group.backend.name
+  }
+  
+  alarm_actions = [aws_autoscaling_policy.scale_up.arn]
+}
+
+resource "aws_cloudwatch_metric_alarm" "cpu_low" {
+  alarm_name          = "${var.app_name}-cpu-low"
+  comparison_operator = "LessThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "CPUUtilization"
+  namespace           = "AWS/EC2"
+  period              = 120
+  statistic           = "Average"
+  threshold           = 30
+  
+  dimensions = {
+    AutoScalingGroupName = aws_autoscaling_group.backend.name
+  }
+  
+  alarm_actions = [aws_autoscaling_policy.scale_down.arn]
+}
+
+# ElastiCache Redis (for session storage)
+resource "aws_elasticache_subnet_group" "main" {
+  name       = "${var.app_name}-redis-subnet-group"
+  subnet_ids = [aws_subnet.private_1.id, aws_subnet.private_2.id]
+}
+
+resource "aws_elasticache_cluster" "redis" {
+  cluster_id           = "${var.app_name}-redis"
+  engine               = "redis"
+  node_type            = "cache.t3.micro"
+  num_cache_nodes      = 1
+  parameter_group_name = "default.redis7"
+  engine_version       = "7.0"
+  port                 = 6379
+  
+  subnet_group_name = aws_elasticache_subnet_group.main.name
+  security_group_ids = [aws_security_group.ec2.id]
+}
+
+# Outputs
+output "alb_dns_name" {
+  value       = aws_lb.main.dns_name
+  description = "DNS name of the load balancer"
+}
+
+output "rds_endpoint" {
+  value       = aws_db_instance.postgres.endpoint
+  description = "RDS PostgreSQL endpoint"
+}
+
+output "redis_endpoint" {
+  value       = aws_elasticache_cluster.redis.cache_nodes[0].address
+  description = "ElastiCache Redis endpoint"
+}
+```
+
+---
+
+#### File: `infrastructure/aws/user_data.sh`
+
+```bash
+#!/bin/bash
+# EC2 instance initialization script
+
+# Update system
+yum update -y
+
+# Install Python 3.11
+yum install -y python3.11 python3.11-pip git
+
+# Install Docker
+amazon-linux-extras install docker -y
+systemctl start docker
+systemctl enable docker
+usermod -a -G docker ec2-user
+
+# Clone application
+cd /opt
+git clone https://github.com/yourusername/betting-automation.git
+cd betting-automation/backend
+
+# Create virtual environment
+python3.11 -m venv venv
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Create environment file
+cat > .env << EOF
+DATABASE_URL=postgresql://admin:${db_password}@${db_host}/${db_name}
+ODDS_API_KEY=${odds_api_key}
+HOST=0.0.0.0
+PORT=8000
+ENVIRONMENT=production
+EOF
+
+# Create systemd service
+cat > /etc/systemd/system/betting-automation.service << EOF
+[Unit]
+Description=Betting Automation API
+After=network.target
+
+[Service]
+Type=simple
+User=ec2-user
+WorkingDirectory=/opt/betting-automation/backend
+Environment="PATH=/opt/betting-automation/backend/venv/bin"
+ExecStart=/opt/betting-automation/backend/venv/bin/python main.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Start service
+systemctl daemon-reload
+systemctl start betting-automation
+systemctl enable betting-automation
+
+# Install CloudWatch agent
+wget https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/amd64/latest/amazon-cloudwatch-agent.rpm
+rpm -U ./amazon-cloudwatch-agent.rpm
+
+# Configure CloudWatch agent
+cat > /opt/aws/amazon-cloudwatch-agent/etc/config.json << EOF
+{
+  "logs": {
+    "logs_collected": {
+      "files": {
+        "collect_list": [
+          {
+            "file_path": "/var/log/betting-automation.log",
+            "log_group_name": "/aws/ec2/betting-automation",
+            "log_stream_name": "{instance_id}"
+          }
+        ]
+      }
+    }
+  },
+  "metrics": {
+    "namespace": "BettingAutomation",
+    "metrics_collected": {
+      "cpu": {
+        "measurement": [
+          {"name": "cpu_usage_idle", "rename": "CPU_IDLE", "unit": "Percent"}
+        ]
+      },
+      "mem": {
+        "measurement": [
+          {"name": "mem_used_percent", "rename": "MEM_USED", "unit": "Percent"}
+        ]
+      }
+    }
+  }
+}
+EOF
+
+# Start CloudWatch agent
+/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+  -a fetch-config \
+  -m ec2 \
+  -s \
+  -c file:/opt/aws/amazon-cloudwatch-agent/etc/config.json
+```
+
+---
+
+### Step 3: Deploy to AWS
+
+```bash
+# Initialize Terraform
+cd infrastructure/aws
+terraform init
+
+# Create terraform.tfvars for secrets
+cat > terraform.tfvars << EOF
+db_password = "YourSecurePasswordHere123!"
+odds_api_key = "your_odds_api_key_here"
+EOF
+
+# Plan deployment
+terraform plan
+
+# Apply (create all resources)
+terraform apply
+
+# This will take 15-20 minutes
+# Outputs will show:
+# - ALB DNS name
+# - RDS endpoint
+# - Redis endpoint
+```
+
+---
+
+### Step 4: Domain & SSL Configuration
+
+```bash
+# Purchase domain (or use existing)
+# Example: yourdomain.com
+
+# Create hosted zone in Route 53
+aws route53 create-hosted-zone \
+  --name yourdomain.com \
+  --caller-reference $(date +%s)
+
+# Point domain nameservers to Route 53
+# (Do this in your domain registrar)
+
+# Request SSL certificate
+aws acm request-certificate \
+  --domain-name api.yourdomain.com \
+  --validation-method DNS \
+  --region us-east-1
+
+# Create DNS validation record
+# AWS will email you validation instructions
+
+# Create A record pointing to ALB
+aws route53 change-resource-record-sets \
+  --hosted-zone-id YOUR_ZONE_ID \
+  --change-batch '{
+    "Changes": [{
+      "Action": "CREATE",
+      "ResourceRecordSet": {
+        "Name": "api.yourdomain.com",
+        "Type": "A",
+        "AliasTarget": {
+          "HostedZoneId": "YOUR_ALB_ZONE_ID",
+          "DNSName": "YOUR_ALB_DNS_NAME",
+          "EvaluateTargetHealth": false
+        }
+      }
+    }]
+  }'
+```
+
+---
+
+## 💧 DigitalOcean Deployment (Budget Option)
+
+### Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     DigitalOcean DNS                        │
+│                   yourdomain.com                            │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│           Load Balancer (with Let's Encrypt SSL)            │
+│              https://api.yourdomain.com                     │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌──────────────────────┬──────────────────────────────────────┐
+│   Droplet 1          │   Droplet 2                          │
+│   Backend API        │   Backend API                        │
+│   2GB RAM, 1 vCPU    │   2GB RAM, 1 vCPU                    │
+└──────────────────────┴──────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│         Managed PostgreSQL Database (2GB RAM)               │
+│         With automated backups                              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Step 1: Create DigitalOcean Account
+
+```bash
+# Install doctl (DigitalOcean CLI)
+cd ~
+wget https://github.com/digitalocean/doctl/releases/download/v1.98.0/doctl-1.98.0-linux-amd64.tar.gz
+tar xf doctl-1.98.0-linux-amd64.tar.gz
+sudo mv doctl /usr/local/bin
+
+# Authenticate
+doctl auth init
+# Enter your API token
+```
+
+---
+
+### Step 2: Deploy Using Docker Compose
+
+#### File: `infrastructure/digitalocean/docker-compose.yml`
+
+```yaml
+version: '3.8'
+
+services:
+  backend:
+    build: ../../backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - ODDS_API_KEY=${ODDS_API_KEY}
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - redis
+    restart: always
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: always
+  
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - /etc/letsencrypt:/etc/letsencrypt
+    depends_on:
+      - backend
+    restart: always
+
+volumes:
+  redis_data:
+```
+
+---
+
+#### File: `infrastructure/digitalocean/Dockerfile`
+
+```dockerfile
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application
+COPY . .
+
+# Expose port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
+  CMD python -c "import requests; requests.get('http://localhost:8000/health')"
+
+# Run application
+CMD ["python", "main.py"]
+```
+
+---
+
+### Step 3: Deploy to DigitalOcean
+
+```bash
+# Create Droplets
+doctl compute droplet create betting-automation-1 \
+  --image docker-20-04 \
+  --size s-2vcpu-2gb \
+  --region nyc1 \
+  --ssh-keys YOUR_SSH_KEY_ID
+
+doctl compute droplet create betting-automation-2 \
+  --image docker-20-04 \
+  --size s-2vcpu-2gb \
+  --region nyc1 \
+  --ssh-keys YOUR_SSH_KEY_ID
+
+# Create Managed Database
+doctl databases create betting-automation-db \
+  --engine pg \
+  --region nyc1 \
+  --size db-s-2vcpu-2gb
+
+# Create Load Balancer
+doctl compute load-balancer create \
+  --name betting-automation-lb \
+  --region nyc1 \
+  --forwarding-rules entry_protocol:https,entry_port:443,target_protocol:http,target_port:8000 \
+  --health-check protocol:http,port:8000,path:/health \
+  --droplet-ids DROPLET1_ID,DROPLET2_ID
+
+# SSH into droplet
+ssh root@DROPLET_IP
+
+# Clone and deploy
+git clone https://github.com/yourusername/betting-automation.git
+cd betting-automation/infrastructure/digitalocean
+
+# Set environment variables
+cat > .env << EOF
+DATABASE_URL=postgresql://user:pass@db-host:25060/betting_automation
+ODDS_API_KEY=your_key_here
+EOF
+
+# Start services
+docker-compose up -d
+
+# Install SSL certificate
+apt install certbot python3-certbot-nginx -y
+certbot --nginx -d api.yourdomain.com
+```
+
+---
+
+### Step 4: Setup Monitoring
+
+```bash
+# Install monitoring agent
+curl -sSL https://repos.insights.digitalocean.com/install.sh | sudo bash
+
+# Configure alerts
+doctl monitoring alert create \
+  --name "High CPU Usage" \
+  --type "droplet_cpu" \
+  --value 80 \
+  --compare "GreaterThan" \
+  --window "5m" \
+  --droplet-ids DROPLET1_ID,DROPLET2_ID
+```
+
+---
+
+## 💰 Cost Breakdown
+
+### AWS Costs (Production Scale)
+
+| Service | Specs | Monthly Cost |
+|---------|-------|--------------|
+| **EC2 (2x t3.medium)** | 2 vCPU, 4GB RAM | $60 |
+| **RDS PostgreSQL (Multi-AZ)** | db.t3.medium | $70 |
+| **Application Load Balancer** | 1 ALB | $20 |
+| **ElastiCache Redis** | cache.t3.micro | $15 |
+| **Data Transfer** | ~1TB/month | $90 |
+| **CloudWatch** | Logs & Metrics | $10 |
+| **Route 53** | Hosted Zone | $0.50 |
+| **S3 (backups)** | 50GB | $1 |
+| **ACM SSL** | Free | $0 |
+| **Total** | | **~$266/month** |
+
+**At 10,000 users**: ~$266/month = **$0.027 per user**
+
+---
+
+### DigitalOcean Costs (Budget Option)
+
+| Service | Specs | Monthly Cost |
+|---------|-------|--------------|
+| **Droplets (2x)** | 2GB RAM, 1 vCPU | $24 |
+| **Managed Database** | 2GB RAM | $15 |
+| **Load Balancer** | 1 LB | $12 |
+| **Bandwidth** | 2TB included | $0 |
+| **Backups** | Automated | $5 |
+| **Total** | | **~$56/month** |
+
+**At 1,000 users**: ~$56/month = **$0.056 per user**
+
+---
+
+## 🔧 CI/CD Pipeline
+
+### File: `.github/workflows/deploy.yml`
+
+```yaml
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+          pip install pytest pytest-cov
+      
+      - name: Run tests
+        run: |
+          cd backend
+          pytest --cov=./ --cov-report=xml
+      
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+  
+  deploy-aws:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+      
+      - name: Build and push Docker image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: betting-automation
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          cd backend
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+      
+      - name: Update ECS service
+        run: |
+          aws ecs update-service \
+            --cluster betting-automation-cluster \
+            --service betting-automation-service \
+            --force-new-deployment
+```
+
+---
+
+## 📊 Monitoring & Alerts
+
+### CloudWatch Dashboard (AWS)
+
+```json
+{
+  "widgets": [
+    {
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          ["AWS/ApplicationELB", "RequestCount"],
+          [".", "TargetResponseTime"],
+          [".", "HTTPCode_Target_5XX_Count"]
+        ],
+        "period": 300,
+        "stat": "Sum",
+        "region": "us-east-1",
+        "title": "API Health"
+      }
+    },
+    {
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          ["AWS/RDS", "DatabaseConnections"],
+          [".", "CPUUtilization"],
+          [".", "FreeableMemory"]
+        ],
+        "period": 300,
+        "stat": "Average",
+        "region": "us-east-1",
+        "title": "Database Health"
+      }
+    }
+  ]
+}
+```
+
+---
+
+## 🚀 Scaling Strategy
+
+### Horizontal Scaling (Add More Servers)
+
+**AWS Auto Scaling:**
+- Automatically scales from 2 to 10 instances
+- Triggered by CPU > 70% or < 30%
+
+**Manual Scaling (DigitalOcean):**
+```bash
+# Create new droplet
+doctl compute droplet create betting-automation-3 \
+  --image docker-20-04 \
+  --size s-2vcpu-2gb \
+  --region nyc1
+
+# Add to load balancer
+doctl compute load-balancer add-droplets YOUR_LB_ID \
+  --droplet-ids NEW_DROPLET_ID
+```
+
+### Vertical Scaling (Bigger Servers)
+
+**AWS:**
+```bash
+# Change instance type
+aws autoscaling update-auto-scaling-group \
+  --auto-scaling-group-name betting-automation-asg \
+  --launch-template LaunchTemplateName=betting-automation,Version=2
+```
+
+**DigitalOcean:**
+```bash
+# Resize droplet (requires downtime)
+doctl compute droplet-action resize \
+  DROPLET_ID \
+  --size s-4vcpu-8gb
+```
+
+---
+
+## ✅ Deployment Checklist
+
+### Pre-Deployment
+- [ ] Domain purchased and DNS configured
+- [ ] SSL certificate obtained
+- [ ] Environment variables set
+- [ ] Database backups configured
+- [ ] Monitoring dashboards created
+- [ ] Load testing completed
+
+### Post-Deployment
+- [ ] Health checks passing
+- [ ] SSL certificate valid
+- [ ] Database connections working
+- [ ] WebSocket connections stable
+- [ ] Monitoring alerts configured
+- [ ] Backup/restore tested
+- [ ] Rollback plan documented
+
+---
+
+## 🎯 Next Steps
+
+1. **Deploy to staging first** (smaller instance sizes)
+2. **Run load tests** (Apache Bench, Locust)
+3. **Monitor for 48 hours**
+4. **Deploy to production**
+5. **Set up alerting** (PagerDuty, OpsGenie)
+6. **Document runbooks** (incident response)
+
+**Your betting automation system is now production-ready at scale! 🚀**

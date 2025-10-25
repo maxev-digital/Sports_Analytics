@@ -20,14 +20,10 @@ interface UseWebSocketReturn {
   error: string | null;
 }
 
-const WEBSOCKET_URL = import.meta.env.PROD
-  ? 'wss://max-ev-sports.com/ws/live-odds'
-  : 'ws://localhost:8000/ws/live-odds';
-
 const RECONNECT_DELAY = 3000; // 3 seconds
 const PING_INTERVAL = 25000; // 25 seconds (send ping to keep alive)
 
-export const useWebSocket = (): UseWebSocketReturn => {
+export const useWebSocket = (userId: string = 'default'): UseWebSocketReturn => {
   const [games, setGames] = useState<LiveGame[]>([]);
   const [connected, setConnected] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
@@ -39,9 +35,15 @@ export const useWebSocket = (): UseWebSocketReturn => {
   const reconnectAttemptsRef = useRef(0);
 
   const connect = useCallback(() => {
+    // Build WebSocket URL with user_id query parameter inside callback
+    const baseUrl = import.meta.env.PROD
+      ? 'wss://max-ev-sports.com/ws/live-odds'
+      : 'ws://localhost:8000/ws/live-odds';
+    const websocketUrl = `${baseUrl}?user_id=${userId}`;
+
     try {
-      console.log('🔌 Connecting to WebSocket...', WEBSOCKET_URL);
-      const ws = new WebSocket(WEBSOCKET_URL);
+      console.log('🔌 Connecting to WebSocket...', websocketUrl);
+      const ws = new WebSocket(websocketUrl);
 
       ws.onopen = () => {
         console.log('✅ WebSocket Connected');
@@ -114,7 +116,7 @@ export const useWebSocket = (): UseWebSocketReturn => {
         connect();
       }, RECONNECT_DELAY);
     }
-  }, []);
+  }, [userId]);
 
   const disconnect = useCallback(() => {
     if (wsRef.current) {
@@ -141,7 +143,7 @@ export const useWebSocket = (): UseWebSocketReturn => {
     return () => {
       disconnect();
     };
-  }, [connect, disconnect]);
+  }, [connect, disconnect, userId]);
 
   return {
     games,

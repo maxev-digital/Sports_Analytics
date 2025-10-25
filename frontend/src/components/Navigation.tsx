@@ -1,22 +1,47 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { uiEmojis } from '../utils/sportDetection';
+import { useSoundEffect } from '../hooks/useSoundEffect';
 
 export function Navigation() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { username, logout } = useAuth();
+  const [settingsDropdownOpen, setSettingsDropdownOpen] = useState(false);
+  const [learnDropdownOpen, setLearnDropdownOpen] = useState(false);
+  const settingsRef = useRef<HTMLDivElement>(null);
+  const learnRef = useRef<HTMLDivElement>(null);
+  // Sound effects
+  const playTabSwitch = useSoundEffect('tab-switch.mp3', 0.3);
+  const playDropdown = useSoundEffect('dropdown.mp3', 0.3);
+  const playLogout = useSoundEffect('logout.mp3', 0.4);
 
-  const navItems = [
-    { path: '/', label: 'Live Games', emoji: uiEmojis.fire },
+  const handleNavClick = () => { playTabSwitch(); };
+  const handleDropdownToggle = (dropdownSetter: (val: boolean) => void, currentState: boolean) => { playDropdown(); dropdownSetter(!currentState); };
+  const handleLogout = () => { playLogout(); setTimeout(() => { logout(); navigate('/login'); }, 200); };
+
+  // Main nav items (always visible)
+  const mainNavItems = [
+    { path: '/', label: '', emoji: uiEmojis.fire },
     { path: '/multi-sport', label: 'Multi-Sport', emoji: uiEmojis.target },
+    { path: '/odds', label: 'Odds', emoji: uiEmojis.chart },
+    { path: '/analytics', label: 'Analytics', emoji: uiEmojis.search },
     { path: '/alerts', label: 'Alerts', emoji: uiEmojis.lightning },
-    { path: '/tools', label: 'Tools', emoji: uiEmojis.search },
-    { path: '/analytics', label: 'Analytics', emoji: uiEmojis.chart },
     { path: '/props', label: 'Props', emoji: uiEmojis.book },
-    { path: '/settings', label: 'Settings', emoji: uiEmojis.gear },
-    { path: '/learn', label: 'Learn', emoji: uiEmojis.graduation },
-    { path: '/getting-started', label: 'Get Started', emoji: uiEmojis.rocket },
-    { path: '/pricing', label: 'Pricing', emoji: uiEmojis.dollar },
+    { path: '/tools', label: 'Tools', emoji: uiEmojis.wrench },
+  ];
+
+  // Settings dropdown items
+  const settingsItems = [
+    { path: '/strategy-settings', label: 'Strategies', emoji: uiEmojis.trophy },
+    { path: '/settings', label: 'Bookmaker Settings', emoji: uiEmojis.gear },
+  ];
+
+  // Learn dropdown items
+  const learnItems = [
+    { path: '/learn', label: 'Learn Articles', emoji: uiEmojis.graduation },
+    { path: '/getting-started', label: 'Getting Started', emoji: uiEmojis.rocket },
   ];
 
   const isActive = (path: string) => {
@@ -26,43 +51,160 @@ export function Navigation() {
     return location.pathname.startsWith(path);
   };
 
+  const isDropdownActive = (items: typeof settingsItems) => {
+    return items.some(item => isActive(item.path));
+  };
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (settingsRef.current && !settingsRef.current.contains(event.target as Node)) {
+        setSettingsDropdownOpen(false);
+      }
+      if (learnRef.current && !learnRef.current.contains(event.target as Node)) {
+        setLearnDropdownOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   return (
-    <nav className="sticky top-0 z-50 bg-slate-900/95 backdrop-blur-sm border-b border-slate-700 shadow-lg">
+    <nav className="sticky top-0 z-50 bg-black border-b border-slate-700 shadow-lg">
       <div className="max-w-7xl mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-24 py-4">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <svg className="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-            <div>
-              <div className="text-xl font-bold text-slate-100">Max EV Sports</div>
-              <div className="text-[10px] text-blue-400 -mt-0.5">Maximum EV Is Our Specialty</div>
-            </div>
+          <Link to="/" onClick={handleNavClick} className="hover:opacity-80 transition-opacity flex-shrink-0">
+            <img 
+              src="/logo.png" 
+              alt="Max EV Sports" 
+              className="h-24 w-auto object-contain"
+              style={{ minWidth: '120px', maxWidth: '200px' }}
+            />
           </Link>
 
           {/* Navigation Links */}
           <div className="hidden md:flex items-center gap-1">
-            {navItems.map((item) => (
+            {/* Main Nav Items */}
+            {mainNavItems.map((item) => (
               <Link
                 key={item.path}
                 to={item.path}
-                className={`px-4 py-2 rounded-lg font-semibold transition-all text-sm flex items-center gap-2 ${
+                className={`px-5 py-2.5 rounded-lg font-semibold transition-all text-base flex items-center gap-2 ${
                   isActive(item.path)
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+                    ? item.path === '/' 
+                      ? 'bg-black text-white border-2 border-yellow-500 shadow-lg shadow-yellow-500/30'
+                      : 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
                     : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
                 }`}
               >
                 {item.emoji && (
-                  <img src={item.emoji} alt="" className="w-4 h-4" style={{ imageRendering: 'crisp-edges' }} />
+                  <img 
+                    src={item.emoji} 
+                    alt={item.label || 'Home'} 
+                    className={item.label ? "w-5 h-5" : "w-8 h-8"} 
+                    style={{ imageRendering: 'crisp-edges' }} 
+                  />
                 )}
                 {item.label}
               </Link>
             ))}
+
+            {/* Learn Dropdown */}
+            <div className="relative" ref={learnRef}>
+              <button
+                onClick={() => handleDropdownToggle(setLearnDropdownOpen, learnDropdownOpen)}
+                className={`px-5 py-2.5 rounded-lg font-semibold transition-all text-base flex items-center gap-2 ${
+                  isDropdownActive(learnItems)
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+                    : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
+                }`}
+              >
+                <img src={uiEmojis.graduation} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} />
+                Learn
+                <svg className={`w-5 h-5 transition-transform ${learnDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {learnDropdownOpen && (
+                <div className="absolute top-full mt-1 left-0 bg-slate-800 border border-slate-700 rounded-lg shadow-xl min-w-[220px] py-2 z-50">
+                  {learnItems.map((item) => (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      onClick={() => { playTabSwitch(); setLearnDropdownOpen(false); }}
+                      className={`px-4 py-2.5 flex items-center gap-3 transition-all ${
+                        isActive(item.path)
+                          ? 'bg-blue-600 text-white'
+                          : 'text-slate-300 hover:bg-slate-700 hover:text-slate-100'
+                      }`}
+                    >
+                      <img src={item.emoji} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} />
+                      <span className="font-semibold text-base">{item.label}</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Pricing - standalone */}
+            <Link
+              to="/pricing" onClick={handleNavClick}
+              className={`px-5 py-2.5 rounded-lg font-semibold transition-all text-base flex items-center gap-2 ${
+                isActive('/pricing')
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+                  : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
+              }`}
+            >
+              <img src={uiEmojis.dollar} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} />
+              Pricing
+            </Link>
           </div>
 
           {/* Right Side Actions */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 ml-auto">
+            {/* Settings Dropdown - moved to far right */}
+            <div className="relative hidden md:block" ref={settingsRef}>
+              <button
+                onClick={() => handleDropdownToggle(setSettingsDropdownOpen, settingsDropdownOpen)}
+                className={`px-5 py-2.5 rounded-lg font-semibold transition-all text-base flex items-center gap-2 ${
+                  isDropdownActive(settingsItems)
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+                    : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
+                }`}
+              >
+                <img src={uiEmojis.gear} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} />
+                Settings
+                <svg className={`w-5 h-5 transition-transform ${settingsDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {settingsDropdownOpen && (
+                <div className="absolute top-full mt-1 right-0 bg-slate-800 border border-slate-700 rounded-lg shadow-xl min-w-[220px] py-2 z-50">
+                  {settingsItems.map((item) => (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      onClick={() => { playTabSwitch(); setSettingsDropdownOpen(false); }}
+                      className={`px-4 py-2.5 flex items-center gap-3 transition-all ${
+                        isActive(item.path)
+                          ? 'bg-blue-600 text-white'
+                          : 'text-slate-300 hover:bg-slate-700 hover:text-slate-100'
+                      }`}
+                    >
+                      <img src={item.emoji} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} />
+                      <span className="font-semibold text-base">{item.label}</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="flex items-center gap-3 bg-slate-800/50 border-2 border-slate-700 rounded-lg px-4 py-2">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
@@ -71,7 +213,10 @@ export function Navigation() {
                 <span className="text-slate-300 text-sm font-semibold">{username}</span>
               </div>
               <button
-                onClick={logout}
+                onClick={() => {
+                  logout();
+                  navigate('/login');
+                }}
                 className="px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-all text-xs"
               >
                 Logout
@@ -80,9 +225,9 @@ export function Navigation() {
           </div>
         </div>
 
-        {/* Mobile Navigation */}
+        {/* Mobile Navigation - Scrollable */}
         <div className="md:hidden flex gap-1 pb-3 overflow-x-auto scrollbar-hide">
-          {navItems.map((item) => (
+          {mainNavItems.map((item) => (
             <Link
               key={item.path}
               to={item.path}
@@ -98,6 +243,49 @@ export function Navigation() {
               {item.label}
             </Link>
           ))}
+          {settingsItems.map((item) => (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={`px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+                isActive(item.path)
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-slate-800 text-slate-300'
+              }`}
+            >
+              {item.emoji && (
+                <img src={item.emoji} alt="" className="w-3.5 h-3.5" style={{ imageRendering: 'crisp-edges' }} />
+              )}
+              {item.label}
+            </Link>
+          ))}
+          {learnItems.map((item) => (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={`px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+                isActive(item.path)
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-slate-800 text-slate-300'
+              }`}
+            >
+              {item.emoji && (
+                <img src={item.emoji} alt="" className="w-3.5 h-3.5" style={{ imageRendering: 'crisp-edges' }} />
+              )}
+              {item.label}
+            </Link>
+          ))}
+          <Link
+            to="/pricing" onClick={handleNavClick}
+            className={`px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+              isActive('/pricing')
+                ? 'bg-blue-600 text-white'
+                : 'bg-slate-800 text-slate-300'
+            }`}
+          >
+            <img src={uiEmojis.dollar} alt="" className="w-3.5 h-3.5" style={{ imageRendering: 'crisp-edges' }} />
+            Pricing
+          </Link>
         </div>
       </div>
     </nav>

@@ -105,6 +105,34 @@ const articles: Article[] = [
     category: 'Strategy',
     readTime: '9 min'
   },
+  {
+    id: 'back-to-back-vs-rested',
+    title: 'Back-to-Back vs Rested: The Ultimate Fatigue Edge',
+    description: 'NBA and NHL teams on back-to-backs lose 61% ATS against rested opponents. Learn the science of fatigue, rest differential analysis, and why this edge has persisted for decades.',
+    category: 'Strategy',
+    readTime: '18 min'
+  },
+  {
+    id: 'reverse-line-movement',
+    title: 'Reverse Line Movement (RLM): Following Sharp Money',
+    description: 'When the line moves opposite of public betting percentages, sharps are in action. 59% win rate following RLM. Learn to identify and exploit these opportunities.',
+    category: 'Strategy',
+    readTime: '16 min'
+  },
+  {
+    id: 'fade-the-public',
+    title: 'Fade the Public: The Contrarian Edge',
+    description: 'Betting against teams with 70%+ public support wins 57% of the time. Understand why the public loses, when to fade, and how to profit from market inefficiencies.',
+    category: 'Strategy',
+    readTime: '15 min'
+  },
+  {
+    id: 'situational-betting',
+    title: 'Situational Betting: Revenge, Letdown, and Lookahead Spots',
+    description: 'Teams after blowout losses, emotional wins, or before big games perform predictably. Learn to identify and exploit these high-value situational spots.',
+    category: 'Strategy',
+    readTime: '20 min'
+  },
 
   // Section 4: Bankroll Management
   {
@@ -167,6 +195,20 @@ const articles: Article[] = [
   },
 
   // Section 6: Advanced Strategies
+  {
+    id: 'nhl-goalie-pull-strategy',
+    title: 'NHL Goalie Pull Strategy: Winning with 48% Success Rate',
+    description: 'Master the most profitable NHL betting strategy. Learn how positive expected value (EV) makes you profitable even with a 48% win rate. Real-world examples, full math breakdowns, and why this beats the closing line 90%+ of the time.',
+    category: 'Advanced',
+    readTime: '25 min'
+  },
+  {
+    id: 'nba-favorite-comeback-strategy',
+    title: 'NBA Favorite Comeback Strategy: Profiting from Regression to the Mean',
+    description: 'When favorites trail underdogs after hot starts, regression creates value. Historical data: 60.3% ATS at halftime. Learn the regression scoring system, when to bet 2H spreads, and why underdogs shooting 15% above average always regress.',
+    category: 'Advanced',
+    readTime: '22 min'
+  },
   {
     id: 'middling-opportunities',
     title: 'Middling Opportunities',
@@ -269,7 +311,7 @@ export function Learn() {
     : articles.filter(a => a.category === selectedCategory);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-black via-slate-900 to-black py-8">
       <div className="max-w-7xl mx-auto px-4">
         {/* Header */}
         <div className="text-center mb-12">
