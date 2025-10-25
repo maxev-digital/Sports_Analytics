@@ -52,10 +52,29 @@ interface LineMovementAlert {
   timestamp: string;
 }
 
+interface MiddleAlert {
+  game_id: string;
+  sport: string;
+  home_team: string;
+  away_team: string;
+  market_type: string;
+  book_low: string;
+  book_high: string;
+  low_line: number;
+  high_line: number;
+  gap: number;
+  side_low: string;
+  side_high: string;
+  odds_low: number;
+  odds_high: number;
+  timestamp: string;
+  expires_in: number;
+}
+
 interface AlertsData {
   arbitrage: { count: number; alerts: ArbitrageAlert[] };
   steam_moves: { count: number; alerts: SteamMoveAlert[] };
-  line_movements: { count: number; alerts: LineMovementAlert[] };
+  middles: { count: number; alerts: MiddleAlert[] };
 }
 
 export function Alerts() {
@@ -223,8 +242,8 @@ export function Alerts() {
               <div className="text-3xl font-bold text-white">{alertsData?.steam_moves.count || 0}</div>
             </div>
             <div className="bg-gradient-to-br from-slate-900 via-slate-700 to-slate-900 border-4 border-slate-600 rounded-lg p-6 hover:shadow-lg hover:shadow-slate-600/30 transition-all">
-              <div className="text-base text-white font-bold tracking-wide mb-1">LINE MOVEMENTS</div>
-              <div className="text-3xl font-bold text-white">{alertsData?.line_movements.count || 0}</div>
+              <div className="text-base text-white font-bold tracking-wide mb-1">MIDDLES</div>
+              <div className="text-3xl font-bold text-white">{alertsData?.middles.count || 0}</div>
             </div>
           </div>
         </div>
@@ -299,7 +318,7 @@ export function Alerts() {
                 : 'bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800 hover:border-blue-600'
             }`}
           >
-            LINE MOVEMENTS ({alertsData?.line_movements.count || 0})
+            MIDDLES ({alertsData?.middles.count || 0})
           </button>
         </div>
 
@@ -438,23 +457,23 @@ export function Alerts() {
           </div>
         )}
 
-        {/* Line Movement Alerts */}
+        {/* Middle Alerts */}
         {activeTab === 'lines' && (
           <div className="space-y-4">
-            {alertsData?.line_movements.alerts.length === 0 ? (
+            {alertsData?.middles.alerts.length === 0 ? (
               <div className="bg-slate-800 border-4 border-slate-700 rounded-lg p-12 text-center">
-                <div className="text-slate-400 text-lg">No significant line movements detected</div>
+                <div className="text-slate-400 text-lg">No middle opportunities detected</div>
                 <div className="text-slate-500 text-sm mt-2">Scanning every 10 seconds...</div>
               </div>
             ) : (
-              alertsData?.line_movements.alerts.map((alert, idx) => (
-                <div key={idx} className="bg-gradient-to-br from-green-900 to-black border-4 border-green-600 rounded-lg p-6">
+              alertsData?.middles.alerts.map((alert, idx) => (
+                <div key={idx} className="bg-gradient-to-br from-purple-900 to-black border-4 border-purple-600 rounded-lg p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <span className={`px-3 py-1 rounded-full text-xs font-bold text-white ${getSportBadgeColor(alert.sport)}`}>
                         {alert.sport.toUpperCase()}
                       </span>
-                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-600 text-white">
+                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-purple-600 text-white">
                         {getMarketLabel(alert.market_type)}
                       </span>
                       <span className="text-lg font-bold text-white">
@@ -462,28 +481,32 @@ export function Alerts() {
                       </span>
                     </div>
                     <div className="text-right">
-                      <div className="text-sm text-slate-400">{alert.bookmaker}</div>
-                      <div className="text-2xl font-bold text-white">
-                        {alert.movement_percent.toFixed(1)}%
+                      <div className="text-2xl font-bold text-purple-400">
+                        {alert.gap.toFixed(1)} pt gap
+                      </div>
+                      <div className="text-sm text-slate-400">
+                        Expires in {formatExpiresIn(alert.expires_in)}
                       </div>
                     </div>
                   </div>
 
-                  <div className="bg-slate-800 border-4 border-slate-700 rounded-lg p-4 mb-4">
-                    <div className="grid grid-cols-3 gap-4 text-center">
-                      <div>
-                        <div className="text-sm text-slate-400 mb-1">Original</div>
-                        <div className="text-xl font-bold text-white">{alert.original_line}</div>
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div className="bg-slate-800 border-4 border-slate-700 rounded-lg p-4">
+                      <div className="text-sm text-slate-400 mb-2">Low: {alert.book_low}</div>
+                      <div className="text-lg font-bold text-white mb-1">
+                        {alert.side_low}
                       </div>
-                      <div>
-                        <div className="text-sm text-slate-400 mb-1">Movement</div>
-                        <div className={`text-xl font-bold ${alert.movement > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                          {alert.movement > 0 ? '+' : ''}{alert.movement.toFixed(1)}
-                        </div>
+                      <div className="text-sm text-slate-300">
+                        Odds: {alert.odds_low > 0 ? `+${alert.odds_low}` : alert.odds_low}
                       </div>
-                      <div>
-                        <div className="text-sm text-slate-400 mb-1">New Line</div>
-                        <div className="text-xl font-bold text-white">{alert.new_line}</div>
+                    </div>
+                    <div className="bg-slate-800 border-4 border-slate-700 rounded-lg p-4">
+                      <div className="text-sm text-slate-400 mb-2">High: {alert.book_high}</div>
+                      <div className="text-lg font-bold text-white mb-1">
+                        {alert.side_high}
+                      </div>
+                      <div className="text-sm text-slate-300">
+                        Odds: {alert.odds_high > 0 ? `+${alert.odds_high}` : alert.odds_high}
                       </div>
                     </div>
                   </div>
