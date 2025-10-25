@@ -210,6 +210,12 @@ function renderOpportunities() {
     const side2 = op.side2 || op.side_b || op.bet2_side || '';
     const odds1 = op.odds1 || op.odds_a || '';
     const odds2 = op.odds2 || op.odds_b || '';
+    const point1 = op.point1 || op.point_a || op.bet1_point || '';
+    const point2 = op.point2 || op.point_b || op.bet2_point || '';
+
+    // Format bet descriptions (e.g., "Over 5.5" or "Warriors -3.5")
+    const bet1Description = point1 ? `${side1} ${point1}` : side1;
+    const bet2Description = point2 ? `${side2} ${point2}` : side2;
 
     // Timestamps
     const alertTime = formatTimeAgo(op.timestamp);
@@ -242,14 +248,14 @@ function renderOpportunities() {
             <img src="${book1Data.logo}" alt="${book1Data.name}" class="book-logo" onerror="this.style.display='none'">
             <div class="book-info">
               <span class="book-name">${book1Data.name}</span>
-              <span class="bet-details">${side1} ${odds1 ? `(${odds1})` : ''}</span>
+              <span class="bet-details">${bet1Description} ${odds1 ? `(${odds1})` : ''}</span>
             </div>
           </div>
           <div class="book-badge book-right">
             <img src="${book2Data.logo}" alt="${book2Data.name}" class="book-logo" onerror="this.style.display='none'">
             <div class="book-info">
               <span class="book-name">${book2Data.name}</span>
-              <span class="bet-details">${side2} ${odds2 ? `(${odds2})` : ''}</span>
+              <span class="bet-details">${bet2Description} ${odds2 ? `(${odds2})` : ''}</span>
             </div>
           </div>
         </div>

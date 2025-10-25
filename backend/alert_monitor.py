@@ -41,13 +41,17 @@ class ArbitrageAlert:
     book_b: str
     odds_a: float
     odds_b: float
-    profit_percent: float
-    stake_a: float
-    stake_b: float
-    total_stake: float
-    guaranteed_profit: float
-    timestamp: datetime
-    expires_in: int  # seconds until game starts
+    side_a: str  # 'Over', 'Under', team name, etc.
+    side_b: str  # 'Over', 'Under', team name, etc.
+    point_a: Optional[float] = None  # Point value for spreads/totals (e.g., 5.5, -3.5)
+    point_b: Optional[float] = None  # Point value for spreads/totals (e.g., 5.5, 3.5)
+    profit_percent: float = 0.0
+    stake_a: float = 0.0
+    stake_b: float = 0.0
+    total_stake: float = 0.0
+    guaranteed_profit: float = 0.0
+    timestamp: datetime = None
+    expires_in: int = 0  # seconds until game starts
 
 @dataclass
 class SteamMoveAlert:
@@ -202,8 +206,8 @@ class AlertMonitor:
         # Check each market type
         for market_type in ['h2h', 'spreads', 'totals']:
             # Find best odds for each outcome
-            best_odds_home = {'bookmaker': None, 'odds': -100000}
-            best_odds_away = {'bookmaker': None, 'odds': -100000}
+            best_odds_home = {'bookmaker': None, 'odds': -100000, 'side': None, 'point': None}
+            best_odds_away = {'bookmaker': None, 'odds': -100000, 'side': None, 'point': None}
 
             for book in bookmakers:
                 book_name = book.get('key')
@@ -218,23 +222,24 @@ class AlertMonitor:
                     for outcome in outcomes:
                         name = outcome.get('name')
                         price = outcome.get('price')
+                        point = outcome.get('point')
 
                         if market_type == 'h2h':
                             if name == home_team and price > best_odds_home['odds']:
-                                best_odds_home = {'bookmaker': book_name, 'odds': price}
+                                best_odds_home = {'bookmaker': book_name, 'odds': price, 'side': name, 'point': None}
                             elif name == away_team and price > best_odds_away['odds']:
-                                best_odds_away = {'bookmaker': book_name, 'odds': price}
+                                best_odds_away = {'bookmaker': book_name, 'odds': price, 'side': name, 'point': None}
                         elif market_type == 'totals':
                             if name == 'Over' and price > best_odds_home['odds']:
-                                best_odds_home = {'bookmaker': book_name, 'odds': price}
+                                best_odds_home = {'bookmaker': book_name, 'odds': price, 'side': 'Over', 'point': point}
                             elif name == 'Under' and price > best_odds_away['odds']:
-                                best_odds_away = {'bookmaker': book_name, 'odds': price}
+                                best_odds_away = {'bookmaker': book_name, 'odds': price, 'side': 'Under', 'point': point}
                         elif market_type == 'spreads':
-                            point = outcome.get('point', 0)
-                            if point < 0 and price > best_odds_home['odds']:  # Favorite
-                                best_odds_home = {'bookmaker': book_name, 'odds': price}
-                            elif point > 0 and price > best_odds_away['odds']:  # Underdog
-                                best_odds_away = {'bookmaker': book_name, 'odds': price}
+                            if point is not None:
+                                if point < 0 and price > best_odds_home['odds']:  # Favorite
+                                    best_odds_home = {'bookmaker': book_name, 'odds': price, 'side': name, 'point': point}
+                                elif point > 0 and price > best_odds_away['odds']:  # Underdog
+                                    best_odds_away = {'bookmaker': book_name, 'odds': price, 'side': name, 'point': point}
 
             # Check for arbitrage
             if best_odds_home['bookmaker'] and best_odds_away['bookmaker']:
@@ -274,6 +279,10 @@ class AlertMonitor:
                             book_b=best_odds_away['bookmaker'],
                             odds_a=best_odds_home['odds'],
                             odds_b=best_odds_away['odds'],
+                            side_a=best_odds_home['side'],
+                            side_b=best_odds_away['side'],
+                            point_a=best_odds_home['point'],
+                            point_b=best_odds_away['point'],
                             profit_percent=profit_percent,
                             stake_a=stake_home,
                             stake_b=stake_away,
