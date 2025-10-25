@@ -40,7 +40,7 @@ export function Odds() {
   const fetchGames = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:8000/api/games`);
+      const response = await fetch(`/api/games`);
       const apiGames = await response.json();
 
       // Transform API data to match our interface

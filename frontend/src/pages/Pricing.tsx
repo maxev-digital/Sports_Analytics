@@ -21,7 +21,7 @@ export function Pricing() {
     setLoading(tier);
 
     try {
-      const response = await fetch('http://localhost:8000/api/stripe/create-checkout-session', {
+      const response = await fetch('/api/stripe/create-checkout-session', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
