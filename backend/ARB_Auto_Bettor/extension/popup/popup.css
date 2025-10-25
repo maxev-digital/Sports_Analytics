@@ -293,6 +293,23 @@ body {
   border-radius: 2px;
 }
 
+.book-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.book-name {
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.bet-details {
+  font-size: 9px;
+  color: #fecaca;
+  font-weight: 500;
+}
+
 /* Alert Timestamps */
 .alert-timestamps {
   display: flex;

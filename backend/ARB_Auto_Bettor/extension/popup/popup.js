@@ -205,6 +205,12 @@ function renderOpportunities() {
     const guaranteedProfit = op.guaranteed_profit || op.guaranteedProfit || 0;
     const market = op.market_type || op.marketType || 'Unknown Market';
 
+    // Extract bet details
+    const side1 = op.side1 || op.side_a || op.bet1_side || '';
+    const side2 = op.side2 || op.side_b || op.bet2_side || '';
+    const odds1 = op.odds1 || op.odds_a || '';
+    const odds2 = op.odds2 || op.odds_b || '';
+
     // Timestamps
     const alertTime = formatTimeAgo(op.timestamp);
     const gameTime = formatGameTime(op.commence_time);
@@ -229,16 +235,22 @@ function renderOpportunities() {
           <div class="opportunity-profit">+${profit.toFixed(2)}%</div>
         </div>
         <div class="opportunity-details">
-          ${market} | $${stake.toFixed(0)} → $${Math.abs(guaranteedProfit).toFixed(0)} profit
+          <strong>${market}</strong> | $${stake.toFixed(0)} stake → $${Math.abs(guaranteedProfit).toFixed(0)} profit
         </div>
         <div class="opportunity-books">
           <div class="book-badge book-left">
             <img src="${book1Data.logo}" alt="${book1Data.name}" class="book-logo" onerror="this.style.display='none'">
-            <span>${book1Data.name}</span>
+            <div class="book-info">
+              <span class="book-name">${book1Data.name}</span>
+              <span class="bet-details">${side1} ${odds1 ? `(${odds1})` : ''}</span>
+            </div>
           </div>
           <div class="book-badge book-right">
             <img src="${book2Data.logo}" alt="${book2Data.name}" class="book-logo" onerror="this.style.display='none'">
-            <span>${book2Data.name}</span>
+            <div class="book-info">
+              <span class="book-name">${book2Data.name}</span>
+              <span class="bet-details">${side2} ${odds2 ? `(${odds2})` : ''}</span>
+            </div>
           </div>
         </div>
         <div class="alert-timestamps">

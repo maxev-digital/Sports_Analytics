@@ -287,34 +287,33 @@ class SoundAlerts {
   async announceOpportunity(profitPercentage, bookA, bookB, game) {
     if (!settings.voiceEnabled) return;
 
-    const percentRounded = profitPercentage.toFixed(1);
-    let announcement = '';
+    // Use professional Eleven Labs voice alerts instead of TTS
+    let soundFile = '';
 
-    // Different announcements based on priority
+    // Select audio file based on priority
     if (profitPercentage >= 5.0) {
-      announcement = `High priority arbitrage opportunity!`;
+      soundFile = 'sounds/high_priority.mp3';
     } else if (profitPercentage >= 3.0) {
-      announcement = `Arbitrage opportunity`;
+      soundFile = 'sounds/arbitrage_found.mp3';
     } else {
-      announcement = `Arbitrage found`;
+      soundFile = 'sounds/low_priority.mp3';
     }
 
-    // Add game info
-    if (game) {
-      announcement += ` ${game}.`;
+    // Play the professional voice alert
+    await this.playAudioFile(soundFile);
+  }
+
+  async playAudioFile(filePath) {
+    if (!settings.voiceEnabled) return;
+
+    try {
+      const audio = new Audio(chrome.runtime.getURL(filePath));
+      audio.volume = settings.soundVolume || 0.5;
+      await audio.play();
+      console.log(`[VOICE] 🔊 Played audio: ${filePath}`);
+    } catch (error) {
+      console.error(`[VOICE] Error playing audio ${filePath}:`, error);
     }
-
-    // Add ROI
-    announcement += ` ${percentRounded} percent ROI`;
-
-    // Add bookmaker info if provided
-    if (bookA && bookB) {
-      const book1Name = this.cleanBookmakerName(bookA);
-      const book2Name = this.cleanBookmakerName(bookB);
-      announcement += ` between ${book1Name} and ${book2Name}`;
-    }
-
-    await this.speak(announcement);
   }
 
   cleanBookmakerName(key) {
@@ -337,12 +336,10 @@ class SoundAlerts {
   }
 
   async playAndAnnounce(profitPercentage, bookA, bookB, game) {
-    // Play sound alert first
-    await this.playForOpportunity(profitPercentage);
+    // BEEPS DISABLED - Voice alerts only
+    // await this.playForOpportunity(profitPercentage);
 
-    // Then speak the announcement
-    // Small delay to let the beep finish
-    await new Promise(resolve => setTimeout(resolve, 300));
+    // Speak the announcement immediately (no beep delay needed)
     this.announceOpportunity(profitPercentage, bookA, bookB, game);
   }
 }
