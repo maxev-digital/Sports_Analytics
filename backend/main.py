@@ -246,9 +246,9 @@ async def startup():
     asyncio.create_task(auto_grade_bets())
     logger.info("Automatic bet grading started (5min intervals - grades completed games)")
 
-    # Start props cache refresh task (production-ready caching)
+    # Start props cache refresh task (once daily at 8 AM EST)
     asyncio.create_task(refresh_props_cache())
-    logger.info("Props cache refresh started (5min intervals - background refresh for instant API responses)")
+    logger.info("Props cache refresh started (daily at 8 AM EST - saves API costs)")
 
 @app.on_event("shutdown")
 async def shutdown():
@@ -1611,9 +1611,11 @@ async def fetch_props_for_sport(sport: str, odds_api_sport: str) -> dict:
 
 async def refresh_props_cache():
     """
-    Background task to refresh props cache every 5 minutes
-    Production-ready: runs continuously in the background
+    Background task to refresh props cache ONCE PER DAY at 8 AM EST
+    Saves API costs by fetching pregame props only when lines are set
     """
+    import pytz
+
     sport_map = {
         'nba': 'basketball_nba',
         'nfl': 'americanfootball_nfl',
@@ -1625,22 +1627,34 @@ async def refresh_props_cache():
 
     while True:
         try:
-            logger.info("[PROPS CACHE] Starting refresh cycle...")
+            # Check current time in Eastern Time
+            eastern = pytz.timezone('US/Eastern')
+            now_eastern = datetime.now(eastern)
+            current_hour = now_eastern.hour
 
-            for sport, odds_api_sport in sport_map.items():
-                props_data = await fetch_props_for_sport(sport, odds_api_sport)
-                props_cache[sport] = {
-                    'props': props_data['props'],
-                    'count': props_data['count'],
-                    'last_updated': datetime.now().isoformat()
-                }
+            # Only refresh at 8 AM EST (once per day)
+            if current_hour == 8:
+                logger.info("[PROPS CACHE] Starting daily refresh at 8 AM EST...")
 
-            logger.info("[PROPS CACHE] Refresh complete. Sleeping for 5 minutes...")
-            await asyncio.sleep(300)  # 5 minutes
+                for sport, odds_api_sport in sport_map.items():
+                    props_data = await fetch_props_for_sport(sport, odds_api_sport)
+                    props_cache[sport] = {
+                        'props': props_data['props'],
+                        'count': props_data['count'],
+                        'last_updated': datetime.now().isoformat()
+                    }
+
+                logger.info("[PROPS CACHE] Daily refresh complete. Next refresh in 24 hours (8 AM EST)")
+                # Sleep until next day's 8 AM (check every hour to stay synced)
+                await asyncio.sleep(3600)  # 1 hour
+            else:
+                # Not 8 AM yet - check again in 30 minutes
+                logger.debug(f"[PROPS CACHE] Current hour: {current_hour}. Waiting for 8 AM EST refresh...")
+                await asyncio.sleep(1800)  # 30 minutes
 
         except Exception as e:
             logger.error(f"[PROPS CACHE] Error in refresh cycle: {str(e)}")
-            await asyncio.sleep(60)  # Retry after 1 minute on error
+            await asyncio.sleep(300)  # Retry after 5 minutes on error
 
 
 # ========== PROPS ENDPOINTS ==========
