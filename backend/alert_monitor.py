@@ -143,8 +143,8 @@ class AlertMonitor:
                 total_profit=1603.80,
                 last_updated=datetime.now()
             ),
-            'line_movements': AlertPerformance(
-                alert_type='line_movements',
+            'middles': AlertPerformance(
+                alert_type='middles',
                 total_alerts=2156,
                 successful_alerts=1534,
                 failed_alerts=498,
