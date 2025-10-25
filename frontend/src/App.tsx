@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Navigation } from './components/Navigation';
@@ -29,6 +29,9 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<SignUp />} />
 
+          {/* Root redirect to login */}
+          <Route path="/" element={<Navigate to="/login" replace />} />
+
           {/* All routes - login disabled for now */}
           <Route
             path="/*"
@@ -36,7 +39,7 @@ function App() {
               <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
                 <Navigation />
                 <Routes>
-                  <Route path="/" element={<LiveGames />} />
+                  <Route path="/live-games" element={<LiveGames />} />
                   <Route path="/tools" element={<Tools />} />
                   <Route path="/analytics" element={<Analytics />} />
                   <Route path="/analytics-sample" element={<AnalyticsSample />} />

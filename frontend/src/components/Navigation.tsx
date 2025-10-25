@@ -23,7 +23,7 @@ export function Navigation() {
 
   // Main nav items (always visible)
   const mainNavItems = [
-    { path: '/', label: '', emoji: uiEmojis.fire },
+    { path: '/live-games', label: '', emoji: uiEmojis.fire },
     { path: '/multi-sport', label: 'Multi-Sport', emoji: uiEmojis.target },
     { path: '/odds', label: 'Odds', emoji: uiEmojis.chart },
     { path: '/analytics', label: 'Analytics', emoji: uiEmojis.search },
@@ -45,8 +45,8 @@ export function Navigation() {
   ];
 
   const isActive = (path: string) => {
-    if (path === '/') {
-      return location.pathname === '/';
+    if (path === '/live-games') {
+      return location.pathname === '/' || location.pathname === '/live-games';
     }
     return location.pathname.startsWith(path);
   };
@@ -77,10 +77,10 @@ export function Navigation() {
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center justify-between h-24 py-4">
           {/* Logo */}
-          <Link to="/" onClick={handleNavClick} className="hover:opacity-80 transition-opacity flex-shrink-0">
-            <img 
-              src="/logo.png" 
-              alt="Max EV Sports" 
+          <Link to="/live-games" onClick={handleNavClick} className="hover:opacity-80 transition-opacity flex-shrink-0">
+            <img
+              src="/logo.png"
+              alt="Max EV Sports"
               className="h-24 w-auto object-contain"
               style={{ minWidth: '120px', maxWidth: '200px' }}
             />
@@ -95,7 +95,7 @@ export function Navigation() {
                 to={item.path}
                 className={`px-5 py-2.5 rounded-lg font-semibold transition-all text-base flex items-center gap-2 ${
                   isActive(item.path)
-                    ? item.path === '/' 
+                    ? item.path === '/live-games'
                       ? 'bg-black text-white border-2 border-yellow-500 shadow-lg shadow-yellow-500/30'
                       : 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
                     : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
