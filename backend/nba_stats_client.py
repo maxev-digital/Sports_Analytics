@@ -7,6 +7,7 @@ from typing import Dict, Optional
 from datetime import datetime, timedelta
 import json
 import os
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -79,14 +80,51 @@ class NBAStatsClient:
         logger.warning(f"Could not find team ID for: {team_name}")
         return None
 
-    def fetch_team_season_stats(self) -> Dict[str, Dict]:
-        """Fetch season stats for all teams"""
-        # Check cache first
-        cached_data = self._load_cache()
-        if cached_data:
-            return cached_data
+    def _load_from_csv(self) -> Dict[str, Dict]:
+        """Load team stats from cached CSV files"""
+        csv_path = os.path.join("data", "raw", "nba", "nba_team_stats_latest.csv")
 
-        logger.info("Fetching fresh team season stats from NBA API...")
+        if not os.path.exists(csv_path):
+            logger.warning(f"CSV file not found: {csv_path}, returning empty stats")
+            return {}
+
+        try:
+            df = pd.read_csv(csv_path)
+            team_stats = {}
+
+            for _, row in df.iterrows():
+                team_name = row['team_name']
+                team_stats[team_name] = {
+                    'team_id': str(row['team_id']),
+                    'team_name': team_name,
+                    'games_played': int(row.get('games_played', 0)),
+                    'wins': int(row.get('wins', 0)),
+                    'losses': int(row.get('losses', 0)),
+                    'win_pct': float(row.get('wins', 0)) / max(int(row.get('games_played', 1)), 1),
+                    'off_rating': float(row.get('off_rating', 0)),
+                    'def_rating': float(row.get('def_rating', 0)),
+                    'net_rating': float(row.get('net_rating', 0)),
+                    'pace': float(row.get('pace', 0)),
+                    'fg_pct': 0.45,  # Default values since not in CSV
+                    'fg3_pct': 0.35,
+                    'ft_pct': 0.75,
+                    'pts_per_game': float(row.get('pts_per_game', 0)),
+                    'pts_allowed': float(row.get('opp_pts_per_game', 0)),
+                }
+
+            logger.info(f"Loaded stats for {len(team_stats)} teams from CSV")
+            return team_stats
+
+        except Exception as e:
+            logger.error(f"Error loading CSV: {e}")
+            return {}
+
+    def fetch_team_season_stats(self) -> Dict[str, Dict]:
+        """Fetch season stats for all teams - ALWAYS use cached CSV data to avoid NBA API timeouts"""
+        # ALWAYS use cached CSV data instead of hitting NBA API
+        # NBA API is extremely slow and unreliable
+        logger.info("Loading team stats from cached CSV files...")
+        return self._load_from_csv()
         team_stats = {}
 
         try:
@@ -192,37 +230,11 @@ class NBAStatsClient:
             return {}
 
     def fetch_last_n_games(self, team_name: str, n: int = 5) -> list:
-        """Fetch last N games for a team"""
-        team_id = self.get_team_id(team_name)
-        if not team_id:
-            return []
-
-        try:
-            time.sleep(0.6)  # Rate limiting
-            game_log = teamgamelog.TeamGameLog(
-                team_id=team_id,
-                season='2024-25'
-            )
-            df = game_log.get_data_frames()[0]
-
-            # Get last N games
-            recent_games = []
-            for _, row in df.head(n).iterrows():
-                recent_games.append({
-                    'game_date': row.get('GAME_DATE', ''),
-                    'matchup': row.get('MATCHUP', ''),
-                    'wl': row.get('WL', ''),
-                    'pts': int(row.get('PTS', 0)),
-                    'opp_pts': int(row.get('PTS', 0)) - int(row.get('PLUS_MINUS', 0)),
-                    'plus_minus': int(row.get('PLUS_MINUS', 0)),
-                    'fg_pct': float(row.get('FG_PCT', 0)),
-                })
-
-            return recent_games
-
-        except Exception as e:
-            logger.error(f"Error fetching game log for {team_name}: {e}")
-            return []
+        """Fetch last N games for a team - Disabled to avoid NBA API timeouts"""
+        # Return empty list to avoid NBA API timeouts
+        # The system will use season averages instead
+        logger.debug(f"Skipping last {n} games fetch for {team_name} (NBA API disabled)")
+        return []
 
     def get_team_stats(self, team_name: str) -> Optional[Dict]:
         """Get season stats for a specific team"""
