@@ -213,6 +213,14 @@ function renderOpportunities() {
     const point1 = op.point1 || op.point_a || op.bet1_point || '';
     const point2 = op.point2 || op.point_b || op.bet2_point || '';
 
+    // Debug logging
+    if (index === 0) {
+      console.log('[POPUP] First opportunity data:', {
+        side1, side2, point1, point2, odds1, odds2,
+        raw_op: op
+      });
+    }
+
     // Format bet descriptions (e.g., "Over 5.5" or "Warriors -3.5")
     const bet1Description = point1 ? `${side1} ${point1}` : side1;
     const bet2Description = point2 ? `${side2} ${point2}` : side2;
