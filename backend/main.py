@@ -1713,15 +1713,26 @@ async def get_nba_props_with_edges(min_edge_pct: float = 5.0):
 
             logger.info(f"Found {len(upcoming_games)} upcoming NBA games")
 
-        # Initialize props manager and get props with edges
-        props_manager = NBAPropsManager()
-        props_response = await props_manager.get_nba_props_with_edges(
-            games=upcoming_games,
-            min_edge_pct=min_edge_pct
+        # DISABLED: NBA API causes timeouts - return empty response
+        logger.warning("NBA props disabled due to API timeouts")
+        from live_models import PlayerPropsResponse
+        props_response = PlayerPropsResponse(
+            total_props=0,
+            total_strong_bets=0,
+            total_moderate_bets=0,
+            games=[]
         )
 
+        # OLD CODE - DISABLED
+        # Initialize props manager and get props with edges
+        # props_manager = NBAPropsManager()
+        # props_response = await props_manager.get_nba_props_with_edges(
+        #     games=upcoming_games,
+        #     min_edge_pct=min_edge_pct
+        # )
+
         # Clean up
-        await props_manager.close()
+        # await props_manager.close()
 
         logger.info(
             f"Returning {props_response.total_props} props "

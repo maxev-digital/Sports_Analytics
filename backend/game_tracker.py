@@ -3,9 +3,10 @@ from live_models import GameState, LiveGame, GameOdds, Team, GameProjection, Tea
 from odds_client import OddsAPIClient
 from projector import GameProjector
 from momentum_calculator import MomentumCalculator
-from nba_stats_client import NBAStatsClient
+# DISABLED: NBA API causes timeouts - using ESPN only
+# from nba_stats_client import NBAStatsClient
 from nba_live_client import NBALiveClient
-from nba_momentum_client import NBAMomentumClient
+# from nba_momentum_client import NBAMomentumClient
 from espn_nfl_client import ESPNNFLClient
 from nfl_stats_client import NFLStatsClient
 from nfl_momentum_client import NFLMomentumClient
@@ -27,9 +28,10 @@ class GameTracker:
     def __init__(self):
         self.odds_client = OddsAPIClient()
         self.projector = GameProjector()
-        self.nba_stats_client = NBAStatsClient()
+        # DISABLED: NBA API causes timeouts
+        # self.nba_stats_client = NBAStatsClient()
         self.nba_live_client = NBALiveClient()
-        self.nba_momentum_client = NBAMomentumClient()
+        # self.nba_momentum_client = NBAMomentumClient()
         self.espn_nfl_client = ESPNNFLClient()
         self.nfl_stats_client = NFLStatsClient()
         self.nfl_momentum_client = NFLMomentumClient()
@@ -384,17 +386,22 @@ class GameTracker:
             return None
 
     def _get_team_stats(self, team_name: str) -> Optional[TeamStats]:
-        """Get team stats with caching"""
+        """Get team stats with caching - DISABLED: NBA API causes timeouts"""
+        # DISABLED: Return None to avoid NBA API calls
+        logger.info(f"NBA stats disabled - skipping stats for {team_name}")
+        return None
+
+        # OLD CODE - DISABLED
         # Check if we have cached stats
-        if not self.team_stats_cache:
+        if False:  # Disabled
             # Fetch all team stats (this is cached in the client)
-            all_stats = self.nba_stats_client.fetch_team_season_stats()
+            # all_stats = self.nba_stats_client.fetch_team_season_stats()
 
             # Convert to TeamStats models
-            for name, stats_dict in all_stats.items():
+            for name, stats_dict in {}:  # all_stats.items():
                 try:
                     # Fetch last 5 games
-                    last_5 = self.nba_stats_client.fetch_last_n_games(name, 5)
+                    last_5 = []  # self.nba_stats_client.fetch_last_n_games(name, 5)
 
                     # Calculate last 5 stats
                     if last_5:
@@ -980,14 +987,19 @@ class GameTracker:
 
                 if game_state.sport_key.startswith('basketball_nba') and game_state.status == 'live':
                     try:
+                        # DISABLED: NBA API causes timeouts
+                        logger.info(f"NBA momentum disabled for game {game_id}")
+                        momentum_data = None
+
+                        # OLD CODE - DISABLED
                         # Get NBA game ID from the live client's scoreboard
                         # The game_id format needs to match NBA API format
                         # Try to extract NBA game ID from our game_id or scoreboard data
 
                         # For now, log and try with the existing game_id
-                        logger.info(f"Attempting to fetch NBA momentum for game {game_id}")
+                        # logger.info(f"Attempting to fetch NBA momentum for game {game_id}")
 
-                        momentum_data = self.nba_momentum_client.get_live_momentum(game_id)
+                        # momentum_data = self.nba_momentum_client.get_live_momentum(game_id)
 
                         if momentum_data:
                             # Create momentum stats for home team
