@@ -4,10 +4,41 @@
  * Manages notifications and coordinates with content scripts
  */
 
-const BACKEND_URL = 'http://localhost:8000';
-const WS_URL = 'ws://localhost:8000/ws';
+// Backend URLs - try production first, fallback to localhost if unreachable
+let BACKEND_URL = 'https://max-ev-sports.com';
+let WS_URL = 'wss://max-ev-sports.com/ws';
+const BACKEND_FALLBACK = 'http://localhost:8000';
+const WS_FALLBACK = 'ws://localhost:8000/ws';
 const USE_WEBSOCKET = false; // Temporarily disabled - using REST polling instead
 const POLL_INTERVAL = 5000; // Poll every 5 seconds
+
+// Test backend connectivity and set appropriate URL
+async function detectBackendURL() {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/games`, { method: 'HEAD', signal: AbortSignal.timeout(3000) });
+    if (response.ok) {
+      console.log('✅ Connected to production backend:', BACKEND_URL);
+      return;
+    }
+  } catch (error) {
+    console.log('⚠️ Production backend unreachable, trying localhost...');
+  }
+
+  // Try localhost fallback
+  try {
+    const response = await fetch(`${BACKEND_FALLBACK}/api/games`, { method: 'HEAD', signal: AbortSignal.timeout(3000) });
+    if (response.ok) {
+      BACKEND_URL = BACKEND_FALLBACK;
+      WS_URL = WS_FALLBACK;
+      console.log('✅ Connected to localhost backend:', BACKEND_URL);
+    }
+  } catch (error) {
+    console.error('❌ No backend available');
+  }
+}
+
+// Detect backend on startup
+detectBackendURL();
 
 // URL Builder functions (inlined to avoid importScripts issues in Manifest V3)
 function slugify(teamName) {
