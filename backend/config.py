@@ -27,5 +27,10 @@ MARKETS = "h2h,spreads,totals"  # Fetch money lines, spreads, and totals
 # Polling
 POLL_INTERVAL = 5  # seconds (5 seconds - fastest recommended rate)
 
+# Quiet Hours - Stop Odds API calls during low-traffic hours to save costs
+QUIET_HOURS_ENABLED = True  # Set to False to disable quiet hours
+QUIET_HOURS_START = 23  # 11 PM (24-hour format)
+QUIET_HOURS_END = 9     # 9 AM (24-hour format)
+
 # Edge detection
 MIN_EDGE = 5.0  # points

@@ -16,11 +16,13 @@ from nhl_goalie_pull_predictor import GoaliePullPredictor
 from strategies.favorite_comeback_detector import FavoriteComebackDetector
 from strategies.halftime_tracker import HalftimeTracker
 from strategies.momentum_detector import MomentumDetector
-from config import POLL_INTERVAL
+from config import POLL_INTERVAL, QUIET_HOURS_ENABLED, QUIET_HOURS_START, QUIET_HOURS_END
 from typing import Dict, List, Optional
 import asyncio
 import logging
 import time
+from datetime import datetime
+import pytz
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +66,23 @@ class GameTracker:
             except Exception as e:
                 logger.error(f"Error in game tracker: {e}", exc_info=True)
                 await asyncio.sleep(5)
-    
+
+    def _is_quiet_hours(self) -> bool:
+        """Check if current time is within quiet hours (11 PM - 9 AM EST)"""
+        if not QUIET_HOURS_ENABLED:
+            return False
+
+        # Use US Eastern Time for consistency with betting markets
+        eastern = pytz.timezone('US/Eastern')
+        now_eastern = datetime.now(eastern)
+        current_hour = now_eastern.hour
+
+        # Quiet hours: 11 PM (23) to 9 AM (9)
+        if QUIET_HOURS_START > QUIET_HOURS_END:  # Spans midnight (e.g., 23 to 9)
+            return current_hour >= QUIET_HOURS_START or current_hour < QUIET_HOURS_END
+        else:  # Same day range (e.g., 2 to 6)
+            return QUIET_HOURS_START <= current_hour < QUIET_HOURS_END
+
     def _map_nhl_team_name(self, team_name: str) -> Optional[str]:
         """Map NHL team name to API abbreviation"""
         team_map = {
@@ -444,6 +462,12 @@ class GameTracker:
     async def update_games(self):
         """Fetch and update all games"""
         logger.info("Updating games...")
+
+        # Check if we're in quiet hours (11 PM - 9 AM EST) to save API costs
+        if self._is_quiet_hours():
+            logger.info("Quiet hours active (11 PM - 9 AM EST) - using cached data, skipping Odds API calls")
+            # Return early without making API calls - frontend will show cached games
+            return
 
         # Fetch odds and scores
         odds_data = await self.odds_client.get_live_games()
