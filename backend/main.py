@@ -10,7 +10,7 @@ import os
 
 from game_tracker import GameTracker
 from live_models import LiveGame
-from alert_monitor import AlertMonitor, ArbitrageAlert, SteamMoveAlert, LineMovementAlert
+from alert_monitor import AlertMonitor, ArbitrageAlert, SteamMoveAlert, MiddleAlert
 from live_analytics_engine import analytics_engine
 from plays_database import plays_db
 from settings_database import settings_db, BOOKMAKER_PRESETS
@@ -940,12 +940,12 @@ async def get_subscription_features(user_id: str):
             'free': ['live_games_limited', 'basic_odds'],
             'pro': [
                 'live_games_limited', 'basic_odds',
-                'all_sports', 'alerts', 'arbitrage', 'steam_moves', 'line_movements',
+                'all_sports', 'alerts', 'arbitrage', 'steam_moves', 'middles',
                 'email_notifications', 'unlimited_views'
             ],
             'elite': [
                 'live_games_limited', 'basic_odds',
-                'all_sports', 'alerts', 'arbitrage', 'steam_moves', 'line_movements',
+                'all_sports', 'alerts', 'arbitrage', 'steam_moves', 'middles',
                 'email_notifications', 'unlimited_views',
                 'goalie_pulls', 'api_access', 'sms_notifications', 'custom_alerts',
                 'advanced_analytics'
@@ -1293,21 +1293,21 @@ async def get_steam_move_alerts(user_id: str = 'default'):
             ]
         }
 
-@app.get("/api/alerts/line-movements")
-async def get_line_movement_alerts(user_id: str = 'default'):
-    """Get line movement alerts filtered by user's enabled bookmakers"""
+@app.get("/api/alerts/middles")
+async def get_middle_alerts(user_id: str = 'default'):
+    """Get middle opportunity alerts filtered by user's enabled bookmakers"""
     try:
         # Get user settings
         settings = settings_db.get_settings(user_id)
         enabled_bookmakers = set(settings['enabled_bookmakers']) if settings else None
 
-        alerts = alert_monitor.active_alerts.get('line_movements', [])
+        alerts = alert_monitor.active_alerts.get('middles', [])
 
         # Filter alerts to only include enabled bookmakers
         if enabled_bookmakers:
             alerts = [
                 alert for alert in alerts
-                if alert.bookmaker in enabled_bookmakers
+                if alert.book_low in enabled_bookmakers and alert.book_high in enabled_bookmakers
             ]
 
         return {
@@ -1319,21 +1319,26 @@ async def get_line_movement_alerts(user_id: str = 'default'):
                     "home_team": alert.home_team,
                     "away_team": alert.away_team,
                     "market_type": alert.market_type,
-                    "bookmaker": alert.bookmaker,
-                    "original_line": alert.original_line,
-                    "new_line": alert.new_line,
-                    "movement": round(alert.movement, 1),
-                    "movement_percent": round(alert.movement_percent, 1),
-                    "timestamp": alert.timestamp.isoformat()
+                    "book_low": alert.book_low,
+                    "book_high": alert.book_high,
+                    "low_line": alert.low_line,
+                    "high_line": alert.high_line,
+                    "gap": round(alert.gap, 1),
+                    "side_low": alert.side_low,
+                    "side_high": alert.side_high,
+                    "odds_low": alert.odds_low,
+                    "odds_high": alert.odds_high,
+                    "timestamp": alert.timestamp.isoformat(),
+                    "expires_in": alert.expires_in
                 }
                 for alert in alerts
             ]
         }
 
     except Exception as e:
-        logger.error(f"Error filtering line movement alerts: {str(e)}")
+        logger.error(f"Error filtering middle alerts: {str(e)}")
         # On error, return all alerts
-        alerts = alert_monitor.active_alerts.get('line_movements', [])
+        alerts = alert_monitor.active_alerts.get('middles', [])
         return {
             "count": len(alerts),
             "alerts": [
@@ -1343,12 +1348,17 @@ async def get_line_movement_alerts(user_id: str = 'default'):
                     "home_team": alert.home_team,
                     "away_team": alert.away_team,
                     "market_type": alert.market_type,
-                    "bookmaker": alert.bookmaker,
-                    "original_line": alert.original_line,
-                    "new_line": alert.new_line,
-                    "movement": round(alert.movement, 1),
-                    "movement_percent": round(alert.movement_percent, 1),
-                    "timestamp": alert.timestamp.isoformat()
+                    "book_low": alert.book_low,
+                    "book_high": alert.book_high,
+                    "low_line": alert.low_line,
+                    "high_line": alert.high_line,
+                    "gap": round(alert.gap, 1),
+                    "side_low": alert.side_low,
+                    "side_high": alert.side_high,
+                    "odds_low": alert.odds_low,
+                    "odds_high": alert.odds_high,
+                    "timestamp": alert.timestamp.isoformat(),
+                    "expires_in": alert.expires_in
                 }
                 for alert in alerts
             ]
@@ -1365,7 +1375,7 @@ async def get_all_alerts(user_id: str = 'default'):
         # Get all alerts
         arb_alerts = alert_monitor.active_alerts.get('arbitrage', [])
         steam_alerts = alert_monitor.active_alerts.get('steam_moves', [])
-        line_alerts = alert_monitor.active_alerts.get('line_movements', [])
+        middle_alerts = alert_monitor.active_alerts.get('middles', [])
 
         # Filter if settings exist
         if enabled_bookmakers:
@@ -1377,9 +1387,9 @@ async def get_all_alerts(user_id: str = 'default'):
                 alert for alert in steam_alerts
                 if any(book in enabled_bookmakers for book in alert.books_moved)
             ]
-            line_alerts = [
-                alert for alert in line_alerts
-                if alert.bookmaker in enabled_bookmakers
+            middle_alerts = [
+                alert for alert in middle_alerts
+                if alert.book_low in enabled_bookmakers and alert.book_high in enabled_bookmakers
             ]
 
         return {
@@ -1391,9 +1401,29 @@ async def get_all_alerts(user_id: str = 'default'):
                 "count": len(steam_alerts),
                 "alerts": steam_alerts
             },
-            "line_movements": {
-                "count": len(line_alerts),
-                "alerts": line_alerts
+            "middles": {
+                "count": len(middle_alerts),
+                "alerts": [
+                    {
+                        "game_id": alert.game_id,
+                        "sport": alert.sport,
+                        "home_team": alert.home_team,
+                        "away_team": alert.away_team,
+                        "market_type": alert.market_type,
+                        "book_low": alert.book_low,
+                        "book_high": alert.book_high,
+                        "low_line": alert.low_line,
+                        "high_line": alert.high_line,
+                        "gap": round(alert.gap, 1),
+                        "side_low": alert.side_low,
+                        "side_high": alert.side_high,
+                        "odds_low": alert.odds_low,
+                        "odds_high": alert.odds_high,
+                        "timestamp": alert.timestamp.isoformat(),
+                        "expires_in": alert.expires_in
+                    }
+                    for alert in middle_alerts
+                ]
             },
             "last_updated": alert_monitor.active_alerts.get('last_updated', None)
         }
@@ -1401,6 +1431,7 @@ async def get_all_alerts(user_id: str = 'default'):
     except Exception as e:
         logger.error(f"Error filtering all alerts: {str(e)}")
         # On error, return all alerts
+        middles_raw = alert_monitor.active_alerts.get('middles', [])
         return {
             "arbitrage": {
                 "count": len(alert_monitor.active_alerts.get('arbitrage', [])),
@@ -1410,9 +1441,29 @@ async def get_all_alerts(user_id: str = 'default'):
                 "count": len(alert_monitor.active_alerts.get('steam_moves', [])),
                 "alerts": alert_monitor.active_alerts.get('steam_moves', [])
             },
-            "line_movements": {
-                "count": len(alert_monitor.active_alerts.get('line_movements', [])),
-                "alerts": alert_monitor.active_alerts.get('line_movements', [])
+            "middles": {
+                "count": len(middles_raw),
+                "alerts": [
+                    {
+                        "game_id": alert.game_id,
+                        "sport": alert.sport,
+                        "home_team": alert.home_team,
+                        "away_team": alert.away_team,
+                        "market_type": alert.market_type,
+                        "book_low": alert.book_low,
+                        "book_high": alert.book_high,
+                        "low_line": alert.low_line,
+                        "high_line": alert.high_line,
+                        "gap": round(alert.gap, 1),
+                        "side_low": alert.side_low,
+                        "side_high": alert.side_high,
+                        "odds_low": alert.odds_low,
+                        "odds_high": alert.odds_high,
+                        "timestamp": alert.timestamp.isoformat(),
+                        "expires_in": alert.expires_in
+                    }
+                    for alert in middles_raw
+                ]
             },
             "last_updated": alert_monitor.active_alerts.get('last_updated', None)
         }
@@ -1450,14 +1501,14 @@ async def get_alert_performance():
             "avg_profit": alert_monitor.performance_stats['steam_moves'].avg_profit,
             "total_profit": alert_monitor.performance_stats['steam_moves'].total_profit,
         },
-        "line_movements": {
-            "total_alerts": alert_monitor.performance_stats['line_movements'].total_alerts,
-            "successful_alerts": alert_monitor.performance_stats['line_movements'].successful_alerts,
-            "failed_alerts": alert_monitor.performance_stats['line_movements'].failed_alerts,
-            "pending_alerts": alert_monitor.performance_stats['line_movements'].pending_alerts,
-            "win_rate": alert_monitor.performance_stats['line_movements'].win_rate,
-            "avg_profit": alert_monitor.performance_stats['line_movements'].avg_profit,
-            "total_profit": alert_monitor.performance_stats['line_movements'].total_profit,
+        "middles": {
+            "total_alerts": alert_monitor.performance_stats['middles'].total_alerts,
+            "successful_alerts": alert_monitor.performance_stats['middles'].successful_alerts,
+            "failed_alerts": alert_monitor.performance_stats['middles'].failed_alerts,
+            "pending_alerts": alert_monitor.performance_stats['middles'].pending_alerts,
+            "win_rate": alert_monitor.performance_stats['middles'].win_rate,
+            "avg_profit": alert_monitor.performance_stats['middles'].avg_profit,
+            "total_profit": alert_monitor.performance_stats['middles'].total_profit,
         }
     }
 
@@ -2446,7 +2497,7 @@ async def get_strategy_specific_performance(strategy_name: str):
 @app.get("/api/plays/categories")
 async def get_alert_categories():
     """
-    Get all alert categories beyond arbitrage/steam/line movements
+    Get all alert categories beyond arbitrage/steam/middles
     - Pace-based, fatigue, regression, moneyline, etc.
     - Display names and icons for frontend
     """
@@ -2828,7 +2879,7 @@ active_websocket_connections = []
 async def websocket_endpoint(websocket: WebSocket):
     """
     WebSocket endpoint for real-time alerts
-    Sends arbitrage opportunities, steam moves, and line movements to connected clients
+    Sends arbitrage opportunities, steam moves, and middle opportunities to connected clients
     """
     try:
         logger.info("[WS] Attempting to accept WebSocket connection...")

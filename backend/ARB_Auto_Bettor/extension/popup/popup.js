@@ -1,6 +1,6 @@
 let opportunities = [];
 let steamMoves = [];
-let lineMovements = [];
+let middles = [];
 let goaliePulls = [];
 
 // Sport emoji helper - using Microsoft Fluent Emoji CDN
@@ -8,7 +8,7 @@ function getSportEmoji(sport) {
   const sportEmojis = {
     'NBA': 'https://em-content.zobj.net/source/microsoft-teams/363/basketball_1f3c0.png',
     'NFL': 'https://em-content.zobj.net/source/microsoft-teams/363/american-football_1f3c8.png',
-    'NHL': 'https://em-content.zobj.net/source/microsoft-teams/363/black-circle_26ab.png', // Puck
+    'NHL': 'https://em-content.zobj.net/source/microsoft-teams/363/ice-hockey_1f3d2.png', // Ice hockey stick and puck
     'MLB': 'https://em-content.zobj.net/source/microsoft-teams/363/baseball_26be-fe0f.png',
     'NCAAF': 'https://em-content.zobj.net/source/microsoft-teams/363/american-football_1f3c8.png',
     'SOCCER': 'https://em-content.zobj.net/source/microsoft-teams/363/soccer-ball_26bd.png'
@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadSoundSettings();
 
   // Event listeners
-  document.getElementById('refreshBtn').addEventListener('click', loadOpportunities);
+  document.getElementById('refreshBtn').addEventListener('click', () => loadOpportunities(true));
   document.getElementById('settingsBtn').addEventListener('click', () => {
     // Open settings page in new tab
     chrome.tabs.create({ url: chrome.runtime.getURL('settings/settings.html') });
@@ -129,14 +129,15 @@ document.addEventListener('DOMContentLoaded', () => {
   // Stat card clicking switches to that tab
   document.getElementById('statArbitrage').addEventListener('click', () => switchTab('arbitrage'));
   document.getElementById('statSteam').addEventListener('click', () => switchTab('steam'));
-  document.getElementById('statLines').addEventListener('click', () => switchTab('lines'));
+  document.getElementById('statMiddles').addEventListener('click', () => switchTab('middles'));
 });
 
-async function loadOpportunities() {
-  console.log('[POPUP] Loading opportunities...');
+async function loadOpportunities(forceRefresh = false) {
+  console.log('[POPUP] Loading opportunities...', forceRefresh ? '(force refresh)' : '(cached)');
   try {
     // Get opportunities from background script
-    chrome.runtime.sendMessage({ type: 'get_opportunities' }, (response) => {
+    const messageType = forceRefresh ? 'refresh' : 'get_opportunities';
+    chrome.runtime.sendMessage({ type: messageType }, (response) => {
       if (chrome.runtime.lastError) {
         console.error('[POPUP] Error getting opportunities:', chrome.runtime.lastError);
         return;
@@ -147,12 +148,12 @@ async function loadOpportunities() {
       if (response) {
         opportunities = response.opportunities || [];
         steamMoves = response.steamMoves || [];
-        lineMovements = response.lineMovements || [];
+        middles = response.middles || [];
         goaliePulls = response.goaliePulls || [];
 
         console.log('[POPUP] Opportunities count:', opportunities.length);
         console.log('[POPUP] Steam moves count:', steamMoves.length);
-        console.log('[POPUP] Line movements count:', lineMovements.length);
+        console.log('[POPUP] Middles count:', middles.length);
         console.log('[POPUP] Goalie pulls count:', goaliePulls.length);
 
         if (opportunities.length > 0) {
@@ -161,7 +162,7 @@ async function loadOpportunities() {
 
         renderOpportunities();
         renderSteamMoves();
-        renderLineMovements();
+        renderMiddles();
         renderGoaliePulls();
         updateStats();
       } else {
@@ -292,7 +293,7 @@ function renderOpportunities() {
 function updateStats() {
   document.getElementById('opportunityCount').textContent = opportunities.length;
   document.getElementById('steamCount').textContent = steamMoves.length;
-  document.getElementById('lineCount').textContent = lineMovements.length;
+  document.getElementById('middlesCount').textContent = middles.length;
   document.getElementById('goalieCount').textContent = goaliePulls.length;
 }
 
@@ -391,41 +392,73 @@ function renderSteamMoves() {
   });
 }
 
-function renderLineMovements() {
-  const container = document.getElementById('lineMovementsList');
+function renderMiddles() {
+  const container = document.getElementById('middlesList');
 
-  if (lineMovements.length === 0) {
+  if (middles.length === 0) {
     container.innerHTML = `
       <div class="empty-state">
         <div class="empty-state-icon">
-          <img src="https://em-content.zobj.net/source/microsoft-teams/363/chart-increasing_1f4c8.png" alt="Chart" style="width: 64px; height: 64px;">
+          <img src="https://em-content.zobj.net/source/microsoft-teams/363/bullseye_1f3af.png" alt="Bullseye" style="width: 64px; height: 64px;">
         </div>
-        <div>No significant line movements</div>
-        <div style="font-size: 11px; margin-top: 8px;">Tracking 1.0+ point moves...</div>
+        <div>No middle opportunities</div>
+        <div style="font-size: 11px; margin-top: 8px;">Tracking NHL (1+ goal gap) and NBA (3+ point gap)...</div>
       </div>
     `;
     return;
   }
 
-  container.innerHTML = lineMovements.map((lm, index) => {
-    const game = lm.game || `${lm.away_team} @ ${lm.home_team}`;
-    const bookData = getBookmaker(lm.bookmaker);
-    const movement = (lm.movement || 0).toFixed(1);
-    const direction = lm.movement > 0 ? 'up' : 'down';
+  container.innerHTML = middles.map((m, index) => {
+    const game = m.game || `${m.away_team} @ ${m.home_team}`;
+
+    // Map sport_key to display name
+    let sport = 'Unknown';
+    if (m.sport) {
+      if (m.sport.includes('basketball_nba')) sport = 'NBA';
+      else if (m.sport.includes('hockey')) sport = 'NHL';
+      else if (m.sport.includes('football_nfl')) sport = 'NFL';
+      else if (m.sport.includes('baseball')) sport = 'MLB';
+      else sport = m.sport;
+    }
+
+    const sportEmoji = getSportEmoji(sport);
+    const bookLow = getBookmaker(m.book_low);
+    const bookHigh = getBookmaker(m.book_high);
+    const gap = (m.gap || 0).toFixed(1);
 
     // Timestamps
-    const alertTime = formatTimeAgo(lm.timestamp);
-    const gameTime = formatGameTime(lm.commence_time);
+    const alertTime = formatTimeAgo(m.timestamp);
+    const gameTime = formatGameTime(m.commence_time);
 
     return `
-      <div class="opportunity-card">
+      <div class="opportunity-card" data-sport="${sport}">
         <div class="opportunity-header">
-          <div class="opportunity-title">${game}</div>
-          <div class="opportunity-profit">${movement} pts</div>
+          <div class="opportunity-title">
+            <img src="${sportEmoji}" alt="${sport}" style="width: 20px; height: 20px; vertical-align: middle; margin-right: 6px;">
+            ${game}
+          </div>
+          <div class="opportunity-profit">${gap} gap</div>
         </div>
         <div class="opportunity-details">
-          ${bookData.name} • ${lm.market_type}<br>
-          ${lm.original_line} → ${lm.new_line} (${direction})
+          ${m.market_type.toUpperCase()} MIDDLE<br>
+          ${m.side_low} (${m.odds_low})<br>
+          ${m.side_high} (${m.odds_high})
+        </div>
+        <div class="opportunity-books">
+          <div class="book-badge book-left">
+            <img src="${bookLow.logo}" alt="${bookLow.name}" class="book-logo">
+            <div class="book-info">
+              <div class="book-name">${bookLow.name}</div>
+              <div class="bet-details">${m.side_low} (${m.odds_low})</div>
+            </div>
+          </div>
+          <div class="book-badge book-right">
+            <img src="${bookHigh.logo}" alt="${bookHigh.name}" class="book-logo">
+            <div class="book-info">
+              <div class="book-name">${bookHigh.name}</div>
+              <div class="bet-details">${m.side_high} (${m.odds_high})</div>
+            </div>
+          </div>
         </div>
         <div class="alert-timestamps">
           <span class="timestamp-alert">⏰ Alert: ${alertTime}</span>

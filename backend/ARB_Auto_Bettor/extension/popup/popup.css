@@ -177,17 +177,27 @@ body {
   color: #ffffff;
 }
 
-/* NHL - Ice rink (light blue-white like ice) */
+/* NHL - Blue and black gradient with white text */
 .opportunity-card[data-sport="NHL"] {
-  background: linear-gradient(135deg, #d4e8f0 0%, #b8dae8 100%);
-  border: 2px solid #6b9fb8;
-  color: #000000;
+  background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
+  border: 2px solid #3b82f6;
+  color: #ffffff;
 }
 
 .opportunity-card[data-sport="NHL"] .opportunity-title,
 .opportunity-card[data-sport="NHL"] .opportunity-profit,
 .opportunity-card[data-sport="NHL"] .opportunity-details {
-  color: #000000;
+  color: #ffffff;
+}
+
+.opportunity-card[data-sport="NHL"] .book-badge.book-left {
+  background: #16a34a;
+  border: 1px solid #15803d;
+}
+
+.opportunity-card[data-sport="NHL"] .book-badge.book-right {
+  background: #15803d;
+  border: 1px solid #166534;
 }
 
 /* MLB - Dirt infield (brown/tan) */
@@ -227,6 +237,29 @@ body {
 .opportunity-card[data-sport="SOCCER"] .opportunity-profit,
 .opportunity-card[data-sport="SOCCER"] .opportunity-details {
   color: #ffffff;
+}
+
+/* Override ALL cards in middles tab to be blue with green book badges */
+#middles-tab .opportunity-card {
+  background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%) !important;
+  border: 2px solid #3b82f6 !important;
+  color: #ffffff !important;
+}
+
+#middles-tab .opportunity-card .opportunity-title,
+#middles-tab .opportunity-card .opportunity-profit,
+#middles-tab .opportunity-card .opportunity-details {
+  color: #ffffff !important;
+}
+
+#middles-tab .opportunity-card .book-badge.book-left {
+  background: #16a34a !important;
+  border: 1px solid #15803d !important;
+}
+
+#middles-tab .opportunity-card .book-badge.book-right {
+  background: #15803d !important;
+  border: 1px solid #166534 !important;
 }
 
 .opportunity-card:hover {

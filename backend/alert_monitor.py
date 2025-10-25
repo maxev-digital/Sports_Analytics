@@ -75,19 +75,24 @@ class SteamMoveAlert:
     timestamp: datetime
 
 @dataclass
-class LineMovementAlert:
-    """Significant line movement alert"""
+class MiddleAlert:
+    """Middle opportunity alert - potential to win both sides"""
     game_id: str
     sport: str
     home_team: str
     away_team: str
-    market_type: str
-    bookmaker: str
-    original_line: float
-    new_line: float
-    movement: float
-    movement_percent: float
+    market_type: str  # 'spreads' or 'totals'
+    book_low: str  # Book with lower line
+    book_high: str  # Book with higher line
+    low_line: float  # Lower line value
+    high_line: float  # Higher line value
+    gap: float  # Middle gap size
+    side_low: str  # Bet side for low line (e.g., "Over 5.5", "Lakers +2.5")
+    side_high: str  # Bet side for high line (e.g., "Under 6.5", "Warriors -3.5")
+    odds_low: float  # Odds at low line
+    odds_high: float  # Odds at high line
     timestamp: datetime
+    expires_in: int = 0  # seconds until game starts
 
 
 class AlertMonitor:
@@ -111,7 +116,7 @@ class AlertMonitor:
         self.active_alerts: Dict[str, List[Any]] = {
             'arbitrage': [],
             'steam_moves': [],
-            'line_movements': []
+            'middles': []  # Replaced line_movements with middles
         }
 
         # Performance tracking - simulated data for demo purposes
@@ -243,6 +248,20 @@ class AlertMonitor:
 
             # Check for arbitrage
             if best_odds_home['bookmaker'] and best_odds_away['bookmaker']:
+                # Validate that points match for true arbitrage (no middle risk)
+                if market_type == 'totals':
+                    # For totals, Over and Under must have the same point value
+                    if best_odds_home['point'] != best_odds_away['point']:
+                        logger.debug(f"Skipping totals arb - mismatched points: Over {best_odds_home['point']} vs Under {best_odds_away['point']}")
+                        continue
+                elif market_type == 'spreads':
+                    # For spreads, points must be opposite (e.g., +3.5 and -3.5)
+                    if best_odds_home['point'] is None or best_odds_away['point'] is None:
+                        continue
+                    if abs(best_odds_home['point'] + best_odds_away['point']) > 0.01:  # Allow tiny floating point error
+                        logger.debug(f"Skipping spread arb - mismatched points: {best_odds_home['point']} vs {best_odds_away['point']}")
+                        continue
+
                 prob_home = self.american_to_implied_prob(best_odds_home['odds'])
                 prob_away = self.american_to_implied_prob(best_odds_away['odds'])
 
@@ -427,69 +446,215 @@ class AlertMonitor:
 
         return alerts
 
-    def detect_line_movement(self, game_id: str, current_odds: Dict) -> List[LineMovementAlert]:
-        """Detect significant line movements at individual books"""
+    def detect_middle_opportunities(self, game_odds: Dict) -> List[MiddleAlert]:
+        """Detect middle opportunities - gaps between lines at different books"""
         alerts = []
 
-        if game_id not in self.odds_history:
-            self.odds_history[game_id] = current_odds
+        game_id = game_odds.get('id')
+        sport_key = game_odds.get('sport_key')
+        home_team = game_odds.get('home_team')
+        away_team = game_odds.get('away_team')
+        commence_time = game_odds.get('commence_time')
+        bookmakers = game_odds.get('bookmakers', [])
+
+        if len(bookmakers) < 2:
             return alerts
 
-        previous_odds = self.odds_history[game_id]
+        # Determine minimum gap based on sport
+        is_nhl = 'hockey' in sport_key.lower()
+        is_nba = 'basketball_nba' in sport_key.lower()
 
-        for book in current_odds.get('bookmakers', []):
-            book_key = book.get('key')
+        # Skip if not NHL or NBA
+        if not (is_nhl or is_nba):
+            return alerts
 
-            prev_book = next(
-                (b for b in previous_odds.get('bookmakers', []) if b.get('key') == book_key),
-                None
-            )
+        # Set minimum gaps
+        min_gap_totals = 1.0 if is_nhl else 3.0  # NHL: 1+ goal, NBA: 3+ points
+        min_gap_spreads = 1.0 if is_nhl else 2.0  # NHL: 1+ goal, NBA: 2+ points
 
-            if not prev_book:
+        # Check each market type
+        for market_type in ['spreads', 'totals']:
+            # Collect all lines from all books
+            book_lines = []
+
+            for book in bookmakers:
+                book_name = book.get('key')
+                markets = book.get('markets', [])
+
+                for market in markets:
+                    if market.get('key') != market_type:
+                        continue
+
+                    outcomes = market.get('outcomes', [])
+
+                    for outcome in outcomes:
+                        point = outcome.get('point')
+                        odds = outcome.get('price')
+                        name = outcome.get('name')
+
+                        if point is not None and odds is not None:
+                            book_lines.append({
+                                'book': book_name,
+                                'point': point,
+                                'odds': odds,
+                                'side': name
+                            })
+
+            # Find gaps between lines
+            if len(book_lines) < 2:
                 continue
 
-            for market_type in ['spreads', 'totals']:
-                current_market = next(
-                    (m for m in book.get('markets', []) if m.get('key') == market_type),
-                    None
-                )
-                prev_market = next(
-                    (m for m in prev_book.get('markets', []) if m.get('key') == market_type),
-                    None
-                )
+            min_gap = min_gap_totals if market_type == 'totals' else min_gap_spreads
 
-                if not current_market or not prev_market:
+            if market_type == 'totals':
+                # For totals, a middle exists when you bet OPPOSITE sides at different totals
+                # Example: Over 5.5 vs Under 6.5 - if game lands on exactly 6, BOTH bets win!
+                # You need: Over at lower total, Under at higher total
+
+                # Separate Over and Under lines
+                over_lines = [line for line in book_lines if line['side'] == 'Over']
+                under_lines = [line for line in book_lines if line['side'] == 'Under']
+
+                # Compare each Over line with each Under line
+                for over_line in over_lines:
+                    for under_line in under_lines:
+                        # For a valid middle: Under total must be higher than Over total
+                        # Example: Over 5.5 and Under 6.5 creates a 1.0 point middle at 6.0
+                        if under_line['point'] > over_line['point']:
+                            gap = under_line['point'] - over_line['point']
+
+                            if gap >= min_gap:
+                                game_time = datetime.fromisoformat(commence_time.replace('Z', '+00:00'))
+                                expires_in = int((game_time - datetime.now(game_time.tzinfo)).total_seconds())
+
+                                side_low = f"Over {over_line['point']}"
+                                side_high = f"Under {under_line['point']}"
+
+                                alert = MiddleAlert(
+                                    game_id=game_id,
+                                    sport=sport_key,
+                                    home_team=home_team,
+                                    away_team=away_team,
+                                    market_type=market_type,
+                                    book_low=over_line['book'],
+                                    book_high=under_line['book'],
+                                    low_line=over_line['point'],
+                                    high_line=under_line['point'],
+                                    gap=gap,
+                                    side_low=side_low,
+                                    side_high=side_high,
+                                    odds_low=over_line['odds'],
+                                    odds_high=under_line['odds'],
+                                    timestamp=datetime.now(),
+                                    expires_in=expires_in
+                                )
+                                alerts.append(alert)
+
+            else:  # spreads
+                # For spreads, we need to normalize all lines to ONE team to avoid counting inverse lines as middles
+                # Example: Panthers -1.5 and Maple Leafs +1.5 are the SAME line (inverse), not a middle!
+                # True middle: Panthers -1.5 at Book A and Panthers -2.5 at Book B = 1.0 gap
+
+                # Key insight: In spread betting, if Team A is -1.5, then Team B is automatically +1.5
+                # These are inverse lines representing the SAME bet from opposite perspectives
+                # When normalizing to home team:
+                #   - Home -1.5 stays as -1.5
+                #   - Away +1.5 also means Home -1.5 (flip the sign)
+                # So both should normalize to the same value!
+
+                # Normalize all spread lines to the home team
+                normalized_lines = []
+                for line in book_lines:
+                    team = line['side']
+                    point = line['point']
+
+                    # If this line is for the home team, keep as-is
+                    if team == home_team:
+                        normalized_lines.append({
+                            'book': line['book'],
+                            'point': point,  # Home team spread stays as-is
+                            'odds': line['odds'],
+                            'side': team,
+                            'original_side': team,
+                            'original_point': point
+                        })
+                    # If this line is for the away team, convert to home team equivalent
+                    else:
+                        # Away team spread needs to be flipped to get home team perspective
+                        # If away is +1.5, home is -1.5 (flip sign)
+                        # If away is -1.5, home is +1.5 (flip sign)
+                        normalized_lines.append({
+                            'book': line['book'],
+                            'point': -point,  # Flip the sign to convert to home team perspective
+                            'odds': line['odds'],
+                            'side': home_team,  # Now comparing as if all bets are on home team
+                            'original_side': team,  # Track original for display
+                            'original_point': point  # Track original point for display
+                        })
+
+                # Now all lines are normalized to home team, find gaps
+                if len(normalized_lines) < 2:
                     continue
 
-                current_outcome = current_market.get('outcomes', [])[0] if current_market.get('outcomes') else None
-                prev_outcome = prev_market.get('outcomes', [])[0] if prev_market.get('outcomes') else None
+                # Group lines by their normalized point value to identify true middles
+                # Inverse lines will have the same normalized point and should NOT create a middle
+                from collections import defaultdict
+                point_groups = defaultdict(list)
+                for line in normalized_lines:
+                    # Round to 1 decimal to handle floating point issues
+                    point_key = round(line['point'], 1)
+                    point_groups[point_key].append(line)
 
-                if not current_outcome or not prev_outcome:
-                    continue
+                # Find middles between DIFFERENT normalized points
+                unique_points = sorted(point_groups.keys())
 
-                current_line = current_outcome.get('point', 0)
-                prev_line = prev_outcome.get('point', 0)
+                for i in range(len(unique_points)):
+                    for j in range(i + 1, len(unique_points)):
+                        low_point = unique_points[i]
+                        high_point = unique_points[j]
 
-                movement = abs(current_line - prev_line)
+                        gap = abs(high_point - low_point)
 
-                if movement >= self.line_movement_threshold:
-                    movement_percent = (movement / abs(prev_line) * 100) if prev_line != 0 else 0
+                        if gap >= min_gap:
+                            # Get one representative from each group
+                            low_lines = point_groups[low_point]
+                            high_lines = point_groups[high_point]
 
-                    alert = LineMovementAlert(
-                        game_id=game_id,
-                        sport=current_odds.get('sport_key'),
-                        home_team=current_odds.get('home_team'),
-                        away_team=current_odds.get('away_team'),
-                        market_type=market_type,
-                        bookmaker=book_key,
-                        original_line=prev_line,
-                        new_line=current_line,
-                        movement=current_line - prev_line,
-                        movement_percent=movement_percent,
-                        timestamp=datetime.now()
-                    )
+                            # Create alert for each combination of books
+                            for low in low_lines:
+                                for high in high_lines:
+                                    # Skip if same book (can't bet both sides at same book)
+                                    if low['book'] == high['book']:
+                                        continue
 
-                    alerts.append(alert)
+                                    # Calculate time until game starts
+                                    game_time = datetime.fromisoformat(commence_time.replace('Z', '+00:00'))
+                                    expires_in = int((game_time - datetime.now(game_time.tzinfo)).total_seconds())
+
+                                    # Use original sides and points for display (before normalization)
+                                    side_low = f"{low['original_side']} {low['original_point']:+.1f}"
+                                    side_high = f"{high['original_side']} {high['original_point']:+.1f}"
+
+                                    alert = MiddleAlert(
+                                        game_id=game_id,
+                                        sport=sport_key,
+                                        home_team=home_team,
+                                        away_team=away_team,
+                                        market_type=market_type,
+                                        book_low=low['book'],
+                                        book_high=high['book'],
+                                        low_line=low_point,  # Use normalized points
+                                        high_line=high_point,  # Use normalized points
+                                        gap=gap,
+                                        side_low=side_low,
+                                        side_high=side_high,
+                                        odds_low=low['odds'],
+                                        odds_high=high['odds'],
+                                        timestamp=datetime.now(),
+                                        expires_in=expires_in
+                                    )
+
+                                    alerts.append(alert)
 
         return alerts
 
@@ -498,7 +663,7 @@ class AlertMonitor:
         all_alerts = {
             'arbitrage': [],
             'steam_moves': [],
-            'line_movements': []
+            'middles': []  # Replaced line_movements with middles
         }
 
         for sport in sports:
@@ -518,9 +683,9 @@ class AlertMonitor:
                 steam_alerts = self.detect_steam_move(game_id, game)
                 all_alerts['steam_moves'].extend(steam_alerts)
 
-                # Detect line movements
-                line_alerts = self.detect_line_movement(game_id, game)
-                all_alerts['line_movements'].extend(line_alerts)
+                # Detect middle opportunities
+                middle_alerts = self.detect_middle_opportunities(game)
+                all_alerts['middles'].extend(middle_alerts)
 
         # Add last_updated timestamp
         all_alerts['last_updated'] = datetime.now().isoformat()
@@ -541,7 +706,7 @@ class AlertMonitor:
                     f"Scan complete: "
                     f"{len(alerts['arbitrage'])} arbitrage, "
                     f"{len(alerts['steam_moves'])} steam moves, "
-                    f"{len(alerts['line_movements'])} line movements"
+                    f"{len(alerts['middles'])} middles"
                 )
 
                 # Wait before next scan

@@ -4,11 +4,11 @@
  * Manages notifications and coordinates with content scripts
  */
 
-// Backend URLs - try production first, fallback to localhost if unreachable
-let BACKEND_URL = 'https://max-ev-sports.com';
-let WS_URL = 'wss://max-ev-sports.com/ws';
-const BACKEND_FALLBACK = 'http://localhost:8000';
-const WS_FALLBACK = 'ws://localhost:8000/ws';
+// Backend URLs - TEMPORARILY USING LOCALHOST ONLY FOR TESTING
+let BACKEND_URL = 'http://localhost:8000';  // Changed to localhost for testing
+let WS_URL = 'ws://localhost:8000/ws';
+const BACKEND_FALLBACK = 'https://max-ev-sports.com';  // Swapped for testing
+const WS_FALLBACK = 'wss://max-ev-sports.com/ws';
 const USE_WEBSOCKET = false; // Temporarily disabled - using REST polling instead
 const POLL_INTERVAL = 5000; // Poll every 5 seconds
 
@@ -140,11 +140,11 @@ let extensionEnabled = true;
 let currentOpportunities = [];
 let seenOpportunityIds = new Set(); // Track seen opportunities to avoid duplicate alerts
 
-// Steam moves and line movements
+// Steam moves and middles
 let currentSteamMoves = [];
-let currentLineMovements = [];
+let currentMiddles = [];
 let seenSteamMoveIds = new Set();
-let seenLineMovementIds = new Set();
+let seenMiddleIds = new Set();
 
 // Goalie pull opportunities
 let currentGoaliePulls = [];
@@ -638,38 +638,38 @@ function handleSteamMovesUpdate(steamMoves) {
   updateBadge();
 }
 
-// Handle line movements update
-function handleLineMovementsUpdate(lineMovements) {
-  console.log(`[LINE] 📈 Line movements update: ${lineMovements.length} active`);
+// Handle middles update
+function handleMiddlesUpdate(middles) {
+  console.log(`[MIDDLE] 🎯 Middles update: ${middles.length} active`);
 
-  currentLineMovements = lineMovements;
+  currentMiddles = middles;
 
-  // Build set of current line movement IDs
-  const currentLineIds = new Set(
-    lineMovements.map(lm => `${lm.game_id}_${lm.market_type}_${lm.timestamp}`)
+  // Build set of current middle IDs
+  const currentMiddleIds = new Set(
+    middles.map(m => `${m.game_id}_${m.market_type}_${m.timestamp}`)
   );
 
-  // Remove old line movement IDs
-  for (const lineId of seenLineMovementIds) {
-    if (!currentLineIds.has(lineId)) {
-      seenLineMovementIds.delete(lineId);
+  // Remove old middle IDs
+  for (const middleId of seenMiddleIds) {
+    if (!currentMiddleIds.has(middleId)) {
+      seenMiddleIds.delete(middleId);
     }
   }
 
-  // Check for NEW line movements (ONLY if line alerts enabled)
-  if (settings.enableLineAlerts) {
-    lineMovements.forEach(lm => {
-      const lineId = `${lm.game_id}_${lm.market_type}_${lm.timestamp}`;
-      const isNew = !seenLineMovementIds.has(lineId);
+  // Check for NEW middles (ONLY if middle alerts enabled)
+  if (settings.enableMiddleAlerts) {
+    middles.forEach(m => {
+      const middleId = `${m.game_id}_${m.market_type}_${m.timestamp}`;
+      const isNew = !seenMiddleIds.has(middleId);
 
       if (isNew) {
-        seenLineMovementIds.add(lineId);
-        console.log(`[LINE] 🆕 NEW line movement: ${lm.game || lm.home_team + ' vs ' + lm.away_team}`);
-        // Could add line movement sound alerts here if desired
+        seenMiddleIds.add(middleId);
+        console.log(`[MIDDLE] 🆕 NEW middle: ${m.game || m.home_team + ' vs ' + m.away_team} (${m.gap} gap)`);
+        // Could add middle sound alerts here if desired
       }
     });
   } else {
-    console.log('[LINE] ⏭️ Line movement alerts disabled, skipping alerts');
+    console.log('[MIDDLE] ⏭️ Middle alerts disabled, skipping alerts');
   }
 
   updateBadge();
@@ -715,7 +715,7 @@ function handleGoaliePullsUpdate(goaliePulls) {
 
 // Update badge with total alert count
 function updateBadge() {
-  const totalAlerts = currentOpportunities.length + currentSteamMoves.length + currentLineMovements.length + currentGoaliePulls.length;
+  const totalAlerts = currentOpportunities.length + currentSteamMoves.length + currentMiddles.length + currentGoaliePulls.length;
 
   if (totalAlerts > 0) {
     chrome.action.setBadgeText({ text: totalAlerts.toString() });
@@ -921,10 +921,26 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     sendResponse({
       opportunities: currentOpportunities,
       steamMoves: currentSteamMoves,
-      lineMovements: currentLineMovements,
+      middles: currentMiddles,
       goaliePulls: currentGoaliePulls
     });
     return true;
+  }
+
+  if (message.type === 'refresh') {
+    // Fetch fresh data from the server
+    fetchOpportunities().then(() => {
+      sendResponse({
+        opportunities: currentOpportunities,
+        steamMoves: currentSteamMoves,
+        middles: currentMiddles,
+        goaliePulls: currentGoaliePulls
+      });
+    }).catch(error => {
+      console.error('[ARB] Error refreshing:', error);
+      sendResponse({ error: error.message });
+    });
+    return true; // Required for async sendResponse
   }
 
   if (message.type === 'get_status') {
@@ -1085,10 +1101,10 @@ async function fetchOpportunities() {
       steamMoves = data.steam_moves.alerts;
     }
 
-    // Extract line movements
-    let lineMovements = [];
-    if (data.line_movements && data.line_movements.alerts && Array.isArray(data.line_movements.alerts)) {
-      lineMovements = data.line_movements.alerts;
+    // Extract middles
+    let middles = [];
+    if (data.middles && data.middles.alerts && Array.isArray(data.middles.alerts)) {
+      middles = data.middles.alerts;
     }
 
     // Fetch goalie pull opportunities separately
@@ -1103,12 +1119,12 @@ async function fetchOpportunities() {
       console.error('[ARB] Error fetching goalie pull opportunities:', error);
     }
 
-    console.log(`[ARB] Received: ${opportunities.length} arbitrage, ${steamMoves.length} steam moves, ${lineMovements.length} line movements, ${goaliePulls.length} goalie pulls`);
+    console.log(`[ARB] Received: ${opportunities.length} arbitrage, ${steamMoves.length} steam moves, ${middles.length} middles, ${goaliePulls.length} goalie pulls`);
 
     // Update opportunities and UI
     handleOpportunitiesUpdate(opportunities);
     handleSteamMovesUpdate(steamMoves);
-    handleLineMovementsUpdate(lineMovements);
+    handleMiddlesUpdate(middles);
     handleGoaliePullsUpdate(goaliePulls);
 
     // Update badge to show connected status
