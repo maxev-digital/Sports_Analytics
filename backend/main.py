@@ -1612,7 +1612,7 @@ async def fetch_props_for_sport(sport: str, odds_api_sport: str) -> dict:
 async def refresh_props_cache():
     """
     Background task to refresh props cache ONCE PER DAY at 8 AM EST
-    Saves API costs by fetching pregame props only when lines are set
+    Fetches immediately on startup, then switches to daily schedule
     """
     import pytz
 
@@ -1625,6 +1625,21 @@ async def refresh_props_cache():
         'ncaaf': 'americanfootball_ncaaf'
     }
 
+    # INITIAL FETCH ON STARTUP - populate cache immediately
+    try:
+        logger.info("[PROPS CACHE] Initial fetch on startup...")
+        for sport, odds_api_sport in sport_map.items():
+            props_data = await fetch_props_for_sport(sport, odds_api_sport)
+            props_cache[sport] = {
+                'props': props_data['props'],
+                'count': props_data['count'],
+                'last_updated': datetime.now().isoformat()
+            }
+        logger.info("[PROPS CACHE] Initial fetch complete. Switching to daily 8 AM EST schedule...")
+    except Exception as e:
+        logger.error(f"[PROPS CACHE] Error in initial fetch: {str(e)}")
+
+    # DAILY REFRESH LOOP
     while True:
         try:
             # Check current time in Eastern Time
