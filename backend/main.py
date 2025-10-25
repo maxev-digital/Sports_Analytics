@@ -534,6 +534,20 @@ async def health():
         "games_tracked": len(tracker.games)
     }
 
+@app.get("/api/version")
+async def get_version():
+    """Get API version info"""
+    import subprocess
+    try:
+        commit = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).decode().strip()
+    except:
+        commit = 'unknown'
+    return {
+        "version": "2.0.1",
+        "commit": commit,
+        "has_side_point_fields": True  # This version includes side_a/side_b/point_a/point_b
+    }
+
 
 # ========== AUTH REQUEST MODELS ==========
 
