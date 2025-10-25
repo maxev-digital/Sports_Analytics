@@ -545,6 +545,12 @@ function handleOpportunitiesUpdate(opportunities) {
     profit_percentage: op.profit_percent || op.profit_percentage || 0,
     book1: op.book_a || op.book1,
     book2: op.book_b || op.book2,
+    side1: op.side_a || op.side1 || '',
+    side2: op.side_b || op.side2 || '',
+    point1: op.point_a || op.point1 || null,
+    point2: op.point_b || op.point2 || null,
+    odds1: op.odds_a || op.odds1 || 0,
+    odds2: op.odds_b || op.odds2 || 0,
     game: op.game || `${op.away_team} @ ${op.home_team}`
   }));
 
