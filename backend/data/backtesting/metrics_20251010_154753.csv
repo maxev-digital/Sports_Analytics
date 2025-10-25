@@ -1,0 +1,2 @@
+total_games,mae,rmse,median_ae,within_3_pct,within_5_pct,within_7_pct,within_10_pct,over_predictions,under_predictions,avg_total,avg_prediction
+1675,18.22,22.98,15.4,9.6,16.9,23.8,34.6,657,1015,138.4,131.8

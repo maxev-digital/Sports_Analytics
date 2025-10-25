@@ -1,0 +1,257 @@
+Date,Home_Team,Away_Team,Closing_Total,Num_Books,Actual_Total,Deviation,Abs_Deviation
+2023-11-06,Oregon Ducks,Georgia Bulldogs,141.0,1,153,12.0,12.0
+2023-11-06,UConn Huskies,Northern Arizona Lumberjacks,140.9,7,147,6.099999999999994,6.099999999999994
+2023-11-06,Purdue Boilermakers,Samford Bulldogs,143.5,7,143,-0.5,0.5
+2023-11-06,Tennessee Volunteers,Tennessee Tech Golden Eagles,134.5,7,122,-12.5,12.5
+2023-11-07,Bowling Green Falcons,Chicago St Cougars,146.5,1,111,-35.5,35.5
+2023-11-07,Colgate Raiders,Brown Bears,146.0,1,142,-4.0,4.0
+2023-11-07,Bucknell Bison,Delaware Blue Hens,141.0,1,135,-6.0,6.0
+2023-11-07,Rhode Island Rams,Central Connecticut St Blue Devils,135.5,1,151,15.5,15.5
+2023-11-07,Charleston Cougars,Iona Gaels,150.0,2,140,-10.0,10.0
+2023-11-07,Charlotte 49ers,Maine Black Bears,131.0,2,121,-10.0,10.0
+2023-11-07,Clemson Tigers,Winthrop Eagles,146.5,1,112,-34.5,34.5
+2023-11-07,Duquesne Dukes,Cleveland St Vikings,142.0,4,156,14.0,14.0
+2023-11-07,Providence Friars,Columbia Lions,144.8,4,137,-7.800000000000011,7.800000000000011
+2023-11-07,Dayton Flyers,SIU-Edwardsville Cougars,135.1,5,110,-25.099999999999994,25.099999999999994
+2023-11-07,Penn State Nittany Lions,Delaware St Hornets,140.6,5,124,-16.599999999999994,16.599999999999994
+2023-11-07,Siena Saints,Holy Cross Crusaders,138.5,1,144,5.5,5.5
+2023-11-07,Louisville Cardinals,UMBC Retrievers,143.5,1,187,43.5,43.5
+2023-11-07,Marshall Thundering Herd,Queens University Royals,157.5,1,162,4.5,4.5
+2023-11-07,Miami Hurricanes,NJIT Highlanders,144.0,1,161,17.0,17.0
+2023-11-07,West Virginia Mountaineers,Missouri St Bears,135.9,7,126,-9.900000000000006,9.900000000000006
+2023-11-07,NC State Wolfpack,The Citadel Bulldogs,145.2,5,131,-14.199999999999989,14.199999999999989
+2023-11-07,Syracuse Orange,New Hampshire Wildcats,139.8,2,155,15.199999999999989,15.199999999999989
+2023-11-07,Notre Dame Fighting Irish,Niagara Purple Eagles,129.8,4,133,3.1999999999999886,3.1999999999999886
+2023-11-07,Western Michigan Broncos,North Dakota St Bison,141.1,4,156,14.900000000000006,14.900000000000006
+2023-11-07,Ohio State Buckeyes,Oakland Golden Grizzlies,144.3,7,152,7.699999999999989,7.699999999999989
+2023-11-07,Rutgers Scarlet Knights,Princeton Tigers,137.5,4,129,-8.5,8.5
+2023-11-07,Villanova Wildcats,American Eagles,140.9,4,153,12.099999999999994,12.099999999999994
+2023-11-07,Belmont Bruins,Georgia St Panthers,145.0,4,176,31.0,31.0
+2023-11-07,Bryant Bulldogs,Manhattan Jaspers,145.0,1,120,-25.0,25.0
+2023-11-07,Colorado Buffaloes,Towson Tigers,139.1,7,132,-7.099999999999994,7.099999999999994
+2023-11-07,Lehigh Mountain Hawks,Cornell Big Red,155.0,1,162,7.0,7.0
+2023-11-07,Fordham Rams,Wagner Seahawks,129.8,2,132,2.1999999999999886,2.1999999999999886
+2023-11-07,Georgia Tech Yellow Jackets,Georgia Southern Eagles,138.4,5,146,7.599999999999994,7.599999999999994
+2023-11-07,Wichita St Shockers,Lipscomb Bisons,145.0,1,135,-10.0,10.0
+2023-11-07,Temple Owls,Maryland-Eastern Shore Hawks,134.5,1,150,15.5,15.5
+2023-11-07,Vermont Catamounts,Merrimack Warriors,131.0,1,122,-9.0,9.0
+2023-11-07,Seton Hall Pirates,Saint Peter's Peacocks,126.1,4,129,2.9000000000000057,2.9000000000000057
+2023-11-07,Alabama Crimson Tide,Morehead St Eagles,143.2,7,178,34.80000000000001,34.80000000000001
+2023-11-07,Arkansas Razorbacks,Alcorn St Braves,145.0,5,152,7.0,7.0
+2023-11-07,Wisconsin Badgers,Arkansas St Red Wolves,135.2,4,181,45.80000000000001,45.80000000000001
+2023-11-07,Arkansas-Little Rock Trojans,Texas State Bobcats,141.2,4,137,-4.199999999999989,4.199999999999989
+2023-11-07,Missouri Tigers,Arkansas-Pine Bluff Golden Lions,149.5,1,180,30.5,30.5
+2023-11-07,Army Knights,Marist Red Foxes,136.5,1,126,-10.5,10.5
+2023-11-07,Minnesota Golden Gophers,Bethune-Cookman Wildcats,139.8,2,140,0.19999999999998863,0.19999999999998863
+2023-11-07,Northwestern Wildcats,Binghamton Bearcats,135.8,2,133,-2.8000000000000114,2.8000000000000114
+2023-11-07,Boston College Eagles,Fairfield Stags,132.5,4,159,26.5,26.5
+2023-11-07,Northeastern Huskies,Boston Univ. Terriers,131.2,2,125,-6.199999999999989,6.199999999999989
+2023-11-07,UAB Blazers,Bradley Braves,140.2,4,144,3.8000000000000114,3.8000000000000114
+2023-11-07,Butler Bulldogs,Eastern Michigan Eagles,141.5,4,149,7.5,7.5
+2023-11-07,Campbell Fighting Camels,Navy Midshipmen,131.0,1,107,-24.0,24.0
+2023-11-07,Tulsa Golden Hurricane,Central Arkansas Bears,149.5,2,123,-26.5,26.5
+2023-11-07,Oklahoma Sooners,Central Michigan Chippewas,136.5,4,148,11.5,11.5
+2023-11-07,Illinois Fighting Illini,Eastern Illinois Panthers,141.6,5,132,-9.599999999999994,9.599999999999994
+2023-11-07,Wake Forest Demon Deacons,Elon Phoenix,142.0,4,179,37.0,37.0
+2023-11-07,Evansville Purple Aces,Miami (OH) RedHawks,142.4,5,136,-6.400000000000006,6.400000000000006
+2023-11-07,Florida Gators,Loyola (MD) Greyhounds,141.0,2,166,25.0,25.0
+2023-11-07,UCF Knights,Florida Int'l Golden Panthers,139.5,2,147,7.5,7.5
+2023-11-07,George Washington Colonials,Stonehill Skyhawks,144.8,2,133,-11.800000000000011,11.800000000000011
+2023-11-07,Iowa State Cyclones,Green Bay Phoenix,133.1,5,129,-4.099999999999994,4.099999999999994
+2023-11-07,Texas Longhorns,Incarnate Word Cardinals,144.7,5,144,-0.6999999999999886,0.6999999999999886
+2023-11-07,Memphis Tigers,Jackson St Tigers,147.5,1,171,23.5,23.5
+2023-11-07,Kansas Jayhawks,North Carolina Central Eagles,142.4,5,155,12.599999999999994,12.599999999999994
+2023-11-07,Kentucky Wildcats,New Mexico St Aggies,141.9,7,132,-9.900000000000006,9.900000000000006
+2023-11-07,LSU Tigers,Miss Valley St Delta Devils,138.0,5,166,28.0,28.0
+2023-11-07,Nebraska Cornhuskers,Lindenwood Lions,142.5,5,136,-6.5,6.5
+2023-11-07,UT-Arlington Mavericks,Oral Roberts Golden Eagles,144.7,5,146,1.3000000000000114,1.3000000000000114
+2023-11-07,Xavier Musketeers,Robert Morris Colonials,143.6,5,140,-3.5999999999999943,3.5999999999999943
+2023-11-07,Saint Louis Billikens,Southern Indiana Screaming Eagles,147.5,4,138,-9.5,9.5
+2023-11-07,UTSA Roadrunners,Western Illinois Leathernecks,144.5,2,146,1.5,1.5
+2023-11-07,Michigan St Spartans,James Madison Dukes,143.5,6,155,11.5,11.5
+2023-11-07,Louisiana Ragin' Cajuns,Youngstown St Penguins,149.5,2,134,-15.5,15.5
+2023-11-07,Marquette Golden Eagles,Northern Illinois Huskies,148.2,4,162,13.800000000000011,13.800000000000011
+2023-11-07,Middle Tennessee Blue Raiders,Northern Kentucky Norse,133.5,2,131,-2.5,2.5
+2023-11-07,Oklahoma St Cowboys,Abilene Christian Wildcats,140.9,4,123,-17.900000000000006,17.900000000000006
+2023-11-07,BYU Cougars,Houston Baptist Huskies,153.0,1,173,20.0,20.0
+2023-11-07,Cincinnati Bearcats,UIC Flames,142.1,4,127,-15.099999999999994,15.099999999999994
+2023-11-07,Duke Blue Devils,Dartmouth Big Green,140.8,7,146,5.199999999999989,5.199999999999989
+2023-11-07,Grand Canyon Antelopes,SE Missouri St Redhawks,143.5,4,155,11.5,11.5
+2023-11-07,Tulane Green Wave,Nicholls St Colonels,157.0,1,172,15.0,15.0
+2023-11-07,TCU Horned Frogs,Southern Jaguars,141.2,2,183,41.80000000000001,41.80000000000001
+2023-11-07,South Dakota St Jackrabbits,Akron Zips,141.1,4,156,14.900000000000006,14.900000000000006
+2023-11-07,Air Force Falcons,Portland St Vikings,139.5,4,117,-22.5,22.5
+2023-11-07,Arizona Wildcats,Morgan St Bears,155.1,5,181,25.900000000000006,25.900000000000006
+2023-11-07,Utah Utes,Eastern Washington Eagles,142.8,4,167,24.19999999999999,24.19999999999999
+2023-11-07,New Mexico Lobos,Texas Southern Tigers,152.2,2,135,-17.19999999999999,17.19999999999999
+2023-11-07,Colorado St Rams,Louisiana Tech Bulldogs,140.8,4,154,13.199999999999989,13.199999999999989
+2023-11-07,San Diego St Aztecs,CSU Fullerton Titans,131.4,7,140,8.599999999999994,8.599999999999994
+2023-11-07,Portland Pilots,Long Beach St 49ers,157.7,7,151,-6.699999999999989,6.699999999999989
+2023-11-07,Stanford Cardinal,CSU Northridge Matadors,141.9,4,167,25.099999999999994,25.099999999999994
+2023-11-07,Washington St Cougars,Idaho Vandals,137.7,5,143,5.300000000000011,5.300000000000011
+2023-11-07,Washington Huskies,Bellarmine Knights,139.0,2,148,9.0,9.0
+2023-11-08,Iowa Hawkeyes,North Dakota Fighting Hawks,155.5,3,178,22.5,22.5
+2023-11-08,Michigan Wolverines,UNC Asheville Bulldogs,137.5,3,173,35.5,35.5
+2023-11-08,Baylor Bears,Auburn Tigers,145.0,3,170,25.0,25.0
+2023-11-09,Mississippi St Bulldogs,Arizona St Sun Devils,134.0,3,127,-7.0,7.0
+2023-11-07,La Salle Explorers,Drexel Dragons,134.8,12,128,-6.800000000000011,6.800000000000011
+2023-11-07,Indiana Hoosiers,Florida Gulf Coast Eagles,143.1,7,132,-11.099999999999994,11.099999999999994
+2023-11-08,Massachusetts Minutemen,Albany Great Danes,145.9,8,163,17.099999999999994,17.099999999999994
+2023-11-08,Maryland Terrapins,Mt. St. Mary's Mountaineers,131.3,12,121,-10.300000000000011,10.300000000000011
+2023-11-08,St. John's Red Storm,Stony Brook Seawolves,144.1,8,164,19.900000000000006,19.900000000000006
+2023-11-08,North Texas Mean Green,Northern Iowa Panthers,129.1,12,160,30.900000000000006,30.900000000000006
+2023-11-08,Vanderbilt Commodores,Presbyterian Blue Hose,136.3,8,130,-6.300000000000011,6.300000000000011
+2023-11-08,Creighton Bluejays,Florida A&M Rattlers,139.5,8,159,19.5,19.5
+2023-11-08,DePaul Blue Demons,Fort Wayne Mastodons,143.5,12,156,12.5,12.5
+2023-11-08,Nevada Wolf Pack,Sacramento St Hornets,135.8,12,140,4.199999999999989,4.199999999999989
+2023-11-10,LIU Sharks,Air Force Falcons,134.4,8,149,14.599999999999994,14.599999999999994
+2023-11-10,Quinnipiac Bobcats,Central Connecticut St Blue Devils,145.4,8,144,-1.4000000000000057,1.4000000000000057
+2023-11-10,Duquesne Dukes,Charleston Cougars,154.6,13,162,7.400000000000006,7.400000000000006
+2023-11-10,Florida St Seminoles,Kennesaw St Owls,148.8,8,161,12.199999999999989,12.199999999999989
+2023-11-10,Xavier Musketeers,Jacksonville Dolphins,138.5,8,135,-3.5,3.5
+2023-11-10,Villanova Wildcats,Le Moyne Dolphins,147.2,4,140,-7.199999999999989,7.199999999999989
+2023-11-10,Michigan Wolverines,Youngstown St Penguins,150.8,13,154,3.1999999999999886,3.1999999999999886
+2023-11-11,NC State Wolfpack,Abilene Christian Wildcats,146.3,13,148,1.6999999999999886,1.6999999999999886
+2023-11-11,George Mason Patriots,Austin Peay Governors,137.3,7,112,-25.30000000000001,25.30000000000001
+2023-11-11,Furman Paladins,Belmont Bruins,159.5,13,175,15.5,15.5
+2023-11-11,The Citadel Bulldogs,Boston College Eagles,142.3,13,146,3.6999999999999886,3.6999999999999886
+2023-11-11,Rutgers Scarlet Knights,Boston Univ. Terriers,128.9,7,114,-14.900000000000006,14.900000000000006
+2023-11-11,Louisville Cardinals,Chattanooga Mocs,151.0,13,152,1.0,1.0
+2023-11-11,Florida Gators,Virginia Cavaliers,134.0,11,143,9.0,9.0
+2023-11-11,Georgia Bulldogs,Wake Forest Demon Deacons,153.7,13,157,3.3000000000000114,3.3000000000000114
+2023-11-11,Hofstra Pride,Princeton Tigers,145.6,13,141,-4.599999999999994,4.599999999999994
+2023-11-11,Iona Gaels,Sacred Heart Pioneers,150.0,8,169,19.0,19.0
+2023-11-11,Miami Hurricanes,UCF Knights,146.8,13,160,13.199999999999989,13.199999999999989
+2023-11-11,West Virginia Mountaineers,Monmouth Hawks,142.8,12,138,-4.800000000000011,4.800000000000011
+2023-11-11,Purdue Boilermakers,Morehead St Eagles,139.2,13,144,4.800000000000011,4.800000000000011
+2023-11-11,UNC Greensboro Spartans,North Carolina A&T Aggies,139.9,12,172,32.099999999999994,32.099999999999994
+2023-11-11,Ohio State Buckeyes,Texas A&M Aggies,138.6,13,139,0.4000000000000057,0.4000000000000057
+2023-11-11,Oregon St Beavers,Troy Trojans,137.3,13,161,23.69999999999999,23.69999999999999
+2023-11-11,VCU Rams,Samford Bulldogs,146.5,12,140,-6.5,6.5
+2023-11-11,Duke Blue Devils,Arizona Wildcats,154.1,13,151,-3.0999999999999943,3.0999999999999943
+2023-11-11,Penn State Nittany Lions,Lehigh Mountain Hawks,144.5,8,139,-5.5,5.5
+2023-11-11,Minnesota Golden Gophers,UTSA Roadrunners,146.5,13,178,31.5,31.5
+2023-11-11,Alabama Crimson Tide,Indiana St Sycamores,162.1,12,182,19.900000000000006,19.900000000000006
+2023-11-11,Iowa Hawkeyes,Alabama St Hornets,155.3,8,165,9.699999999999989,9.699999999999989
+2023-11-11,Arkansas Razorbacks,Gardner-Webb Bulldogs,143.3,7,154,10.699999999999989,10.699999999999989
+2023-11-11,Auburn Tigers,SE Louisiana Lions,153.2,8,157,3.8000000000000114,3.8000000000000114
+2023-11-11,Kansas St Wildcats,Bellarmine Knights,144.4,8,158,13.599999999999994,13.599999999999994
+2023-11-11,Colorado Buffaloes,Grambling St Tigers,137.6,8,158,20.400000000000006,20.400000000000006
+2023-11-11,Rice Owls,Harvard Crimson,145.5,12,165,19.5,19.5
+2023-11-11,Illinois Fighting Illini,Oakland Golden Grizzlies,148.9,12,117,-31.900000000000006,31.900000000000006
+2023-11-11,Kansas Jayhawks,Manhattan Jaspers,140.4,11,160,19.599999999999994,19.599999999999994
+2023-11-11,LSU Tigers,Nicholls St Colonels,147.0,7,134,-13.0,13.0
+2023-11-11,Oklahoma Sooners,Miss Valley St Delta Devils,138.9,7,125,-13.900000000000006,13.900000000000006
+2023-11-11,Murray St Racers,Tennessee Tech Golden Eagles,144.3,12,150,5.699999999999989,5.699999999999989
+2023-11-11,Southern Illinois Salukis,Queens University Royals,140.6,7,159,18.400000000000006,18.400000000000006
+2023-11-11,UIC Flames,Arkansas-Little Rock Trojans,152.4,13,157,4.599999999999994,4.599999999999994
+2023-11-11,Butler Bulldogs,SE Missouri St Redhawks,147.5,12,147,-0.5,0.5
+2023-11-11,Northwestern Wildcats,Dayton Flyers,126.8,13,137,10.200000000000003,10.200000000000003
+2023-11-11,Marquette Golden Eagles,Rider Broncs,147.9,13,160,12.099999999999994,12.099999999999994
+2023-11-11,Navy Midshipmen,Temple Owls,130.2,8,143,12.800000000000011,12.800000000000011
+2023-11-11,BYU Cougars,San Diego St Aztecs,145.7,12,139,-6.699999999999989,6.699999999999989
+2023-11-11,Colorado St Rams,Wright St Raiders,155.5,12,182,26.5,26.5
+2023-11-11,Texas Longhorns,Delaware St Hornets,144.6,7,145,0.4000000000000057,0.4000000000000057
+2023-11-11,Gonzaga Bulldogs,Yale Bulldogs,154.5,13,157,2.5,2.5
+2023-11-11,Missouri Tigers,Memphis Tigers,159.8,12,125,-34.80000000000001,34.80000000000001
+2023-11-11,Oregon Ducks,Montana Grizzlies,142.9,12,136,-6.900000000000006,6.900000000000006
+2023-11-11,Stanford Cardinal,Sacramento St Hornets,143.1,12,164,20.900000000000006,20.900000000000006
+2023-11-11,Wisconsin Badgers,Tennessee Volunteers,131.6,13,150,18.400000000000006,18.400000000000006
+2023-11-11,UAB Blazers,Clemson Tigers,144.8,12,153,8.199999999999989,8.199999999999989
+2023-11-11,South Carolina Gamecocks,Virginia Tech Hokies,142.0,11,156,14.0,14.0
+2023-11-11,Washington St Cougars,Prairie View Panthers,136.9,7,148,11.099999999999994,11.099999999999994
+2023-11-11,California Golden Bears,Pacific Tigers,141.5,12,166,24.5,24.5
+2023-11-11,UCLA Bruins,Lafayette Leopards,129.5,7,118,-11.5,11.5
+2023-11-13,St. John's Red Storm,Michigan Wolverines,155.3,13,162,6.699999999999989,6.699999999999989
+2023-11-14,American Eagles,Siena Saints,136.5,7,136,-0.5,0.5
+2023-11-14,Florida St Seminoles,Central Michigan Chippewas,153.0,13,161,8.0,8.0
+2023-11-14,Duquesne Dukes,Stony Brook Seawolves,146.3,13,148,1.6999999999999886,1.6999999999999886
+2023-11-14,Miami Hurricanes,Florida Int'l Golden Panthers,162.3,12,166,3.6999999999999886,3.6999999999999886
+2023-11-14,Norfolk St Spartans,Hampton Pirates,146.8,6,143,-3.8000000000000114,3.8000000000000114
+2023-11-14,Massachusetts Minutemen,Quinnipiac Bobcats,152.2,12,183,30.80000000000001,30.80000000000001
+2023-11-14,South Carolina St Bulldogs,North Florida Ospreys,155.6,8,164,8.400000000000006,8.400000000000006
+2023-11-14,Pennsylvania Quakers,Villanova Wildcats,141.9,13,148,6.099999999999994,6.099999999999994
+2023-11-14,Presbyterian Blue Hose,The Citadel Bulldogs,135.4,7,135,-0.4000000000000057,0.4000000000000057
+2023-11-14,South Carolina Gamecocks,VMI Keydets,147.0,11,138,-9.0,9.0
+2023-11-14,Central Arkansas Bears,Arkansas-Pine Bluff Golden Lions,151.7,8,168,16.30000000000001,16.30000000000001
+2023-11-14,Middle Tennessee Blue Raiders,Western Carolina Catamounts,137.5,13,130,-7.5,7.5
+2023-11-14,Northwestern St Demons,Stephen F. Austin Lumberjacks,146.5,8,166,19.5,19.5
+2023-11-14,Arizona Wildcats,Southern Jaguars,158.5,7,156,-2.5,2.5
+2023-11-14,Arkansas Razorbacks,Old Dominion Monarchs,144.6,11,163,18.400000000000006,18.400000000000006
+2023-11-14,Houston Cougars,Stetson Hatters,138.9,7,127,-11.900000000000006,11.900000000000006
+2023-11-14,Kansas St Wildcats,South Dakota St Jackrabbits,154.2,12,159,4.800000000000011,4.800000000000011
+2023-11-14,Missouri St Bears,Oral Roberts Golden Eagles,144.5,12,153,8.5,8.5
+2023-11-14,Missouri Tigers,SIU-Edwardsville Cougars,149.0,12,118,-31.0,31.0
+2023-11-14,Nebraska Cornhuskers,Rider Broncs,149.4,14,114,-35.400000000000006,35.400000000000006
+2023-11-14,Purdue Boilermakers,Xavier Musketeers,151.5,12,154,2.5,2.5
+2023-11-14,Pepperdine Waves,LIU Sharks,159.5,8,141,-18.5,18.5
+2023-11-16,Vermont Catamounts,Charleston Cougars,145.7,14,137,-8.699999999999989,8.699999999999989
+2023-11-16,North Texas Mean Green,St. John's Red Storm,137.1,14,105,-32.099999999999994,32.099999999999994
+2023-11-16,Wyoming Cowboys,Saint Louis Billikens,150.0,14,148,-2.0,2.0
+2023-11-16,LSU Tigers,Dayton Flyers,133.8,14,137,3.1999999999999886,3.1999999999999886
+2023-11-16,Coastal Carolina Chanticleers,Wichita St Shockers,144.5,14,163,18.5,18.5
+2023-11-16,Air Force Falcons,Lindenwood Lions,129.1,14,134,4.900000000000006,4.900000000000006
+2023-11-16,Towson Tigers,Houston Cougars,127.5,14,114,-13.5,13.5
+2023-11-16,St. Bonaventure Bonnies,Oklahoma St Cowboys,135.7,14,130,-5.699999999999989,5.699999999999989
+2023-11-17,American Eagles,NJIT Highlanders,137.0,10,160,23.0,23.0
+2023-11-17,Boston Univ. Terriers,Bryant Bulldogs,137.9,9,174,36.099999999999994,36.099999999999994
+2023-11-17,UCF Knights,CSU Fullerton Titans,142.3,13,116,-26.30000000000001,26.30000000000001
+2023-11-17,Liberty Flames,Furman Paladins,145.2,13,162,16.80000000000001,16.80000000000001
+2023-11-17,Indiana Hoosiers,Wright St Raiders,152.0,13,169,17.0,17.0
+2023-11-17,North Florida Ospreys,Presbyterian Blue Hose,145.8,10,150,4.199999999999989,4.199999999999989
+2023-11-17,Virginia Cavaliers,Texas Southern Tigers,130.2,8,95,-35.19999999999999,35.19999999999999
+2023-11-17,UAB Blazers,Alcorn St Braves,152.5,10,157,4.5,4.5
+2023-11-17,Southern Illinois Salukis,Chicago St Cougars,131.1,10,126,-5.099999999999994,5.099999999999994
+2023-11-17,Tulsa Golden Hurricane,Jackson St Tigers,144.9,10,124,-20.900000000000006,20.900000000000006
+2023-11-17,South Alabama Jaguars,Nicholls St Colonels,140.1,8,199,58.900000000000006,58.900000000000006
+2023-11-17,Notre Dame Fighting Irish,Auburn Tigers,145.3,14,142,-3.3000000000000114,3.3000000000000114
+2023-11-17,Minnesota Golden Gophers,Missouri Tigers,147.6,14,138,-9.599999999999994,9.599999999999994
+2023-11-17,New Mexico Lobos,UT-Arlington Mavericks,148.4,14,162,13.599999999999994,13.599999999999994
+2023-11-17,Omaha Mavericks,William & Mary Tribe,146.1,12,172,25.900000000000006,25.900000000000006
+2023-11-17,Wake Forest Demon Deacons,Utah Utes,150.9,13,147,-3.9000000000000057,3.9000000000000057
+2023-11-17,Montana Grizzlies,North Dakota St Bison,137.1,14,147,9.900000000000006,9.900000000000006
+2023-11-17,California Golden Bears,Montana St Bobcats,142.0,14,123,-19.0,19.0
+2023-11-19,Furman Paladins,Wyoming Cowboys,152.1,14,149,-3.0999999999999943,3.0999999999999943
+2023-11-19,Drake Bulldogs,Oakland Golden Grizzlies,142.0,14,162,20.0,20.0
+2023-11-19,Georgia Bulldogs,Providence Friars,140.2,13,135,-5.199999999999989,5.199999999999989
+2023-11-19,Towson Tigers,North Texas Mean Green,116.7,14,104,-12.700000000000003,12.700000000000003
+2023-11-19,Clemson Tigers,Boise State Broncos,138.2,13,153,14.800000000000011,14.800000000000011
+2023-11-19,Central Connecticut St Blue Devils,Manhattan Jaspers,137.0,10,130,-7.0,7.0
+2023-11-19,Coastal Carolina Chanticleers,Charleston Cougars,156.5,14,152,-4.5,4.5
+2023-11-19,Colgate Raiders,Weber State Wildcats,139.5,3,112,-27.5,27.5
+2023-11-19,Miami (OH) RedHawks,Eastern Illinois Panthers,138.3,11,140,1.6999999999999886,1.6999999999999886
+2023-11-19,Iowa State Cyclones,Grambling St Tigers,132.7,10,129,-3.6999999999999886,3.6999999999999886
+2023-11-19,Indiana Hoosiers,UConn Huskies,144.6,14,134,-10.599999999999994,10.599999999999994
+2023-11-19,UMBC Retrievers,Loyola (MD) Greyhounds,148.6,4,173,24.400000000000006,24.400000000000006
+2023-11-19,South Alabama Jaguars,SIU-Edwardsville Cougars,129.8,13,160,30.19999999999999,30.19999999999999
+2023-11-19,William & Mary Tribe,Lindenwood Lions,146.7,13,131,-15.699999999999989,15.699999999999989
+2023-11-19,Stephen F. Austin Lumberjacks,Loyola Marymount Lions,149.8,13,162,12.199999999999989,12.199999999999989
+2023-11-19,Quinnipiac Bobcats,Albany Great Danes,151.2,10,167,15.800000000000011,15.800000000000011
+2023-11-19,Georgia St Panthers,Arkansas-Little Rock Trojans,153.4,10,165,11.599999999999994,11.599999999999994
+2023-11-19,Chattanooga Mocs,Tennessee Tech Golden Eagles,148.5,14,131,-17.5,17.5
+2023-11-19,Cincinnati Bearcats,Northern Kentucky Norse,137.6,14,156,18.400000000000006,18.400000000000006
+2023-11-19,Drexel Dragons,Queens University Royals,139.2,3,114,-25.19999999999999,25.19999999999999
+2023-11-19,East Carolina Pirates,Northeastern Huskies,142.2,13,158,15.800000000000011,15.800000000000011
+2023-11-19,Winthrop Eagles,Elon Phoenix,154.5,4,148,-6.5,6.5
+2023-11-19,Miami Hurricanes,Kansas St Wildcats,157.2,13,174,16.80000000000001,16.80000000000001
+2023-11-19,Wake Forest Demon Deacons,LSU Tigers,149.4,13,166,16.599999999999994,16.599999999999994
+2023-11-19,Gardner-Webb Bulldogs,Yale Bulldogs,136.0,4,141,5.0,5.0
+2023-11-19,Louisville Cardinals,Texas Longhorns,142.9,14,161,18.099999999999994,18.099999999999994
+2023-11-19,Air Force Falcons,Omaha Mavericks,135.3,14,114,-21.30000000000001,21.30000000000001
+2023-11-19,Ohio State Buckeyes,Western Michigan Broncos,141.6,14,129,-12.599999999999994,12.599999999999994
+2023-11-19,Georgetown Hoyas,American Eagles,143.5,10,171,27.5,27.5
+2023-11-19,San Francisco Dons,DePaul Blue Demons,142.7,14,124,-18.69999999999999,18.69999999999999
+2023-11-19,Utah State Aggies,Marshall Thundering Herd,154.1,14,143,-11.099999999999994,11.099999999999994
+2023-11-19,South Florida Bulls,Northern Iowa Panthers,144.1,14,139,-5.099999999999994,5.099999999999994
+2023-11-19,Virginia Tech Hokies,Wofford Terriers,147.8,13,174,26.19999999999999,26.19999999999999
+2023-11-19,Liberty Flames,Vermont Catamounts,133.5,13,132,-1.5,1.5
+2023-11-19,Utah Utes,St. John's Red Storm,150.9,13,173,22.099999999999994,22.099999999999994
+2023-11-19,Abilene Christian Wildcats,Fordham Rams,140.6,14,104,-36.599999999999994,36.599999999999994
+2023-11-19,Michigan St Spartans,Alcorn St Braves,142.1,9,130,-12.099999999999994,12.099999999999994
+2023-11-19,Arizona Wildcats,UT-Arlington Mavericks,154.6,14,157,2.4000000000000057,2.4000000000000057
+2023-11-19,Missouri Tigers,Jackson St Tigers,145.2,8,145,-0.19999999999998863,0.19999999999998863
+2023-11-20,Akron Zips,Florida Int'l Golden Panthers,145.4,14,148,2.5999999999999943,2.5999999999999943
+2023-11-20,USC Trojans,Brown Bears,143.7,14,151,7.300000000000011,7.300000000000011
+2023-11-20,Illinois Fighting Illini,Southern Jaguars,148.0,10,148,0.0,0.0
+2023-11-20,Missouri St Bears,Kent State Golden Flashes,141.2,14,108,-33.19999999999999,33.19999999999999
+2023-11-20,Houston Cougars,Dayton Flyers,130.6,14,124,-6.599999999999994,6.599999999999994

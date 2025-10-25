@@ -1,5 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { GoaliePullAlerts } from '../components/GoaliePullAlert';
+import { FavoriteComebackAlerts } from '../components/FavoriteComebackAlert';
+import { HalftimeTrackerAlerts } from '../components/HalftimeTrackerAlert';
+import { MomentumAlerts } from '../components/MomentumAlert';
 
 interface ArbitrageAlert {
   game_id: string;
@@ -57,17 +60,53 @@ interface AlertsData {
 
 export function Alerts() {
   const [alertsData, setAlertsData] = useState<AlertsData | null>(null);
+  const [goaliePullCount, setGoaliePullCount] = useState(0);
+  const [favoriteComebackCount, setFavoriteComebackCount] = useState(0);
+  const [halftimeCount, setHalftimeCount] = useState(0);
+  const [momentumCount, setMomentumCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'arbitrage' | 'steam' | 'lines' | 'goalie'>('goalie');
+  const [activeTab, setActiveTab] = useState<'arbitrage' | 'steam' | 'lines' | 'goalie' | 'comeback' | 'halftime' | 'momentum'>('comeback');
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const alertBellRef = useRef<HTMLAudioElement>(null);
+  const sirenRef = useRef<HTMLAudioElement>(null);
+  const previousCountRef = useRef({ arbitrage: 0, steam: 0, lines: 0 });
 
   const fetchAlerts = async () => {
     try {
-      const response = await fetch('/api/alerts/all?user_id=default');
-      if (!response.ok) throw new Error('Failed to fetch alerts');
-      const data = await response.json();
-      setAlertsData(data);
+      const [alertsResponse, goalieResponse, comebackResponse, halftimeResponse, momentumResponse] = await Promise.all([
+        fetch('/api/alerts/all?user_id=default'),
+        fetch('/api/goalie-pull-opportunities'),
+        fetch('/api/favorite-comeback-opportunities'),
+        fetch('/api/halftime-opportunities'),
+        fetch('/api/momentum-opportunities')
+      ]);
+
+      if (!alertsResponse.ok) throw new Error('Failed to fetch alerts');
+
+      const alertsData = await alertsResponse.json();
+      setAlertsData(alertsData);
+
+      if (goalieResponse.ok) {
+        const goalieData = await goalieResponse.json();
+        setGoaliePullCount(goalieData.count || 0);
+      }
+
+      if (comebackResponse.ok) {
+        const comebackData = await comebackResponse.json();
+        setFavoriteComebackCount(comebackData.count || 0);
+      }
+
+      if (halftimeResponse.ok) {
+        const halftimeData = await halftimeResponse.json();
+        setHalftimeCount(halftimeData.count || 0);
+      }
+
+      if (momentumResponse.ok) {
+        const momentumData = await momentumResponse.json();
+        setMomentumCount(momentumData.count || 0);
+      }
+
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
@@ -158,16 +197,32 @@ export function Alerts() {
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-gradient-to-br from-red-900 to-black border-4 border-red-600 rounded-lg p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+            <div className="bg-gradient-to-br from-orange-900 via-orange-700 to-orange-900 border-4 border-orange-500 rounded-lg p-6 hover:shadow-lg hover:shadow-orange-600/30 transition-all">
+              <div className="text-base text-white font-bold tracking-wide mb-1">🔥 NBA COMEBACKS</div>
+              <div className="text-3xl font-bold text-white">{favoriteComebackCount}</div>
+            </div>
+            <div className="bg-gradient-to-br from-red-900 via-red-700 to-red-900 border-4 border-red-500 rounded-lg p-6 hover:shadow-lg hover:shadow-red-600/30 transition-all">
+              <div className="text-base text-white font-bold tracking-wide mb-1">🚨 NHL GOALIE PULLS</div>
+              <div className="text-3xl font-bold text-white">{goaliePullCount}</div>
+            </div>
+            <div className="bg-gradient-to-br from-purple-900 via-purple-700 to-purple-900 border-4 border-purple-500 rounded-lg p-6 hover:shadow-lg hover:shadow-purple-600/30 transition-all">
+              <div className="text-base text-white font-bold tracking-wide mb-1">⏰ NBA HALFTIME 2H</div>
+              <div className="text-3xl font-bold text-white">{halftimeCount}</div>
+            </div>
+            <div className="bg-gradient-to-br from-red-900 via-orange-700 to-red-900 border-4 border-orange-500 rounded-lg p-6 hover:shadow-lg hover:shadow-orange-600/30 transition-all">
+              <div className="text-base text-white font-bold tracking-wide mb-1">🔥 MOMENTUM SURGES</div>
+              <div className="text-3xl font-bold text-white">{momentumCount}</div>
+            </div>
+            <div className="bg-gradient-to-br from-green-900 via-green-700 to-green-900 border-4 border-green-600 rounded-lg p-6 hover:shadow-lg hover:shadow-green-600/30 transition-all">
               <div className="text-base text-white font-bold tracking-wide mb-1">ARBITRAGE OPPORTUNITIES</div>
               <div className="text-3xl font-bold text-white">{alertsData?.arbitrage.count || 0}</div>
             </div>
-            <div className="bg-gradient-to-br from-blue-900 to-slate-800 border-4 border-blue-500 rounded-lg p-6">
+            <div className="bg-gradient-to-br from-blue-900 via-blue-700 to-blue-900 border-4 border-blue-500 rounded-lg p-6 hover:shadow-lg hover:shadow-blue-600/30 transition-all">
               <div className="text-base text-white font-bold tracking-wide mb-1">STEAM MOVES</div>
               <div className="text-3xl font-bold text-white">{alertsData?.steam_moves.count || 0}</div>
             </div>
-            <div className="bg-gradient-to-br from-green-900 to-black border-4 border-green-600 rounded-lg p-6">
+            <div className="bg-gradient-to-br from-slate-900 via-slate-700 to-slate-900 border-4 border-slate-600 rounded-lg p-6 hover:shadow-lg hover:shadow-slate-600/30 transition-all">
               <div className="text-base text-white font-bold tracking-wide mb-1">LINE MOVEMENTS</div>
               <div className="text-3xl font-bold text-white">{alertsData?.line_movements.count || 0}</div>
             </div>
@@ -177,14 +232,44 @@ export function Alerts() {
         {/* Tabs */}
         <div className="flex gap-2 mb-6">
           <button
-            onClick={() => setActiveTab('goalie')}
+            onClick={() => setActiveTab('comeback')}
             className={`px-6 py-3 rounded-lg border-4 font-bold tracking-wide transition-colors ${
-              activeTab === 'goalie'
-                ? 'bg-gradient-to-br from-red-600 via-red-700 to-red-800 text-white border-red-500'
+              activeTab === 'comeback'
+                ? 'bg-gradient-to-br from-orange-600 via-orange-700 to-orange-800 text-white border-orange-500 shadow-lg shadow-orange-600/30'
                 : 'bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800 hover:border-blue-600'
             }`}
           >
-            🚨 NHL GOALIE PULLS
+            🔥 NBA COMEBACKS ({favoriteComebackCount})
+          </button>
+          <button
+            onClick={() => setActiveTab('goalie')}
+            className={`px-6 py-3 rounded-lg border-4 font-bold tracking-wide transition-colors ${
+              activeTab === 'goalie'
+                ? 'bg-gradient-to-br from-red-600 via-red-700 to-red-800 text-white border-red-500 shadow-lg shadow-red-600/30'
+                : 'bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800 hover:border-blue-600'
+            }`}
+          >
+            🚨 NHL GOALIE PULLS ({goaliePullCount})
+          </button>
+          <button
+            onClick={() => setActiveTab('halftime')}
+            className={`px-6 py-3 rounded-lg border-4 font-bold tracking-wide transition-colors ${
+              activeTab === 'halftime'
+                ? 'bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 text-white border-purple-500 shadow-lg shadow-purple-600/30'
+                : 'bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800 hover:border-blue-600'
+            }`}
+          >
+            ⏰ NBA HALFTIME 2H ({halftimeCount})
+          </button>
+          <button
+            onClick={() => setActiveTab('momentum')}
+            className={`px-6 py-3 rounded-lg border-4 font-bold tracking-wide transition-colors ${
+              activeTab === 'momentum'
+                ? 'bg-gradient-to-br from-red-600 via-orange-700 to-red-800 text-white border-orange-500 shadow-lg shadow-orange-600/30'
+                : 'bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800 hover:border-blue-600'
+            }`}
+          >
+            🔥 MOMENTUM SURGES ({momentumCount})
           </button>
           <button
             onClick={() => setActiveTab('arbitrage')}
@@ -415,6 +500,21 @@ export function Alerts() {
         {/* NHL Goalie Pull Alerts */}
         {activeTab === 'goalie' && (
           <GoaliePullAlerts />
+        )}
+
+        {/* NBA Halftime Tracker Alerts */}
+        {activeTab === 'halftime' && (
+          <HalftimeTrackerAlerts />
+        )}
+
+        {/* NBA Favorite Comeback Alerts */}
+        {activeTab === 'comeback' && (
+          <FavoriteComebackAlerts />
+        )}
+
+        {/* Momentum Surge Alerts */}
+        {activeTab === 'momentum' && (
+          <MomentumAlerts />
         )}
       </div>
     </div>

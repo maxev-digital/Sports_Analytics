@@ -40,11 +40,24 @@ export function Odds() {
   const fetchGames = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:8001/api/games`);
-      const allGames = await response.json();
+      const response = await fetch(`http://localhost:8000/api/games`);
+      const apiGames = await response.json();
+
+      // Transform API data to match our interface
+      const transformedGames = apiGames.map((game: any) => ({
+        id: game.state.id,
+        sport_key: game.state.sport_key,
+        home_team: game.state.home_team.name,
+        away_team: game.state.away_team.name,
+        home_score: game.state.home_team.score,
+        away_score: game.state.away_team.score,
+        commence_time: game.state.commence_time,
+        status: game.state.status,
+        odds: game.odds
+      }));
 
       // Filter games by selected sport and sort by time
-      const filteredGames = allGames.filter((game: GameOdds) => game.sport_key === activeSport);
+      const filteredGames = transformedGames.filter((game: GameOdds) => game.sport_key === activeSport);
       filteredGames.sort((a, b) => new Date(a.commence_time).getTime() - new Date(b.commence_time).getTime());
 
       setGames(filteredGames);
@@ -132,7 +145,7 @@ export function Odds() {
 
         {/* Sport Tabs */}
         <div className="flex gap-2 mb-6 overflow-x-auto">
-          {(['basketball_nba', 'americanfootball_nfl', 'icehockey_nhl', 'baseball_mlb'] as SportKey[]).map((sport) => (
+          {(['basketball_nba', 'basketball_ncaab', 'americanfootball_nfl', 'americanfootball_ncaaf', 'icehockey_nhl', 'baseball_mlb'] as SportKey[]).map((sport) => (
             <button
               key={sport}
               onClick={() => setActiveSport(sport)}

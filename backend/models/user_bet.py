@@ -59,6 +59,23 @@ class CreateBetRequest(BaseModel):
     strategy: Optional[str] = None
 
 
+class ManualBetRequest(BaseModel):
+    """Request model for manually adding a complete bet entry"""
+    user_id: str
+    sport: str
+    home_team: str
+    away_team: str
+    commence_time: str
+    bet_type: Literal['spread', 'total', 'moneyline', 'prop']
+    bet_side: str
+    odds: float
+    stake: float = Field(gt=0, description="Stake amount must be greater than 0")
+    bookmaker: str
+    confidence: Optional[Literal['HIGH', 'MEDIUM', 'LOW']] = None
+    edge_percent: Optional[float] = None
+    notes: Optional[str] = None
+
+
 class AddStakeRequest(BaseModel):
     """Request model for adding stake to a pending bet"""
     stake: float = Field(gt=0, description="Stake amount must be greater than 0")

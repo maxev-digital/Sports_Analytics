@@ -116,7 +116,7 @@ const getBookmakerInfoFallback = (bookmaker: string) => {
 };
 
 export function GameCard({ game }: GameCardProps) {
-  const { state, odds, projection, home_team_stats, away_team_stats, home_nfl_live_stats, away_nfl_live_stats, home_nfl_stats, away_nfl_stats, home_nhl_momentum, away_nhl_momentum, home_nhl_stats, away_nhl_stats } = game;
+  const { state, odds, projection, home_team_stats, away_team_stats, home_nfl_live_stats, away_nfl_live_stats, home_nfl_stats, away_nfl_stats, home_nhl_momentum, away_nhl_momentum, home_nhl_stats, away_nhl_stats, home_nba_momentum, away_nba_momentum, home_nfl_momentum, away_nfl_momentum, home_ncaaf_momentum, away_ncaaf_momentum } = game;
 
   // Get username for bet tracking
   const { username } = useAuth();
@@ -601,8 +601,8 @@ export function GameCard({ game }: GameCardProps) {
         );
       })()}
 
-      {/* Team Momentum Bar (NFL only, live games) */}
-      {sportBadge === 'NFL' && state.status === 'live' && (state.home_team.momentum !== null || state.away_team.momentum !== null) && (
+      {/* Team Momentum Bar (NBA only, live games) */}
+      {sportBadge === 'NBA' && state.status === 'live' && (state.home_team.momentum !== null || state.away_team.momentum !== null) && (
         <div className="mb-3">
           <div className={`text-base ${textLabel} mb-1`}>Game Momentum</div>
           <div className="flex items-center gap-2">
@@ -636,6 +636,364 @@ export function GameCard({ game }: GameCardProps) {
           </div>
         </div>
       )}
+
+      {/* NBA Momentum Stats (NBA only, live games) */}
+      {sportBadge === 'NBA' && state.status === 'live' && (away_nba_momentum || home_nba_momentum) && (
+        <div className="mb-3 border border-blue-600/30 bg-blue-900/10 rounded p-2">
+          <div className="text-base text-blue-400 font-semibold mb-2">Recent Momentum (Last ~5 Min)</div>
+          <div className="grid grid-cols-2 gap-3 text-base">
+            {/* Away Team Momentum */}
+            <div>
+              <div className={`${textLabel} font-semibold mb-1`}>{state.away_team.name.split(' ').pop()}</div>
+              {away_nba_momentum && (
+                <>
+                  <div className="flex justify-between mb-0.5">
+                    <span className={`${textLabel}`}>Momentum:</span>
+                    <span className={`font-semibold ${
+                      away_nba_momentum.momentum_score > 60 ? 'text-green-400' :
+                      away_nba_momentum.momentum_score < 40 ? 'text-red-400' : `${textSecondary}`
+                    }`}>{away_nba_momentum.momentum_score.toFixed(1)}</span>
+                  </div>
+                  <div className="flex justify-between mb-0.5">
+                    <span className={`${textLabel}`}>Points:</span>
+                    <span className={
+                      home_nba_momentum && away_nba_momentum.points_last_5min > home_nba_momentum.points_last_5min
+                        ? 'text-green-400'
+                        : `${textSecondary}`
+                    }>{away_nba_momentum.points_last_5min}</span>
+                  </div>
+                  <div className="flex justify-between mb-0.5">
+                    <span className={`${textLabel}`}>FG%:</span>
+                    <span className={
+                      home_nba_momentum && away_nba_momentum.fg_pct_recent > home_nba_momentum.fg_pct_recent
+                        ? 'text-green-400'
+                        : `${textSecondary}`
+                    }>{away_nba_momentum.fg_pct_recent.toFixed(1)}%</span>
+                  </div>
+                  <div className="flex justify-between mb-0.5">
+                    <span className={`${textLabel}`}>Off Reb:</span>
+                    <span className={
+                      home_nba_momentum && away_nba_momentum.offensive_rebounds > home_nba_momentum.offensive_rebounds
+                        ? 'text-green-400'
+                        : `${textSecondary}`
+                    }>{away_nba_momentum.offensive_rebounds}</span>
+                  </div>
+                  <div className="flex justify-between mb-0.5">
+                    <span className={`${textLabel}`}>Turnovers:</span>
+                    <span className={
+                      home_nba_momentum && away_nba_momentum.turnovers < home_nba_momentum.turnovers
+                        ? 'text-green-400'
+                        : `${textSecondary}`
+                    }>{away_nba_momentum.turnovers}</span>
+                  </div>
+                  <div className="flex justify-between mb-0.5">
+                    <span className={`${textLabel}`}>Steals:</span>
+                    <span className={
+                      home_nba_momentum && away_nba_momentum.steals > home_nba_momentum.steals
+                        ? 'text-green-400'
+                        : `${textSecondary}`
+                    }>{away_nba_momentum.steals}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className={`${textLabel}`}>Assists:</span>
+                    <span className={
+                      home_nba_momentum && away_nba_momentum.assists > home_nba_momentum.assists
+                        ? 'text-green-400'
+                        : `${textSecondary}`
+                    }>{away_nba_momentum.assists}</span>
+                  </div>
+                  {away_nba_momentum.possession_indicator && (
+                    <div className="mt-1">
+                      <span className={`text-sm px-2 py-0.5 rounded ${
+                        away_nba_momentum.possession_indicator === 'ATTACKING' ? 'bg-green-900 text-green-200' :
+                        away_nba_momentum.possession_indicator === 'DEFENDING' ? 'bg-red-900 text-red-200' :
+                        'bg-slate-700 ${textSecondary}'
+                      }`}>
+                        {away_nba_momentum.possession_indicator}
+                      </span>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Home Team Momentum */}
+            <div>
+              <div className={`${textLabel} font-semibold mb-1`}>{state.home_team.name.split(' ').pop()}</div>
+              {home_nba_momentum && (
+                <>
+                  <div className="flex justify-between mb-0.5">
+                    <span className={`${textLabel}`}>Momentum:</span>
+                    <span className={`font-semibold ${
+                      home_nba_momentum.momentum_score > 60 ? 'text-green-400' :
+                      home_nba_momentum.momentum_score < 40 ? 'text-red-400' : `${textSecondary}`
+                    }`}>{home_nba_momentum.momentum_score.toFixed(1)}</span>
+                  </div>
+                  <div className="flex justify-between mb-0.5">
+                    <span className={`${textLabel}`}>Points:</span>
+                    <span className={
+                      away_nba_momentum && home_nba_momentum.points_last_5min > away_nba_momentum.points_last_5min
+                        ? 'text-green-400'
+                        : `${textSecondary}`
+                    }>{home_nba_momentum.points_last_5min}</span>
+                  </div>
+                  <div className="flex justify-between mb-0.5">
+                    <span className={`${textLabel}`}>FG%:</span>
+                    <span className={
+                      away_nba_momentum && home_nba_momentum.fg_pct_recent > away_nba_momentum.fg_pct_recent
+                        ? 'text-green-400'
+                        : `${textSecondary}`
+                    }>{home_nba_momentum.fg_pct_recent.toFixed(1)}%</span>
+                  </div>
+                  <div className="flex justify-between mb-0.5">
+                    <span className={`${textLabel}`}>Off Reb:</span>
+                    <span className={
+                      away_nba_momentum && home_nba_momentum.offensive_rebounds > away_nba_momentum.offensive_rebounds
+                        ? 'text-green-400'
+                        : `${textSecondary}`
+                    }>{home_nba_momentum.offensive_rebounds}</span>
+                  </div>
+                  <div className="flex justify-between mb-0.5">
+                    <span className={`${textLabel}`}>Turnovers:</span>
+                    <span className={
+                      away_nba_momentum && home_nba_momentum.turnovers < away_nba_momentum.turnovers
+                        ? 'text-green-400'
+                        : `${textSecondary}`
+                    }>{home_nba_momentum.turnovers}</span>
+                  </div>
+                  <div className="flex justify-between mb-0.5">
+                    <span className={`${textLabel}`}>Steals:</span>
+                    <span className={
+                      away_nba_momentum && home_nba_momentum.steals > away_nba_momentum.steals
+                        ? 'text-green-400'
+                        : `${textSecondary}`
+                    }>{home_nba_momentum.steals}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className={`${textLabel}`}>Assists:</span>
+                    <span className={
+                      away_nba_momentum && home_nba_momentum.assists > away_nba_momentum.assists
+                        ? 'text-green-400'
+                        : `${textSecondary}`
+                    }>{home_nba_momentum.assists}</span>
+                  </div>
+                  {home_nba_momentum.possession_indicator && (
+                    <div className="mt-1">
+                      <span className={`text-sm px-2 py-0.5 rounded ${
+                        home_nba_momentum.possession_indicator === 'ATTACKING' ? 'bg-green-900 text-green-200' :
+                        home_nba_momentum.possession_indicator === 'DEFENDING' ? 'bg-red-900 text-red-200' :
+                        'bg-slate-700 ${textSecondary}'
+                      }`}>
+                        {home_nba_momentum.possession_indicator}
+                      </span>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* NFL/NCAAF Momentum Bar (football only, live games) */}
+      {(sportBadge === 'NFL' || sportBadge === 'NCAAF') && state.status === 'live' && ((home_nfl_momentum || away_nfl_momentum) || (home_ncaaf_momentum || away_ncaaf_momentum)) && (() => {
+        const footballMomentum = sportBadge === 'NFL'
+          ? { home: home_nfl_momentum, away: away_nfl_momentum }
+          : { home: home_ncaaf_momentum, away: away_ncaaf_momentum };
+
+        if (!footballMomentum.home && !footballMomentum.away) return null;
+
+        return (
+          <>
+            {/* Momentum Bar */}
+            <div className="mb-3">
+              <div className={`text-base ${textLabel} mb-1`}>Game Momentum</div>
+              <div className="flex items-center gap-2">
+                <span className={`text-base ${textLabel} w-12`}>{state.away_team.name.split(' ').pop()}</span>
+                <div className="flex-1 h-3 bg-slate-700 rounded-full overflow-hidden relative">
+                  {(() => {
+                    const awayMomentum = footballMomentum.away?.momentum_score || 50;
+                    const homeMomentum = footballMomentum.home?.momentum_score || 50;
+                    const awayPercent = (awayMomentum / (awayMomentum + homeMomentum)) * 100;
+                    const homePercent = 100 - awayPercent;
+
+                    return (
+                      <>
+                        <div
+                          className="absolute left-0 top-0 h-full transition-all"
+                          style={{ width: `${awayPercent}%`, backgroundColor: awayTeamColors.primary }}
+                        />
+                        <div
+                          className="absolute right-0 top-0 h-full transition-all"
+                          style={{ width: `${homePercent}%`, backgroundColor: homeTeamColors.primary }}
+                        />
+                        <div className="absolute left-1/2 top-0 h-full w-0.5 bg-white/30" style={{ transform: 'translateX(-50%)' }} />
+                      </>
+                    );
+                  })()}
+                </div>
+                <span className={`text-base ${textLabel} w-12 text-right`}>{state.home_team.name.split(' ').pop()}</span>
+              </div>
+            </div>
+
+            {/* Momentum Stats Panel */}
+            <div className="mb-3 border border-orange-600/30 bg-orange-900/10 rounded p-2">
+              <div className="text-base text-orange-400 font-semibold mb-2">Recent Momentum (Last ~6 Drives)</div>
+              <div className="grid grid-cols-2 gap-3 text-base">
+                {/* Away Team Momentum */}
+                <div>
+                  <div className={`${textLabel} font-semibold mb-1`}>{state.away_team.name.split(' ').pop()}</div>
+                  {footballMomentum.away && (
+                    <>
+                      <div className="flex justify-between mb-0.5">
+                        <span className={`${textLabel}`}>Momentum:</span>
+                        <span className={`font-semibold ${
+                          footballMomentum.away.momentum_score > 60 ? 'text-green-400' :
+                          footballMomentum.away.momentum_score < 40 ? 'text-red-400' : `${textSecondary}`
+                        }`}>{footballMomentum.away.momentum_score.toFixed(1)}</span>
+                      </div>
+                      <div className="flex justify-between mb-0.5">
+                        <span className={`${textLabel}`}>Yds/Play:</span>
+                        <span className={
+                          footballMomentum.home && footballMomentum.away.yards_per_play > footballMomentum.home.yards_per_play
+                            ? 'text-green-400'
+                            : `${textSecondary}`
+                        }>{footballMomentum.away.yards_per_play.toFixed(1)}</span>
+                      </div>
+                      <div className="flex justify-between mb-0.5">
+                        <span className={`${textLabel}`}>Yards:</span>
+                        <span className={
+                          footballMomentum.home && footballMomentum.away.recent_yards > footballMomentum.home.recent_yards
+                            ? 'text-green-400'
+                            : `${textSecondary}`
+                        }>{footballMomentum.away.recent_yards}</span>
+                      </div>
+                      <div className="flex justify-between mb-0.5">
+                        <span className={`${textLabel}`}>Points:</span>
+                        <span className={
+                          footballMomentum.home && footballMomentum.away.recent_points > footballMomentum.home.recent_points
+                            ? 'text-green-400'
+                            : `${textSecondary}`
+                        }>{footballMomentum.away.recent_points}</span>
+                      </div>
+                      <div className="flex justify-between mb-0.5">
+                        <span className={`${textLabel}`}>TDs:</span>
+                        <span className={
+                          footballMomentum.home && footballMomentum.away.touchdowns > footballMomentum.home.touchdowns
+                            ? 'text-green-400'
+                            : `${textSecondary}`
+                        }>{footballMomentum.away.touchdowns}</span>
+                      </div>
+                      <div className="flex justify-between mb-0.5">
+                        <span className={`${textLabel}`}>FGs:</span>
+                        <span className={`${textSecondary}`}>{footballMomentum.away.field_goals}</span>
+                      </div>
+                      <div className="flex justify-between mb-0.5">
+                        <span className={`${textLabel}`}>Turnovers:</span>
+                        <span className={
+                          footballMomentum.home && footballMomentum.away.turnovers < footballMomentum.home.turnovers
+                            ? 'text-green-400'
+                            : `${textSecondary}`
+                        }>{footballMomentum.away.turnovers}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className={`${textLabel}`}>Red Zone:</span>
+                        <span className={`${textSecondary}`}>{footballMomentum.away.red_zone_efficiency}</span>
+                      </div>
+                      {footballMomentum.away.drive_state && (
+                        <div className="mt-1">
+                          <span className={`text-sm px-2 py-0.5 rounded ${
+                            footballMomentum.away.drive_state === 'ATTACKING' ? 'bg-green-900 text-green-200' :
+                            footballMomentum.away.drive_state === 'DEFENDING' ? 'bg-red-900 text-red-200' :
+                            'bg-slate-700 ${textSecondary}'
+                          }`}>
+                            {footballMomentum.away.drive_state}
+                          </span>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+
+                {/* Home Team Momentum */}
+                <div>
+                  <div className={`${textLabel} font-semibold mb-1`}>{state.home_team.name.split(' ').pop()}</div>
+                  {footballMomentum.home && (
+                    <>
+                      <div className="flex justify-between mb-0.5">
+                        <span className={`${textLabel}`}>Momentum:</span>
+                        <span className={`font-semibold ${
+                          footballMomentum.home.momentum_score > 60 ? 'text-green-400' :
+                          footballMomentum.home.momentum_score < 40 ? 'text-red-400' : `${textSecondary}`
+                        }`}>{footballMomentum.home.momentum_score.toFixed(1)}</span>
+                      </div>
+                      <div className="flex justify-between mb-0.5">
+                        <span className={`${textLabel}`}>Yds/Play:</span>
+                        <span className={
+                          footballMomentum.away && footballMomentum.home.yards_per_play > footballMomentum.away.yards_per_play
+                            ? 'text-green-400'
+                            : `${textSecondary}`
+                        }>{footballMomentum.home.yards_per_play.toFixed(1)}</span>
+                      </div>
+                      <div className="flex justify-between mb-0.5">
+                        <span className={`${textLabel}`}>Yards:</span>
+                        <span className={
+                          footballMomentum.away && footballMomentum.home.recent_yards > footballMomentum.away.recent_yards
+                            ? 'text-green-400'
+                            : `${textSecondary}`
+                        }>{footballMomentum.home.recent_yards}</span>
+                      </div>
+                      <div className="flex justify-between mb-0.5">
+                        <span className={`${textLabel}`}>Points:</span>
+                        <span className={
+                          footballMomentum.away && footballMomentum.home.recent_points > footballMomentum.away.recent_points
+                            ? 'text-green-400'
+                            : `${textSecondary}`
+                        }>{footballMomentum.home.recent_points}</span>
+                      </div>
+                      <div className="flex justify-between mb-0.5">
+                        <span className={`${textLabel}`}>TDs:</span>
+                        <span className={
+                          footballMomentum.away && footballMomentum.home.touchdowns > footballMomentum.away.touchdowns
+                            ? 'text-green-400'
+                            : `${textSecondary}`
+                        }>{footballMomentum.home.touchdowns}</span>
+                      </div>
+                      <div className="flex justify-between mb-0.5">
+                        <span className={`${textLabel}`}>FGs:</span>
+                        <span className={`${textSecondary}`}>{footballMomentum.home.field_goals}</span>
+                      </div>
+                      <div className="flex justify-between mb-0.5">
+                        <span className={`${textLabel}`}>Turnovers:</span>
+                        <span className={
+                          footballMomentum.away && footballMomentum.home.turnovers < footballMomentum.away.turnovers
+                            ? 'text-green-400'
+                            : `${textSecondary}`
+                        }>{footballMomentum.home.turnovers}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className={`${textLabel}`}>Red Zone:</span>
+                        <span className={`${textSecondary}`}>{footballMomentum.home.red_zone_efficiency}</span>
+                      </div>
+                      {footballMomentum.home.drive_state && (
+                        <div className="mt-1">
+                          <span className={`text-sm px-2 py-0.5 rounded ${
+                            footballMomentum.home.drive_state === 'ATTACKING' ? 'bg-green-900 text-green-200' :
+                            footballMomentum.home.drive_state === 'DEFENDING' ? 'bg-red-900 text-red-200' :
+                            'bg-slate-700 ${textSecondary}'
+                          }`}>
+                            {footballMomentum.home.drive_state}
+                          </span>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          </>
+        );
+      })()}
 
       {/* Live Betting Lines (All Sports, Live Games) */}
       {state.status === 'live' && (state.away_team.money_line || state.home_team.money_line || state.away_team.spread || state.home_team.spread) && (

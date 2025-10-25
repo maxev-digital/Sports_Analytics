@@ -38,7 +38,7 @@ export const sportEmojis: Record<SportType, string> = {
   'NCAAB': 'https://em-content.zobj.net/source/microsoft-teams/363/basketball_1f3c0.png',
   'SOCCER': 'https://em-content.zobj.net/source/microsoft-teams/363/soccer-ball_26bd.png',
   'PGA': 'https://em-content.zobj.net/source/microsoft-teams/363/flag-in-hole_26f3.png',
-  'TENNIS': 'https://em-content.zobj.net/source/microsoft-teams/363/tennis_1f3be.png',
+  'TENNIS': 'https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Tennis/3D/tennis_3d.png',
   'MMA': 'https://em-content.zobj.net/source/microsoft-teams/363/boxing-glove_1f94a.png'
 };
 
@@ -56,7 +56,8 @@ export const uiEmojis = {
   rocket: 'https://em-content.zobj.net/source/microsoft-teams/363/rocket_1f680.png',
   dollar: 'https://em-content.zobj.net/source/microsoft-teams/363/money-bag_1f4b0.png',
   gear: 'https://em-content.zobj.net/source/microsoft-teams/363/gear_2699-fe0f.png',
-  trophy: 'https://em-content.zobj.net/source/microsoft-teams/363/trophy_1f3c6.png'
+  trophy: 'https://em-content.zobj.net/source/microsoft-teams/363/trophy_1f3c6.png',
+  wrench: 'https://em-content.zobj.net/source/microsoft-teams/363/wrench_1f527.png'
 };
 
 /**

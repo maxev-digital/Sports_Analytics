@@ -9,6 +9,7 @@ export function Login() {
   const { login, error, loading } = useAuth();
   const navigate = useNavigate();
   const audioRef = useRef<HTMLAudioElement>(null);
+  const bullAudioRef = useRef<HTMLAudioElement>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -17,34 +18,33 @@ export function Login() {
     if (success) {
       // Trigger fire ring animation
       setShowFireRing(true);
-      
-      // Play flame sound
-      if (audioRef.current) {
-        audioRef.current.play().catch(err => console.log('Audio play failed:', err));
+
+      // Play bull sound only
+      if (bullAudioRef.current) {
+        bullAudioRef.current.play().catch(err => console.log('Bull audio play failed:', err));
       }
-      
-      // Redirect after animation
+
+      // Redirect after bull sound finishes (giving it time to play)
       setTimeout(() => {
         navigate('/');
-      }, 1500);
+      }, 5000);
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-black px-4 relative overflow-hidden">
-      {/* Hidden audio element for flame sound */}
-      <audio 
+      {/* Hidden audio elements for sound effects */}
+      <audio
         ref={audioRef}
         src="/flame.mp3"
         preload="auto"
       />
-      
-      {/* Fire Ring Animation Overlay */}
-      {showFireRing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
-          <div className="fire-ring animate-fire-ring"></div>
-        </div>
-      )}
+      <audio
+        ref={bullAudioRef}
+        src="/bull.mp3"
+        preload="auto"
+      />
+
       <div className="max-w-md w-full space-y-6">
         <div className="text-center relative">
           <img 

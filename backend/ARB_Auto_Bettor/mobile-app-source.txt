@@ -1,0 +1,813 @@
+# 📱 Mobile App - React Native Complete Source Code
+
+## 📋 Overview
+
+A native mobile app (iOS & Android) for betting automation with:
+- Real-time opportunity alerts
+- Push notifications
+- Deep links to sportsbook apps
+- Bet tracking dashboard
+- One-tap bet placement
+
+---
+
+## 🏗️ Project Structure
+
+```
+mobile-app/
+├── src/
+│   ├── screens/
+│   │   ├── HomeScreen.tsx
+│   │   ├── OpportunitiesScreen.tsx
+│   │   ├── BetTrackerScreen.tsx
+│   │   └── SettingsScreen.tsx
+│   ├── components/
+│   │   ├── OpportunityCard.tsx
+│   │   ├── BetSlipModal.tsx
+│   │   └── StatsWidget.tsx
+│   ├── services/
+│   │   ├── WebSocketService.ts
+│   │   ├── NotificationService.ts
+│   │   └── DeepLinkService.ts
+│   ├── navigation/
+│   │   └── AppNavigator.tsx
+│   ├── utils/
+│   │   ├── calculations.ts
+│   │   └── formatters.ts
+│   └── types/
+│       └── index.ts
+├── ios/
+├── android/
+├── package.json
+├── app.json
+└── README.md
+```
+
+---
+
+## 🚀 Setup & Installation
+
+### Step 1: Initialize React Native Project
+
+```bash
+# Install React Native CLI
+npm install -g react-native-cli
+
+# Create new project
+npx react-native init BettingAutomation --template react-native-template-typescript
+
+cd BettingAutomation
+
+# Install dependencies
+npm install @react-navigation/native @react-navigation/bottom-tabs
+npm install react-native-screens react-native-safe-area-context
+npm install @react-native-community/push-notification-ios
+npm install react-native-push-notification
+npm install @react-native-async-storage/async-storage
+npm install axios
+npm install date-fns
+npm install react-native-linear-gradient
+npm install react-native-vector-icons
+
+# iOS specific
+cd ios && pod install && cd ..
+
+# Link assets
+npx react-native-asset
+```
+
+---
+
+### Step 2: Core Type Definitions
+
+#### File: `src/types/index.ts`
+
+```typescript
+export interface BettingOpportunity {
+  opportunity_id: string;
+  opportunity_type: 'arbitrage' | 'goalie_pull' | 'positive_ev';
+  sport: string;
+  game_id: string;
+  home_team: string;
+  away_team: string;
+  commence_time: string;
+  legs: BetLeg[];
+  total_stake: number;
+  guaranteed_profit?: number;
+  expected_value?: number;
+  roi_percentage: number;
+  priority: 'HIGH' | 'MEDIUM' | 'LOW';
+  expiry_time: string;
+  time_to_place: number;
+  created_at: string;
+  status: 'active' | 'placed' | 'expired' | 'error';
+}
+
+export interface BetLeg {
+  sportsbook: string;
+  market_type: string;
+  selection: string;
+  odds: number;
+  stake: number;
+  game_url: string;
+  bet_selector: string;
+  stake_input_selector: string;
+  expected_return: number;
+}
+
+export interface UserStats {
+  total_opportunities: number;
+  opportunities_today: number;
+  total_profit: number;
+  roi_percentage: number;
+  win_rate: number;
+}
+
+export interface UserSettings {
+  notifications_enabled: boolean;
+  min_roi_threshold: number;
+  favorite_sportsbooks: string[];
+  auto_place_enabled: boolean;
+}
+```
+
+---
+
+### Step 3: WebSocket Service
+
+#### File: `src/services/WebSocketService.ts`
+
+```typescript
+import {EventEmitter} from 'events';
+import {BettingOpportunity} from '../types';
+
+class WebSocketService extends EventEmitter {
+  private ws: WebSocket | null = null;
+  private reconnectInterval: number = 5000;
+  private reconnectAttempts: number = 0;
+  private maxReconnectAttempts: number = 10;
+  private url: string;
+
+  constructor(url: string) {
+    super();
+    this.url = url;
+  }
+
+  connect() {
+    try {
+      this.ws = new WebSocket(this.url);
+
+      this.ws.onopen = () => {
+        console.log('WebSocket connected');
+        this.reconnectAttempts = 0;
+        this.emit('connected');
+      };
+
+      this.ws.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data);
+          this.handleMessage(message);
+        } catch (error) {
+          console.error('Error parsing message:', error);
+        }
+      };
+
+      this.ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        this.emit('error', error);
+      };
+
+      this.ws.onclose = () => {
+        console.log('WebSocket disconnected');
+        this.emit('disconnected');
+        this.attemptReconnect();
+      };
+    } catch (error) {
+      console.error('Error connecting to WebSocket:', error);
+      this.attemptReconnect();
+    }
+  }
+
+  private handleMessage(message: any) {
+    switch (message.type) {
+      case 'opportunities':
+        this.emit('opportunities', message.data);
+        break;
+      case 'new_opportunities':
+        this.emit('new_opportunities', message.opportunities);
+        break;
+      case 'opportunity_expired':
+        this.emit('opportunity_expired', message.opportunity_id);
+        break;
+      default:
+        console.log('Unknown message type:', message.type);
+    }
+  }
+
+  private attemptReconnect() {
+    if (this.reconnectAttempts < this.maxReconnectAttempts) {
+      this.reconnectAttempts++;
+      console.log(`Reconnect attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts}`);
+      
+      setTimeout(() => {
+        this.connect();
+      }, this.reconnectInterval);
+    } else {
+      console.error('Max reconnect attempts reached');
+      this.emit('max_reconnect_attempts');
+    }
+  }
+
+  send(message: any) {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify(message));
+    } else {
+      console.error('WebSocket is not connected');
+    }
+  }
+
+  disconnect() {
+    if (this.ws) {
+      this.ws.close();
+      this.ws = null;
+    }
+  }
+
+  getOpportunities() {
+    this.send({type: 'get_opportunities'});
+  }
+}
+
+export default new WebSocketService('wss://api.yourdomain.com/ws/opportunities');
+```
+
+---
+
+### Step 4: Push Notification Service
+
+#### File: `src/services/NotificationService.ts`
+
+```typescript
+import PushNotification from 'react-native-push-notification';
+import {Platform} from 'react-native';
+import {BettingOpportunity} from '../types';
+
+class NotificationService {
+  constructor() {
+    // Configure push notifications
+    PushNotification.configure({
+      onRegister: (token) => {
+        console.log('FCM Token:', token);
+        // Send token to backend
+      },
+
+      onNotification: (notification) => {
+        console.log('Notification received:', notification);
+        
+        if (notification.userInteraction) {
+          // User tapped notification
+          this.handleNotificationTap(notification);
+        }
+      },
+
+      permissions: {
+        alert: true,
+        badge: true,
+        sound: true,
+      },
+
+      popInitialNotification: true,
+      requestPermissions: true,
+    });
+
+    // Create notification channels (Android)
+    if (Platform.OS === 'android') {
+      PushNotification.createChannel(
+        {
+          channelId: 'opportunities',
+          channelName: 'Betting Opportunities',
+          channelDescription: 'Notifications for new betting opportunities',
+          playSound: true,
+          soundName: 'default',
+          importance: 4,
+          vibrate: true,
+        },
+        (created) => console.log(`Channel created: ${created}`)
+      );
+    }
+  }
+
+  sendOpportunityNotification(opportunity: BettingOpportunity) {
+    const title = `${opportunity.opportunity_type.toUpperCase()} - ${opportunity.priority}`;
+    const message = `${opportunity.away_team} @ ${opportunity.home_team}\nROI: ${opportunity.roi_percentage.toFixed(1)}% • ${opportunity.time_to_place}s`;
+
+    PushNotification.localNotification({
+      channelId: 'opportunities',
+      title: title,
+      message: message,
+      playSound: true,
+      soundName: 'default',
+      importance: 'high',
+      priority: 'high',
+      vibrate: true,
+      vibration: 300,
+      actions: ['Place Bets', 'Dismiss'],
+      userInfo: {
+        opportunity_id: opportunity.opportunity_id,
+        type: 'opportunity',
+      },
+    });
+  }
+
+  private handleNotificationTap(notification: any) {
+    const {opportunity_id} = notification.data;
+    
+    // Navigate to opportunity detail
+    // This will be implemented in navigation
+  }
+
+  requestPermission() {
+    return new Promise((resolve, reject) => {
+      PushNotification.requestPermissions()
+        .then(resolve)
+        .catch(reject);
+    });
+  }
+
+  cancelAllNotifications() {
+    PushNotification.cancelAllLocalNotifications();
+  }
+}
+
+export default new NotificationService();
+```
+
+---
+
+### Step 5: Deep Link Service
+
+#### File: `src/services/DeepLinkService.ts`
+
+```typescript
+import {Linking, Platform} from 'react-native';
+import {BetLeg} from '../types';
+
+class DeepLinkService {
+  private sportsbookSchemes = {
+    draftkings: {
+      ios: 'draftkings://sportsbook',
+      android: 'draftkings://sportsbook',
+    },
+    fanduel: {
+      ios: 'fanduel://sportsbook',
+      android: 'fanduel://sportsbook',
+    },
+    betmgm: {
+      ios: 'betmgm://sports',
+      android: 'betmgm://sports',
+    },
+    caesars: {
+      ios: 'caesars://sportsbook',
+      android: 'caesars://sportsbook',
+    },
+  };
+
+  async openSportsbook(leg: BetLeg): Promise<boolean> {
+    const scheme = this.sportsbookSchemes[leg.sportsbook as keyof typeof this.sportsbookSchemes];
+    
+    if (!scheme) {
+      console.error(`Unknown sportsbook: ${leg.sportsbook}`);
+      return false;
+    }
+
+    const deepLink = Platform.OS === 'ios' ? scheme.ios : scheme.android;
+    
+    try {
+      // Check if app is installed
+      const canOpen = await Linking.canOpenURL(deepLink);
+      
+      if (canOpen) {
+        // Open sportsbook app
+        await Linking.openURL(deepLink);
+        return true;
+      } else {
+        // App not installed, open web version
+        await Linking.openURL(leg.game_url);
+        return true;
+      }
+    } catch (error) {
+      console.error('Error opening deep link:', error);
+      
+      // Fallback to web
+      try {
+        await Linking.openURL(leg.game_url);
+        return true;
+      } catch (fallbackError) {
+        console.error('Error opening web URL:', fallbackError);
+        return false;
+      }
+    }
+  }
+
+  async placeBetSequence(legs: BetLeg[]): Promise<void> {
+    for (const leg of legs) {
+      await this.openSportsbook(leg);
+      
+      // Wait 8 seconds between opening apps
+      await new Promise(resolve => setTimeout(resolve, 8000));
+    }
+  }
+
+  async canOpenSportsbook(sportsbook: string): Promise<boolean> {
+    const scheme = this.sportsbookSchemes[sportsbook as keyof typeof this.sportsbookSchemes];
+    
+    if (!scheme) {
+      return false;
+    }
+
+    const deepLink = Platform.OS === 'ios' ? scheme.ios : scheme.android;
+    
+    try {
+      return await Linking.canOpenURL(deepLink);
+    } catch {
+      return false;
+    }
+  }
+}
+
+export default new DeepLinkService();
+```
+
+---
+
+### Step 6: Home Screen
+
+#### File: `src/screens/HomeScreen.tsx`
+
+```typescript
+import React, {useEffect, useState} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  RefreshControl,
+  TouchableOpacity,
+  Alert,
+} from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
+import WebSocketService from '../services/WebSocketService';
+import NotificationService from '../services/NotificationService';
+import {BettingOpportunity, UserStats} from '../types';
+
+const HomeScreen = ({navigation}: any) => {
+  const [opportunities, setOpportunities] = useState<BettingOpportunity[]>([]);
+  const [stats, setStats] = useState<UserStats>({
+    total_opportunities: 0,
+    opportunities_today: 0,
+    total_profit: 0,
+    roi_percentage: 0,
+    win_rate: 0,
+  });
+  const [connected, setConnected] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    // Connect to WebSocket
+    WebSocketService.connect();
+
+    // Listen for connection events
+    WebSocketService.on('connected', () => {
+      setConnected(true);
+      WebSocketService.getOpportunities();
+    });
+
+    WebSocketService.on('disconnected', () => {
+      setConnected(false);
+    });
+
+    // Listen for opportunities
+    WebSocketService.on('opportunities', (data: BettingOpportunity[]) => {
+      setOpportunities(data);
+    });
+
+    WebSocketService.on('new_opportunities', (data: BettingOpportunity[]) => {
+      setOpportunities(data);
+      
+      // Send notifications for high priority
+      data.forEach(opp => {
+        if (opp.priority === 'HIGH') {
+          NotificationService.sendOpportunityNotification(opp);
+        }
+      });
+    });
+
+    return () => {
+      WebSocketService.removeAllListeners();
+    };
+  }, []);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    WebSocketService.getOpportunities();
+    setTimeout(() => setRefreshing(false), 2000);
+  };
+
+  const renderStatsCard = () => (
+    <LinearGradient
+      colors={['#667eea', '#764ba2']}
+      style={styles.statsCard}
+      start={{x: 0, y: 0}}
+      end={{x: 1, y: 1}}>
+      <View style={styles.statsRow}>
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>{opportunities.length}</Text>
+          <Text style={styles.statLabel}>Active</Text>
+        </View>
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>
+            {opportunities.reduce((sum, opp) => sum + opp.roi_percentage, 0) / opportunities.length || 0}%
+          </Text>
+          <Text style={styles.statLabel}>Avg ROI</Text>
+        </View>
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>${stats.total_profit.toFixed(0)}</Text>
+          <Text style={styles.statLabel}>Profit</Text>
+        </View>
+      </View>
+    </LinearGradient>
+  );
+
+  const renderOpportunityCard = (opp: BettingOpportunity) => {
+    const priorityColors = {
+      HIGH: '#ff4444',
+      MEDIUM: '#ff8800',
+      LOW: '#4CAF50',
+    };
+
+    return (
+      <TouchableOpacity
+        key={opp.opportunity_id}
+        style={styles.opportunityCard}
+        onPress={() => navigation.navigate('OpportunityDetail', {opportunity: opp})}>
+        <View style={styles.opportunityHeader}>
+          <View style={[styles.priorityBadge, {backgroundColor: priorityColors[opp.priority]}]}>
+            <Text style={styles.priorityText}>{opp.opportunity_type.toUpperCase()}</Text>
+          </View>
+          <Text style={styles.roiText}>{opp.roi_percentage.toFixed(1)}%</Text>
+        </View>
+
+        <Text style={styles.gameText}>
+          {opp.away_team} @ {opp.home_team}
+        </Text>
+
+        <View style={styles.opportunityFooter}>
+          <Text style={styles.legsText}>{opp.legs.length} bets • {opp.time_to_place}s</Text>
+          <Text style={styles.profitText}>
+            ${(opp.guaranteed_profit || opp.expected_value || 0).toFixed(2)}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  return (
+    <View style={styles.container}>
+      <ScrollView
+        style={styles.scrollView}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Betting Automation</Text>
+          <View style={[styles.statusDot, {backgroundColor: connected ? '#4CAF50' : '#ff4444'}]} />
+        </View>
+
+        {renderStatsCard()}
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Active Opportunities</Text>
+
+          {opportunities.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>No opportunities found</Text>
+              <Text style={styles.emptySubtext}>Scanning markets...</Text>
+            </View>
+          ) : (
+            opportunities.map(renderOpportunityCard)
+          )}
+        </View>
+      </ScrollView>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    paddingTop: 60,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  statusDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  statsCard: {
+    margin: 20,
+    padding: 20,
+    borderRadius: 16,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#fff',
+    opacity: 0.9,
+  },
+  section: {
+    padding: 20,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 16,
+  },
+  opportunityCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  opportunityHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  priorityBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  priorityText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  roiText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#4CAF50',
+  },
+  gameText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 12,
+  },
+  opportunityFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  legsText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  profitText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#4CAF50',
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#999',
+    marginBottom: 8,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: '#ccc',
+  },
+});
+
+export default HomeScreen;
+```
+
+---
+
+### Step 7: Opportunity Detail Screen
+
+#### File: `src/screens/OpportunityDetailScreen.tsx`
+
+```typescript
+import React, {useState} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
+import DeepLinkService from '../services/DeepLinkService';
+import {BettingOpportunity} from '../types';
+
+const OpportunityDetailScreen = ({route, navigation}: any) => {
+  const {opportunity}: {opportunity: BettingOpportunity} = route.params;
+  const [placing, setPlacing] = useState(false);
+
+  const handlePlaceBets = async () => {
+    Alert.alert(
+      'Place Bets',
+      `This will open ${opportunity.legs.length} sportsbook apps in sequence. You must confirm each bet manually.`,
+      [
+        {text: 'Cancel', style: 'cancel'},
+        {
+          text: 'Continue',
+          onPress: async () => {
+            setPlacing(true);
+            
+            try {
+              await DeepLinkService.placeBetSequence(opportunity.legs);
+              
+              Alert.alert(
+                'Success',
+                'Bet slips opened! Please confirm each bet in the sportsbook apps.',
+              );
+            } catch (error) {
+              Alert.alert('Error', 'Failed to open sportsbook apps');
+            } finally {
+              setPlacing(false);
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const renderBetLeg = (leg: any, index: number) => (
+    <View key={index} style={styles.betLegCard}>
+      <View style={styles.betLegHeader}>
+        <Text style={styles.sportsbookText}>{leg.sportsbook.toUpperCase()}</Text>
+        <Text style={styles.oddsText}>{leg.odds > 0 ? '+' : ''}{leg.odds}</Text>
+      </View>
+
+      <Text style={styles.selectionText}>{leg.selection}</Text>
+
+      <View style={styles.betLegFooter}>
+        <Text style={styles.marketText}>{leg.market_type}</Text>
+        <Text style={styles.stakeText}>${leg.stake.toFixed(2)}</Text>
+      </View>
+    </View>
+  );
+
+  return (
+    <View style={styles.container}>
+      <ScrollView style={styles.scrollView}>
+        <LinearGradient
+          colors={['#667eea', '#764ba2']}
+          style={styles.headerCard}
+          start={{x

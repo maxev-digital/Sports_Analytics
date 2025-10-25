@@ -2,6 +2,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { uiEmojis } from '../utils/sportDetection';
+import { useSoundEffect } from '../hooks/useSoundEffect';
 
 export function Navigation() {
   const location = useLocation();
@@ -11,6 +12,14 @@ export function Navigation() {
   const [learnDropdownOpen, setLearnDropdownOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
   const learnRef = useRef<HTMLDivElement>(null);
+  // Sound effects
+  const playTabSwitch = useSoundEffect('tab-switch.mp3', 0.3);
+  const playDropdown = useSoundEffect('dropdown.mp3', 0.3);
+  const playLogout = useSoundEffect('logout.mp3', 0.4);
+
+  const handleNavClick = () => { playTabSwitch(); };
+  const handleDropdownToggle = (dropdownSetter: (val: boolean) => void, currentState: boolean) => { playDropdown(); dropdownSetter(!currentState); };
+  const handleLogout = () => { playLogout(); setTimeout(() => { logout(); navigate('/login'); }, 200); };
 
   // Main nav items (always visible)
   const mainNavItems = [
@@ -20,6 +29,7 @@ export function Navigation() {
     { path: '/analytics', label: 'Analytics', emoji: uiEmojis.search },
     { path: '/alerts', label: 'Alerts', emoji: uiEmojis.lightning },
     { path: '/props', label: 'Props', emoji: uiEmojis.book },
+    { path: '/tools', label: 'Tools', emoji: uiEmojis.wrench },
   ];
 
   // Settings dropdown items
@@ -67,7 +77,7 @@ export function Navigation() {
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center justify-between h-24 py-4">
           {/* Logo */}
-          <Link to="/" className="hover:opacity-80 transition-opacity flex-shrink-0">
+          <Link to="/" onClick={handleNavClick} className="hover:opacity-80 transition-opacity flex-shrink-0">
             <img 
               src="/logo.png" 
               alt="Max EV Sports" 
@@ -106,7 +116,7 @@ export function Navigation() {
             {/* Learn Dropdown */}
             <div className="relative" ref={learnRef}>
               <button
-                onClick={() => setLearnDropdownOpen(!learnDropdownOpen)}
+                onClick={() => handleDropdownToggle(setLearnDropdownOpen, learnDropdownOpen)}
                 className={`px-5 py-2.5 rounded-lg font-semibold transition-all text-base flex items-center gap-2 ${
                   isDropdownActive(learnItems)
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
@@ -126,7 +136,7 @@ export function Navigation() {
                     <Link
                       key={item.path}
                       to={item.path}
-                      onClick={() => setLearnDropdownOpen(false)}
+                      onClick={() => { playTabSwitch(); setLearnDropdownOpen(false); }}
                       className={`px-4 py-2.5 flex items-center gap-3 transition-all ${
                         isActive(item.path)
                           ? 'bg-blue-600 text-white'
@@ -143,7 +153,7 @@ export function Navigation() {
 
             {/* Pricing - standalone */}
             <Link
-              to="/pricing"
+              to="/pricing" onClick={handleNavClick}
               className={`px-5 py-2.5 rounded-lg font-semibold transition-all text-base flex items-center gap-2 ${
                 isActive('/pricing')
                   ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
@@ -160,7 +170,7 @@ export function Navigation() {
             {/* Settings Dropdown - moved to far right */}
             <div className="relative hidden md:block" ref={settingsRef}>
               <button
-                onClick={() => setSettingsDropdownOpen(!settingsDropdownOpen)}
+                onClick={() => handleDropdownToggle(setSettingsDropdownOpen, settingsDropdownOpen)}
                 className={`px-5 py-2.5 rounded-lg font-semibold transition-all text-base flex items-center gap-2 ${
                   isDropdownActive(settingsItems)
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
@@ -180,7 +190,7 @@ export function Navigation() {
                     <Link
                       key={item.path}
                       to={item.path}
-                      onClick={() => setSettingsDropdownOpen(false)}
+                      onClick={() => { playTabSwitch(); setSettingsDropdownOpen(false); }}
                       className={`px-4 py-2.5 flex items-center gap-3 transition-all ${
                         isActive(item.path)
                           ? 'bg-blue-600 text-white'
@@ -266,7 +276,7 @@ export function Navigation() {
             </Link>
           ))}
           <Link
-            to="/pricing"
+            to="/pricing" onClick={handleNavClick}
             className={`px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
               isActive('/pricing')
                 ? 'bg-blue-600 text-white'

@@ -1,0 +1,1721 @@
+Date,Home_Team,Away_Team,Home_Score,Away_Score,Actual_Total
+2023-11-06,LSU,Colorado,78,92,170
+2023-11-06,Kansas,North Carolina Central,99,56,155
+2023-11-06,Duke,Dartmouth,92,54,146
+2023-11-06,Purdue,Samford,98,45,143
+2023-11-06,Iowa,FDU,102,46,148
+2023-11-06,Michigan State,James Madison,76,79,155
+2023-11-06,UCLA,Purdue,92,49,141
+2023-11-06,Utah,Mississippi Valley State,104,45,149
+2023-11-06,Marquette,Northern Illinois,92,70,162
+2023-11-06,South Carolina,Notre Dame,100,71,171
+2023-11-06,UConn,Northern Arizona,95,52,147
+2023-11-06,USC,Ohio State,83,74,157
+2023-11-06,Houston,Louisiana-Monroe,84,31,115
+2023-11-06,Virginia Tech,High Point,94,55,149
+2023-11-06,Tennessee,Tennessee Tech,80,42,122
+2023-11-06,Ole Miss,Queens (NC),91,44,135
+2023-11-06,Arizona,Morgan State,122,59,181
+2023-11-06,Miami (FL),NJIT,101,60,161
+2023-11-06,Maryland,Harvard,98,75,173
+2023-11-06,Arkansas,Alcorn State,93,59,152
+2023-11-06,Texas A&M,East Texas A&M,78,46,124
+2023-11-06,Kentucky,New Mexico State,86,46,132
+2023-11-06,Cincinnati,Louisville,59,77,136
+2023-11-06,San Diego State,Cal State Fullerton,83,57,140
+2023-11-06,Florida State,Charleston Southern,99,63,162
+2023-11-06,Texas,Incarnate Word,88,56,144
+2023-11-06,UNC,Radford,86,70,156
+2023-11-06,Baylor,Southern,85,53,138
+2023-11-06,USC,Kansas State,82,69,151
+2023-11-06,Creighton,North Dakota State,75,52,127
+2023-11-06,Villanova,American,90,63,153
+2023-11-06,Saint Mary's,Cal State Stanislaus,107,28,135
+2023-11-06,Washington State,Cal Poly,78,61,139
+2023-11-06,Alabama,Morehead State,105,73,178
+2023-11-06,Mississippi State,Alcorn State,77,42,119
+2023-11-06,Illinois,Eastern Illinois,80,52,132
+2023-11-06,Stephen F. Austin,Panhandle State,118,46,164
+2023-11-06,Ball State,Tennessee Tech,97,64,161
+2023-11-06,Chattanooga,King (TN),88,32,120
+2023-11-06,Clemson,Winthrop,71,41,112
+2023-11-06,College of Charleston,Pfeiffer,117,30,147
+2023-11-06,Duke,Richmond,83,53,136
+2023-11-06,Georgia Tech,Coastal Carolina,83,53,136
+2023-11-06,Hofstra,St. Joseph's–Long Island,101,48,149
+2023-11-06,IU Indianapolis,Spalding,70,63,133
+2023-11-06,Iowa State,Butler,82,55,137
+2023-11-06,McNeese State,Dillard,76,47,123
+2023-11-06,Kansas City,Bradley,73,66,139
+2023-11-06,Missouri,Belmont,72,61,133
+2023-11-06,Samford,Auburn Montgomery,78,51,129
+2023-11-06,Southeastern Louisiana,Millsaps,61,30,91
+2023-11-06,Southern Miss,William Carey,88,46,134
+2023-11-06,Stephen F. Austin,North American,96,68,164
+2023-11-06,Troy,Univ. of Ft. Lauderdale,92,47,139
+2023-11-06,Vanderbilt,Kennesaw State,98,51,149
+2023-11-06,Utah Tech,La Verne,116,59,175
+2023-11-06,Marquette,UT-Martin,84,51,135
+2023-11-06,Nebraska,Northwestern State,90,42,132
+2023-11-06,Oklahoma,Wichita State,92,68,160
+2023-11-06,Prairie View,Kansas Christian,89,66,155
+2023-11-06,UC-Davis,Academy of Art,102,52,154
+2023-11-06,George Mason,Bowie State,96,45,141
+2023-11-06,UAB,Alabama A&M,70,63,133
+2023-11-06,Liberty,Frostburg State,68,46,114
+2023-11-06,Old Dominion,Lincoln (PA),72,50,122
+2023-11-06,Oregon,Georgia,82,71,153
+2023-11-06,Temple,Delaware State,109,43,152
+2023-11-06,Alabama,Alabama State,93,39,132
+2023-11-06,Army,NJIT,57,73,130
+2023-11-06,Boston College,Holy Cross,66,61,127
+2023-11-06,Bryant,Dartmouth,70,52,122
+2023-11-06,Buffalo,Canisius,69,60,129
+2023-11-06,Campbell,North Carolina Wesleyan,108,37,145
+2023-11-06,Florida,North Florida,82,65,147
+2023-11-06,Fordham,Adelphi,70,43,113
+2023-11-06,George Washington,Howard,64,58,122
+2023-11-06,Lehigh,East Stroudsburg State,78,42,120
+2023-11-06,Morgan State,Washington Adventist,59,57,116
+2023-11-06,Oregon State,Linfield,82,46,128
+2023-11-06,Quinnipiac,Maine,70,57,127
+2023-11-06,SMU,UC-Riverside,78,55,133
+2023-11-06,TCU,Oral Roberts,76,56,132
+2023-11-06,Vermont,Miami (OH),60,48,108
+2023-11-06,Wake Forest,Wofford,75,65,140
+2023-11-06,William & Mary,Norfolk State,64,66,130
+2023-11-06,Appalachian State,UNC Greensboro,71,65,136
+2023-11-06,Little Rock,Missouri State,47,52,99
+2023-11-06,Austin Peay,Trevecca Nazarene,59,75,134
+2023-11-06,Binghamton,Bloomsburg,72,59,131
+2023-11-06,Boston University,UMass-Lowell,60,58,118
+2023-11-06,UCF,Bethune-Cookman,101,63,164
+2023-11-06,Georgia State,Berry,78,41,119
+2023-11-06,Grambling,Champion Christian,93,48,141
+2023-11-06,Grand Canyon,Saint Mary's,55,52,107
+2023-11-06,Louisiana,Spring Hill,75,45,120
+2023-11-06,UMass-Lowell,Rivier,96,51,147
+2023-11-06,UMass,St. Peter's,56,44,100
+2023-11-06,Middle Tennessee,Memphis,67,47,114
+2023-11-06,Omaha,Illinois State,59,105,164
+2023-11-06,New Hampshire,New England,73,39,112
+2023-11-06,North Alabama,UT-Southern,90,47,137
+2023-11-06,Oklahoma State,SIU-Edwardsville,100,59,159
+2023-11-06,Penn,John Jay,102,57,159
+2023-11-06,South Alabama,Mobile,74,61,135
+2023-11-06,South Dakota,Northern State,85,57,142
+2023-11-06,Stonehill,Northeastern,61,73,134
+2023-11-06,Stony Brook,Columbia,85,73,158
+2023-11-06,Tennessee State,Wilberforce,53,47,100
+2023-11-06,UTEP,Western New Mexico,75,58,133
+2023-11-06,Tulane,Stetson,68,57,125
+2023-11-06,Western Kentucky,Mercer,70,64,134
+2023-11-06,Abilene Christian,SW Assembl. of God,77,52,129
+2023-11-06,Air Force,Denver,65,63,128
+2023-11-06,Akron,Oakland,87,91,178
+2023-11-06,American,Longwood,81,68,149
+2023-11-06,Belmont,Georgia State,89,87,176
+2023-11-06,Bowling Green State,Chicago State,70,41,111
+2023-11-06,Brown,Florida Gulf Coast,58,80,138
+2023-11-06,Bryant,Manhattan,59,61,120
+2023-11-06,Bucknell,Delaware,57,78,135
+2023-11-06,Buffalo,FDU,86,92,178
+2023-11-06,Central Arkansas,Hendrix,85,25,110
+2023-11-06,Charleston Southern,Toccoa Falls,94,59,153
+2023-11-06,Charlotte,Maine,69,52,121
+2023-11-06,Chattanooga,Covenant,89,44,133
+2023-11-06,Coastal Carolina,Piedmont,88,86,174
+2023-11-06,Colgate,Brown,72,70,142
+2023-11-06,College of Charleston,Iona,71,69,140
+2023-11-06,Colorado,Towson,75,57,132
+2023-11-06,Colorado State,Le Moyne,69,49,118
+2023-11-06,Coppin State,La Salle,68,73,141
+2023-11-06,Davidson,Washington & Lee,86,63,149
+2023-11-06,Dayton,SIU-Edwardsville,63,47,110
+2023-11-06,Drake,St. Thomas,94,69,163
+2023-11-06,Duquesne,Cleveland State,79,77,156
+2023-11-06,East Carolina,Ferrum,91,61,152
+2023-11-06,ETSU,King (TN),73,56,129
+2023-11-06,Eastern Kentucky,Hanover,94,43,137
+2023-11-06,Eastern Michigan,Detroit Mercy,38,68,106
+2023-11-06,Elon,East Carolina,37,68,105
+2023-11-06,Fairfield,Lehman,101,14,115
+2023-11-06,Florida International,Florida National University,113,30,143
+2023-11-06,Fordham,Wagner,68,64,132
+2023-11-06,Furman,North Greenville,84,68,152
+2023-11-06,Gardner-Webb,Erskine,98,58,156
+2023-11-06,George Mason,Monmouth,72,61,133
+2023-11-06,Georgetown,Maryland-Eastern Shore,61,50,111
+2023-11-06,Georgia Tech,Georgia Southern,84,62,146
+2023-11-06,Georgia,North Carolina A&T,71,59,130
+2023-11-06,Harvard,Massachusetts-Boston,78,50,128
+2023-11-06,High Point,St. Andrews,105,51,156
+2023-11-06,Howard,Hampton,92,80,172
+2023-11-06,Indiana State,Saint Mary-of-the-Woods College,90,60,150
+2023-11-06,IU Indianapolis,Eastern Illinois,77,72,149
+2023-11-06,Jacksonville,Johnson (FL),113,46,159
+2023-11-06,James Madison,Eastern Mennonite,104,31,135
+2023-11-06,Kansas State,Presbyterian,69,35,104
+2023-11-06,Kent State,Malone,79,58,137
+2023-11-06,Lehigh,Cornell,78,84,162
+2023-11-06,Liberty,Mid-Atlantic Christian,103,43,146
+2023-11-06,Lindenwood,Tulsa,80,89,169
+2023-11-06,Louisiana Tech,Louisiana State-Alexandria,93,37,130
+2023-11-06,Louisville,UMBC,94,93,187
+2023-11-06,Loyola (IL),UIC,51,67,118
+2023-11-06,Manhattan,Central Connecticut,52,35,87
+2023-11-06,Marshall,Queens (NC),89,73,162
+2023-11-06,Mercer,Clark Atlanta,64,71,135
+2023-11-06,Merrimack,Albany (NY),55,58,113
+2023-11-06,Michigan,Purdue Fort Wayne,80,61,141
+2023-11-06,New Mexico,Texas Southern,76,59,135
+2023-11-06,New Orleans,Millsaps,100,70,170
+2023-11-06,Nicholls State,North American,82,65,147
+2023-11-06,Norfolk State,Penn St.-Wilkes Barre,102,55,157
+2023-11-06,NC State,The Citadel,72,59,131
+2023-11-06,UNC Wilmington,Mount Olive,105,66,171
+2023-11-06,North Florida,Coastal Georgia,92,55,147
+2023-11-06,North Texas,North Texas at Dallas,117,42,159
+2023-11-06,Northern Colorado,Hastings (NE),86,56,142
+2023-11-06,Northern Iowa,Green Bay,78,67,145
+2023-11-06,Northern Kentucky,Indiana State,82,85,167
+2023-11-06,Northwestern State,Dallas Christian,101,54,155
+2023-11-06,Notre Dame,Niagara,70,63,133
+2023-11-06,Ohio State,Oakland,79,73,152
+2023-11-06,Old Dominion,Virginia Wesleyan,71,57,128
+2023-11-06,Penn State,Delaware State,79,45,124
+2023-11-06,Pitt,North Carolina A&T,100,52,152
+2023-11-06,Princeton,Duquesne,65,57,122
+2023-11-06,Providence,Columbia,78,59,137
+2023-11-06,Quinnipiac,Coast Guard,116,48,164
+2023-11-06,Radford,Concord,77,53,130
+2023-11-06,Rhode Island,Central Connecticut,81,70,151
+2023-11-06,Richmond,VMI,93,75,168
+2023-11-06,Rider,Immaculata,113,67,180
+2023-11-06,Rutgers,Princeton,61,68,129
+2023-11-06,Rutgers,Monmouth,56,51,107
+2023-11-06,Sacred Heart,Sarah Lawrence,95,51,146
+2023-11-06,Saint Francis (PA),Robert Morris,50,61,111
+2023-11-06,St. Joseph's,Lafayette,81,60,141
+2023-11-06,Seton Hall,St. Peter's,70,59,129
+2023-11-06,Siena,Holy Cross,73,71,144
+2023-11-06,South Carolina,USC Upstate,82,53,135
+2023-11-06,South Carolina State,Voorhees,65,57,122
+2023-11-06,South Dakota State,Arkansas State,55,42,97
+2023-11-06,South Florida,UT Arlington,76,61,137
+2023-11-06,Southeastern Louisiana,Delta State,90,71,161
+2023-11-06,St. Bonaventure,Longwood,73,69,142
+2023-11-06,St. John's (NY),LIU,81,44,125
+2023-11-06,Stetson,Trinity Baptist,109,54,163
+2023-11-06,Syracuse,New Hampshire,83,72,155
+2023-11-06,Temple,Maryland-Eastern Shore,85,65,150
+2023-11-06,UT-Martin,Champion Christian,104,76,180
+2023-11-06,East Texas A&M,LeTourneau,96,41,137
+2023-11-06,Texas-Rio Grande Valley,Southwestern Adventist,110,59,169
+2023-11-06,Toledo,Detroit Mercy,94,60,154
+2023-11-06,Towson,UMBC,76,72,148
+2023-11-06,Utah Valley,Carroll (MT),81,73,154
+2023-11-06,Vermont,Merrimack,67,55,122
+2023-11-06,Virginia,Tarleton State,80,50,130
+2023-11-06,VCU,McNeese State,65,76,141
+2023-11-06,West Virginia,Missouri State,67,59,126
+2023-11-06,Western Carolina,Agnes Scott,101,27,128
+2023-11-06,Western Michigan,North Dakota State,76,80,156
+2023-11-06,Wichita State,Lipscomb,76,59,135
+2023-11-06,William & Mary,Regent,84,29,113
+2023-11-06,Wofford,Brevard,85,68,153
+2023-11-06,Yale,Vassar,102,53,155
+2023-11-06,UAB,Bradley,71,73,144
+2023-11-06,Arizona State,UTSA,70,55,125
+2023-11-06,Little Rock,Texas State,71,66,137
+2023-11-06,Army,Marist,55,71,126
+2023-11-06,Auburn,Jacksonville State,78,49,127
+2023-11-06,Austin Peay,Life,90,72,162
+2023-11-06,Boise State,College of Idaho,77,35,112
+2023-11-06,Boston College,Fairfield,89,70,159
+2023-11-06,Butler,Eastern Michigan,94,55,149
+2023-11-06,UC-San Diego,California Baptist,50,64,114
+2023-11-06,Campbell,Navy,59,48,107
+2023-11-06,UCF,Florida International,85,62,147
+2023-11-06,DePaul,Western Michigan,77,53,130
+2023-11-06,Evansville,Miami (OH),72,64,136
+2023-11-06,Florida,Loyola (MD),93,73,166
+2023-11-06,Fresno State,Fresno Pacific,70,42,112
+2023-11-06,George Washington,Stonehill,89,44,133
+2023-11-06,Grambling,North Texas at Dallas,82,67,149
+2023-11-06,Idaho State,Warner Pacific,92,36,128
+2023-11-06,Illinois State,Lourdes,75,56,131
+2023-11-06,Iowa State,Green Bay,85,44,129
+2023-11-06,Lamar,Jarvis Christian,114,66,180
+2023-11-06,Louisiana,Youngstown State,72,62,134
+2023-11-06,LSU,Mississippi Valley State,106,60,166
+2023-11-06,Memphis,Jackson State,94,77,171
+2023-11-06,Middle Tennessee,Northern Kentucky,74,57,131
+2023-11-06,Milwaukee,Wisconsin-Stout,91,73,164
+2023-11-06,Minnesota,Bethune-Cookman,80,60,140
+2023-11-06,Ole Miss,Alabama State,69,59,128
+2023-11-06,Missouri,Arkansas-Pine Bluff,101,79,180
+2023-11-06,Kansas City,Avila,79,48,127
+2023-11-06,Murray State,Midway,91,58,149
+2023-11-06,Nebraska,Lindenwood,84,52,136
+2023-11-06,Omaha,Doane College,85,53,138
+2023-11-06,New Mexico State,Arizona,57,68,125
+2023-11-06,North Alabama,Blue Mountain Christian University,93,60,153
+2023-11-06,Northeastern,Boston University,67,58,125
+2023-11-06,Northwestern,Binghamton,72,61,133
+2023-11-06,Oklahoma,Central Michigan,89,59,148
+2023-11-06,Oregon State,Arkansas-Pine Bluff,85,74,159
+2023-11-06,Portland,San Diego State,72,58,130
+2023-11-06,Rice,Houston Christian,70,38,108
+2023-11-06,Saint Louis,Southern Indiana,75,63,138
+2023-11-06,San Diego,Chapman,92,38,130
+2023-11-06,Southern Illinois,Kentucky State,88,57,145
+2023-11-06,Southern Indiana,Wright State,67,63,130
+2023-11-06,SMU,SW Assembl. of God,82,63,145
+2023-11-06,Tarleton State,Howard Payne,106,38,144
+2023-11-06,Tennessee State,Fisk,76,61,137
+2023-11-06,UT Arlington,Oral Roberts,75,71,146
+2023-11-06,UTSA,Western Illinois,78,68,146
+2023-11-06,Texas State,Arlington Baptist,90,48,138
+2023-11-06,Tulsa,Central Arkansas,70,53,123
+2023-11-06,Valparaiso,Trinity Christian,100,61,161
+2023-11-06,Virginia Tech,Coppin State,100,55,155
+2023-11-06,Wake Forest,Elon,101,78,179
+2023-11-06,Washington,Sacramento State,76,28,104
+2023-11-06,Western Illinois,Mount Mercy,81,57,138
+2023-11-06,Western Kentucky,Kentucky Wesleyan,90,64,154
+2023-11-06,Wisconsin,Arkansas State,105,76,181
+2023-11-06,Wyoming,North Dakota,77,60,137
+2023-11-06,Xavier,Robert Morris,77,63,140
+2023-11-06,Air Force,Portland State,55,62,117
+2023-11-06,BYU,Houston Christian,110,63,173
+2023-11-06,Cal State Northridge,Utah State,79,64,143
+2023-11-06,California,St. Thomas,71,66,137
+2023-11-06,UC-Davis,William Jessup,86,51,137
+2023-11-06,Cincinnati,UIC,69,58,127
+2023-11-06,Grand Canyon,Southeast Missouri State,88,67,155
+2023-11-06,Idaho,Walla Walla,92,50,142
+2023-11-06,Montana State,Northwest Indian College,103,63,166
+2023-11-06,Montana,Gonzaga,70,83,153
+2023-11-06,Northern Colorado,Colorado College,87,58,145
+2023-11-06,Oklahoma State,Abilene Christian,59,64,123
+2023-11-06,Oregon,Northern Arizona,81,48,129
+2023-11-06,South Dakota,Mount Marty,85,53,138
+2023-11-06,South Dakota State,Akron,75,81,156
+2023-11-06,TCU,Southern,108,75,183
+2023-11-06,UTEP,McMurry,120,71,191
+2023-11-06,Tulane,Nicholls State,91,81,172
+2023-11-06,Utah,Eastern Washington,101,66,167
+2023-11-06,Utah State,South Dakota Mines,101,48,149
+2023-11-06,Utah Valley,Weber State,56,55,111
+2023-11-06,Cal Poly,La Verne,80,62,142
+2023-11-06,Cal State Bakersfield,Southern Utah,73,72,145
+2023-11-06,California Baptist,San Francisco State,74,57,131
+2023-11-06,UC-San Diego,Denver,95,87,182
+2023-11-06,Colorado State,Louisiana Tech,81,73,154
+2023-11-06,Loyola Marymount,UNLV,62,72,134
+2023-11-06,Pacific,Sam Houston,57,64,121
+2023-11-06,Pepperdine,Concordia (CA),76,64,140
+2023-11-06,Portland,Long Beach State,78,73,151
+2023-11-06,San Francisco,Bethesda University (CA),128,59,187
+2023-11-06,San Jose State,Santa Clara,47,55,102
+2023-11-06,California,Cal State Bakersfield,89,56,145
+2023-11-06,San Diego,Sonoma State,68,64,132
+2023-11-06,Stanford,Cal State Northridge,88,79,167
+2023-11-06,UCLA,Saint Francis (PA),75,44,119
+2023-11-06,Washington,Bellarmine,91,57,148
+2023-11-06,Washington State,Idaho,84,59,143
+2023-11-07,Creighton,Florida A&M,105,54,159
+2023-11-07,Tennessee,Florida A&M,93,64,157
+2023-11-07,Baylor,Auburn,88,82,170
+2023-11-07,Illinois,Morehead State,81,61,142
+2023-11-07,Incarnate Word,Our Lady of the Lake,68,40,108
+2023-11-07,Jacksonville State,Brescia,91,41,132
+2023-11-07,Montana State,BYU,60,68,128
+2023-11-07,Appalachian State,Oakland City,87,49,136
+2023-11-07,Bowling Green State,Cleveland State,89,86,175
+2023-11-07,Indiana,Florida Gulf Coast,69,63,132
+2023-11-07,Jackson State,LeMoyne-Owen,113,39,152
+2023-11-07,Jacksonville,Warner,66,47,113
+2023-11-07,La Salle,Drexel,67,61,128
+2023-11-07,UNC Wilmington,Newport News-Apprentice,78,42,120
+2023-11-07,Penn State,Bucknell,94,51,145
+2023-11-07,Rhode Island,Sacred Heart,91,40,131
+2023-11-07,Texas A&M-Corpus Christi,St. Thomas (TX),79,41,120
+2023-11-07,VCU,Hofstra,72,44,116
+2023-11-07,Ball State,Goshen,101,40,141
+2023-11-07,Colgate,Cornell,71,60,131
+2023-11-07,Davidson,USC Upstate,86,51,137
+2023-11-07,Eastern Kentucky,West Virginia Tech,108,72,180
+2023-11-07,Evansville,Lipscomb,58,77,135
+2023-11-07,Furman,UNC Asheville,71,61,132
+2023-11-07,Georgetown,Le Moyne,94,57,151
+2023-11-07,Kennesaw State,Oakwood,93,46,139
+2023-11-07,Kentucky,ETSU,74,66,140
+2023-11-07,Maryland,Mount St. Mary's,68,53,121
+2023-11-07,UMass,Albany (NY),92,71,163
+2023-11-07,NC State,Charlotte,84,43,127
+2023-11-07,Pitt,Yale,79,74,153
+2023-11-07,Providence,Hampton,76,46,122
+2023-11-07,St. Joseph's,Rider,71,49,120
+2023-11-07,Seton Hall,Iona,75,32,107
+2023-11-07,Southern Illinois,Southeast Missouri State,85,70,155
+2023-11-07,St. John's (NY),Stony Brook,90,74,164
+2023-11-07,Syracuse,Lafayette,75,41,116
+2023-11-07,Texas Tech,Texas-Rio Grande Valley,95,53,148
+2023-11-07,West Virginia,Loyola (MD),74,39,113
+2023-11-07,Western Carolina,Dalton State,106,65,171
+2023-11-07,Wisconsin,Milwaukee,62,51,113
+2023-11-07,Arkansas,Louisiana-Monroe,81,76,157
+2023-11-07,Iowa,North Dakota,110,68,178
+2023-11-07,Michigan,UNC Asheville,99,74,173
+2023-11-07,North Texas,Northern Iowa,83,77,160
+2023-11-07,Rice,St. Thomas (TX),101,57,158
+2023-11-07,Texas A&M-Corpus Christi,Southwestern Adventist,111,46,157
+2023-11-07,Vanderbilt,Presbyterian,62,68,130
+2023-11-07,Wyoming,Northern New Mexico,104,56,160
+2023-11-07,Boise State,Vanguard,89,55,144
+2023-11-07,DePaul,Purdue Fort Wayne,74,82,156
+2023-11-07,Montana,Northwest Indian College,107,59,166
+2023-11-07,Pepperdine,UC-Irvine,63,58,121
+2023-11-07,Weber State,Benedictine,96,62,158
+2023-11-07,UC-Riverside,UC-Merced,76,69,145
+2023-11-07,UCSB,San Francisco,87,75,162
+2023-11-07,Loyola Marymount,Westcliff,109,68,177
+2023-11-07,Nevada,Sacramento State,77,63,140
+2023-11-07,San Jose State,UC-Irvine,72,64,136
+2023-11-08,UConn,Dayton,102,58,160
+2023-11-08,Loyola (IL),Florida Atlantic,62,75,137
+2023-11-08,Texas,Southern,80,35,115
+2023-11-08,Stanford,Hawaii,87,40,127
+2023-11-08,UNC,Gardner-Webb,102,49,151
+2023-11-08,Colorado,Le Moyne,97,38,135
+2023-11-08,Oklahoma State,New Orleans,74,66,140
+2023-11-08,Wichita State,Presbyterian,60,41,101
+2023-11-08,UC-San Diego,Life Pacific,88,32,120
+2023-11-08,Bryant,Fisher College,140,79,219
+2023-11-08,Drexel,Norfolk State,49,51,100
+2023-11-08,Georgia Southern,Allen,103,49,152
+2023-11-08,Maine,Maine-Presque Isle,111,59,170
+2023-11-08,Michigan State,Oakland,87,62,149
+2023-11-08,Niagara,St. Bonaventure,75,51,126
+2023-11-08,Winthrop,Brevard,98,44,142
+2023-11-08,Youngstown State,Xavier,55,41,96
+2023-11-08,Cleveland State,Defiance,102,41,143
+2023-11-08,Cornell,SUNY Morrisville,107,86,193
+2023-11-08,Delaware,Goldey-Beacom,101,68,169
+2023-11-08,FDU,Penn St. - Brandywine,107,63,170
+2023-11-08,James Madison,Toledo,49,60,109
+2023-11-08,Kansas,Northwestern State,88,46,134
+2023-11-08,Lamar,Texas College,108,34,142
+2023-11-08,UMBC,Gettysburg,90,83,173
+2023-11-08,Morehead State,Shawnee State,96,40,136
+2023-11-08,Navy,Susquehanna,78,37,115
+2023-11-08,New Hampshire,Curry,115,38,153
+2023-11-08,Ohio,Troy,88,70,158
+2023-11-08,Penn,Bucknell,80,61,141
+2023-11-08,SMU,Western Illinois,90,53,143
+2023-11-08,Syracuse,Canisius,89,77,166
+2023-11-08,TCU,Texas A&M-Kingsville,86,48,134
+2023-11-08,Tulane,Nicholls State,66,69,135
+2023-11-08,Virginia,Maryland-Eastern Shore,76,52,128
+2023-11-08,Alcorn State,Xavier (LA),70,62,132
+2023-11-08,Drake,Lipscomb,85,70,155
+2023-11-08,Eastern Illinois,Monmouth (IL),91,45,136
+2023-11-08,Idaho,Cal Poly,55,65,120
+2023-11-08,Minnesota,LIU,92,57,149
+2023-11-08,Omaha,College of Saint Mary,89,59,148
+2023-11-08,New Mexico State,Sul Ross State,84,49,133
+2023-11-08,North Dakota State,Mount Marty,93,66,159
+2023-11-08,Northern Colorado,Northern New Mexico,81,60,141
+2023-11-08,South Dakota State,Dakota Wesleyan,83,55,138
+2023-11-08,Southern Utah,Eastern Washington,77,86,163
+2023-11-08,Texas Tech,East Texas A&M,73,46,119
+2023-11-08,Idaho State,Park (AZ),97,58,155
+2023-11-08,Long Beach State,Biola,82,62,144
+2023-11-08,Mississippi State,Arizona State,71,56,127
+2023-11-08,Oregon,Arkansas-Pine Bluff,86,60,146
+2023-11-08,Portland,Lewis & Clark,89,72,161
+2023-11-08,Saint Louis,Lincoln (MO),102,66,168
+2023-11-08,California,Santa Clara,71,56,127
+2023-11-08,UNLV,Southern,71,85,156
+2023-11-08,San Diego,Jackson State,87,61,148
+2023-11-08,Santa Clara,Utah Tech,77,69,146
+2023-11-08,Seattle,Prairie View,71,60,131
+2023-11-09,LSU,Queens (NC),112,55,167
+2023-11-09,Virginia Tech,Iowa,76,80,156
+2023-11-09,Michigan State,Southern Indiana,74,51,125
+2023-11-09,UCLA,UC-Riverside,90,52,142
+2023-11-09,Utah,South Carolina State,108,48,156
+2023-11-09,Indiana,Eastern Illinois,96,43,139
+2023-11-09,Florida State,Tennessee,92,91,183
+2023-11-09,Ole Miss,Oklahoma,70,80,150
+2023-11-09,Baylor,John Brown,96,70,166
+2023-11-09,USC,Cal State Bakersfield,85,59,144
+2023-11-09,Saint Mary's,New Mexico,72,58,130
+2023-11-09,Washington State,Gonzaga,77,72,149
+2023-11-09,Miami (FL),Jacksonville,81,53,134
+2023-11-09,Middle Tennessee,Florida A&M,93,48,141
+2023-11-09,North Florida,Trinity Baptist,116,44,160
+2023-11-09,Arkansas State,Northern Illinois,75,62,137
+2023-11-09,Louisiana Tech,Louisiana Christian,88,52,140
+2023-11-09,Oral Roberts,Friends (KS),100,47,147
+2023-11-09,La Salle,Maine,48,58,106
+2023-11-09,UC-Davis,Pepperdine,79,78,157
+2023-11-09,Chicago State,Loyola (IL),47,74,121
+2023-11-09,Coppin State,Campbell,55,68,123
+2023-11-09,Binghamton,Siena,64,73,137
+2023-11-09,Boston College,Harvard,59,66,125
+2023-11-09,East Carolina,USC Upstate,105,35,140
+2023-11-09,Florida,Bethune-Cookman,83,69,152
+2023-11-09,Morgan State,Cheyney,100,52,152
+2023-11-09,North Dakota State,Jamestown,112,59,171
+2023-11-09,Prairie View,Huston-Tillotson,102,62,164
+2023-11-09,SIU-Edwardsville,Eastern Kentucky,72,74,146
+2023-11-09,UT-Martin,Vanderbilt,68,70,138
+2023-11-09,Charleston Southern,North Florida,70,81,151
+2023-11-09,Delaware,Longwood,81,55,136
+2023-11-09,Duke,Coastal Carolina,88,42,130
+2023-11-09,Elon,ETSU,79,76,155
+2023-11-09,Florida International,Tarleton State,65,82,147
+2023-11-09,George Mason,Marshall,84,77,161
+2023-11-09,Georgia Tech,Howard,88,85,173
+2023-11-09,Green Bay,St. Francis (IL),72,56,128
+2023-11-09,Hampton,Mid-Atlantic Christian,109,46,155
+2023-11-09,Holy Cross,Brown,62,54,116
+2023-11-09,Howard,Mount St. Mary's,58,39,97
+2023-11-09,Purdue Fort Wayne,Andrews,130,34,164
+2023-11-09,Kent State,James Madison,108,113,221
+2023-11-09,Marist,Army,76,68,144
+2023-11-09,Mercer,Florida Atlantic,70,62,132
+2023-11-09,Merrimack,Worcester State,93,72,165
+2023-11-09,Norfolk State,Newport News-Apprentice,90,56,146
+2023-11-09,North Carolina Central,Virginia-Lynchburg,107,54,161
+2023-11-09,North Texas,Grambling,83,60,143
+2023-11-09,Northeastern,UMass,78,74,152
+2023-11-09,Presbyterian,Columbia International,100,58,158
+2023-11-09,Rhode Island,Fairfield,93,80,173
+2023-11-09,Robert Morris,Point Park,66,56,122
+2023-11-09,Rutgers,Wagner,86,43,129
+2023-11-09,Sam Houston,Utah Valley,73,79,152
+2023-11-09,San Francisco,Cal State Stanislaus,92,70,162
+2023-11-09,South Florida,South Carolina State,96,52,148
+2023-11-09,Stonehill,Army,57,44,101
+2023-11-09,Temple,Georgetown,45,68,113
+2023-11-09,Texas A&M,Texas A&M-Corpus Christi,73,50,123
+2023-11-09,Tulane,Northwestern State,88,71,159
+2023-11-09,VMI,Christendom,87,53,140
+2023-11-09,Wagner,Molloy,83,48,131
+2023-11-09,Western Carolina,Radford,49,67,116
+2023-11-09,Wichita State,Western Kentucky,71,61,132
+2023-11-09,William & Mary,American,75,56,131
+2023-11-09,Wofford,Erskine,85,47,132
+2023-11-09,Abilene Christian,Rice,58,69,127
+2023-11-09,Arkansas-Pine Bluff,Champion Christian,116,73,189
+2023-11-09,Auburn,Louisiana,60,54,114
+2023-11-09,UC-Davis,Portland State,62,71,133
+2023-11-09,Chicago State,Mercer,61,66,127
+2023-11-09,Colorado State,Alabama A&M,83,39,122
+2023-11-09,Coppin State,Towson,49,70,119
+2023-11-09,DePaul,Stonehill,99,52,151
+2023-11-09,Evansville,St. Louis College of Pharmacy,116,46,162
+2023-11-09,Iowa State,Lindenwood,102,47,149
+2023-11-09,Memphis,Alabama State,95,51,146
+2023-11-09,Middle Tennessee,Stephen F. Austin,67,62,129
+2023-11-09,Missouri,Indiana State,98,57,155
+2023-11-09,Nebraska,Florida A&M,81,54,135
+2023-11-09,North Alabama,Alabama A&M,83,67,150
+2023-11-09,Northwestern,UIC,92,86,178
+2023-11-09,Saint Louis,Drake,66,78,144
+2023-11-09,San Jose State,Bellarmine,81,65,146
+2023-11-09,South Alabama,Central Michigan,77,55,132
+2023-11-09,SIU-Edwardsville,North Park,92,67,159
+2023-11-09,SMU,Lamar,78,67,145
+2023-11-09,Southern Utah,Life Pacific,108,73,181
+2023-11-09,Tennessee State,Kentucky State,83,58,141
+2023-11-09,TCU,Omaha,82,60,142
+2023-11-09,Washington,North Carolina Central,113,39,152
+2023-11-09,Wisconsin,Western Illinois,74,52,126
+2023-11-09,Cal State Northridge,Seattle,81,72,153
+2023-11-09,Denver,Cal Poly,97,76,173
+2023-11-09,Utah Tech,Jacksonville State,73,58,131
+2023-11-09,Idaho,Cal State Northridge,73,76,149
+2023-11-09,Nevada,Sacramento State,69,53,122
+2023-11-09,Pepperdine,New Mexico,48,57,105
+2023-11-09,UTEP,Science and Arts of Oklahoma,123,72,195
+2023-11-09,UCSB,Portland State,76,82,158
+2023-11-09,San Francisco,Saint Francis (PA),84,52,136
+2023-11-09,San Jose State,Bethesda University (CA),117,72,189
+2023-11-09,Washington,Northern Kentucky,75,67,142
+2023-11-10,Kansas,Manhattan,99,61,160
+2023-11-10,Duke,Arizona,73,78,151
+2023-11-10,Purdue,Morehead State,87,57,144
+2023-11-10,Marquette,Rider,95,65,160
+2023-11-10,Wisconsin,Tennessee,70,80,150
+2023-11-10,Gonzaga,Yale,86,71,157
+2023-11-10,Miami (FL),UCF,88,72,160
+2023-11-10,Arkansas,Gardner-Webb,86,68,154
+2023-11-10,Ohio State,Texas A&M,66,73,139
+2023-11-10,Kentucky,East Texas A&M,81,61,142
+2023-11-10,BYU,San Diego State,74,65,139
+2023-11-10,Texas,Delaware State,86,59,145
+2023-11-10,USC,Florida Gulf Coast,67,51,118
+2023-11-10,Creighton,South Dakota,81,55,136
+2023-11-10,Villanova,Le Moyne,83,57,140
+2023-11-10,Alabama,Indiana State,102,80,182
+2023-11-10,Mississippi State,Southeastern Louisiana,67,46,113
+2023-11-10,Illinois,Oakland,64,53,117
+2023-11-10,Delaware State,Drexel,33,65,98
+2023-11-10,Fordham,Albany (NY),66,63,129
+2023-11-10,Manhattan,George Washington,49,55,104
+2023-11-10,Rhode Island,UMass-Lowell,78,38,116
+2023-11-10,Austin Peay,Chattanooga,52,57,109
+2023-11-10,Arkansas,Murray State,82,79,161
+2023-11-10,Lipscomb,Fairfield,66,89,155
+2023-11-10,Nicholls State,Southern–New Orleans,94,52,146
+2023-11-10,Tulsa,New Orleans,86,61,147
+2023-11-10,BYU,Weber State,77,49,126
+2023-11-10,LIU,Air Force,67,82,149
+2023-11-10,Charlotte,Tennessee State,84,35,119
+2023-11-10,Charlotte,Liberty,59,71,130
+2023-11-10,Quinnipiac,Central Connecticut,74,70,144
+2023-11-10,South Florida,Stetson,67,55,122
+2023-11-10,Alabama,Winthrop,79,50,129
+2023-11-10,Boston University,New Hampshire,56,47,103
+2023-11-10,McNeese State,College of Biblical Studies,96,55,151
+2023-11-10,North Carolina A&T,Guilford,114,41,155
+2023-11-10,Penn State,Navy,107,44,151
+2023-11-10,Dartmouth,UMass-Lowell,48,81,129
+2023-11-10,Duquesne,College of Charleston,90,72,162
+2023-11-10,Florida State,Kennesaw State,94,67,161
+2023-11-10,Georgia State,Western Michigan,71,58,129
+2023-11-10,Michigan,Youngstown State,92,62,154
+2023-11-10,St. Joseph's,Penn,69,61,130
+2023-11-10,Stony Brook,St. Joseph's–Long Island,91,50,141
+2023-11-10,East Texas A&M,North Texas at Dallas,80,56,136
+2023-11-10,UT Arlington,Lamar,57,74,131
+2023-11-10,Xavier,Jacksonville,79,56,135
+2023-11-10,Akron,Southern Miss,72,54,126
+2023-11-10,Belmont,Georgia,76,50,126
+2023-11-10,Bethune-Cookman,Trinity (FL),113,46,159
+2023-11-10,Central Arkansas,Hendrix,82,39,121
+2023-11-10,Cincinnati,Detroit Mercy,93,61,154
+2023-11-10,The Citadel,Boston College,71,75,146
+2023-11-10,Clemson,Charleston Southern,85,55,140
+2023-11-10,Columbia,Seton Hall,72,61,133
+2023-11-10,Davidson,Maryland,64,61,125
+2023-11-10,Detroit Mercy,Chicago State,83,48,131
+2023-11-10,Eastern Kentucky,Wilberforce,133,75,208
+2023-11-10,Florida,Virginia,70,73,143
+2023-11-10,Florida Gulf Coast,Ave Maria,80,71,151
+2023-11-10,Furman,Belmont,99,76,175
+2023-11-10,George Mason,Austin Peay,67,45,112
+2023-11-10,Georgia,Wake Forest,80,77,157
+2023-11-10,Hofstra,Princeton,67,74,141
+2023-11-10,Iona,Sacred Heart,88,81,169
+2023-11-10,Kennesaw State,Life,62,45,107
+2023-11-10,Louisville,Chattanooga,71,81,152
+2023-11-10,Minnesota,UTSA,102,76,178
+2023-11-10,Monmouth,St. John's (NY),74,69,143
+2023-11-10,NJIT,Merrimack,48,45,93
+2023-11-10,North Alabama,Denver,51,67,118
+2023-11-10,UNC Greensboro,North Carolina A&T,94,78,172
+2023-11-10,NC State,Abilene Christian,84,64,148
+2023-11-10,Oregon State,Troy,81,80,161
+2023-11-10,Penn State,Lehigh,74,65,139
+2023-11-10,Pitt,Binghamton,89,60,149
+2023-11-10,Providence,Vermont,57,47,104
+2023-11-10,Radford,Marshall,66,62,128
+2023-11-10,Rutgers,Boston University,69,45,114
+2023-11-10,Stephen F. Austin,Liberty,81,84,165
+2023-11-10,Syracuse,Central Connecticut,101,53,154
+2023-11-10,Texas-Rio Grande Valley,Florida International,64,65,129
+2023-11-10,Utah State,Eastern Washington,39,75,114
+2023-11-10,Vanderbilt,USC Upstate,74,67,141
+2023-11-10,VCU,Samford,75,65,140
+2023-11-10,West Virginia,Monmouth,65,73,138
+2023-11-10,William & Mary,VCU,54,70,124
+2023-11-10,Arizona State,Montana State,75,62,137
+2023-11-10,Arizona,Northern Arizona,87,64,151
+2023-11-10,Auburn,Southeastern Louisiana,86,71,157
+2023-11-10,Butler,Southeast Missouri State,91,56,147
+2023-11-10,Colorado,Grambling,95,63,158
+2023-11-10,Houston,Air Force,99,61,160
+2023-11-10,UIC,Little Rock,86,71,157
+2023-11-10,Iowa,Alabama State,98,67,165
+2023-11-10,Kansas State,Bellarmine,83,75,158
+2023-11-10,LSU,Nicholls State,66,68,134
+2023-11-10,Ole Miss,Eastern Washington,75,64,139
+2023-11-10,Murray State,Tennessee Tech,78,72,150
+2023-11-10,Navy,Temple,68,75,143
+2023-11-10,Northwestern,Dayton,71,66,137
+2023-11-10,Oklahoma,Mississippi Valley State,82,43,125
+2023-11-10,Oral Roberts,Mid-America Christian,74,69,143
+2023-11-10,Rice,Harvard,76,89,165
+2023-11-10,South Dakota,Texas-Rio Grande Valley,100,79,179
+2023-11-10,Southern Illinois,Queens (NC),91,68,159
+2023-11-10,Southern Utah,Western Kentucky,62,76,138
+2023-11-10,St. Thomas,Idaho State,54,53,107
+2023-11-10,UTSA,New Mexico State,58,55,113
+2023-11-10,Texas Tech,Tarleton State,70,63,133
+2023-11-10,Wyoming,Nebraska,52,71,123
+2023-11-10,UAB,Clemson,76,77,153
+2023-11-10,Colorado State,Wright State,105,77,182
+2023-11-10,Fresno State,UC-Merced,100,47,147
+2023-11-10,Missouri,Memphis,55,70,125
+2023-11-10,UNLV,College of Charleston,85,60,145
+2023-11-10,Oregon,Montana,75,61,136
+2023-11-10,Pacific,Cal State Fullerton,73,57,130
+2023-11-10,Portland,Villanova,42,64,106
+2023-11-10,San Diego State,California Baptist,68,76,144
+2023-11-10,South Carolina,Virginia Tech,79,77,156
+2023-11-10,Stanford,Sacramento State,91,73,164
+2023-11-10,Valparaiso,IU Indianapolis,56,66,122
+2023-11-10,California Baptist,Jackson State,80,66,146
+2023-11-10,Utah,UC-Riverside,82,53,135
+2023-11-10,Washington State,Prairie View,83,65,148
+2023-11-10,California,Pacific,79,87,166
+2023-11-10,UCLA,Lafayette,68,50,118
+2023-11-11,UConn,Stonehill,107,67,174
+2023-11-11,Houston,Texas A&M-Corpus Christi,82,50,132
+2023-11-11,Creighton,North Dakota State,89,60,149
+2023-11-11,Marquette,Illinois,71,67,138
+2023-11-11,Temple,Bucknell,77,53,130
+2023-11-11,Samford,Central Arkansas,65,62,127
+2023-11-11,UTEP,Kansas City,62,60,122
+2023-11-11,San Jose State,Cal Poly,61,56,117
+2023-11-11,Brown,Loyola (MD),75,77,152
+2023-11-11,Miami (OH),Texas State,65,75,140
+2023-11-11,Bowling Green State,Arkansas State,81,75,156
+2023-11-11,Central Michigan,Louisiana-Monroe,64,74,138
+2023-11-11,ETSU,Lafayette,51,43,94
+2023-11-11,Eastern Michigan,Georgia Southern,70,60,130
+2023-11-11,La Salle,American,62,53,115
+2023-11-11,UNC Greensboro,South Carolina State,61,30,91
+2023-11-11,Penn,Marist,74,51,125
+2023-11-11,Wofford,High Point,99,98,197
+2023-11-11,Yale,St. Joseph's,45,66,111
+2023-11-11,Canisius,Saint Francis (PA),78,62,140
+2023-11-11,Davidson,Wake Forest,57,52,109
+2023-11-11,Fordham,Cornell,73,78,151
+2023-11-11,Gardner-Webb,Elon,69,90,159
+2023-11-11,George Washington,William & Mary,95,89,184
+2023-11-11,Green Bay,Illinois State,88,62,150
+2023-11-11,Purdue Fort Wayne,Great Lakes,124,41,165
+2023-11-11,UMBC,Colgate,51,57,108
+2023-11-11,Niagara,Duquesne,79,82,161
+2023-11-11,St. Bonaventure,Robert Morris,70,52,122
+2023-11-11,Western Michigan,Georgia State,70,77,147
+2023-11-11,Appalachian State,Ohio,71,64,135
+2023-11-11,Little Rock,Kansas State,39,77,116
+2023-11-11,Ball State,Old Dominion,73,68,141
+2023-11-11,Buffalo,South Alabama,56,70,126
+2023-11-11,East Carolina,Campbell,77,63,140
+2023-11-11,Eastern Kentucky,Northern Kentucky,86,75,161
+2023-11-11,Georgia Southern,Eastern Michigan,82,58,140
+2023-11-11,Georgia Tech,Furman,91,56,147
+2023-11-11,High Point,Lees-McRae,99,47,146
+2023-11-11,Le Moyne,Stony Brook,61,82,143
+2023-11-11,Longwood,St. Mary's (MD),95,43,138
+2023-11-11,UNC Asheville,UNC Wilmington,66,83,149
+2023-11-11,Notre Dame,Western Carolina,61,71,132
+2023-11-11,Pitt,West Virginia,62,71,133
+2023-11-11,Presbyterian,Johnson C. Smith,76,40,116
+2023-11-11,Stonehill,Lehigh,50,62,112
+2023-11-11,Arizona State,Texas Southern,63,52,115
+2023-11-11,Jacksonville State,Utah Tech,79,81,160
+2023-11-11,UMBC,Marist,59,65,124
+2023-11-11,Maryland-Eastern Shore,Cairn,83,65,148
+2023-11-11,Northern Illinois,Appalachian State,91,78,169
+2023-11-11,Sam Houston,Houston Christian,67,65,132
+2023-11-11,Southeast Missouri State,Stephens,82,60,142
+2023-11-11,Southern Illinois,Cornell,77,80,157
+2023-11-11,SMU,Alabama State,96,47,143
+2023-11-11,Southern Miss,Akron,77,60,137
+2023-11-11,Texas State,Bowling Green State,74,48,122
+2023-11-11,Tulsa,Incarnate Word,85,71,156
+2023-11-11,Wofford,UNC Wilmington,74,49,123
+2023-11-11,La Salle,Northeastern,79,74,153
+2023-11-11,Mount St. Mary's,Coppin State,74,60,134
+2023-11-11,NJIT,St. Peter's,48,75,123
+2023-11-11,Old Dominion,Buffalo,59,48,107
+2023-11-11,Santa Clara,Hawaii,62,51,113
+2023-11-11,Seton Hall,FDU,85,55,140
+2023-11-11,St. Bonaventure,Canisius,67,70,137
+2023-11-11,St. Thomas,Wisconsin-River Falls,101,62,163
+2023-11-11,Troy,Ball State,71,86,157
+2023-11-11,UC-Irvine,Seattle,74,43,117
+2023-11-11,Columbia,Albany (NY),75,78,153
+2023-11-11,Lipscomb,Asbury,113,74,187
+2023-11-11,Mississippi State,UT-Martin,87,63,150
+2023-11-11,New Orleans,Southern–New Orleans,106,69,175
+2023-11-11,San Diego,Portland State,71,43,114
+2023-11-11,Seattle,Montana State,71,68,139
+2023-11-11,Winthrop,Drexel,72,74,146
+2023-11-11,Cleveland State,Ohio,82,78,160
+2023-11-11,Kentucky,USC Upstate,82,54,136
+2023-11-11,Maryland-Eastern Shore,Washington Adventist,91,71,162
+2023-11-11,Providence,Milwaukee,79,69,148
+2023-11-11,UT Arlington,Texas-Tyler,95,64,159
+2023-11-11,Youngstown State,Slippery Rock,78,32,110
+2023-11-11,Kent State,Fresno State,79,69,148
+2023-11-11,UNLV,Stetson,71,55,126
+2023-11-11,Niagara,Bucknell,64,73,137
+2023-11-11,Santa Clara,Saint Francis (PA),82,59,141
+2023-11-11,Toledo,Louisiana,87,78,165
+2023-11-11,Vermont,SUNY-Plattsburgh,92,41,133
+2023-11-11,Xavier,James Madison,54,81,135
+2023-11-11,Arkansas-Pine Bluff,Southwestern Christian,112,68,180
+2023-11-11,Bradley,Utah State,72,66,138
+2023-11-11,Georgetown,Holy Cross,67,68,135
+2023-11-11,Louisiana-Monroe,Miami (OH),78,62,140
+2023-11-11,Loyola (IL),Eastern Illinois,89,65,154
+2023-11-11,Kansas City,Saint Mary (KS),95,42,137
+2023-11-11,North Dakota,Grand Canyon,61,73,134
+2023-11-11,North Texas,Omaha,75,64,139
+2023-11-11,Richmond,Siena,90,48,138
+2023-11-11,Saint Louis,Illinois State,80,71,151
+2023-11-11,Tarleton State,North Texas at Dallas,93,52,145
+2023-11-11,Pepperdine,Cal Tech,79,42,121
+2023-11-11,Wyoming,Cal Poly,80,66,146
+2023-11-11,Cal State Fullerton,La Sierra,78,48,126
+2023-11-11,UC-Irvine,New Mexico State,91,74,165
+2023-11-11,UC-San Diego,San Diego,69,63,132
+2023-11-11,DePaul,Long Beach State,73,77,150
+2023-11-12,LSU,Mississippi Valley State,109,47,156
+2023-11-12,NC State,UConn,92,81,173
+2023-11-12,Northern Iowa,Iowa,53,94,147
+2023-11-12,UCLA,Bellarmine,113,64,177
+2023-11-12,South Carolina,Maryland,114,76,190
+2023-11-12,Ohio State,IU Indianapolis,108,58,166
+2023-11-12,Stanford,Indiana,96,64,160
+2023-11-12,NJIT,Notre Dame,57,104,161
+2023-11-12,Texas,Liberty,75,57,132
+2023-11-12,UNC,Davidson,74,70,144
+2023-11-12,Louisville,DePaul,81,74,155
+2023-11-12,UNC,Lehigh,90,68,158
+2023-11-12,Colorado,Oklahoma State,86,75,161
+2023-11-12,Baylor,Gardner-Webb,77,62,139
+2023-11-12,Saint Mary's,Weber State,57,61,118
+2023-11-12,Washington State,Idaho State,64,47,111
+2023-11-12,Mississippi State,Jacksonville State,84,45,129
+2023-11-12,Dartmouth,Siena,49,56,105
+2023-11-12,Longwood,Chowan,88,59,147
+2023-11-12,Michigan State,Wright State,99,55,154
+2023-11-12,Middle Tennessee,Princeton,60,65,125
+2023-11-12,Oklahoma,Oral Roberts,103,74,177
+2023-11-12,Saint Louis,Missouri,93,85,178
+2023-11-12,Texas A&M,North Texas,74,55,129
+2023-11-12,UAB,Maryland,66,63,129
+2023-11-12,Cincinnati,Eastern Washington,85,73,158
+2023-11-12,Dayton,Lindenwood,91,73,164
+2023-11-12,Morgan State,Penn St.-Wilkes Barre,78,60,138
+2023-11-12,Morgan State,Sacred Heart,55,63,118
+2023-11-12,Rutgers,Bryant,66,57,123
+2023-11-12,Army,FDU,71,63,134
+2023-11-12,Delaware,Air Force,65,57,122
+2023-11-12,Iowa State,Idaho State,86,55,141
+2023-11-12,Maine,UMass,69,48,117
+2023-11-12,Seton Hall,Bryant,73,45,118
+2023-11-12,William & Mary,George Mason,72,77,149
+2023-11-12,Boston College,Northeastern,67,58,125
+2023-11-12,Chattanooga,Marshall,74,79,153
+2023-11-12,Clemson,Mercer,90,66,156
+2023-11-12,Georgetown,Brown,43,45,88
+2023-11-12,Harvard,Quinnipiac,85,41,126
+2023-11-12,Hofstra,Wagner,51,48,99
+2023-11-12,Incarnate Word,New Mexico State,52,59,111
+2023-11-12,Purdue Fort Wayne,East Texas A&M,86,64,150
+2023-11-12,Miami (FL),Fordham,78,39,117
+2023-11-12,Minnesota,Chicago State,100,42,142
+2023-11-12,UNC Asheville,Tennessee State,53,38,91
+2023-11-12,North Dakota,Elon,85,68,153
+2023-11-12,Radford,Norfolk State,46,70,116
+2023-11-12,Richmond,Delaware State,105,44,149
+2023-11-12,SIU-Edwardsville,Evansville,91,83,174
+2023-11-12,Southern Indiana,Oakland City,86,38,124
+2023-11-12,TCU,Rice,67,42,109
+2023-11-12,Texas Tech,San Jose State,56,42,98
+2023-11-12,Vanderbilt,Fairfield,73,70,143
+2023-11-12,Virginia,Campbell,74,49,123
+2023-11-12,Western Illinois,Northern Illinois,95,62,157
+2023-11-12,Wichita State,Friends (KS),95,65,160
+2023-11-12,Alabama,Morehead State,85,44,129
+2023-11-12,Bradley,Central Michigan,65,62,127
+2023-11-12,Clemson,Davidson,68,65,133
+2023-11-12,Drake,Iowa State,85,73,158
+2023-11-12,Eastern Illinois,Valparaiso,75,62,137
+2023-11-12,Loyola (IL),Cleveland State,66,74,140
+2023-11-12,Milwaukee,UIC,70,73,143
+2023-11-12,Northwestern,Omaha,87,69,156
+2023-11-12,Oklahoma State,Sam Houston,85,70,155
+2023-11-12,Tulsa,Northwestern State,65,53,118
+2023-11-12,Arizona,Loyola Marymount,70,54,124
+2023-11-12,Boise State,San Francisco,63,58,121
+2023-11-12,Columbia,Bard,86,36,122
+2023-11-12,James Madison,Howard,107,86,193
+2023-11-12,Long Beach State,Nevada,79,57,136
+2023-11-12,Maine,Merrimack,65,71,136
+2023-11-12,McNeese State,Prairie View,70,85,155
+2023-11-12,New Mexico,Tarleton State,64,55,119
+2023-11-12,Pepperdine,Lafayette,76,53,129
+2023-11-12,Purdue,Southern,67,50,117
+2023-11-12,Radford,Eastern Mennonite,84,47,131
+2023-11-12,Saint Mary's,UC-San Diego,61,58,119
+2023-11-12,USC Upstate,Carolina,106,48,154
+2023-11-12,Southern Indiana,Chicago State,67,78,145
+2023-11-12,Western Illinois,St. Ambrose,94,59,153
+2023-11-12,Butler,Detroit Mercy,68,61,129
+2023-11-12,Georgia,North Carolina Central,64,54,118
+2023-11-12,Gonzaga,Toledo,91,70,161
+2023-11-12,Grand Canyon,Northern Arizona,89,55,144
+2023-11-12,Iona,LIU,80,59,139
+2023-11-12,Louisiana,Kent State,55,64,119
+2023-11-12,Loyola (MD),Binghamton,77,73,150
+2023-11-12,New Hampshire,Howard,59,51,110
+2023-11-12,Oregon State,Villanova,63,56,119
+2023-11-12,Pacific,Cal State Bakersfield,67,54,121
+2023-11-12,Portland,UC-Riverside,76,65,141
+2023-11-12,Portland State,Linfield,70,53,123
+2023-11-12,Rider,Merrimack,61,47,108
+2023-11-12,Sacramento State,Cal State Fullerton,51,61,112
+2023-11-12,St. Thomas,North Central (MN),100,54,154
+2023-11-12,Binghamton,Keystone,104,50,154
+2023-11-12,Loyola Marymount,Yale,80,83,163
+2023-11-12,Indiana,Army,72,64,136
+2023-11-12,Rutgers,Auburn,56,76,132
+2023-11-12,Towson,Robert Morris,66,62,128
+2023-11-12,Montana,UC-Davis,78,65,143
+2023-11-12,Washington,Nevada,76,83,159
+2023-11-13,Purdue,Xavier,83,71,154
+2023-11-13,Arizona,Southern,97,59,156
+2023-11-13,Houston,Stetson,79,48,127
+2023-11-13,USC,Le Moyne,93,42,135
+2023-11-13,Miami (FL),Florida International,86,80,166
+2023-11-13,Arkansas,Old Dominion,86,77,163
+2023-11-13,Tennessee,Memphis,84,74,158
+2023-11-13,Penn,Villanova,76,72,148
+2023-11-13,Saint Francis (PA),Coppin State,34,70,104
+2023-11-13,Texas A&M-Corpus Christi,Schreiner,92,40,132
+2023-11-13,California,Cal Poly,74,60,134
+2023-11-13,UCF,Anderson (SC),96,73,169
+2023-11-13,Penn State,Kansas,91,85,176
+2023-11-13,St. John's (NY),Michigan,73,89,162
+2023-11-13,Youngstown State,Ohio Christian,99,71,170
+2023-11-13,UAB,Western Carolina,81,56,137
+2023-11-13,Albany (NY),Sarah Lawrence,118,27,145
+2023-11-13,American,Siena,78,58,136
+2023-11-13,Butler,ETSU,81,47,128
+2023-11-13,Central Arkansas,Arkansas-Pine Bluff,83,85,168
+2023-11-13,Central Connecticut,Framingham State,99,42,141
+2023-11-13,Charleston Southern,Johnson & Wales (NC),102,61,163
+2023-11-13,Duquesne,Stony Brook,85,63,148
+2023-11-13,Fairfield,Mount Saint Mary (NY),92,45,137
+2023-11-13,Florida State,Central Michigan,94,67,161
+2023-11-13,Georgia,Georgia Southern,85,59,144
+2023-11-13,Holy Cross,UMass-Lowell,51,41,92
+2023-11-13,Le Moyne,SUNY-Canton,105,46,151
+2023-11-13,Louisiana Tech,Lyon,100,43,143
+2023-11-13,UMass,Quinnipiac,102,81,183
+2023-11-13,Middle Tennessee,Western Carolina,64,66,130
+2023-11-13,Norfolk State,Hampton,75,68,143
+2023-11-13,North Florida,Florida Atlantic,75,84,159
+2023-11-13,Northwestern State,Stephen F. Austin,70,96,166
+2023-11-13,Pitt,Florida Gulf Coast,86,74,160
+2023-11-13,Presbyterian,The Citadel,71,64,135
+2023-11-13,St. Peter's,Central Connecticut,61,57,118
+2023-11-13,South Carolina,VMI,74,64,138
+2023-11-13,South Carolina State,North Florida,87,77,164
+2023-11-13,South Florida,Grambling,83,57,140
+2023-11-13,UT-Martin,Brescia,90,72,162
+2023-11-13,Texas Tech,Lamar,61,44,105
+2023-11-13,Western Kentucky,Cornell,62,56,118
+2023-11-13,Boise State,Weber State,76,47,123
+2023-11-13,Florida,Florida A&M,92,54,146
+2023-11-13,Kansas State,South Dakota State,91,68,159
+2023-11-13,Lindenwood,Hannibal-LaGrange,83,52,135
+2023-11-13,McNeese State,Champion Christian,110,46,156
+2023-11-13,Missouri,SIU-Edwardsville,68,50,118
+2023-11-13,Missouri State,Oral Roberts,84,69,153
+2023-11-13,Nebraska,Rider,64,50,114
+2023-11-13,Northern Illinois,Illinois Tech,107,55,162
+2023-11-13,Texas A&M-Corpus Christi,Dallas Christian,104,45,149
+2023-11-13,Arizona State,San Francisco,77,69,146
+2023-11-13,San Diego State,UC-Davis,77,68,145
+2023-11-13,California,Cal State Bakersfield,83,63,146
+2023-11-13,UC-San Diego,La Verne,116,57,173
+2023-11-13,Pepperdine,LIU,88,53,141
+2023-11-13,UTEP,UCSB,89,76,165
+2023-11-14,Kansas,Kentucky,89,84,173
+2023-11-14,Baylor,Utah,84,77,161
+2023-11-14,Illinois,Marquette,64,71,135
+2023-11-14,UConn,Mississippi Valley State,87,53,140
+2023-11-14,LSU,Kent State,109,79,188
+2023-11-14,Tennessee,Wofford,82,61,143
+2023-11-14,Creighton,Iowa,92,84,176
+2023-11-14,Michigan State,Duke,65,74,139
+2023-11-14,Florida Atlantic,Eastern Michigan,100,57,157
+2023-11-14,Texas,UT Arlington,110,64,174
+2023-11-14,Gonzaga,Eastern Oregon,123,57,180
+2023-11-14,SMU,Texas A&M,66,79,145
+2023-11-14,Baylor,Kansas City,99,61,160
+2023-11-14,USC,UC-Irvine,60,70,130
+2023-11-14,Alabama,South Alabama,102,46,148
+2023-11-14,Montana,Washington State,49,61,110
+2023-11-14,Colorado,Milwaukee,106,79,185
+2023-11-14,Central Michigan,Concordia (MI),80,57,137
+2023-11-14,Dartmouth,Keene State,65,41,106
+2023-11-14,Michigan,Oakland,80,39,119
+2023-11-14,Penn,St. Joseph's,49,77,126
+2023-11-14,Wisconsin,South Dakota State,66,64,130
+2023-11-14,UNC Greensboro,Pfeiffer,93,25,118
+2023-11-14,Murray State,Cumberland,121,63,184
+2023-11-14,SMU,Nicholls State,69,54,123
+2023-11-14,Texas Southern,North American,109,67,176
+2023-11-14,Incarnate Word,Schreiner,104,63,167
+2023-11-14,Queens (NC),Johnson & Wales (NC),101,51,152
+2023-11-14,Wright State,Mount Vernon Nazarene,88,64,152
+2023-11-14,Howard,Duquesne,51,65,116
+2023-11-14,UC-Davis,North Dakota State,68,53,121
+2023-11-14,Boston University,Yale,60,53,113
+2023-11-14,Buffalo,Niagara,92,75,167
+2023-11-14,Charleston Southern,Furman,68,71,139
+2023-11-14,Charlotte,UNC Asheville,67,51,118
+2023-11-14,Chicago State,Ball State,56,85,141
+2023-11-14,Columbia,Duke,62,66,128
+2023-11-14,Georgia State,Kennesaw State,62,52,114
+2023-11-14,Kentucky,Austin Peay,63,68,131
+2023-11-14,La Salle,Bucknell,69,57,126
+2023-11-14,Maine,Rhode Island,59,48,107
+2023-11-14,UMBC,Penn St. - York,84,65,149
+2023-11-14,UNC Asheville,Carolina,117,54,171
+2023-11-14,Old Dominion,Xavier,55,43,98
+2023-11-14,Providence,Wisconsin,72,59,131
+2023-11-14,Stonehill,Bryant,49,69,118
+2023-11-14,Troy,Samford,61,65,126
+2023-11-14,VCU,East Carolina,55,50,105
+2023-11-14,Winthrop,Erskine,84,43,127
+2023-11-14,Akron,Heidelberg,114,56,170
+2023-11-14,Alabama State,Oglethorpe,115,51,166
+2023-11-14,Ball State,Oakland City,92,51,143
+2023-11-14,Belmont,Berry,93,59,152
+2023-11-14,Central Arkansas,UT-Martin,56,45,101
+2023-11-14,Chattanooga,Bellarmine,72,64,136
+2023-11-14,Delaware,Lehigh,77,78,155
+2023-11-14,Drexel,Temple,64,66,130
+2023-11-14,Florida,Florida A&M,89,68,157
+2023-11-14,Florida Gulf Coast,Florida International,81,48,129
+2023-11-14,George Washington,Hofstra,71,60,131
+2023-11-14,Georgia Tech,UMass-Lowell,71,74,145
+2023-11-14,Grambling,Champion Christian,113,73,186
+2023-11-14,Harvard,Northeastern,80,56,136
+2023-11-14,High Point,Stetson,59,54,113
+2023-11-14,Holy Cross,Sacred Heart,77,84,161
+2023-11-14,Houston Christian,St. Thomas (TX),79,49,128
+2023-11-14,Howard,Boston University,64,53,117
+2023-11-14,Indiana State,IU Indianapolis,96,57,153
+2023-11-14,Jacksonville,Georgia Southern,85,68,153
+2023-11-14,Lipscomb,Morehead State,77,73,150
+2023-11-14,Mississippi State,North Alabama,81,54,135
+2023-11-14,Morehead State,Mercer,74,66,140
+2023-11-14,New Hampshire,Brown,82,64,146
+2023-11-14,North Carolina Central,Mid-Atlantic Christian,113,50,163
+2023-11-14,UNC Wilmington,Columbia International,116,80,196
+2023-11-14,Northern Kentucky,DePauw,85,68,153
+2023-11-14,Oakland,Bowling Green State,81,62,143
+2023-11-14,Penn State,Saint Francis (PA),83,53,136
+2023-11-14,Queens (NC),High Point,74,72,146
+2023-11-14,Rhode Island,Wagner,69,53,122
+2023-11-14,St. Joseph's,Stonehill,100,56,156
+2023-11-14,Samford,Mississippi College,96,52,148
+2023-11-14,USC Upstate,Lees-McRae,72,44,116
+2023-11-14,Southeastern Louisiana,Southern–New Orleans,90,30,120
+2023-11-14,Syracuse,Colgate,79,75,154
+2023-11-14,Tennessee Tech,Lipscomb,65,96,161
+2023-11-14,Tulane,Prairie View,71,46,117
+2023-11-14,Virginia,North Carolina A&T,80,51,131
+2023-11-14,West Virginia,Jacksonville State,70,57,127
+2023-11-14,Wofford,North Carolina Central,82,52,134
+2023-11-14,Wright State,Toledo,77,78,155
+2023-11-14,Abilene Christian,Prairie View,74,79,153
+2023-11-14,Air Force,Regis (CO),78,68,146
+2023-11-14,Arizona,San Diego,79,66,145
+2023-11-14,Arkansas State,Alcorn State,100,86,186
+2023-11-14,Arkansas,Little Rock,77,36,113
+2023-11-14,Austin Peay,Fisk,79,52,131
+2023-11-14,Bradley,Tarleton State,86,63,149
+2023-11-14,BYU,Utah Valley,59,44,103
+2023-11-14,Chicago State,Cal State Northridge,64,74,138
+2023-11-14,Denver,Wyoming,41,58,99
+2023-11-14,Drake,Southwest Minnesota State,87,67,154
+2023-11-14,Houston,Sam Houston,106,65,171
+2023-11-14,Lamar,UTSA,90,82,172
+2023-11-14,Loyola (IL),UIC,67,72,139
+2023-11-14,McNeese State,LeTourneau,81,49,130
+2023-11-14,Ole Miss,Detroit Mercy,70,69,139
+2023-11-14,Kansas City,Utah State,60,62,122
+2023-11-14,Missouri,North Alabama,83,72,155
+2023-11-14,Murray State,Western Kentucky,81,86,167
+2023-11-14,Nebraska,Alcorn State,79,32,111
+2023-11-14,Northern Colorado,Colorado State,64,83,147
+2023-11-14,Northern Iowa,Loras,90,50,140
+2023-11-14,Northwestern,Western Michigan,63,59,122
+2023-11-14,Oklahoma,Texas State,93,54,147
+2023-11-14,Oral Roberts,Mid-America Christian,94,72,166
+2023-11-14,South Alabama,Tougaloo,93,57,150
+2023-11-14,South Dakota,Northern Colorado,72,59,131
+2023-11-14,Southern Indiana,Tiffin,68,65,133
+2023-11-14,TCU,Texas-Rio Grande Valley,88,55,143
+2023-11-14,Troy,Reinhardt,111,46,157
+2023-11-14,Valparaiso,Green Bay,64,59,123
+2023-11-14,Vanderbilt,UNC Greensboro,74,70,144
+2023-11-14,DePaul,South Dakota,72,60,132
+2023-11-14,Idaho,Evergreen State,88,42,130
+2023-11-14,Montana State,San Jose State,62,49,111
+2023-11-14,UNLV,Utah Tech,100,67,167
+2023-11-14,New Mexico State,Western New Mexico,78,43,121
+2023-11-14,Portland State,Warner Pacific,74,62,136
+2023-11-14,Sacramento State,Pacific Union,128,66,194
+2023-11-14,Saint Mary's,UC-Irvine,52,37,89
+2023-11-14,Santa Clara,Cal State Northridge,71,39,110
+2023-11-14,Seattle,Portland,61,89,150
+2023-11-14,Stanford,Santa Clara,77,89,166
+2023-11-14,UTEP,Texas A&M-Kingsville,63,55,118
+2023-11-14,Utah State,Southern Utah,93,84,177
+2023-11-14,Loyola Marymount,Jackson State,88,66,154
+2023-11-14,Oregon State,Appalachian State,81,71,152
+2023-11-14,San Diego State,Long Beach State,88,76,164
+2023-11-15,NC State,Elon,90,35,125
+2023-11-15,Notre Dame,Northwestern,110,52,162
+2023-11-15,UNC,Hampton,62,32,94
+2023-11-15,Texas,Rice,80,64,144
+2023-11-15,Ole Miss,Temple,80,63,143
+2023-11-15,Oklahoma,Alabama State,92,46,138
+2023-11-15,Drexel,La Salle,71,46,117
+2023-11-15,George Washington,American,69,59,128
+2023-11-15,Hawaii,Hawaii-Hilo,82,66,148
+2023-11-15,Seton Hall,Rutgers,82,63,145
+2023-11-15,Illinois,St. Peter's,103,33,136
+2023-11-15,Jackson State,Tougaloo,105,47,152
+2023-11-15,Saint Louis,Missouri State,79,67,146
+2023-11-15,New Mexico,East Texas A&M,75,74,149
+2023-11-15,Southern Utah,Alaska-Fairbanks,72,58,130
+2023-11-15,Gonzaga,North Florida,83,55,138
+2023-11-15,Bucknell,FDU,49,44,93
+2023-11-15,Cincinnati,Lindenwood,81,62,143
+2023-11-15,Gardner-Webb,Richmond,53,80,133
+2023-11-15,Hofstra,Delaware State,66,53,119
+2023-11-15,Indiana State,Illinois-Springfield,69,71,140
+2023-11-15,Radford,ETSU,45,49,94
+2023-11-15,Robert Morris,Akron,58,63,121
+2023-11-15,Illinois State,SIU-Edwardsville,90,86,176
+2023-11-15,Mississippi State,New Orleans,87,26,113
+2023-11-15,TCU,Incarnate Word,61,55,116
+2023-11-15,George Mason,Pitt,60,52,112
+2023-11-15,Maryland-Eastern Shore,Stony Brook,63,76,139
+2023-11-15,Bethune-Cookman,Iona,74,72,146
+2023-11-15,Lafayette,Marist,76,84,160
+2023-11-15,Presbyterian,Columbia International,95,43,138
+2023-11-15,Seton Hall,Albany (NY),96,71,167
+2023-11-15,South Carolina State,Coastal Carolina,61,73,134
+2023-11-15,Virginia Tech,Campbell,60,44,104
+2023-11-15,Wake Forest,North Carolina A&T,51,56,107
+2023-11-15,Belmont,Wichita State,75,67,142
+2023-11-15,Bethune-Cookman,Trinity Baptist,104,63,167
+2023-11-15,Boston College,Richmond,68,61,129
+2023-11-15,Brown,Providence,61,56,117
+2023-11-15,Buffalo,Roberts Wesleyan,89,83,172
+2023-11-15,Charlotte,Utah Valley,62,45,107
+2023-11-15,Cleveland State,Canisius,71,61,132
+2023-11-15,Columbia,SUNY Delhi,105,60,165
+2023-11-15,Dartmouth,Westfield State,79,61,140
+2023-11-15,Delaware State,Delaware,67,78,145
+2023-11-15,Nicholls State,Denver,85,91,176
+2023-11-15,Duquesne,Princeton,67,70,137
+2023-11-15,East Carolina,USC Upstate,81,83,164
+2023-11-15,Evansville,Eastern Kentucky,75,77,152
+2023-11-15,FDU,St. Peter's,71,70,141
+2023-11-15,George Mason,Cornell,90,83,173
+2023-11-15,IU Indianapolis,Marquette,58,92,150
+2023-11-15,James Madison,Longwood,84,50,134
+2023-11-15,Kennesaw State,Keiser,101,55,156
+2023-11-15,Louisville,Coppin State,61,41,102
+2023-11-15,Loyola (MD),Binghamton,57,63,120
+2023-11-15,UMBC,Loyola (MD),48,49,97
+2023-11-15,Monmouth,Sacred Heart,50,59,109
+2023-11-15,Navy,Mount St. Mary's,59,67,126
+2023-11-15,NJIT,Rider,70,57,127
+2023-11-15,Ohio State,Merrimack,76,52,128
+2023-11-15,South Florida,Central Michigan,63,68,131
+2023-11-15,Southeast Missouri State,Evansville,57,76,133
+2023-11-15,Southern Illinois,Purdue Fort Wayne,64,70,134
+2023-11-15,Syracuse,Coppin State,80,47,127
+2023-11-15,Tennessee Tech,Chattanooga,45,70,115
+2023-11-15,Vanderbilt,Western Kentucky,77,74,151
+2023-11-15,VCU,Radford,73,50,123
+2023-11-15,Virginia,William & Mary,80,51,131
+2023-11-15,Boise State,UC-Riverside,63,55,118
+2023-11-15,Colorado State,New Hampshire,67,45,112
+2023-11-15,Fresno State,Pepperdine,74,55,129
+2023-11-15,Houston Christian,Florida International,74,83,157
+2023-11-15,Illinois State,Eastern Illinois,69,61,130
+2023-11-15,Louisiana,Louisiana Christian,107,56,163
+2023-11-15,Maryland-Eastern Shore,Longwood,61,80,141
+2023-11-15,Minnesota,North Dakota State,75,53,128
+2023-11-15,Nebraska,Stony Brook,84,63,147
+2023-11-15,North Dakota,Concordia-Moorhead,80,47,127
+2023-11-15,Northern Arizona,Benedictine,91,37,128
+2023-11-15,Rutgers,Georgetown,71,60,131
+2023-11-15,Southern Miss,Xavier (LA),76,45,121
+2023-11-15,East Texas A&M,Science and Arts of Oklahoma,113,63,176
+2023-11-15,Texas A&M-Corpus Christi,UTSA,59,66,125
+2023-11-15,Western Illinois,Hannibal-LaGrange,101,23,124
+2023-11-15,BYU,Southeastern Louisiana,105,48,153
+2023-11-15,California Baptist,Long Beach State,82,71,153
+2023-11-15,Portland,Tennessee State,65,75,140
+2023-11-15,UC-San Diego,La Sierra,94,40,134
+2023-11-15,Fresno State,Morgan State,87,68,155
+2023-11-15,Idaho State,UCSB,70,64,134
+2023-11-15,Nevada,Pacific,88,39,127
+2023-11-15,Seattle,Northern Arizona,60,62,122
+2023-11-15,UCLA,LIU,78,58,136
+2023-11-15,Washington,Pacific,81,64,145
+2023-11-16,South Carolina,Clemson,109,40,149
+2023-11-16,Iowa,Kansas State,58,65,123
+2023-11-16,Towson,Houston,49,65,114
+2023-11-16,Stanford,Cal Poly,86,32,118
+2023-11-16,UConn,Maryland,80,48,128
+2023-11-16,Virginia Tech,Houston Christian,105,36,141
+2023-11-16,Ohio State,Boston College,88,66,154
+2023-11-16,Louisville,Bellarmine,111,33,144
+2023-11-16,Creighton,Green Bay,53,65,118
+2023-11-16,Fordham,Manhattan,44,58,102
+2023-11-16,Indiana,Wright State,89,80,169
+2023-11-16,Manhattan,Felician,79,67,146
+2023-11-16,Mercer,Georgia,57,77,134
+2023-11-16,Morgan State,Notre Dame (MD),75,32,107
+2023-11-16,Purdue,Texas A&M,72,58,130
+2023-11-16,UAB,Alcorn State,80,77,157
+2023-11-16,California,Montana State,60,63,123
+2023-11-16,Eastern Washington,Corban,72,47,119
+2023-11-16,Norfolk State,Appalachian State,67,53,120
+2023-11-16,UNC Wilmington,Western Carolina,43,54,97
+2023-11-16,Vermont,College of Charleston,73,64,137
+2023-11-16,Abilene Christian,Angelo State,65,57,122
+2023-11-16,North Texas,St. John's (NY),52,53,105
+2023-11-16,Cal State Bakersfield,St. Katherine,77,44,121
+2023-11-16,Portland,Warner Pacific,86,49,135
+2023-11-16,Wyoming,Saint Louis,69,79,148
+2023-11-16,Coastal Carolina,Wichita State,77,86,163
+2023-11-16,LSU,Dayton,67,70,137
+2023-11-16,Maine,Northwestern State,78,65,143
+2023-11-16,Denver,SIU-Edwardsville,74,77,151
+2023-11-16,Milwaukee,Louisiana-Monroe,67,73,140
+2023-11-16,Youngstown State,Western Michigan,52,54,106
+2023-11-16,Air Force,Lindenwood,76,58,134
+2023-11-16,Colgate,Canisius,61,55,116
+2023-11-16,Jacksonville,Georgia Southern,61,59,120
+2023-11-16,UMass,Harvard,57,78,135
+2023-11-16,Michigan State,Detroit Mercy,105,44,149
+2023-11-16,St. Bonaventure,Oklahoma State,66,64,130
+2023-11-16,Prairie View,North American,101,44,145
+2023-11-16,Alabama,South Florida,70,41,111
+2023-11-16,American,NJIT,87,73,160
+2023-11-16,Boston University,Bryant,95,79,174
+2023-11-16,Bradley,Loyola (IL),62,67,129
+2023-11-16,Brown,Rhode Island College,92,51,143
+2023-11-16,UCF,Cal State Fullerton,72,44,116
+2023-11-16,The Citadel,North Greenville,77,59,136
+2023-11-16,Columbia,Towson,80,57,137
+2023-11-16,Duke,Davidson,62,69,131
+2023-11-16,Grambling,Arizona State,70,67,137
+2023-11-16,Lamar,Louisiana State-Alexandria,72,48,120
+2023-11-16,Lehigh,SUNY-Oneonta,90,65,155
+2023-11-16,Liberty,Furman,88,74,162
+2023-11-16,Louisiana-Monroe,Louisiana Tech,63,73,136
+2023-11-16,North Florida,Presbyterian,69,81,150
+2023-11-16,Ohio,Dayton,67,61,128
+2023-11-16,St. Bonaventure,Albany (NY),56,66,122
+2023-11-16,St. John's (NY),Penn State,53,69,122
+2023-11-16,Stephen F. Austin,North Texas,55,78,133
+2023-11-16,Tennessee Tech,Midway,82,70,152
+2023-11-16,Virginia,Texas Southern,62,33,95
+2023-11-16,McNeese State,Mississippi Valley State,82,85,167
+2023-11-16,North Dakota,Valley City State,93,63,156
+2023-11-16,Northeastern,Merrimack,58,47,105
+2023-11-16,Rice,Georgia Tech,75,78,153
+2023-11-16,South Alabama,Nicholls State,97,102,199
+2023-11-16,Southern Illinois,Chicago State,71,55,126
+2023-11-16,Southern Indiana,Northern Illinois,66,60,126
+2023-11-16,Texas Tech,Texas A&M-Corpus Christi,73,64,137
+2023-11-16,Tulsa,Jackson State,72,52,124
+2023-11-16,Arizona State,UMass-Lowell,71,69,140
+2023-11-16,Notre Dame,Auburn,59,83,142
+2023-11-16,Grand Canyon,Oregon,56,64,120
+2023-11-16,Idaho State,Northwest University,85,51,136
+2023-11-16,Loyola Marymount,Biola,66,36,102
+2023-11-16,Minnesota,Missouri,68,70,138
+2023-11-16,Omaha,William & Mary,89,83,172
+2023-11-16,New Mexico,UT Arlington,82,80,162
+2023-11-16,Wake Forest,Utah,70,77,147
+2023-11-16,Montana,North Dakota State,69,78,147
+2023-11-17,UCLA,Princeton,77,74,151
+2023-11-17,Arizona,Belmont,100,68,168
+2023-11-17,Utah,Houston,66,76,142
+2023-11-17,Southeastern Louisiana,LSU,50,73,123
+2023-11-17,Duke,Bucknell,90,60,150
+2023-11-17,Florida,Florida State,75,79,154
+2023-11-17,Miami (FL),Georgia,79,68,147
+2023-11-17,Texas A&M,Oral Roberts,74,66,140
+2023-11-17,Arkansas,UNC Greensboro,72,78,150
+2023-11-17,Kentucky,Stonehill,101,67,168
+2023-11-17,Michigan State,Butler,74,54,128
+2023-11-17,Indiana,Murray State,112,79,191
+2023-11-17,UNC,UC-Riverside,77,52,129
+2023-11-17,Villanova,Maryland,57,40,97
+2023-11-17,Alabama,Mercer,98,67,165
+2023-11-17,Illinois,Valparaiso,87,64,151
+2023-11-17,James Madison,Radford,76,73,149
+2023-11-17,Bryant,Central Connecticut,72,69,141
+2023-11-17,Duquesne,Rider,77,58,135
+2023-11-17,Florida Atlantic,Chicago State,80,57,137
+2023-11-17,Hawaii,Niagara,92,73,165
+2023-11-17,UMass,Harvard,75,78,153
+2023-11-17,St. Joseph's,East Texas A&M,54,57,111
+2023-11-17,UIC,Southeast Missouri State,87,74,161
+2023-11-17,Memphis,Alabama State,92,75,167
+2023-11-17,Vanderbilt,Central Arkansas,75,71,146
+2023-11-17,Idaho,Cal State Fullerton,56,48,104
+2023-11-17,LSU,North Texas,66,62,128
+2023-11-17,UMBC,Sacred Heart,85,80,165
+2023-11-17,Old Dominion,Texas Southern,57,38,95
+2023-11-17,Queens (NC),USC Upstate,61,51,112
+2023-11-17,Saint Louis,Vermont,68,78,146
+2023-11-17,Fordham,Norfolk State,77,64,141
+2023-11-17,Omaha,Northern Colorado,70,82,152
+2023-11-17,Wyoming,College of Charleston,67,60,127
+2023-11-17,Dayton,St. John's (NY),88,81,169
+2023-11-17,Georgia State,Northern Illinois,64,70,134
+2023-11-17,South Dakota,VMI,85,81,166
+2023-11-17,San Jose State,Abilene Christian,71,77,148
+2023-11-17,Cal State Northridge,Life Pacific,98,67,165
+2023-11-17,Gardner-Webb,Weber State,62,61,123
+2023-11-17,Lindenwood,Omaha,72,70,142
+2023-11-17,Presbyterian,Maine,66,80,146
+2023-11-17,Northern Arizona,Purdue Fort Wayne,67,77,144
+2023-11-17,Oklahoma State,Notre Dame,64,66,130
+2023-11-17,Quinnipiac,Vermont,53,58,111
+2023-11-17,South Alabama,Denver,82,75,157
+2023-11-17,Army,Quinnipiac,58,67,125
+2023-11-17,Kent State,Hampton,100,62,162
+2023-11-17,Louisiana-Monroe,Mississippi Valley State,73,62,135
+2023-11-17,Miami (FL),Southern,61,57,118
+2023-11-17,North Carolina Central,Mid-Atlantic Christian,132,22,154
+2023-11-17,Winthrop,Holy Cross,89,51,140
+2023-11-17,Air Force,William & Mary,80,71,151
+2023-11-17,Buffalo,Stonehill,60,39,99
+2023-11-17,Charleston Southern,College of Charleston,60,70,130
+2023-11-17,Charlotte,Gardner-Webb,93,43,136
+2023-11-17,Coastal Carolina,Furman,80,89,169
+2023-11-17,Yale,Colgate,68,50,118
+2023-11-17,Grambling,Delaware State,63,71,134
+2023-11-17,Kansas State,Providence,73,70,143
+2023-11-17,Lehigh,Yale,90,75,165
+2023-11-17,Tennessee State,Lipscomb,43,74,117
+2023-11-17,Texas State,Texas-Rio Grande Valley,66,63,129
+2023-11-17,Youngstown State,Utah Tech,75,68,143
+2023-11-17,Bowling Green State,Bellarmine,67,85,152
+2023-11-17,Brown,Rhode Island,56,67,123
+2023-11-17,St. Thomas,Cal Poly,60,61,121
+2023-11-17,Drexel,Fairfield,65,47,112
+2023-11-17,ETSU,Davidson,70,68,138
+2023-11-17,Eastern Kentucky,UT-Martin,74,80,154
+2023-11-17,Elon,IU Indianapolis,86,72,158
+2023-11-17,Georgetown,FDU,60,45,105
+2023-11-17,Hawaii,San Francisco,65,51,116
+2023-11-17,High Point,Wofford,80,64,144
+2023-11-17,Jacksonville State,Alabama-Huntsville,67,53,120
+2023-11-17,Miami (OH),Coppin State,76,48,124
+2023-11-17,Michigan,Long Beach State,86,94,180
+2023-11-17,SIU-Edwardsville,Nicholls State,60,51,111
+2023-11-17,NC State,Charleston Southern,87,53,140
+2023-11-17,North Florida,Northwestern State,80,74,154
+2023-11-17,Oakland,Cleary University,110,51,161
+2023-11-17,Penn State,Morehead State,74,51,125
+2023-11-17,Pitt,Jacksonville,107,56,163
+2023-11-17,Sam Houston,Schreiner,96,43,139
+2023-11-17,Samford,South Carolina State,89,72,161
+2023-11-17,St. Bonaventure,Auburn,60,77,137
+2023-11-17,Texas Tech,East Texas A&M,91,45,136
+2023-11-17,Tulane,Sacramento State,92,57,149
+2023-11-17,Wake Forest,Towson,71,61,132
+2023-11-17,Wisconsin,Robert Morris,78,68,146
+2023-11-17,Arkansas State,Arkansas,67,82,149
+2023-11-17,Auburn,California,53,67,120
+2023-11-17,Florida Gulf Coast,Missouri State,61,70,131
+2023-11-17,Iowa,Arkansas State,88,74,162
+2023-11-17,McNeese State,Milwaukee,67,88,155
+2023-11-17,Milwaukee,Luther,85,56,141
+2023-11-17,Oklahoma,Texas-Rio Grande Valley,90,66,156
+2023-11-17,TCU,Mississippi Valley State,86,52,138
+2023-11-17,Texas State,UTSA,72,62,134
+2023-11-17,Utah State,Weber State,72,62,134
+2023-11-17,Western Illinois,Southern,88,80,168
+2023-11-17,Air Force,Army,83,61,144
+2023-11-17,Colorado State,Kansas City,84,61,145
+2023-11-17,Grand Canyon,San Francisco,76,72,148
+2023-11-17,Idaho,Pacific Lutheran,96,52,148
+2023-11-17,Liberty,Wichita State,83,66,149
+2023-11-17,Ole Miss,Sam Houston,70,67,137
+2023-11-17,Nevada,Pepperdine,64,41,105
+2023-11-17,Oregon,Tennessee State,92,67,159
+2023-11-17,Oregon State,UC-Davis,86,48,134
+2023-11-17,San Diego State,Saint Mary's,79,54,133
+2023-11-17,Stanford,Eastern Washington,95,70,165
+2023-11-17,UTEP,Austin Peay,71,63,134
+2023-11-17,California Baptist,Portland State,63,66,129
+2023-11-17,UC-Irvine,Occidental,111,51,162
+2023-11-17,Pepperdine,UNLV,68,82,150
+2023-11-17,San Diego,Le Moyne,80,71,151
+2023-11-17,DePaul,South Carolina,68,73,141
+2023-11-18,SMU,Colorado,69,84,153
+2023-11-18,Creighton,Texas Southern,82,50,132
+2023-11-18,Florida Atlantic,Bryant,52,61,113
+2023-11-18,Notre Dame,Illinois,79,68,147
+2023-11-18,UNC,Elon,68,39,107
+2023-11-18,Ole Miss,Howard,67,54,121
+2023-11-18,Ball State,Northern Iowa,75,64,139
+2023-11-18,Eastern Illinois,Coppin State,48,46,94
+2023-11-18,Eastern Michigan,Cleveland State,69,62,131
+2023-11-18,Eastern Michigan,SIU-Edwardsville,68,65,133
+2023-11-18,Fairfield,Queens (NC),63,69,132
+2023-11-18,UMass-Lowell,Le Moyne,61,63,124
+2023-11-18,Monmouth,Princeton,57,82,139
+2023-11-18,Morgan State,Davidson,48,62,110
+2023-11-18,Temple,Columbia,73,78,151
+2023-11-18,Xavier,Washington,71,74,145
+2023-11-18,Little Rock,Northern Illinois,93,98,191
+2023-11-18,Arkansas-Pine Bluff,Incarnate Word,81,100,181
+2023-11-18,Evansville,Ball State,74,50,124
+2023-11-18,Middle Tennessee,Milligan,88,62,150
+2023-11-18,Samford,Alabama State,69,47,116
+2023-11-18,BYU,Morgan State,93,50,143
+2023-11-18,Binghamton,St. Bonaventure,73,65,138
+2023-11-18,Dayton,Detroit Mercy,60,76,136
+2023-11-18,Georgetown,Mount St. Mary's,83,72,155
+2023-11-18,Loyola (MD),Sacred Heart,51,66,117
+2023-11-18,Mississippi State,Washington State,76,64,140
+2023-11-18,Rutgers,Saint Francis (PA),80,51,131
+2023-11-18,Seton Hall,Wagner,72,51,123
+2023-11-18,Florida International,Coppin State,66,70,136
+2023-11-18,George Washington,New Hampshire,79,67,146
+2023-11-18,Indiana State,Wright State,63,72,135
+2023-11-18,Miami (OH),Western Kentucky,43,63,106
+2023-11-18,NJIT,Wagner,80,36,116
+2023-11-18,California Baptist,UTEP,90,87,177
+2023-11-18,Campbell,Western Carolina,70,52,122
+2023-11-18,Cleveland State,Central Michigan,96,57,153
+2023-11-18,Duquesne,Pitt,56,55,111
+2023-11-18,FDU,Penn St.-Schuylkill,124,66,190
+2023-11-18,Furman,Coastal Carolina,72,78,150
+2023-11-18,La Salle,Southern Indiana,79,78,157
+2023-11-18,LIU,Lafayette,51,54,105
+2023-11-18,Maryland-Eastern Shore,George Washington,62,59,121
+2023-11-18,Milwaukee,Mississippi Valley State,67,61,128
+2023-11-18,Minnesota,USC Upstate,67,53,120
+2023-11-18,Morehead State,Midway,103,51,154
+2023-11-18,UNC Asheville,Virginia-Lynchburg,114,59,173
+2023-11-18,Northern Arizona,VMI,78,69,147
+2023-11-18,Northern Kentucky,Marshall,76,66,142
+2023-11-18,Rhode Island,Northwestern,61,72,133
+2023-11-18,Northwestern State,Presbyterian,75,78,153
+2023-11-18,Ohio,Detroit Mercy,71,52,123
+2023-11-18,Radford,UNC Greensboro,60,63,123
+2023-11-18,Rider,Boston University,58,55,113
+2023-11-18,South Carolina State,Winthrop,45,54,99
+2023-11-18,UT-Martin,South Dakota State,38,55,93
+2023-11-18,Valparaiso,Western Illinois,54,76,130
+2023-11-18,VCU,Seattle,60,56,116
+2023-11-18,Xavier,Bowling Green State,64,73,137
+2023-11-18,Alabama A&M,Tennessee Tech,62,56,118
+2023-11-18,Binghamton,Marist,82,59,141
+2023-11-18,Cal State Northridge,Hope International,60,64,124
+2023-11-18,Chattanooga,Virginia Wise,75,62,137
+2023-11-18,George Mason,Robert Morris,83,63,146
+2023-11-18,Longwood,North Carolina Central,73,66,139
+2023-11-18,Louisiana,Nicholls State,69,63,132
+2023-11-18,Oregon,Santa Clara,50,89,139
+2023-11-18,San Jose State,Norfolk State,77,53,130
+2023-11-18,St. Thomas,Utah Valley,70,62,132
+2023-11-18,Stetson,Iona,71,62,133
+2023-11-18,UT Arlington,UTSA,66,70,136
+2023-11-18,Arizona,Memphis,90,67,157
+2023-11-18,Colgate,Gardner-Webb,59,52,111
+2023-11-18,Kansas City,Kansas,61,70,131
+2023-11-18,Loyola (IL),New Orleans,73,70,143
+2023-11-18,Maryland-Eastern Shore,Penn,83,80,163
+2023-11-18,Nebraska,Oregon State,84,63,147
+2023-11-18,New Mexico State,Portland State,57,38,95
+2023-11-18,South Dakota,Purdue Fort Wayne,81,93,174
+2023-11-18,Washington,Seattle,80,64,144
+2023-11-18,Western Carolina,McNeese State,76,74,150
+2023-11-18,Boston College,Harvard,73,64,137
+2023-11-18,Butler,Austin Peay,53,47,100
+2023-11-18,Portland State,Cal Poly,73,57,130
+2023-11-18,Florida Gulf Coast,Hampton,85,92,177
+2023-11-18,Gonzaga,Wyoming,80,64,144
+2023-11-18,Lipscomb,Alabama A&M,106,81,187
+2023-11-18,McNeese State,Louisiana-Monroe,53,87,140
+2023-11-18,Michigan,Middle Tennessee,63,49,112
+2023-11-18,Mount St. Mary's,Cornell,47,52,99
+2023-11-18,UNLV,New Hampshire,93,30,123
+2023-11-18,North Florida,Maine,67,58,125
+2023-11-18,Pacific,Lamar,77,76,153
+2023-11-18,Sacramento State,San Diego State,45,68,113
+2023-11-18,Winthrop,IU Indianapolis,74,61,135
+2023-11-18,Arkansas-Pine Bluff,Texas A&M-Texarkana,118,51,169
+2023-11-18,BYU,Wake Forest,67,44,111
+2023-11-18,North Alabama,Southern Miss,63,91,154
+2023-11-18,Richmond,American,76,44,120
+2023-11-18,Rutgers,Howard,85,63,148
+2023-11-18,Weber State,Yale,75,65,140
+2023-11-18,UC-San Diego,Navy,73,55,128
+2023-11-18,DePaul,South Dakota,71,83,154
+2023-11-18,Holy Cross,Elon,69,83,152
+2023-11-18,California Baptist,St. Thomas,66,62,128
+2023-11-18,North Alabama,Jacksonville State,61,59,120
+2023-11-18,Oral Roberts,Tulsa,93,87,180
+2023-11-18,Santa Clara,Southeastern Louisiana,65,63,128
+2023-11-18,Western Kentucky,Kentucky State,95,75,170
+2023-11-18,UC-Riverside,Antelope Valley,69,47,116
+2023-11-18,Eastern Kentucky,UAB,68,64,132
+2023-11-18,New Mexico State,Northern Colorado,76,71,147
+2023-11-18,Cal State Bakersfield,Fresno State,65,63,128
+2023-11-18,Nevada,Portland,108,83,191
+2023-11-19,Iowa,Drake,113,90,203
+2023-11-19,Arizona,UT Arlington,101,56,157
+2023-11-19,Utah,Eastern Kentucky,117,72,189
+2023-11-19,Indiana,UConn,57,77,134
+2023-11-19,Stanford,Duke,82,79,161
+2023-11-19,Houston,Dayton,69,55,124
+2023-11-19,Minnesota,UConn,44,62,106
+2023-11-19,Texas,Louisiana Tech,96,44,140
+2023-11-19,Florida State,South Alabama,80,45,125
+2023-11-19,Miami (FL),Kansas State,91,83,174
+2023-11-19,NC State,Rhode Island,67,58,125
+2023-11-19,Tennessee,Troy,100,73,173
+2023-11-19,USC,Brown,81,70,151
+2023-11-19,Indiana,Lipscomb,77,44,121
+2023-11-19,Michigan State,Alcorn State,81,49,130
+2023-11-19,Louisville,Texas,80,81,161
+2023-11-19,Louisville,Bucknell,77,44,121
+2023-11-19,Maryland,Syracuse,83,81,164
+2023-11-19,Baylor,Harvard,81,71,152
+2023-11-19,Nebraska,Creighton,74,79,153
+2023-11-19,Ole Miss,Arizona,56,47,103
+2023-11-19,Illinois,Southern,88,60,148
+2023-11-19,Prairie View,Washington State,43,81,124
+2023-11-19,Virginia,Oklahoma,67,82,149
+2023-11-19,Drexel,St. Joseph's,53,64,117
+2023-11-19,Mercer,Tulane,58,64,122
+2023-11-19,Michigan State,Evansville,105,49,154
+2023-11-19,Stony Brook,Holy Cross,68,55,123
+2023-11-19,Utah,St. John's (NY),82,91,173
+2023-11-19,Wake Forest,LSU,80,86,166
+2023-11-19,UIC,IU Indianapolis,79,49,128
+2023-11-19,Kansas State,Wisconsin,75,57,132
+2023-11-19,Prairie View,UT-Martin,78,66,144
+2023-11-19,Furman,Wyoming,71,78,149
+2023-11-19,Drake,Oakland,85,77,162
+2023-11-19,Georgia,Providence,64,71,135
+2023-11-19,IU Indianapolis,Holy Cross,61,74,135
+2023-11-19,Utah Valley,Southern Miss,67,65,132
+2023-11-19,Towson,North Texas,39,65,104
+2023-11-19,Central Connecticut,Manhattan,63,67,130
+2023-11-19,Clemson,Boise State,85,68,153
+2023-11-19,Coastal Carolina,College of Charleston,72,80,152
+2023-11-19,Colgate,Weber State,57,55,112
+2023-11-19,Iowa State,Grambling,92,37,129
+2023-11-19,Lafayette,Wilkes,69,53,122
+2023-11-19,William & Mary,Lindenwood,60,71,131
+2023-11-19,UMBC,Loyola (MD),94,79,173
+2023-11-19,Miami (OH),Eastern Illinois,76,64,140
+2023-11-19,Mississippi State,Northwestern,66,57,123
+2023-11-19,Niagara,Stonehill,71,69,140
+2023-11-19,North Dakota,Montana State,53,60,113
+2023-11-19,South Alabama,SIU-Edwardsville,86,74,160
+2023-11-19,Vermont,Saint Rose,60,44,104
+2023-11-19,Little Rock,Alabama,39,63,102
+2023-11-19,Cal State Fullerton,Cornell,70,88,158
+2023-11-19,Chattanooga,Tennessee Tech,68,63,131
+2023-11-19,Cincinnati,Northern Kentucky,90,66,156
+2023-11-19,Drexel,Queens (NC),62,52,114
+2023-11-19,East Carolina,Northeastern,76,82,158
+2023-11-19,Florida Gulf Coast,Kentucky,59,48,107
+2023-11-19,Georgia State,Little Rock,88,77,165
+2023-11-19,Georgia Tech,Kennesaw State,77,38,115
+2023-11-19,Hampton,Norfolk State,45,59,104
+2023-11-19,James Madison,VCU,78,65,143
+2023-11-19,Marquette,St. Peter's,96,36,132
+2023-11-19,Michigan,South Dakota,70,52,122
+2023-11-19,Monmouth,UMass,74,62,136
+2023-11-19,North Carolina A&T,Liberty,56,47,103
+2023-11-19,North Carolina Central,Johnson & Wales (NC),83,50,133
+2023-11-19,Providence,Boston College,56,71,127
+2023-11-19,Quinnipiac,Albany (NY),85,82,167
+2023-11-19,Sacred Heart,Hofstra,63,60,123
+2023-11-19,Siena,Penn,79,85,164
+2023-11-19,South Florida,North Florida,56,55,111
+2023-11-19,Southern Illinois,North Texas,73,79,152
+2023-11-19,St. John's (NY),Manhattan,67,47,114
+2023-11-19,TCU,Army,88,51,139
+2023-11-19,Toledo,Cincinnati,60,71,131
+2023-11-19,Villanova,Temple,90,62,152
+2023-11-19,Winthrop,Elon,78,70,148
+2023-11-19,Belmont,Mississippi State,62,63,125
+2023-11-19,Clemson,Longwood,102,63,165
+2023-11-19,Gardner-Webb,Yale,70,71,141
+2023-11-19,Houston,Grambling,106,74,180
+2023-11-19,Illinois State,St. Francis (IL),89,51,140
+2023-11-19,Incarnate Word,Texas-Rio Grande Valley,67,57,124
+2023-11-19,Northwestern,Southeast Missouri State,76,68,144
+2023-11-19,Presbyterian,ETSU,56,72,128
+2023-11-19,Washington State,Rhode Island,78,57,135
+2023-11-19,Rice,Saint Mary's,73,62,135
+2023-11-19,Youngstown State,Lake Erie,79,57,136
+2023-11-19,Air Force,Omaha,58,56,114
+2023-11-19,San Francisco,DePaul,70,54,124
+2023-11-19,Georgetown,American,88,83,171
+2023-11-19,Stephen F. Austin,Loyola Marymount,86,76,162
+2023-11-19,Ohio State,Western Michigan,73,56,129
+2023-11-19,West Virginia,Youngstown State,94,40,134
+2023-11-19,Abilene Christian,Fordham,59,45,104
+2023-11-19,UC-San Diego,Northern Arizona,69,74,143
+2023-11-19,UCSB,Southern Utah,71,61,132
+2023-11-19,George Mason,Charlotte,49,54,103
+2023-11-19,Georgia Southern,Kennesaw State,92,96,188
+2023-11-19,Howard,Memphis,43,52,95
+2023-11-19,UIC,Aurora,99,48,147
+2023-11-19,Liberty,Vermont,71,61,132
+2023-11-19,Loyola Marymount,San Jose State,53,61,114
+2023-11-19,Utah State,Marshall,83,60,143
+2023-11-19,St. Thomas,Portland State,76,70,146
+2023-11-19,San Diego,Princeton,51,62,113
+2023-11-19,South Florida,Northern Iowa,74,65,139
+2023-11-19,Virginia Tech,Wofford,98,76,174
+2023-11-19,Missouri,Jackson State,72,73,145
+2023-11-19,Akron,Florida International,77,71,148
+2023-11-19,Middle Tennessee,DePaul,71,69,140
+2023-11-19,Grand Canyon,South Carolina,68,75,143
+2023-11-19,Saint Mary's,Xavier,49,66,115
+2023-11-19,San Francisco,Cal State Fullerton,48,54,102
+2023-11-19,Arizona State,Idaho State,72,40,112
+2023-11-19,California Baptist,Cal Poly,67,58,125
+2023-11-19,Missouri State,Kent State,56,52,108
+2023-11-19,South Dakota State,UCF,80,83,163
+2023-11-19,Wichita State,Saint Louis,88,69,157
+2023-11-19,UCSB,Le Moyne,96,72,168
+2023-11-19,Hawaii,Idaho,40,50,90
+2023-11-19,San Diego State,Washington,100,97,197
+2023-11-20,South Carolina,South Dakota State,78,38,116
+2023-11-20,Gonzaga,Purdue,63,73,136
+2023-11-20,Marquette,UCLA,71,69,140
+2023-11-20,Texas,UConn,71,81,152
+2023-11-20,Syracuse,Tennessee,56,73,129
+2023-11-20,LSU,Texas Southern,106,47,153
+2023-11-20,USC,Seton Hall,64,54,118
+2023-11-20,Virginia Tech,UNC Greensboro,72,51,123
+2023-11-20,East Carolina,Ohio State,55,79,134
+2023-11-20,Kentucky,St. Joseph's,96,88,184
+2023-11-20,Richmond,Colorado,59,64,123
+2023-11-20,Ole Miss,Michigan,60,49,109
+2023-11-20,Virginia,Wisconsin,41,65,106
+2023-11-20,Campbell,North Carolina Central,75,78,153
+2023-11-20,Florida A&M,Oregon,54,67,121
+2023-11-20,Florida A&M,California,38,76,114
+2023-11-20,Florida Atlantic,Stetson,50,39,89
+2023-11-20,Fordham,Georgian Court,85,44,129
+2023-11-20,Marshall,Point Park,121,55,176
+2023-11-20,Wake Forest,Saint Louis,94,66,160
+2023-11-20,Southeastern Louisiana,Jackson State,54,63,117
+2023-11-20,Texas A&M,Houston Christian,80,35,115
+2023-11-20,Santa Clara,Mississippi Valley State,81,39,120
+2023-11-20,Butler,Roosevelt,104,50,154
+2023-11-20,Southern Miss,Cal State Fullerton,67,74,141
+2023-11-20,Central Michigan,Siena,70,56,126
+2023-11-20,Georgia,Columbia,73,56,129
+2023-11-20,Iona,High Point,68,82,150
+2023-11-20,Loyola Marymount,Oakland,69,74,143
+2023-11-20,Western Illinois,Stephens,80,51,131
+2023-11-20,Stephen F. Austin,Drake,92,68,160
+2023-11-20,Florida Gulf Coast,Norfolk State,66,69,135
+2023-11-20,Long Beach State,Illinois State,52,61,113
+2023-11-20,Stetson,Milwaukee,85,67,152
+2023-11-20,UNC Wilmington,Murray State,83,81,164
+2023-11-20,Arizona,South Dakota,61,52,113
+2023-11-20,Utah Valley,Cornell,61,74,135
+2023-11-20,East Texas A&M,Utah Tech,84,75,159
+2023-11-20,Vanderbilt,Alabama State,88,42,130
+2023-11-20,Cal State Bakersfield,Sacramento State,75,71,146
+2023-11-20,Hampton,San Jose State,52,71,123
+2023-11-20,Kennesaw State,Northeastern,79,77,156
+2023-11-20,Pacific,Yale,66,59,125
+2023-11-20,Idaho State,The Citadel,61,62,123
+2023-11-20,Louisville,Indiana,66,74,140
+2023-11-20,Florida,Purdue,52,49,101
+2023-11-20,Austin Peay,Tarleton State,59,66,125
+2023-11-20,Canisius,D'Youville,67,59,126
+2023-11-20,Florida International,Marshall,69,80,149
+2023-11-20,UNLV,Florida State,75,83,158
+2023-11-20,Kent State,Fordham,79,72,151
+2023-11-20,Louisiana,Wright State,85,91,176
+2023-11-20,Memphis,Middle Tennessee,57,64,121
+2023-11-20,Bellarmine,Morehead State,51,64,115
+2023-11-20,East Carolina,Georgia Southern,82,64,146
+2023-11-20,George Mason,South Dakota State,73,71,144
+2023-11-20,Georgia Southern,Albany State (GA),97,49,146
+2023-11-20,Oklahoma State,Penn State,80,89,169
+2023-11-20,Stony Brook,Rider,55,48,103
+2023-11-20,Akron,Utah State,62,65,127
+2023-11-20,Bethune-Cookman,Charleston Southern,79,73,152
+2023-11-20,Bryant,Howard,67,61,128
+2023-11-20,Bucknell,Southern Indiana,67,56,123
+2023-11-20,Hofstra,Buffalo,102,68,170
+2023-11-20,UCF,Auburn,60,53,113
+2023-11-20,College of Charleston,Gardner-Webb,90,78,168
+2023-11-20,Dayton,SIU-Edwardsville,75,74,149
+2023-11-20,Howard,DePaul,62,85,147
+2023-11-20,Furman,Southern Wesleyan,96,62,158
+2023-11-20,Iowa State,Southern,78,60,138
+2023-11-20,Jacksonville State,Life,83,31,114
+2023-11-20,Louisiana-Monroe,Ecclesia,103,74,177
+2023-11-20,NJIT,Delaware State,81,72,153
+2023-11-20,Rutgers,Fairfield,54,78,132
+2023-11-20,Saint Francis (PA),Pittsburgh-Greensburg,77,63,140
+2023-11-20,St. Peter's,UMass-Lowell,61,69,130
+2023-11-20,USC Upstate,South Carolina State,58,53,111
+2023-11-20,Southeast Missouri State,Central Arkansas,70,68,138
+2023-11-20,Texas-Rio Grande Valley,North American,92,73,165
+2023-11-20,Texas Tech,UTSA,63,58,121
+2023-11-20,Troy,Sam Houston,86,88,174
+2023-11-20,Wichita State,Omaha,92,86,178
+2023-11-20,Wright State,Slippery Rock,82,45,127
+2023-11-20,Arkansas,Central Arkansas,81,67,148
+2023-11-20,Boise State,Pepperdine,63,47,110
+2023-11-20,Charlotte,UCF,71,74,145
+2023-11-20,Grand Canyon,Montana,71,76,147
+2023-11-20,Houston Christian,UTSA,87,89,176
+2023-11-20,Missouri State,Abilene Christian,87,69,156
+2023-11-20,Missouri,Southern Indiana,96,62,158
+2023-11-20,North Dakota State,Wisconsin-Stout,101,72,173
+2023-11-20,Northern Colorado,North Dakota State,60,67,127
+2023-11-20,Oklahoma State,New Orleans,96,68,164
+2023-11-20,Tennessee State,Midway,87,70,157
+2023-11-20,East Texas A&M,Stonehill,97,86,183
+2023-11-20,Tulsa,South Carolina State,90,70,160
+2023-11-20,West Virginia,SMU,58,70,128
+2023-11-20,UC-Irvine,Eastern Washington,71,63,134
+2023-11-20,Montana State,Green Bay,53,54,107
+2023-11-20,San Diego,Navy,67,59,126
+2023-11-20,Tulane,Bradley,77,80,157
+2023-11-20,Pacific,North Dakota,71,73,144

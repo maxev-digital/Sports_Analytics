@@ -8,12 +8,19 @@ import stripe
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 from dotenv import load_dotenv
+from pathlib import Path
 
-# Load environment variables
-load_dotenv()
+# Load environment variables from backend/.env
+backend_dir = Path(__file__).parent
+env_path = backend_dir / '.env'
+load_dotenv(dotenv_path=env_path)
 
 # Initialize Stripe with secret key
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+if not stripe.api_key:
+    print("WARNING: STRIPE_SECRET_KEY not found in environment variables!")
+else:
+    print(f"Stripe initialized with API key: {stripe.api_key[:20]}...")
 
 # Price IDs from environment
 STRIPE_PRO_PRICE_ID = os.getenv("STRIPE_PRO_PRICE_ID")

@@ -1,0 +1,19 @@
+Metric,Value
+Total Games,396
+Mean Deviation,0.72 pts
+Mean Absolute Error,13.91 pts
+Std Deviation,17.53 pts
+,
+Within 5 pts,86 (21.7%)
+Within 10 pts,183 (46.2%)
+Within 15 pts,247 (62.4%)
+Within 20 pts,307 (77.5%)
+Within 25 pts,334 (84.3%)
+Within 30 pts,360 (90.9%)
+,
+Over 5 pts,310 (78.3%)
+Over 10 pts,213 (53.8%)
+Over 15 pts,149 (37.6%)
+Over 20 pts,89 (22.5%)
+Over 25 pts,62 (15.7%)
+Over 30 pts,36 (9.1%)

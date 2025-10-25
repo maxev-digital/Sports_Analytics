@@ -128,6 +128,29 @@ class NHLMomentumStats(BaseModel):
     penalty_minutes: Optional[int] = None  # Total penalty minutes
     blocked_shots: Optional[int] = None  # Shots blocked (defensive metric)
 
+class NBAMomentumStats(BaseModel):
+    """Live momentum statistics for NBA games"""
+    momentum_score: float  # 0-100 scale (higher = more momentum)
+    points_last_5min: int  # Points scored in last ~5 minutes
+    fg_pct_recent: float  # Field goal % in recent possessions
+    offensive_rebounds: int  # Offensive rebounds (second chance points)
+    turnovers: int  # Turnovers in recent play
+    steals: int  # Steals forced
+    assists: int  # Assists in recent play
+    possession_indicator: Optional[str] = None  # "ATTACKING", "DEFENDING", "NEUTRAL"
+
+class NFLMomentumStats(BaseModel):
+    """Live momentum statistics for NFL/NCAAF games"""
+    momentum_score: float  # 0-100 scale (higher = more momentum)
+    yards_per_play: float  # Average yards per play on recent drives
+    recent_yards: int  # Total yards gained on recent drives
+    recent_points: int  # Points scored on recent drives
+    touchdowns: int  # TDs on recent drives
+    field_goals: int  # Field goals on recent drives
+    turnovers: int  # Turnovers on recent drives
+    red_zone_efficiency: str  # "2/3" format (scores/trips)
+    drive_state: Optional[str] = None  # "ATTACKING", "DEFENDING", "NEUTRAL"
+
 class NHLTeamStats(BaseModel):
     """Season statistics for NHL teams"""
     team_id: str
@@ -261,6 +284,87 @@ class LiveGame(BaseModel):
     away_nhl_momentum: Optional[NHLMomentumStats] = None  # NHL-specific momentum
     home_nhl_stats: Optional[NHLTeamStats] = None  # NHL-specific season stats
     away_nhl_stats: Optional[NHLTeamStats] = None  # NHL-specific season stats
+    home_nba_momentum: Optional[NBAMomentumStats] = None  # NBA-specific momentum
+    away_nba_momentum: Optional[NBAMomentumStats] = None  # NBA-specific momentum
+    home_nfl_momentum: Optional[NFLMomentumStats] = None  # NFL-specific momentum
+    away_nfl_momentum: Optional[NFLMomentumStats] = None  # NFL-specific momentum
+    home_ncaaf_momentum: Optional[NFLMomentumStats] = None  # NCAAF-specific momentum (uses same model as NFL)
+    away_ncaaf_momentum: Optional[NFLMomentumStats] = None  # NCAAF-specific momentum (uses same model as NFL)
     home_mlb_stats: Optional[MLBTeamStats] = None  # MLB-specific season stats
     away_mlb_stats: Optional[MLBTeamStats] = None  # MLB-specific season stats
+
+
+# ============================================================================
+# PLAYER PROPS MODELS
+# ============================================================================
+
+class BookmakerOdds(BaseModel):
+    """Odds from a single bookmaker for a player prop"""
+    bookmaker: str
+    over_odds: Optional[int] = None  # American odds (e.g., -110)
+    under_odds: Optional[int] = None  # American odds (e.g., -110)
+
+class PlayerPropOdds(BaseModel):
+    """Market odds for a single player prop"""
+    player_name: str
+    prop_type: str  # 'points', 'rebounds', 'assists', 'threes', etc.
+    line: float  # The over/under line (e.g., 25.5)
+    bookmakers: list[BookmakerOdds]  # All available bookmaker odds
+    best_over_odds: Optional[int] = None  # Best available over odds
+    best_under_odds: Optional[int] = None  # Best available under odds
+    best_over_book: Optional[str] = None  # Bookmaker with best over
+    best_under_book: Optional[str] = None  # Bookmaker with best under
+
+class ProjectionFactors(BaseModel):
+    """Detailed breakdown of projection factors"""
+    baseline: float  # Season average
+    recent_avg: float  # Recent games average
+    trend: str  # 'increasing', 'decreasing', 'stable'
+    matchup_adjustment: float  # Adjustment for opponent defense
+    pace_adjustment: float  # Adjustment for game pace
+    total_adjustment: float  # Total adjustment applied
+
+class PlayerPropProjection(BaseModel):
+    """Our projection for a player prop"""
+    prop_type: str  # 'points', 'rebounds', 'assists', 'threes'
+    projection: float  # Our projected value
+    confidence: str  # 'HIGH', 'MEDIUM', 'LOW'
+    confidence_score: float  # Numerical confidence (0.0-1.0)
+    factors: ProjectionFactors  # Detailed breakdown
+    reasoning: str  # Human-readable explanation
+
+class PlayerPropEdge(BaseModel):
+    """Edge analysis comparing projection to market line"""
+    edge: float  # Difference (projection - line)
+    edge_pct: float  # Percentage edge
+    recommendation: Optional[str] = None  # 'OVER', 'UNDER', or None
+    bet_strength: Optional[str] = None  # 'STRONG', 'MODERATE', 'WEAK', or None
+
+class PlayerProp(BaseModel):
+    """Complete player prop with odds, projection, and edge"""
+    player_name: str
+    team: str
+    opponent: Optional[str] = None
+    game_time: Optional[datetime] = None
+    prop_type: str
+    market_odds: PlayerPropOdds  # Market odds from bookmakers
+    projection: PlayerPropProjection  # Our projection
+    edge: PlayerPropEdge  # Edge analysis
+
+class PlayerPropsGame(BaseModel):
+    """All player props for a single game"""
+    event_id: str
+    sport_key: str
+    home_team: str
+    away_team: str
+    commence_time: datetime
+    props: list[PlayerProp]  # All player props for this game
+
+class PlayerPropsResponse(BaseModel):
+    """API response for player props"""
+    games: list[PlayerPropsGame]  # Props organized by game
+    total_props: int  # Total number of props with edges
+    total_strong_bets: int  # Number of strong bet recommendations
+    total_moderate_bets: int  # Number of moderate bet recommendations
+    last_updated: datetime  # When props were last fetched/updated
 
