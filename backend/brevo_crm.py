@@ -32,6 +32,7 @@ class BrevoClient:
         # Initialize API instances
         self.contacts_api = sib_api_v3_sdk.ContactsApi(sib_api_v3_sdk.ApiClient(configuration))
         self.lists_api = sib_api_v3_sdk.ContactsApi(sib_api_v3_sdk.ApiClient(configuration))
+        self.transactional_api = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
 
         self.enabled = True
         logger.info("Brevo CRM client initialized successfully")
@@ -257,6 +258,147 @@ class BrevoClient:
 
         return self.update_contact(email, attributes)
 
+    def send_welcome_email_with_extension(
+        self,
+        email: str,
+        full_name: str
+    ) -> bool:
+        """
+        Send welcome email with download links for Chrome extension
+
+        Args:
+            email: Recipient email
+            full_name: User's full name
+
+        Returns:
+            bool: True if successful
+        """
+        if not self.enabled:
+            return False
+
+        try:
+            import base64
+
+            # Split name for personalization
+            name_parts = full_name.split(maxsplit=1)
+            firstname = name_parts[0] if name_parts else "there"
+
+            # Download URLs for extension and guide
+            # Use environment variable for website URL (defaults to production)
+            website_url = os.getenv("WEBSITE_URL", "https://max-ev-sports.com")
+            extension_download_url = f"{website_url}/downloads/MAX-EV_Sports_Extension.zip"
+            guide_download_url = f"{website_url}/downloads/Installation_Guide.pdf"
+
+            # Email HTML content
+            html_content = f"""
+            <h2>Hi {firstname},</h2>
+
+            <p>Welcome to MAX-EV Sports! 🎉</p>
+
+            <p>You now have access to our professional sports betting analytics platform and exclusive Chrome extension for real-time opportunity alerts.</p>
+
+            <h3>What's Included:</h3>
+            <ul>
+                <li>✅ <strong>Web Platform</strong> - Access live odds, projections, and analytics at <a href="https://www.max-ev-sports.com/">https://www.max-ev-sports.com/</a></li>
+                <li>✅ <strong>Chrome Extension</strong> - Get instant alerts for arbitrage, middles, steam moves, and more</li>
+                <li>✅ <strong>Real-Time Data</strong> - Updated every 10 seconds with the latest opportunities</li>
+                <li>✅ <strong>Professional Tools</strong> - Built by professional sports bettors for serious players</li>
+            </ul>
+
+            <hr>
+
+            <h3>Get Started in 3 Steps:</h3>
+
+            <h4>1. Access Your Account</h4>
+            <ul>
+                <li><strong>Website:</strong> <a href="https://www.max-ev-sports.com/">https://www.max-ev-sports.com/</a></li>
+                <li><strong>Email:</strong> {email}</li>
+            </ul>
+
+            <h4>2. Install the Chrome Extension</h4>
+            <p><strong>Download your files:</strong></p>
+
+            <p style="margin: 20px 0;">
+                <a href="{extension_download_url}" style="display: inline-block; background-color: #4CAF50; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">📦 Download Chrome Extension</a>
+            </p>
+
+            <p style="margin: 20px 0;">
+                <a href="{guide_download_url}" style="display: inline-block; background-color: #2196F3; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">📄 Download Installation Guide</a>
+            </p>
+
+            <p><strong>Quick Install:</strong></p>
+            <ol>
+                <li>Extract the zip file</li>
+                <li>Open Chrome → Extensions (chrome://extensions/)</li>
+                <li>Enable "Developer mode"</li>
+                <li>Click "Load unpacked" and select the "extension" folder</li>
+                <li>Done! The extension icon will appear in your toolbar</li>
+            </ol>
+
+            <h4>3. Start Finding Opportunities</h4>
+            <ul>
+                <li>Open 2-3 sportsbook tabs (DraftKings, FanDuel, BetMGM)</li>
+                <li>Click the extension icon to see live opportunities</li>
+                <li>Enable audio alerts in settings for instant notifications</li>
+            </ul>
+
+            <hr>
+
+            <h3>What You'll Find:</h3>
+            <ul>
+                <li>🟢 <strong>Arbitrage Opportunities</strong> - Risk-free profits (2-5% returns)</li>
+                <li>🔵 <strong>Middle Opportunities</strong> - Bet both sides with a gap (potential to win both)</li>
+                <li>🟠 <strong>Steam Moves</strong> - Sharp money detection (follow the pros)</li>
+                <li>🔴 <strong>Goalie Pull Alerts</strong> - NHL empty net betting (8-12% edge)</li>
+            </ul>
+
+            <hr>
+
+            <h3>Pro Tips for Success:</h3>
+            <ol>
+                <li><strong>Have Multiple Books</strong> - At least 3-5 accounts (DraftKings, FanDuel, BetMGM, Caesars, BetRivers)</li>
+                <li><strong>Act Quickly</strong> - Arbitrage disappears in 30-60 seconds</li>
+                <li><strong>Start Small</strong> - Test with smaller amounts until you're comfortable</li>
+                <li><strong>Keep Tabs Ready</strong> - Have sportsbook tabs open for faster execution</li>
+                <li><strong>Track Your Bets</strong> - Use our bet tracking feature to monitor performance</li>
+            </ol>
+
+            <hr>
+
+            <h3>Need Help?</h3>
+            <p>Reply to this email or contact: <a href="mailto:support@max-ev-sports.com">support@max-ev-sports.com</a></p>
+
+            <p><strong>Let's start finding profitable opportunities together!</strong></p>
+
+            <p>The MAX-EV Sports Team</p>
+
+            <hr>
+
+            <p><em>P.S. The extension auto-updates, so you'll always have the latest features. No reinstallation needed!</em></p>
+            """
+
+            # Create email object (without attachments - users download from website)
+            sender_email = os.getenv("BREVO_SENDER_EMAIL", "noreply@max-ev-sports.com")
+            send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
+                to=[{"email": email, "name": full_name}],
+                sender={"email": sender_email, "name": "MAX-EV Sports"},
+                subject="Welcome to MAX-EV Sports - Your Chrome Extension is Ready!",
+                html_content=html_content
+                # Note: No 'attachment' parameter - users download from website instead
+            )
+
+            # Send email
+            api_response = self.transactional_api.send_transac_email(send_smtp_email)
+            logger.info(f"Successfully sent welcome email with extension to: {email}")
+            return True
+
+        except ApiException as e:
+            logger.error(f"Error sending welcome email via Brevo: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"Unexpected error sending welcome email: {e}")
+            return False
+
 
 # Load environment variables before initializing client
 from dotenv import load_dotenv
@@ -285,3 +427,8 @@ def sync_trial_expired_to_brevo(email: str):
 def sync_cancellation_to_brevo(email: str):
     """Sync subscription cancellation to Brevo CRM"""
     return brevo_client.sync_cancellation(email)
+
+
+def send_welcome_email(email: str, full_name: str):
+    """Send welcome email with Chrome extension download links"""
+    return brevo_client.send_welcome_email_with_extension(email, full_name)
