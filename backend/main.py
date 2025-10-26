@@ -24,7 +24,7 @@ import json
 from datetime import datetime
 from dotenv import load_dotenv
 import auth  # Authentication module
-from brevo_crm import sync_signup_to_brevo  # Brevo CRM integration
+from brevo_crm import sync_signup_to_brevo, send_welcome_email  # Brevo CRM integration
 
 # Betting ensemble temporarily disabled to avoid import conflicts
 # from backend.models.ensemble.betting_ensemble import BettingEnsemble, GameData, EnsemblePrediction
@@ -626,6 +626,14 @@ async def register(request: Request):
                 trial_days=7
             )
             logger.info(f"Successfully synced new signup to Brevo: {email}")
+
+            # Send welcome email with Chrome extension download links
+            send_welcome_email(
+                email=email,
+                full_name=full_name
+            )
+            logger.info(f"Successfully sent welcome email to: {email}")
+
         except Exception as brevo_error:
             # Don't fail registration if Brevo sync fails
             logger.error(f"Failed to sync to Brevo (non-critical): {brevo_error}")
@@ -867,14 +875,31 @@ async def stripe_webhook(request: Request):
         if result['processed']:
             # Update database based on event
             if result['action'] == 'create_subscription':
-                # Create subscription in database
-                SubscriptionDB.create_subscription(
-                    user_id=result['user_id'],
-                    stripe_subscription_id=result['subscription_id'],
-                    stripe_customer_id=result['customer_id'],
-                    tier=result['tier'],
-                    status=result['status']
-                )
+                # Get user_id - if not in webhook metadata, look up by customer_id
+                user_id = result['user_id']
+                if not user_id and result['customer_id']:
+                    # Try to find user by stripe_customer_id
+                    from subscription_db import get_db_connection
+                    with get_db_connection() as conn:
+                        cursor = conn.cursor()
+                        cursor.execute('SELECT id FROM users WHERE stripe_customer_id = ?', (result['customer_id'],))
+                        row = cursor.fetchone()
+                        if row:
+                            user_id = row['id']
+                            logger.info(f"Found user_id {user_id} for customer {result['customer_id']}")
+
+                if user_id:
+                    # Create subscription in database
+                    SubscriptionDB.create_subscription(
+                        user_id=user_id,
+                        stripe_subscription_id=result['subscription_id'],
+                        stripe_customer_id=result['customer_id'],
+                        tier=result['tier'],
+                        status=result['status']
+                    )
+                    logger.info(f"Created subscription for user {user_id}, tier {result['tier']}")
+                else:
+                    logger.warning(f"Could not find user_id for customer {result['customer_id']}")
 
             elif result['action'] == 'update_subscription':
                 # Update subscription

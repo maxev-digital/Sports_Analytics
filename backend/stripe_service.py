@@ -23,8 +23,11 @@ else:
     print(f"Stripe initialized with API key: {stripe.api_key[:20]}...")
 
 # Price IDs from environment
-STRIPE_PRO_PRICE_ID = os.getenv("STRIPE_PRO_PRICE_ID")
+STRIPE_STARTER_PRICE_ID = os.getenv("STRIPE_STARTER_PRICE_ID")
+STRIPE_SEMIPRO_PRICE_ID = os.getenv("STRIPE_SEMIPRO_PRICE_ID")
+STRIPE_PROFESSIONAL_PRICE_ID = os.getenv("STRIPE_PROFESSIONAL_PRICE_ID")
 STRIPE_ELITE_PRICE_ID = os.getenv("STRIPE_ELITE_PRICE_ID")
+STRIPE_ELITEPRO_PRICE_ID = os.getenv("STRIPE_ELITEPRO_PRICE_ID")
 DOMAIN = os.getenv("DOMAIN", "http://localhost:5173")
 
 
@@ -246,19 +249,25 @@ class StripeService:
     def get_price_tier(price_id: str) -> str:
         """
         Determine subscription tier from price ID
-        
+
         Args:
             price_id: Stripe price ID
-            
+
         Returns:
-            Tier name ('free', 'pro', 'elite')
+            Tier name ('trial', 'starter', 'semipro', 'professional', 'elite', 'elitepro')
         """
-        if price_id == STRIPE_PRO_PRICE_ID:
-            return 'pro'
+        if price_id == STRIPE_STARTER_PRICE_ID:
+            return 'starter'
+        elif price_id == STRIPE_SEMIPRO_PRICE_ID:
+            return 'semipro'
+        elif price_id == STRIPE_PROFESSIONAL_PRICE_ID:
+            return 'professional'
         elif price_id == STRIPE_ELITE_PRICE_ID:
             return 'elite'
+        elif price_id == STRIPE_ELITEPRO_PRICE_ID:
+            return 'elitepro'
         else:
-            return 'free'
+            return 'trial'
 
     @staticmethod
     def create_customer(email: str, user_id: str, name: str = None) -> Optional[str]:

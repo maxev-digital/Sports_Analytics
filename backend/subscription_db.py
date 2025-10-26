@@ -384,24 +384,88 @@ class SubscriptionDB:
     def has_feature_access(user_id: str, feature: str) -> bool:
         """Check if user has access to a specific feature"""
         tier = SubscriptionDB.get_subscription_tier(user_id)
-        
-        # Feature access matrix
+
+        # Feature access matrix - each tier inherits from previous tiers
         features = {
-            'free': ['live_games_limited', 'basic_odds'],
-            'pro': [
-                'live_games_limited', 'basic_odds',
-                'all_sports', 'alerts', 'arbitrage', 'steam_moves', 'line_movements',
-                'email_notifications', 'unlimited_views'
+            'trial': ['live_games_limited', 'basic_odds', 'basic_tracker'],
+            'starter': [
+                'live_games_limited', 'basic_odds', 'basic_tracker',
+                'all_major_sports', 'email_notifications', 'ev_calculator',
+                'no_vig_calculator', 'basic_line_tracker', 'advanced_tracker_100',
+                'export_csv'
+            ],
+            'semipro': [
+                'live_games_limited', 'basic_odds', 'basic_tracker',
+                'all_major_sports', 'email_notifications', 'ev_calculator',
+                'no_vig_calculator', 'basic_line_tracker', 'advanced_tracker_100',
+                'export_csv',
+                'advanced_analytics_dashboard', 'advanced_line_tracker',
+                'steam_moves', 'market_consensus', 'arbitrage', 'middles',
+                'advanced_tracker_unlimited', 'clv_tracker', 'roi_dashboard',
+                'international_markets', 'sms_notifications', 'position_sizing'
+            ],
+            'professional': [
+                'live_games_limited', 'basic_odds', 'basic_tracker',
+                'all_major_sports', 'email_notifications', 'ev_calculator',
+                'no_vig_calculator', 'basic_line_tracker', 'advanced_tracker_100',
+                'export_csv',
+                'advanced_analytics_dashboard', 'advanced_line_tracker',
+                'steam_moves', 'market_consensus', 'arbitrage', 'middles',
+                'advanced_tracker_unlimited', 'clv_tracker', 'roi_dashboard',
+                'international_markets', 'sms_notifications', 'position_sizing',
+                'browser_extension', 'player_props', 'sgp_builder',
+                'prizepicks_comparison', 'ml_projections', 'weather_analysis',
+                'injury_alerts', 'kelly_criterion', 'hedge_calculator',
+                'clv_predictor', 'priority_support', 'custom_alerts',
+                'multi_account_tracking'
             ],
             'elite': [
-                'live_games_limited', 'basic_odds',
-                'all_sports', 'alerts', 'arbitrage', 'steam_moves', 'line_movements',
-                'email_notifications', 'unlimited_views',
-                'goalie_pulls', 'api_access', 'sms_notifications', 'custom_alerts',
-                'advanced_analytics'
+                'live_games_limited', 'basic_odds', 'basic_tracker',
+                'all_major_sports', 'email_notifications', 'ev_calculator',
+                'no_vig_calculator', 'basic_line_tracker', 'advanced_tracker_100',
+                'export_csv',
+                'advanced_analytics_dashboard', 'advanced_line_tracker',
+                'steam_moves', 'market_consensus', 'arbitrage', 'middles',
+                'advanced_tracker_unlimited', 'clv_tracker', 'roi_dashboard',
+                'international_markets', 'sms_notifications', 'position_sizing',
+                'browser_extension', 'player_props', 'sgp_builder',
+                'prizepicks_comparison', 'ml_projections', 'weather_analysis',
+                'injury_alerts', 'kelly_criterion', 'hedge_calculator',
+                'clv_predictor', 'priority_support', 'custom_alerts',
+                'multi_account_tracking',
+                'desktop_client', 'api_access_unlimited', 'custom_models',
+                'account_manager', 'custom_integrations', 'backtesting',
+                'ml_models', 'automated_betting', 'custom_data_feeds',
+                'white_glove_onboarding', 'priority_features', 'sla_guarantee',
+                'custom_dashboards', 'offshore_books', 'private_channel'
+            ],
+            'elitepro': [
+                'live_games_limited', 'basic_odds', 'basic_tracker',
+                'all_major_sports', 'email_notifications', 'ev_calculator',
+                'no_vig_calculator', 'basic_line_tracker', 'advanced_tracker_100',
+                'export_csv',
+                'advanced_analytics_dashboard', 'advanced_line_tracker',
+                'steam_moves', 'market_consensus', 'arbitrage', 'middles',
+                'advanced_tracker_unlimited', 'clv_tracker', 'roi_dashboard',
+                'international_markets', 'sms_notifications', 'position_sizing',
+                'browser_extension', 'player_props', 'sgp_builder',
+                'prizepicks_comparison', 'ml_projections', 'weather_analysis',
+                'injury_alerts', 'kelly_criterion', 'hedge_calculator',
+                'clv_predictor', 'priority_support', 'custom_alerts',
+                'multi_account_tracking',
+                'desktop_client', 'api_access_unlimited', 'custom_models',
+                'account_manager', 'custom_integrations', 'backtesting',
+                'ml_models', 'automated_betting', 'custom_data_feeds',
+                'white_glove_onboarding', 'priority_features', 'sla_guarantee',
+                'custom_dashboards', 'offshore_books', 'private_channel',
+                'enhanced_desktop_client', 'offshore_servers', 'direct_sportsbook_api',
+                'fastest_ai', 'realtime_ml', 'distributed_servers',
+                'sub_50ms_detection', 'dedicated_gpu', 'sharp_alerts',
+                'syndicate_feeds', 'trading_desk', 'custom_algorithms',
+                'institutional_infra', 'reserved_capacity', 'circa_vip_invite'
             ]
         }
-        
+
         return feature in features.get(tier, [])
 
 
