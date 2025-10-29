@@ -151,21 +151,21 @@ export function Dashboard() {
     new Date(a.state.commence_time).getTime() - new Date(b.state.commence_time).getTime()
   );
 
-  // Get league logo
-  const getLeagueLogo = (sport: Sport) => {
+  // Get league emoji (no copyrighted logos)
+  const getLeagueEmoji = (sport: Sport) => {
     switch(sport) {
       case 'NBA':
-        return 'https://cdn.nba.com/logos/leagues/logo-nba.svg';
+        return '🏀';
       case 'NHL':
-        return 'https://assets.nhle.com/logos/nhl.svg';
+        return '🏒';
       case 'NCAAF':
-        return 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/ncaa_conf/500/23.png&h=100&w=100';
+        return '🏈';
       case 'NFL':
-        return 'https://a.espncdn.com/i/teamlogos/leagues/500/nfl.png';
+        return '🏈';
       case 'MLB':
-        return 'https://a.espncdn.com/i/teamlogos/leagues/500/mlb.png';
+        return '⚾';
       default:
-        return '';
+        return '🏀';
     }
   };
 
@@ -187,11 +187,9 @@ export function Dashboard() {
         <div className="flex items-center justify-between mb-4">
           {selectedSport !== 'ALL' && (
             <div className="flex items-center gap-4">
-              <img
-                src={getLeagueLogo(selectedSport)}
-                alt={`${selectedSport} logo`}
-                className="h-16 w-16 object-contain"
-              />
+              <div className="text-5xl">
+                {getLeagueEmoji(selectedSport)}
+              </div>
               <div>
                 <h1 className="text-3xl font-bold text-white">{selectedSport} Games</h1>
                 <div className="flex items-center gap-3">

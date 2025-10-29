@@ -156,18 +156,18 @@ export function MultiSport() {
     return styles[confidence as keyof typeof styles] || styles.LOW;
   };
 
-  const getSportLogo = (sport: string) => {
+  const getSportEmoji = (sport: string) => {
     switch(sport.toLowerCase()) {
       case 'nba':
-        return 'https://a.espncdn.com/i/teamlogos/leagues/500/nba.png';
+        return '🏀';
       case 'nhl':
-        return 'https://a.espncdn.com/i/teamlogos/leagues/500/nhl.png';
+        return '🏒';
       case 'nfl':
-        return 'https://a.espncdn.com/i/teamlogos/leagues/500/nfl.png';
+        return '🏈';
       case 'mlb':
-        return 'https://a.espncdn.com/i/teamlogos/leagues/500/mlb.png';
+        return '⚾';
       default:
-        return 'https://a.espncdn.com/i/teamlogos/leagues/500/nba.png';
+        return '🏀';
     }
   };
 
@@ -210,7 +210,7 @@ export function MultiSport() {
                   : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:border-slate-600'
               }`}
             >
-              <img src={getSportLogo(sport)} alt={sport} className="w-5 h-5" />
+              <span className="text-lg">{getSportEmoji(sport)}</span>
               {sport.toUpperCase()}
               <span className="text-sm opacity-75">
                 ({predictions.filter(p => p.sport.toLowerCase() === sport).length})
@@ -223,7 +223,7 @@ export function MultiSport() {
         <div className="grid gap-6">
           {filteredPredictions.length === 0 ? (
             <div className="bg-slate-800 rounded border-2 border-slate-700 p-12 text-center">
-              <img src={getSportLogo(activeTab)} alt={activeTab} className="w-24 h-24 mx-auto mb-4 opacity-50" />
+              <div className="text-6xl mb-4 opacity-50">{getSportEmoji(activeTab)}</div>
               <h3 className="text-xl font-semibold text-slate-300 mb-2">
                 No {activeTab.toUpperCase()} Games Available
               </h3>
@@ -244,7 +244,7 @@ export function MultiSport() {
                       {pred.away_team} @ {pred.home_team}
                     </div>
                     <div className="text-sm text-slate-400 flex items-center gap-2">
-                      <img src={getSportLogo(pred.sport)} alt={pred.sport} className="w-4 h-4" />
+                      <span>{getSportEmoji(pred.sport)}</span>
                       {pred.sport} • {formatDate(pred.game_date)}
                     </div>
                   </div>
@@ -434,7 +434,7 @@ export function MultiSport() {
                 <div key={sport} className="bg-slate-800 rounded border-2 border-slate-700 p-6 hover:border-blue-600 transition-all">
                   {/* Sport Header */}
                   <div className="flex items-center gap-3 mb-4 pb-3 border-b-2 border-slate-700">
-                    <img src={getSportLogo(sport.toLowerCase())} alt={sport} className="w-8 h-8" />
+                    <span className="text-2xl">{getSportEmoji(sport.toLowerCase())}</span>
                     <h3 className="text-xl font-bold text-white">{sport}</h3>
                   </div>
 

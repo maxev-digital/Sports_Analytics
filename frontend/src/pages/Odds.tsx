@@ -238,7 +238,7 @@ export function Odds() {
                       index < bookmakers.length - 1 ? 'border-r border-slate-600' : ''
                     }`}>
                       <BookmakerLogo
-                        bookmaker={bookmaker}
+                        bookmakerKey={bookmaker}
                         size="md"
                         showName={false}
                       />

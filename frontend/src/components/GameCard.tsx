@@ -6,6 +6,7 @@ import { openSportsbook } from '../utils/deepLinking';
 import { getGameSpecificUrl } from '../utils/gameUrls';
 import { trackBetClick } from '../utils/betTracking';
 import { useAuth } from '../contexts/AuthContext';
+import { MomentumBar } from './MomentumBar';
 
 interface GameCardProps {
   game: LiveGame;
@@ -206,139 +207,7 @@ export function GameCard({ game }: GameCardProps) {
                      state.sport_key?.includes('baseball_mlb') ? 'MLB' :
                      state.sport_key?.includes('basketball_nba') ? 'NBA' : 'NBA';
 
-  // Get team logo URLs using a logo service
-  const getTeamLogo = (teamName: string, sport: string) => {
-    // Clean team name for logo lookup - normalize to lowercase with spaces
-    const cleanName = teamName.toLowerCase();
-
-    if (sport === 'NHL') {
-      // Use ESPN's NHL team logos
-      const nhlTeams: Record<string, string> = {
-        'anaheim ducks': 'ana', 'arizona coyotes': 'ari', 'boston bruins': 'bos',
-        'buffalo sabres': 'buf', 'calgary flames': 'cgy', 'carolina hurricanes': 'car',
-        'chicago blackhawks': 'chi', 'colorado avalanche': 'col', 'columbus blue jackets': 'cbj',
-        'dallas stars': 'dal', 'detroit red wings': 'det', 'edmonton oilers': 'edm',
-        'florida panthers': 'fla', 'los angeles kings': 'la', 'minnesota wild': 'min',
-        'montréal canadiens': 'mtl', 'montreal canadiens': 'mtl', 'nashville predators': 'nsh',
-        'new jersey devils': 'njd', 'new york islanders': 'nyi', 'new york rangers': 'nyr',
-        'ottawa senators': 'ott', 'philadelphia flyers': 'phi', 'pittsburgh penguins': 'pit',
-        'san jose sharks': 'sj', 'seattle kraken': 'sea', 'st louis blues': 'stl',
-        'st. louis blues': 'stl', 'tampa bay lightning': 'tb', 'toronto maple leafs': 'tor',
-        'vancouver canucks': 'van', 'vegas golden knights': 'vgk', 'washington capitals': 'wsh',
-        'winnipeg jets': 'wpg', 'utah mammoth': 'utah', 'utah hockey club': 'utah'
-      };
-      const abbr = nhlTeams[cleanName];
-      return abbr ? `https://a.espncdn.com/i/teamlogos/nhl/500/${abbr}.png` : '';
-    } else if (sport === 'NCAAF') {
-      // Use ESPN's NCAAF team logos
-      const ncaafTeams: Record<string, string> = {
-        'alabama crimson tide': 'ala', 'arizona wildcats': 'ariz', 'arizona state sun devils': 'asu',
-        'arkansas razorbacks': 'ark', 'auburn tigers': 'aub', 'baylor bears': 'bay',
-        'boise state broncos': 'bsu', 'boston college eagles': 'bc', 'bowling green falcons': 'bgsu',
-        'buffalo bulls': 'buf', 'california golden bears': 'cal', 'central michigan chippewas': 'cmu',
-        'cincinnati bearcats': 'cin', 'clemson tigers': 'clem', 'colorado buffaloes': 'col',
-        'duke blue devils': 'duke', 'east carolina pirates': 'ecu', 'florida gators': 'fla',
-        'florida state seminoles': 'fsu', 'fresno state bulldogs': 'fres', 'georgia bulldogs': 'uga',
-        'georgia tech yellow jackets': 'gt', 'houston cougars': 'hou', 'illinois fighting illini': 'ill',
-        'indiana hoosiers': 'ind', 'iowa hawkeyes': 'iowa', 'iowa state cyclones': 'isu',
-        'kansas jayhawks': 'kan', 'kansas state wildcats': 'ksu', 'kentucky wildcats': 'uk',
-        'louisiana ragin cajuns': 'ul', 'louisville cardinals': 'lou', 'lsu tigers': 'lsu',
-        'marshall thundering herd': 'mar', 'maryland terrapins': 'md', 'memphis tigers': 'mem',
-        'miami hurricanes': 'mia', 'michigan wolverines': 'mich', 'michigan state spartans': 'msu',
-        'minnesota golden gophers': 'minn', 'mississippi state bulldogs': 'miss', 'missouri tigers': 'miz',
-        'nc state wolfpack': 'ncst', 'nebraska cornhuskers': 'neb', 'nevada wolf pack': 'nev',
-        'north carolina tar heels': 'unc', 'northwestern wildcats': 'nw', 'notre dame fighting irish': 'nd',
-        'ohio state buckeyes': 'osu', 'oklahoma sooners': 'okla', 'oklahoma state cowboys': 'okst',
-        'ole miss rebels': 'miss', 'oregon ducks': 'ore', 'oregon state beavers': 'orst',
-        'penn state nittany lions': 'psu', 'pittsburgh panthers': 'pitt', 'purdue boilermakers': 'pur',
-        'rutgers scarlet knights': 'rutg', 'san diego state aztecs': 'sdsu', 'south carolina gamecocks': 'sc',
-        'smu mustangs': 'smu', 'stanford cardinal': 'stan', 'syracuse orange': 'syr',
-        'tcu horned frogs': 'tcu', 'temple owls': 'tem', 'tennessee volunteers': 'tenn',
-        'texas longhorns': 'tex', 'texas a&m aggies': 'tamu', 'texas tech red raiders': 'tt',
-        'toledo rockets': 'tol', 'troy trojans': 'troy', 'tulane green wave': 'tul',
-        'ucla bruins': 'ucla', 'usc trojans': 'usc', 'utah utes': 'utah',
-        'vanderbilt commodores': 'van', 'virginia cavaliers': 'uva', 'virginia tech hokies': 'vt',
-        'wake forest demon deacons': 'wake', 'washington huskies': 'wash', 'washington state cougars': 'wsu',
-        'west virginia mountaineers': 'wvu', 'wisconsin badgers': 'wisc', 'wyoming cowboys': 'wyo',
-        'james madison dukes': 'jmu', 'liberty flames': 'lib', 'georgia state panthers': 'gast',
-        // Additional FBS teams
-        'umass minutemen': 'umass', 'kent state golden flashes': 'kent', 'air force falcons': 'afa',
-        'unlv rebels': 'unlv', 'old dominion monarchs': 'odu', 'ball state cardinals': 'ball',
-        'western michigan broncos': 'wmu', 'appalachian state mountaineers': 'app', 'navy midshipmen': 'navy',
-        'uab blazers': 'uab', 'florida atlantic owls': 'fau', 'ul monroe warhawks': 'ulm',
-        'coastal carolina chanticleers': 'ccu', 'san jose state spartans': 'sjsu', 'rice owls': 'rice',
-        'utsa roadrunners': 'utsa', 'byu cougars': 'byu', 'texas state bobcats': 'txst',
-        'new mexico lobos': 'unm', 'utah state aggies': 'usu', 'hawaii rainbow warriors': 'haw',
-        'new mexico state aggies': 'nmsu', 'arkansas state red wolves': 'arst', 'south alabama jaguars': 'usa',
-        'florida international panthers': 'fiu', 'western kentucky hilltoppers': 'wku',
-        'jacksonville state gamecocks': 'jvst', 'utep miners': 'utep', 'sam houston state bearkats': 'shsu',
-        'tulsa golden hurricane': 'tulsa', 'delaware blue hens': 'del'
-      };
-      const abbr = ncaafTeams[cleanName];
-      return abbr ? `https://a.espncdn.com/i/teamlogos/ncaa/500/${abbr}.png` : '';
-    } else if (sport === 'NFL') {
-      // Use ESPN's NFL team logos
-      const nflTeams: Record<string, string> = {
-        'arizona cardinals': 'ari', 'atlanta falcons': 'atl', 'baltimore ravens': 'bal',
-        'buffalo bills': 'buf', 'carolina panthers': 'car', 'chicago bears': 'chi',
-        'cincinnati bengals': 'cin', 'cleveland browns': 'cle', 'dallas cowboys': 'dal',
-        'denver broncos': 'den', 'detroit lions': 'det', 'green bay packers': 'gb',
-        'houston texans': 'hou', 'indianapolis colts': 'ind', 'jacksonville jaguars': 'jax',
-        'kansas city chiefs': 'kc', 'las vegas raiders': 'lv', 'los angeles chargers': 'lac',
-        'los angeles rams': 'lar', 'miami dolphins': 'mia', 'minnesota vikings': 'min',
-        'new england patriots': 'ne', 'new orleans saints': 'no', 'new york giants': 'nyg',
-        'new york jets': 'nyj', 'philadelphia eagles': 'phi', 'pittsburgh steelers': 'pit',
-        'san francisco 49ers': 'sf', 'seattle seahawks': 'sea', 'tampa bay buccaneers': 'tb',
-        'tennessee titans': 'ten', 'washington commanders': 'wsh'
-      };
-      const abbr = nflTeams[cleanName];
-      return abbr ? `https://a.espncdn.com/i/teamlogos/nfl/500/${abbr}.png` : '';
-    } else if (sport === 'MLB') {
-      // Use ESPN's MLB team logos
-      const mlbTeams: Record<string, string> = {
-        'arizona diamondbacks': 'ari', 'atlanta braves': 'atl', 'baltimore orioles': 'bal',
-        'boston red sox': 'bos', 'chicago cubs': 'chc', 'chicago white sox': 'chw',
-        'cincinnati reds': 'cin', 'cleveland guardians': 'cle', 'colorado rockies': 'col',
-        'detroit tigers': 'det', 'houston astros': 'hou', 'kansas city royals': 'kc',
-        'los angeles angels': 'laa', 'los angeles dodgers': 'lad', 'miami marlins': 'mia',
-        'milwaukee brewers': 'mil', 'minnesota twins': 'min', 'new york mets': 'nym',
-        'new york yankees': 'nyy', 'oakland athletics': 'oak', 'philadelphia phillies': 'phi',
-        'pittsburgh pirates': 'pit', 'san diego padres': 'sd', 'san francisco giants': 'sf',
-        'seattle mariners': 'sea', 'st louis cardinals': 'stl', 'st. louis cardinals': 'stl',
-        'tampa bay rays': 'tb', 'texas rangers': 'tex', 'toronto blue jays': 'tor',
-        'washington nationals': 'wsh'
-      };
-      const abbr = mlbTeams[cleanName];
-      return abbr ? `https://a.espncdn.com/i/teamlogos/mlb/500/${abbr}.png` : '';
-    } else {
-      // Use ESPN's NBA team logos
-      const nbaTeams: Record<string, string> = {
-        'atlanta hawks': 'atl', 'boston celtics': 'bos', 'brooklyn nets': 'bkn',
-        'charlotte hornets': 'cha', 'chicago bulls': 'chi', 'cleveland cavaliers': 'cle',
-        'dallas mavericks': 'dal', 'denver nuggets': 'den', 'detroit pistons': 'det',
-        'golden state warriors': 'gs', 'houston rockets': 'hou', 'indiana pacers': 'ind',
-        'los angeles clippers': 'lac', 'los angeles lakers': 'lal', 'memphis grizzlies': 'mem',
-        'miami heat': 'mia', 'milwaukee bucks': 'mil', 'minnesota timberwolves': 'min',
-        'new orleans pelicans': 'no', 'new york knicks': 'ny', 'oklahoma city thunder': 'okc',
-        'orlando magic': 'orl', 'philadelphia 76ers': 'phi', 'phoenix suns': 'phx',
-        'portland trail blazers': 'por', 'sacramento kings': 'sac', 'san antonio spurs': 'sa',
-        'toronto raptors': 'tor', 'utah jazz': 'utah', 'washington wizards': 'wsh'
-      };
-      const abbr = nbaTeams[cleanName];
-      return abbr ? `https://a.espncdn.com/i/teamlogos/nba/500/${abbr}.png` : '';
-    }
-  };
-
-  const awayLogo = getTeamLogo(state.away_team.name, sportBadge);
-  const homeLogo = getTeamLogo(state.home_team.name, sportBadge);
-
-  // Debug: Log teams without logos
-  if (!awayLogo) {
-    console.log(`Missing logo for ${sportBadge} team: ${state.away_team.name}`);
-  }
-  if (!homeLogo) {
-    console.log(`Missing logo for ${sportBadge} team: ${state.home_team.name}`);
-  }
+  // Team logos removed for legal compliance - no copyrighted league/team imagery
 
   // Get team colors for NFL teams
   const getTeamColors = (teamName: string): { primary: string, secondary: string } => {
@@ -509,14 +378,13 @@ export function GameCard({ game }: GameCardProps) {
         <div>
           <div className="flex justify-between items-center mb-1">
             <div className="flex items-center gap-2">
-              {sportBadge !== 'NCAAF' && awayLogo && <img src={awayLogo} alt={state.away_team.name} className="w-8 h-8 object-contain" />}
               <span className={`font-medium ${textPrimary}`}>{state.away_team.name}</span>
             </div>
             {state.away_team.score !== null && (
               <span className={`text-3xl font-bold ${textPrimary}`}>{state.away_team.score}</span>
             )}
           </div>
-          <div className={`flex gap-4 text-base ${sportBadge !== 'NCAAF' ? 'ml-10' : ''}`}>
+          <div className="flex gap-4 text-base">
             {state.away_team.spread !== null && state.away_team.spread !== undefined && (
               <div className={textSecondary}>
                 <span className={textTertiary}>{isNHL ? "Puck Line: " : "Spread: "}</span>
@@ -537,14 +405,13 @@ export function GameCard({ game }: GameCardProps) {
         <div>
           <div className="flex justify-between items-center mb-1">
             <div className="flex items-center gap-2">
-              {sportBadge !== 'NCAAF' && homeLogo && <img src={homeLogo} alt={state.home_team.name} className="w-8 h-8 object-contain" />}
               <span className={`font-medium ${textPrimary}`}>{state.home_team.name}</span>
             </div>
             {state.home_team.score !== null && (
               <span className={`text-3xl font-bold ${textPrimary}`}>{state.home_team.score}</span>
             )}
           </div>
-          <div className={`flex gap-4 text-base ${sportBadge !== 'NCAAF' ? 'ml-10' : ''}`}>
+          <div className="flex gap-4 text-base">
             {state.home_team.spread !== null && state.home_team.spread !== undefined && (
               <div className={textSecondary}>
                 <span className={textTertiary}>{isNHL ? "Puck Line: " : "Spread: "}</span>
@@ -3061,6 +2928,31 @@ export function GameCard({ game }: GameCardProps) {
         </div>
         )
       })()}
+
+      {/* Momentum Bar - NHL/NBA Live Games */}
+      {state.status === 'live' && (
+        (state.sport_key === 'icehockey_nhl' && game.home_nhl_momentum && game.away_nhl_momentum) ||
+        (state.sport_key === 'basketball_nba' && game.home_nba_momentum && game.away_nba_momentum)
+      ) && (
+        <div className="px-4 pb-4 pt-2">
+          <MomentumBar
+            homeTeam={state.home_team.name}
+            awayTeam={state.away_team.name}
+            homeMomentum={
+              state.sport_key === 'icehockey_nhl'
+                ? (game.home_nhl_momentum?.momentum_score || 50)
+                : (game.home_nba_momentum?.momentum_score || 50)
+            }
+            awayMomentum={
+              state.sport_key === 'icehockey_nhl'
+                ? (game.away_nhl_momentum?.momentum_score || 50)
+                : (game.away_nba_momentum?.momentum_score || 50)
+            }
+            homeColor={getTeamColors(state.home_team.name).primary}
+            awayColor={getTeamColors(state.away_team.name).primary}
+          />
+        </div>
+      )}
     </div>
   );
 }

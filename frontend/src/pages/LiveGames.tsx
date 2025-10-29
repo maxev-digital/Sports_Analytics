@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { LiveGame } from '../types';
 import { GameCard } from '../components/GameCard';
 import { sportEmojis } from '../utils/sportDetection';
+import { getApiUrl } from '../config';
 
 export function LiveGames() {
   const [games, setGames] = useState<LiveGame[]>([]);
@@ -16,7 +17,7 @@ export function LiveGames() {
 
   const fetchGames = async () => {
     try {
-      const response = await fetch('/api/games?user_id=default');
+      const response = await fetch(getApiUrl('games?user_id=default'));
       const data = await response.json();
       console.log('📊 Fetched games:', data);
       console.log('📊 Number of games:', data.length);
@@ -30,19 +31,19 @@ export function LiveGames() {
   };
 
   const sports = [
-    { key: 'live', label: 'All Games', logo: null, emoji: null },
-    { key: 'nfl', label: 'NFL', filter: 'americanfootball_nfl', logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/nfl.png', emoji: sportEmojis.NFL },
-    { key: 'ncaaf', label: 'NCAAF', filter: 'americanfootball_ncaaf', logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/ncaa.png', emoji: sportEmojis.NCAAF },
-    { key: 'nba', label: 'NBA', filter: 'basketball_nba', logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/nba.png', emoji: sportEmojis.NBA },
-    { key: 'ncaab', label: 'NCAAB', filter: 'basketball_ncaab', logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/ncaa.png', emoji: sportEmojis.NCAAB },
-    { key: 'nhl', label: 'NHL', filter: 'icehockey_nhl', logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/nhl.png', emoji: sportEmojis.NHL },
-    { key: 'mlb', label: 'MLB', filter: 'baseball_mlb', logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/mlb.png', emoji: sportEmojis.MLB },
-    { key: 'pga', label: 'PGA', filter: 'golf_pga', logo: 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/leagues/500/pga.png', emoji: sportEmojis.PGA },
-    { key: 'atp', label: 'ATP', filter: 'tennis_atp', logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/atp.png', emoji: sportEmojis.TENNIS },
-    { key: 'wta', label: 'WTA', filter: 'tennis_wta', logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/wta.png', emoji: sportEmojis.TENNIS },
-    { key: 'mma', label: 'MMA', filter: 'mma_mixed_martial_arts', logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/ufc.png', emoji: sportEmojis.MMA },
-    { key: 'wnba', label: 'WNBA', filter: 'basketball_wnba', logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/wnba.png', emoji: sportEmojis.NBA },
-    { key: 'nascar', label: 'NASCAR', filter: 'motorsport_nascar', logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/nascar.png', emoji: null },
+    { key: 'live', label: 'All Games', emoji: null },
+    { key: 'nfl', label: 'NFL', filter: 'americanfootball_nfl', emoji: sportEmojis.NFL },
+    { key: 'ncaaf', label: 'NCAAF', filter: 'americanfootball_ncaaf', emoji: sportEmojis.NCAAF },
+    { key: 'nba', label: 'NBA', filter: 'basketball_nba', emoji: sportEmojis.NBA },
+    { key: 'ncaab', label: 'NCAAB', filter: 'basketball_ncaab', emoji: sportEmojis.NCAAB },
+    { key: 'nhl', label: 'NHL', filter: 'icehockey_nhl', emoji: sportEmojis.NHL },
+    { key: 'mlb', label: 'MLB', filter: 'baseball_mlb', emoji: sportEmojis.MLB },
+    { key: 'pga', label: 'PGA', filter: 'golf_pga', emoji: sportEmojis.PGA },
+    { key: 'atp', label: 'ATP', filter: 'tennis_atp', emoji: sportEmojis.TENNIS },
+    { key: 'wta', label: 'WTA', filter: 'tennis_wta', emoji: sportEmojis.TENNIS },
+    { key: 'mma', label: 'MMA', filter: 'mma_mixed_martial_arts', emoji: sportEmojis.MMA },
+    { key: 'wnba', label: 'WNBA', filter: 'basketball_wnba', emoji: sportEmojis.NBA },
+    { key: 'nascar', label: 'NASCAR', filter: 'motorsport_nascar', emoji: null },
   ];
 
   const filteredGames = selectedSport === 'live'
