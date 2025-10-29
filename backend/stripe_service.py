@@ -5,6 +5,7 @@ Handles all Stripe-related operations for subscription management
 
 import os
 import stripe
+from stripe.error import StripeError, SignatureVerificationError
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 from dotenv import load_dotenv
@@ -22,12 +23,27 @@ if not stripe.api_key:
 else:
     print(f"Stripe initialized with API key: {stripe.api_key[:20]}...")
 
-# Price IDs from environment
+# Price IDs from environment (Legacy - kept for backward compatibility)
 STRIPE_STARTER_PRICE_ID = os.getenv("STRIPE_STARTER_PRICE_ID")
 STRIPE_SEMIPRO_PRICE_ID = os.getenv("STRIPE_SEMIPRO_PRICE_ID")
 STRIPE_PROFESSIONAL_PRICE_ID = os.getenv("STRIPE_PROFESSIONAL_PRICE_ID")
 STRIPE_ELITE_PRICE_ID = os.getenv("STRIPE_ELITE_PRICE_ID")
 STRIPE_ELITEPRO_PRICE_ID = os.getenv("STRIPE_ELITEPRO_PRICE_ID")
+
+# Beta Launch Discounted Price IDs (Monthly)
+STRIPE_STARTER_MONTHLY_PRICE_ID = os.getenv("STRIPE_STARTER_MONTHLY_PRICE_ID", STRIPE_STARTER_PRICE_ID)
+STRIPE_SEMIPRO_MONTHLY_PRICE_ID = os.getenv("STRIPE_SEMIPRO_MONTHLY_PRICE_ID", STRIPE_SEMIPRO_PRICE_ID)
+STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID = os.getenv("STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID", STRIPE_PROFESSIONAL_PRICE_ID)
+STRIPE_ELITE_MONTHLY_PRICE_ID = os.getenv("STRIPE_ELITE_MONTHLY_PRICE_ID", STRIPE_ELITE_PRICE_ID)
+STRIPE_ELITEPRO_MONTHLY_PRICE_ID = os.getenv("STRIPE_ELITEPRO_MONTHLY_PRICE_ID", STRIPE_ELITEPRO_PRICE_ID)
+
+# Beta Launch Discounted Price IDs (Annual)
+STRIPE_STARTER_ANNUAL_PRICE_ID = os.getenv("STRIPE_STARTER_ANNUAL_PRICE_ID")
+STRIPE_SEMIPRO_ANNUAL_PRICE_ID = os.getenv("STRIPE_SEMIPRO_ANNUAL_PRICE_ID")
+STRIPE_PROFESSIONAL_ANNUAL_PRICE_ID = os.getenv("STRIPE_PROFESSIONAL_ANNUAL_PRICE_ID")
+STRIPE_ELITE_ANNUAL_PRICE_ID = os.getenv("STRIPE_ELITE_ANNUAL_PRICE_ID")
+STRIPE_ELITEPRO_ANNUAL_PRICE_ID = os.getenv("STRIPE_ELITEPRO_ANNUAL_PRICE_ID")
+
 DOMAIN = os.getenv("DOMAIN", "http://localhost:5173")
 
 
@@ -94,7 +110,7 @@ class StripeService:
                 'url': session.url
             }
 
-        except stripe.error.StripeError as e:
+        except StripeError as e:
             raise Exception(f"Stripe error: {str(e)}")
 
     @staticmethod
@@ -121,7 +137,7 @@ class StripeService:
 
             return {'url': session.url}
 
-        except stripe.error.StripeError as e:
+        except StripeError as e:
             raise Exception(f"Stripe error: {str(e)}")
 
     @staticmethod
@@ -155,7 +171,7 @@ class StripeService:
                 ]
             }
 
-        except stripe.error.StripeError as e:
+        except StripeError as e:
             print(f"Error retrieving subscription: {str(e)}")
             return None
 
@@ -180,7 +196,7 @@ class StripeService:
                 'metadata': customer.metadata
             }
 
-        except stripe.error.StripeError as e:
+        except StripeError as e:
             print(f"Error retrieving customer: {str(e)}")
             return None
 
@@ -209,7 +225,7 @@ class StripeService:
             
             return True
 
-        except stripe.error.StripeError as e:
+        except StripeError as e:
             print(f"Error cancelling subscription: {str(e)}")
             return False
 
@@ -240,7 +256,7 @@ class StripeService:
             # Invalid payload
             print("Invalid webhook payload")
             return None
-        except stripe.error.SignatureVerificationError:
+        except SignatureVerificationError:
             # Invalid signature
             print("Invalid webhook signature")
             return None
@@ -249,6 +265,7 @@ class StripeService:
     def get_price_tier(price_id: str) -> str:
         """
         Determine subscription tier from price ID
+        Supports both legacy single price IDs and new monthly/annual price IDs
 
         Args:
             price_id: Stripe price ID
@@ -256,18 +273,60 @@ class StripeService:
         Returns:
             Tier name ('trial', 'starter', 'semipro', 'professional', 'elite', 'elitepro')
         """
-        if price_id == STRIPE_STARTER_PRICE_ID:
+        # Starter tier (legacy, monthly, or annual)
+        if price_id in (STRIPE_STARTER_PRICE_ID, STRIPE_STARTER_MONTHLY_PRICE_ID, STRIPE_STARTER_ANNUAL_PRICE_ID):
             return 'starter'
-        elif price_id == STRIPE_SEMIPRO_PRICE_ID:
+        # Semi Pro tier
+        elif price_id in (STRIPE_SEMIPRO_PRICE_ID, STRIPE_SEMIPRO_MONTHLY_PRICE_ID, STRIPE_SEMIPRO_ANNUAL_PRICE_ID):
             return 'semipro'
-        elif price_id == STRIPE_PROFESSIONAL_PRICE_ID:
+        # Professional tier
+        elif price_id in (STRIPE_PROFESSIONAL_PRICE_ID, STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID, STRIPE_PROFESSIONAL_ANNUAL_PRICE_ID):
             return 'professional'
-        elif price_id == STRIPE_ELITE_PRICE_ID:
+        # Elite tier
+        elif price_id in (STRIPE_ELITE_PRICE_ID, STRIPE_ELITE_MONTHLY_PRICE_ID, STRIPE_ELITE_ANNUAL_PRICE_ID):
             return 'elite'
-        elif price_id == STRIPE_ELITEPRO_PRICE_ID:
+        # Elite Pro tier
+        elif price_id in (STRIPE_ELITEPRO_PRICE_ID, STRIPE_ELITEPRO_MONTHLY_PRICE_ID, STRIPE_ELITEPRO_ANNUAL_PRICE_ID):
             return 'elitepro'
         else:
             return 'trial'
+
+    @staticmethod
+    def get_price_id(tier: str, billing_cycle: str = 'monthly') -> Optional[str]:
+        """
+        Get the appropriate Stripe price ID for a given tier and billing cycle
+
+        Args:
+            tier: Subscription tier ('starter', 'semipro', 'professional', 'elite', 'elitepro')
+            billing_cycle: 'monthly' or 'annual' (default: 'monthly')
+
+        Returns:
+            Stripe price ID or None if not found
+        """
+        price_map = {
+            'starter': {
+                'monthly': STRIPE_STARTER_MONTHLY_PRICE_ID,
+                'annual': STRIPE_STARTER_ANNUAL_PRICE_ID
+            },
+            'semipro': {
+                'monthly': STRIPE_SEMIPRO_MONTHLY_PRICE_ID,
+                'annual': STRIPE_SEMIPRO_ANNUAL_PRICE_ID
+            },
+            'professional': {
+                'monthly': STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID,
+                'annual': STRIPE_PROFESSIONAL_ANNUAL_PRICE_ID
+            },
+            'elite': {
+                'monthly': STRIPE_ELITE_MONTHLY_PRICE_ID,
+                'annual': STRIPE_ELITE_ANNUAL_PRICE_ID
+            },
+            'elitepro': {
+                'monthly': STRIPE_ELITEPRO_MONTHLY_PRICE_ID,
+                'annual': STRIPE_ELITEPRO_ANNUAL_PRICE_ID
+            }
+        }
+
+        return price_map.get(tier.lower(), {}).get(billing_cycle.lower())
 
     @staticmethod
     def create_customer(email: str, user_id: str, name: str = None) -> Optional[str]:
@@ -293,7 +352,7 @@ class StripeService:
             
             return customer.id
 
-        except stripe.error.StripeError as e:
+        except StripeError as e:
             print(f"Error creating customer: {str(e)}")
             return None
 
@@ -329,7 +388,7 @@ class StripeService:
                 for invoice in invoices.data
             ]
 
-        except stripe.error.StripeError as e:
+        except StripeError as e:
             print(f"Error listing invoices: {str(e)}")
             return []
 

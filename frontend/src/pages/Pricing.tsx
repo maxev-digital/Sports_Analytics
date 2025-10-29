@@ -25,12 +25,28 @@ export function Pricing() {
   };
 
   // Stripe Price IDs (from backend .env)
+  // Beta Launch: 50% OFF FOR LIFE - Discounted price IDs
   const STRIPE_PRICE_IDS = {
-    starter: 'price_1SL6DfR4L082TOJBCtBGFXgA',
-    semipro: 'price_1SL6D2R4L082TOJBUP6iO2g7',
-    professional: 'price_1SL6E4R4L082TOJBLphpsfhx',
-    elite: 'price_1SL6ERR4L082TOJBz91Q9hBM',
-    elitepro: 'price_1SL6EtR4L082TOJB2Pzx9Mgq',
+    starter: {
+      monthly: 'price_1SL6DfR4L082TOJBCtBGFXgA', // TODO: Update with beta discount monthly price
+      annual: 'price_BETA_STARTER_ANNUAL', // TODO: Update with beta discount annual price
+    },
+    semipro: {
+      monthly: 'price_1SL6D2R4L082TOJBUP6iO2g7', // TODO: Update with beta discount monthly price
+      annual: 'price_BETA_SEMIPRO_ANNUAL', // TODO: Update with beta discount annual price
+    },
+    professional: {
+      monthly: 'price_1SL6E4R4L082TOJBLphpsfhx', // TODO: Update with beta discount monthly price
+      annual: 'price_BETA_PROFESSIONAL_ANNUAL', // TODO: Update with beta discount annual price
+    },
+    elite: {
+      monthly: 'price_1SL6ERR4L082TOJBz91Q9hBM', // TODO: Update with beta discount monthly price
+      annual: 'price_BETA_ELITE_ANNUAL', // TODO: Update with beta discount annual price
+    },
+    elitepro: {
+      monthly: 'price_1SL6EtR4L082TOJB2Pzx9Mgq', // TODO: Update with beta discount monthly price
+      annual: 'price_BETA_ELITEPRO_ANNUAL', // TODO: Update with beta discount annual price
+    },
   };
 
   const handleSubscribe = async (tier: 'starter' | 'semipro' | 'professional' | 'elite' | 'elitepro') => {
@@ -42,13 +58,16 @@ export function Pricing() {
     setLoading(tier);
 
     try {
+      // Get the appropriate price ID based on billing cycle
+      const priceId = STRIPE_PRICE_IDS[tier][billingCycle];
+
       const response = await fetch('/api/stripe/create-checkout-session', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          price_id: STRIPE_PRICE_IDS[tier],
+          price_id: priceId,
           user_id: username,
           user_email: `${username.replace(/\s+/g, '.')}@max-ev-sports.com`,
         }),
