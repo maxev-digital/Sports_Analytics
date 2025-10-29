@@ -119,6 +119,14 @@ const getBookmakerInfoFallback = (bookmaker: string) => {
 export function GameCard({ game }: GameCardProps) {
   const { state, odds, projection, home_team_stats, away_team_stats, home_nfl_live_stats, away_nfl_live_stats, home_nfl_stats, away_nfl_stats, home_nhl_momentum, away_nhl_momentum, home_nhl_stats, away_nhl_stats, home_nba_momentum, away_nba_momentum, home_nfl_momentum, away_nfl_momentum, home_ncaaf_momentum, away_ncaaf_momentum } = game;
 
+  // DEBUG: Log stats data
+  console.log(`🏀 ${state.away_team.name} @ ${state.home_team.name}:`, {
+    sport: state.sport_key,
+    nba_stats: { home: !!home_team_stats, away: !!away_team_stats },
+    nhl_stats: { home: !!home_nhl_stats, away: !!away_nhl_stats },
+    nfl_stats: { home: !!home_nfl_stats, away: !!away_nfl_stats }
+  });
+
   // Get username for bet tracking
   const { username } = useAuth();
 
@@ -925,7 +933,7 @@ export function GameCard({ game }: GameCardProps) {
               <div className="flex justify-between text-base">
                 <div className={`${textSecondary}`}>
                   <span className={`${textLabel}`}>Current: </span>
-                  <span className="font-bold text-white">{projection.first_half_current || 0}</span>
+                  <span className={`font-bold ${textValue}`}>{projection.first_half_current || 0}</span>
                 </div>
                 <div className={`${textSecondary}`}>
                   <span className={`${textLabel}`}>Projected: </span>
@@ -965,13 +973,13 @@ export function GameCard({ game }: GameCardProps) {
               <div className="flex justify-between text-base">
                 <div className={`${textSecondary}`}>
                   <span className={`${textLabel}`}>{state.away_team.name.split(' ').pop()}: </span>
-                  <span className={`font-bold ${(state.away_team.money_line || 0) > 0 ? 'text-blue-400' : 'text-white'}`}>
+                  <span className={`font-bold ${(state.away_team.money_line || 0) > 0 ? 'text-blue-400' : textValue}`}>
                     {state.away_team.money_line !== null ? `${state.away_team.money_line > 0 ? '+' : ''}${state.away_team.money_line}` : 'N/A'}
                   </span>
                 </div>
                 <div className={`${textSecondary}`}>
                   <span className={`${textLabel}`}>{state.home_team.name.split(' ').pop()}: </span>
-                  <span className={`font-bold ${(state.home_team.money_line || 0) > 0 ? 'text-blue-400' : 'text-white'}`}>
+                  <span className={`font-bold ${(state.home_team.money_line || 0) > 0 ? 'text-blue-400' : textValue}`}>
                     {state.home_team.money_line !== null ? `${state.home_team.money_line > 0 ? '+' : ''}${state.home_team.money_line}` : 'N/A'}
                   </span>
                 </div>
@@ -1904,16 +1912,16 @@ export function GameCard({ game }: GameCardProps) {
       <div className={`${dividerClass} pt-3 space-y-2`}>
         <div className="flex justify-between text-base">
           <span className={`${textLabel}`}>Pregame Total (FD):</span>
-          <span className="font-bold text-white">{Math.round(projection.pregame_total)}</span>
+          <span className={`font-bold ${textValue}`}>{Math.round(projection.pregame_total)}</span>
         </div>
         <div className="flex justify-between text-base">
           <span className={`${textLabel}`}>Current Live Avg:</span>
-          <span className="font-bold text-white">{avgTotal}</span>
+          <span className={`font-bold ${textValue}`}>{avgTotal}</span>
         </div>
         {projection.line_movement !== null && projection.line_movement !== undefined && (
           <div className="flex justify-between text-base">
             <span className={`${textLabel}`}>Line Movement:</span>
-            <span className={`font-bold ${projection.line_movement > 0 ? 'text-green-400' : projection.line_movement < 0 ? 'text-red-400' : 'text-white'}`}>
+            <span className={`font-bold ${projection.line_movement > 0 ? 'text-green-400' : projection.line_movement < 0 ? 'text-red-400' : textValue}`}>
               {projection.line_movement > 0 ? '+' : ''}{projection.line_movement.toFixed(1)}
             </span>
           </div>
