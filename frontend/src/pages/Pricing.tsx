@@ -74,33 +74,6 @@ export function Pricing() {
 
   const plans = [
     {
-      name: 'Trial',
-      price: 0,
-      period: 'forever',
-      description: 'Perfect for getting started with sports betting analytics',
-      edge: '0-1%',
-      edgeColor: 'slate',
-      features: [
-        'Live game odds from 60+ sportsbooks',
-        'Basic totals projections',
-        'Basic Bet Tracker',
-        'NFL, NBA, NHL, NCAAF, NCAAB coverage',
-        'Game momentum tracking',
-        '15 Second Updates',
-      ],
-      limitations: [
-        'No advanced tools',
-        'No bet tracking',
-        'No props',
-        'No historical data',
-        'Limited sports coverage',
-      ],
-      cta: 'Get Started',
-      popular: false,
-      color: 'slate',
-      annualPrice: null,
-    },
-    {
       name: 'Starter',
       price: 29,
       period: 'month',
@@ -108,7 +81,9 @@ export function Pricing() {
       edge: '2-4%',
       edgeColor: 'green',
       features: [
-        'Everything in Trial, plus:',
+        'Live game odds from 60+ sportsbooks',
+        'Basic totals projections',
+        'Game momentum tracking',
         'No-Vig Calculator',
         'Expected Value Calculator',
         'Basic Line Movement Tracker',
@@ -466,9 +441,7 @@ export function Pricing() {
 
               <button
                 onClick={() => {
-                  if (plan.name === 'Trial') {
-                    alert('Trial tier is free! Just sign up to get started.');
-                  } else if (plan.name === 'Starter') {
+                  if (plan.name === 'Starter') {
                     handleSubscribe('starter');
                   } else if (plan.name === 'Semi Pro') {
                     handleSubscribe('semipro');
