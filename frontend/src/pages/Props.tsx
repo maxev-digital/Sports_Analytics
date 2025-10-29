@@ -260,12 +260,6 @@ export function Props() {
     return odds > 0 ? `+${odds}` : `${odds}`;
   };
 
-  // Get player headshot URL
-  const getPlayerHeadshot = (playerName: string) => {
-    // This would need a proper player ID mapping in production
-    // For now, return a placeholder
-    return `https://via.placeholder.com/48x48.png?text=${playerName.charAt(0)}`;
-  };
 
   const allBookmakers = Array.from(
     new Set(props.map(p => p.bookmaker))
@@ -612,17 +606,7 @@ export function Props() {
                       className="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors"
                     >
                       <td className="py-4 px-4">
-                        <div className="flex items-center gap-3">
-                          <img
-                            src={getPlayerHeadshot(prop.player_name)}
-                            alt={prop.player_name}
-                            className="w-10 h-10 rounded-full bg-slate-700"
-                            onError={(e) => {
-                              e.currentTarget.src = `https://via.placeholder.com/40x40.png?text=${prop.player_name.charAt(0)}`;
-                            }}
-                          />
-                          <span className="text-white font-semibold">{prop.player_name}</span>
-                        </div>
+                        <span className="text-white font-semibold">{prop.player_name}</span>
                       </td>
                       <td className="py-4 px-4 text-slate-300">
                         {formatPropType(prop.prop_type)}
