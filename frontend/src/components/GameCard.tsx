@@ -1993,7 +1993,7 @@ export function GameCard({ game }: GameCardProps) {
         </div>
       )}
 
-      {/* All Odds with Latency */}
+      {/* All Odds */}
       {odds.length > 0 && (
         <div className={`${dividerClass} mt-3 pt-3`}>
           {/* Market Type Tabs */}
@@ -2034,20 +2034,17 @@ export function GameCard({ game }: GameCardProps) {
           <div className={`text-base ${textLabel} mb-2`}>
             {selectedMarket === 'totals' && (
               <>
-                Sportsbook Lines & Speed (Best Overs ↑ / Best Unders ↓)
-                <div className={`text-sm ${textMuted} mt-0.5`}>Latency times are approximate and vary by sport</div>
+                Sportsbook Lines (Best Overs ↑ / Best Unders ↓)
               </>
             )}
             {selectedMarket === 'spread' && (
               <>
-                Sportsbook Spreads & Speed
-                <div className={`text-sm ${textMuted} mt-0.5`}>Latency times are approximate and vary by sport</div>
+                Sportsbook Spreads
               </>
             )}
             {selectedMarket === 'moneyline' && (
               <>
-                Sportsbook Moneylines & Speed
-                <div className={`text-sm ${textMuted} mt-0.5`}>Latency times are approximate and vary by sport</div>
+                Sportsbook Moneylines
               </>
             )}
           </div>
@@ -2058,45 +2055,12 @@ export function GameCard({ game }: GameCardProps) {
                 index === self.findIndex((o) => o.bookmaker === odd.bookmaker)
               );
 
-              // Find min and max latency across all books
-              const latencies = uniqueOdds.map(o => o.latency_ms).filter(l => l !== null && l !== undefined) as number[];
-              const minLatency = latencies.length > 0 ? Math.min(...latencies) : null;
-              const maxLatency = latencies.length > 0 ? Math.max(...latencies) : null;
-
               return uniqueOdds.map((odd, idx) => {
                 // Determine if this book should be highlighted based on recommendation
                 const shouldHighlight = projection.recommendation && (
                   (projection.recommendation === 'OVER' && odd.is_best_over) ||
                   (projection.recommendation === 'UNDER' && odd.is_best_under)
                 );
-
-                // Only highlight fastest (red) and slowest (green)
-                const getLatencyColor = (latencyMs: number | null) => {
-                  if (latencyMs === null || latencyMs === undefined) return `${textLabel}`;
-                  if (minLatency !== null && latencyMs === minLatency) return isNHL ? 'text-red-600' : 'text-red-400'; // Fastest = worst
-                  if (maxLatency !== null && latencyMs === maxLatency && maxLatency > minLatency) return isNHL ? 'text-green-600' : 'text-green-400'; // Slowest = best
-                  return `${textLabel}`; // Everything else neutral
-                };
-
-                // Format latency for display
-                const formatLatency = (latencyMs: number | null) => {
-                  if (latencyMs === null || latencyMs === undefined) return '';
-                  if (latencyMs === 0) return '~0s';
-                  if (latencyMs < 1000) return '~<1s';
-                  const seconds = Math.round(latencyMs / 1000);
-                  return `~${seconds}s`;
-                };
-
-                // Only show edge for slowest book
-                const getBettorEdge = (latencyMs: number | null) => {
-                  if (latencyMs === null || latencyMs === undefined) return '';
-                  if (maxLatency === null || latencyMs !== maxLatency || maxLatency === minLatency) return '';
-
-                  // Calculate edge based on actual delay
-                  if (maxLatency < 5000) return '(+0.5%)';
-                  if (maxLatency < 15000) return '(+1.5%)';
-                  return '(+3%)';
-                };
 
                 const bookmakerInfo = getBookmakerInfo(odd.bookmaker);
 
@@ -2158,9 +2122,6 @@ export function GameCard({ game }: GameCardProps) {
                       )}
                       <span className={`${textSecondary} text-base`}>{odd.bookmaker}</span>
                       {shouldHighlight && <span className="text-blue-300">⭐</span>}
-                      <span className={`${getLatencyColor(odd.latency_ms)} text-base font-bold`} title="Slower books give you more time to react">
-                        {formatLatency(odd.latency_ms)} {getBettorEdge(odd.latency_ms)}
-                      </span>
                     </div>
                     {/* Display based on selected market */}
                     {selectedMarket === 'totals' && (

@@ -11,7 +11,6 @@ export interface UserSettings {
   steam_move_threshold: number;
   line_movement_threshold: number;
   alert_sound_enabled: boolean;
-  show_latency: boolean;
   highlight_pinnacle: boolean;
   dark_mode: boolean;
 }
