@@ -5,7 +5,7 @@ export const Footer = () => {
       <div className="flex justify-center gap-6 mb-6">
         {/* X (Twitter) */}
         <a
-          href="https://twitter.com/maxevsports"
+          href="https://x.com/GTE_APW"
           target="_blank"
           rel="noopener noreferrer"
           className="text-slate-400 hover:text-white transition-colors"
@@ -18,7 +18,7 @@ export const Footer = () => {
 
         {/* YouTube */}
         <a
-          href="https://youtube.com/@maxevsports"
+          href="https://www.youtube.com/channel/UCrrIg5-DHhSinndzMX2qZRA"
           target="_blank"
           rel="noopener noreferrer"
           className="text-slate-400 hover:text-red-500 transition-colors"
@@ -31,7 +31,7 @@ export const Footer = () => {
 
         {/* Instagram */}
         <a
-          href="https://instagram.com/maxevsports"
+          href="https://www.instagram.com/max_ev_sports/"
           target="_blank"
           rel="noopener noreferrer"
           className="text-slate-400 hover:text-pink-500 transition-colors"
