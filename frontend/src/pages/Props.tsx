@@ -112,12 +112,12 @@ export function Props() {
   const [minEdge, setMinEdge] = useState<number>(5.0);
 
   const sports = [
-    { key: 'nba', name: 'NBA', icon: 'https://cdn.ssref.net/req/202410311/tlogo/bbr/NBA.png' },
-    { key: 'nfl', name: 'NFL', icon: 'https://cdn.ssref.net/req/202410311/tlogo/pfr/NFL.png' },
-    { key: 'nhl', name: 'NHL', icon: 'https://cdn.ssref.net/req/202410311/tlogo/hr/NHL.png' },
-    { key: 'mlb', name: 'MLB', icon: 'https://cdn.ssref.net/req/202410311/tlogo/br/MLB.png' },
-    { key: 'ncaab', name: 'NCAAB', icon: 'https://cdn.ssref.net/req/202410311/tlogo/cbb/NCAA.png' },
-    { key: 'ncaaf', name: 'NCAAF', icon: 'https://cdn.ssref.net/req/202410311/tlogo/cfb/NCAA.png' }
+    { key: 'nba', name: 'NBA', emoji: '🏀' },
+    { key: 'nfl', name: 'NFL', emoji: '🏈' },
+    { key: 'nhl', name: 'NHL', emoji: '🏒' },
+    { key: 'mlb', name: 'MLB', emoji: '⚾' },
+    { key: 'ncaab', name: 'NCAAB', emoji: '🏀' },
+    { key: 'ncaaf', name: 'NCAAF', emoji: '🏈' }
   ];
 
   // Fetch props data (basic view)
@@ -327,7 +327,7 @@ export function Props() {
                     : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                 }`}
               >
-                <img src={sport.icon} alt={sport.name} className="w-6 h-6 object-contain" />
+                <span className="text-xl">{sport.emoji}</span>
                 {sport.name}
               </button>
             ))}
