@@ -24,7 +24,7 @@ import json
 from datetime import datetime
 from dotenv import load_dotenv
 import auth  # Authentication module
-from brevo_crm import sync_signup_to_brevo, send_welcome_email  # Brevo CRM integration
+from brevo_crm import sync_signup_to_brevo, send_welcome_email, send_admin_signup_notification, send_admin_payment_notification  # Brevo CRM integration
 
 # Betting ensemble temporarily disabled to avoid import conflicts
 # from backend.models.ensemble.betting_ensemble import BettingEnsemble, GameData, EnsemblePrediction
@@ -634,6 +634,14 @@ async def register(request: Request):
             )
             logger.info(f"Successfully sent welcome email to: {email}")
 
+            # Send admin notification for new signup
+            send_admin_signup_notification(
+                email=email,
+                full_name=full_name,
+                username=username
+            )
+            logger.info(f"Successfully sent admin signup notification for: {email}")
+
         except Exception as brevo_error:
             # Don't fail registration if Brevo sync fails
             logger.error(f"Failed to sync to Brevo (non-critical): {brevo_error}")
@@ -665,12 +673,17 @@ async def login(request: LoginRequest):
 
         # Create session
         token = auth.create_session(request.username)
+        
+        # Get user email
+        users = auth.load_users()
+        user_email = users.get(request.username, {}).get('email', f"{request.username}@max-ev-sports.com")
 
         return {
             "success": True,
             "message": "Login successful",
             "token": token,
-            "username": request.username
+            "username": request.username,
+            "email": user_email
         }
 
     except HTTPException:
@@ -767,6 +780,7 @@ class CheckoutSessionRequest(BaseModel):
     price_id: str
     user_id: str
     user_email: str
+    apply_beta_discount: bool = False  # Auto-apply 50% OFF promo code
 
 
 class PortalSessionRequest(BaseModel):
@@ -803,11 +817,12 @@ async def create_checkout_session(request: CheckoutSessionRequest):
                     stripe_customer_id=customer_id
                 )
 
-        # Create checkout session
+        # Create checkout session with optional beta discount
         session = StripeService.create_checkout_session(
             price_id=request.price_id,
             user_id=request.user_id,
-            user_email=request.user_email
+            user_email=request.user_email,
+            apply_beta_discount=request.apply_beta_discount
         )
 
         return {
@@ -898,6 +913,23 @@ async def stripe_webhook(request: Request):
                         status=result['status']
                     )
                     logger.info(f"Created subscription for user {user_id}, tier {result['tier']}")
+
+                    # Send admin notification for successful payment
+                    try:
+                        users = auth.load_users()
+                        if user_id in users:
+                            user_data = users[user_id]
+                            # Get amount from event (assumes price in metadata or amount_total)
+                            amount = result.get('amount', 0) / 100 if result.get('amount') else 0  # Stripe amounts are in cents
+                            send_admin_payment_notification(
+                                email=user_data.get('email', 'unknown'),
+                                full_name=user_data.get('full_name', user_id),
+                                tier=result['tier'],
+                                amount=amount
+                            )
+                            logger.info(f"Successfully sent admin payment notification for: {user_id}")
+                    except Exception as notification_error:
+                        logger.error(f"Failed to send admin payment notification (non-critical): {notification_error}")
                 else:
                     logger.warning(f"Could not find user_id for customer {result['customer_id']}")
 

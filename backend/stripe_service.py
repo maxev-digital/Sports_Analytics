@@ -23,26 +23,15 @@ if not stripe.api_key:
 else:
     print(f"Stripe initialized with API key: {stripe.api_key[:20]}...")
 
-# Price IDs from environment (Legacy - kept for backward compatibility)
+# Price IDs from environment
 STRIPE_STARTER_PRICE_ID = os.getenv("STRIPE_STARTER_PRICE_ID")
 STRIPE_SEMIPRO_PRICE_ID = os.getenv("STRIPE_SEMIPRO_PRICE_ID")
 STRIPE_PROFESSIONAL_PRICE_ID = os.getenv("STRIPE_PROFESSIONAL_PRICE_ID")
 STRIPE_ELITE_PRICE_ID = os.getenv("STRIPE_ELITE_PRICE_ID")
 STRIPE_ELITEPRO_PRICE_ID = os.getenv("STRIPE_ELITEPRO_PRICE_ID")
 
-# Beta Launch Discounted Price IDs (Monthly)
-STRIPE_STARTER_MONTHLY_PRICE_ID = os.getenv("STRIPE_STARTER_MONTHLY_PRICE_ID", STRIPE_STARTER_PRICE_ID)
-STRIPE_SEMIPRO_MONTHLY_PRICE_ID = os.getenv("STRIPE_SEMIPRO_MONTHLY_PRICE_ID", STRIPE_SEMIPRO_PRICE_ID)
-STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID = os.getenv("STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID", STRIPE_PROFESSIONAL_PRICE_ID)
-STRIPE_ELITE_MONTHLY_PRICE_ID = os.getenv("STRIPE_ELITE_MONTHLY_PRICE_ID", STRIPE_ELITE_PRICE_ID)
-STRIPE_ELITEPRO_MONTHLY_PRICE_ID = os.getenv("STRIPE_ELITEPRO_MONTHLY_PRICE_ID", STRIPE_ELITEPRO_PRICE_ID)
-
-# Beta Launch Discounted Price IDs (Annual)
-STRIPE_STARTER_ANNUAL_PRICE_ID = os.getenv("STRIPE_STARTER_ANNUAL_PRICE_ID")
-STRIPE_SEMIPRO_ANNUAL_PRICE_ID = os.getenv("STRIPE_SEMIPRO_ANNUAL_PRICE_ID")
-STRIPE_PROFESSIONAL_ANNUAL_PRICE_ID = os.getenv("STRIPE_PROFESSIONAL_ANNUAL_PRICE_ID")
-STRIPE_ELITE_ANNUAL_PRICE_ID = os.getenv("STRIPE_ELITE_ANNUAL_PRICE_ID")
-STRIPE_ELITEPRO_ANNUAL_PRICE_ID = os.getenv("STRIPE_ELITEPRO_ANNUAL_PRICE_ID")
+# Beta Launch Promo Code (50% OFF FOR LIFE)
+STRIPE_BETA_PROMO_CODE = os.getenv("STRIPE_BETA_PROMO_CODE", "BETA50")
 
 DOMAIN = os.getenv("DOMAIN", "http://localhost:5173")
 
@@ -56,18 +45,20 @@ class StripeService:
         user_id: str,
         user_email: str,
         success_url: str = None,
-        cancel_url: str = None
+        cancel_url: str = None,
+        apply_beta_discount: bool = False
     ) -> Dict[str, Any]:
         """
         Create a Stripe Checkout Session for subscription
-        
+
         Args:
             price_id: Stripe price ID (pro or elite tier)
             user_id: Internal user ID
             user_email: User's email address
             success_url: URL to redirect on successful payment
             cancel_url: URL to redirect on cancelled payment
-            
+            apply_beta_discount: If True, automatically apply beta promo code
+
         Returns:
             Dictionary with session_id and checkout URL
         """
@@ -78,23 +69,23 @@ class StripeService:
             if not cancel_url:
                 cancel_url = f"{DOMAIN}/subscription/cancel"
 
-            # Create checkout session
-            session = stripe.checkout.Session.create(
-                customer_email=user_email,
-                client_reference_id=user_id,  # Link to our internal user ID
-                payment_method_types=['card'],
-                line_items=[{
+            # Build session parameters
+            session_params = {
+                'customer_email': user_email,
+                'client_reference_id': user_id,  # Link to our internal user ID
+                'payment_method_types': ['card'],
+                'line_items': [{
                     'price': price_id,
                     'quantity': 1,
                 }],
-                mode='subscription',
-                success_url=success_url,
-                cancel_url=cancel_url,
-                metadata={
+                'mode': 'subscription',
+                'success_url': success_url,
+                'cancel_url': cancel_url,
+                'metadata': {
                     'user_id': user_id,
                 },
                 # Enable customer portal access
-                subscription_data={
+                'subscription_data': {
                     'metadata': {
                         'user_id': user_id,
                     },
@@ -102,8 +93,18 @@ class StripeService:
                     'trial_period_days': 7,
                 },
                 # Collect billing address
-                billing_address_collection='required',
-            )
+                'billing_address_collection': 'required',
+            }
+
+            # Apply beta promo code if requested
+            if apply_beta_discount and STRIPE_BETA_PROMO_CODE:
+                session_params['discounts'] = [{
+                    'promotion_code': STRIPE_BETA_PROMO_CODE
+                }]
+                print(f"Applying beta promo code: {STRIPE_BETA_PROMO_CODE}")
+
+            # Create checkout session
+            session = stripe.checkout.Session.create(**session_params)
 
             return {
                 'session_id': session.id,
@@ -265,7 +266,6 @@ class StripeService:
     def get_price_tier(price_id: str) -> str:
         """
         Determine subscription tier from price ID
-        Supports both legacy single price IDs and new monthly/annual price IDs
 
         Args:
             price_id: Stripe price ID
@@ -273,60 +273,18 @@ class StripeService:
         Returns:
             Tier name ('trial', 'starter', 'semipro', 'professional', 'elite', 'elitepro')
         """
-        # Starter tier (legacy, monthly, or annual)
-        if price_id in (STRIPE_STARTER_PRICE_ID, STRIPE_STARTER_MONTHLY_PRICE_ID, STRIPE_STARTER_ANNUAL_PRICE_ID):
+        if price_id == STRIPE_STARTER_PRICE_ID:
             return 'starter'
-        # Semi Pro tier
-        elif price_id in (STRIPE_SEMIPRO_PRICE_ID, STRIPE_SEMIPRO_MONTHLY_PRICE_ID, STRIPE_SEMIPRO_ANNUAL_PRICE_ID):
+        elif price_id == STRIPE_SEMIPRO_PRICE_ID:
             return 'semipro'
-        # Professional tier
-        elif price_id in (STRIPE_PROFESSIONAL_PRICE_ID, STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID, STRIPE_PROFESSIONAL_ANNUAL_PRICE_ID):
+        elif price_id == STRIPE_PROFESSIONAL_PRICE_ID:
             return 'professional'
-        # Elite tier
-        elif price_id in (STRIPE_ELITE_PRICE_ID, STRIPE_ELITE_MONTHLY_PRICE_ID, STRIPE_ELITE_ANNUAL_PRICE_ID):
+        elif price_id == STRIPE_ELITE_PRICE_ID:
             return 'elite'
-        # Elite Pro tier
-        elif price_id in (STRIPE_ELITEPRO_PRICE_ID, STRIPE_ELITEPRO_MONTHLY_PRICE_ID, STRIPE_ELITEPRO_ANNUAL_PRICE_ID):
+        elif price_id == STRIPE_ELITEPRO_PRICE_ID:
             return 'elitepro'
         else:
             return 'trial'
-
-    @staticmethod
-    def get_price_id(tier: str, billing_cycle: str = 'monthly') -> Optional[str]:
-        """
-        Get the appropriate Stripe price ID for a given tier and billing cycle
-
-        Args:
-            tier: Subscription tier ('starter', 'semipro', 'professional', 'elite', 'elitepro')
-            billing_cycle: 'monthly' or 'annual' (default: 'monthly')
-
-        Returns:
-            Stripe price ID or None if not found
-        """
-        price_map = {
-            'starter': {
-                'monthly': STRIPE_STARTER_MONTHLY_PRICE_ID,
-                'annual': STRIPE_STARTER_ANNUAL_PRICE_ID
-            },
-            'semipro': {
-                'monthly': STRIPE_SEMIPRO_MONTHLY_PRICE_ID,
-                'annual': STRIPE_SEMIPRO_ANNUAL_PRICE_ID
-            },
-            'professional': {
-                'monthly': STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID,
-                'annual': STRIPE_PROFESSIONAL_ANNUAL_PRICE_ID
-            },
-            'elite': {
-                'monthly': STRIPE_ELITE_MONTHLY_PRICE_ID,
-                'annual': STRIPE_ELITE_ANNUAL_PRICE_ID
-            },
-            'elitepro': {
-                'monthly': STRIPE_ELITEPRO_MONTHLY_PRICE_ID,
-                'annual': STRIPE_ELITEPRO_ANNUAL_PRICE_ID
-            }
-        }
-
-        return price_map.get(tier.lower(), {}).get(billing_cycle.lower())
 
     @staticmethod
     def create_customer(email: str, user_id: str, name: str = None) -> Optional[str]:
