@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getApiUrl } from '../config';
 
 export function SignUp() {
   const [formData, setFormData] = useState({
@@ -62,15 +63,15 @@ export function SignUp() {
 
         // Trigger fire ring animation
         setShowFireRing(true);
-        
+
         // Play flame sound
         if (audioRef.current) {
           audioRef.current.play().catch(err => console.log('Audio play failed:', err));
         }
-        
-        // Redirect after animation
+
+        // Redirect to pricing page after animation
         setTimeout(() => {
-          window.location.href = '/';
+          window.location.href = '/pricing';
         }, 1500);
       } else {
         setError(data.detail || 'Registration failed');
@@ -255,17 +256,7 @@ export function SignUp() {
         </div>
 
         <div className="text-center text-xs text-slate-600 mt-4">
-          <p>© 2025 Casino Tears - MAX EV SPORTS™. All Rights Reserved.</p>
-        </div>
-
-        {/* Casino Tears Branding */}
-        <div className="text-center mt-6">
-          <p className="text-slate-400 text-sm mb-3">Brought to you by:</p>
-          <img 
-            src="/casino-tears.png" 
-            alt="Casino Tears" 
-            className="mx-auto w-64 h-auto"
-          />
+          <p>© 2025 Max EV Holdings, LLC. All rights reserved.</p>
         </div>
       </div>
     </div>
