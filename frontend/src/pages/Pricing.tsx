@@ -1,18 +1,39 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { getApiUrl } from '../config';
 
 export function Pricing() {
   const { username, isAuthenticated } = useAuth();
   const [loading, setLoading] = useState<string | null>(null);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
+  const [showFeatureComparison, setShowFeatureComparison] = useState(false);
+  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+
+  // Beta launch promotion - flat 50% off for all early members
+  const discountPercent = 50;
+
+  const toggleCardExpansion = (planName: string) => {
+    setExpandedCards(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(planName)) {
+        newSet.delete(planName);
+      } else {
+        newSet.add(planName);
+      }
+      return newSet;
+    });
+  };
 
   // Stripe Price IDs (from backend .env)
   const STRIPE_PRICE_IDS = {
-    pro: 'price_1QR5WiGp5HWb2tPk7YVf5xHa',
-    elite: 'price_1QR5WrGp5HWb2tPkZtZGc4rL',
+    starter: 'price_1SL6DfR4L082TOJBCtBGFXgA',
+    semipro: 'price_1SL6D2R4L082TOJBUP6iO2g7',
+    professional: 'price_1SL6E4R4L082TOJBLphpsfhx',
+    elite: 'price_1SL6ERR4L082TOJBz91Q9hBM',
+    elitepro: 'price_1SL6EtR4L082TOJB2Pzx9Mgq',
   };
 
-  const handleSubscribe = async (tier: 'pro' | 'elite') => {
+  const handleSubscribe = async (tier: 'starter' | 'semipro' | 'professional' | 'elite' | 'elitepro') => {
     if (!isAuthenticated || !username) {
       alert('Please log in to subscribe');
       return;
@@ -29,7 +50,7 @@ export function Pricing() {
         body: JSON.stringify({
           price_id: STRIPE_PRICE_IDS[tier],
           user_id: username,
-          user_email: `${username}@example.com`, // Replace with actual email from user profile
+          user_email: `${username.replace(/\s+/g, '.')}@max-ev-sports.com`,
         }),
       });
 
@@ -51,20 +72,19 @@ export function Pricing() {
 
   const plans = [
     {
-      name: 'Free',
+      name: 'Trial',
       price: 0,
       period: 'forever',
       description: 'Perfect for getting started with sports betting analytics',
       edge: '0-1%',
       edgeColor: 'slate',
       features: [
-        'Live game odds from 10+ books',
+        'Live game odds from 60+ sportsbooks',
         'Basic totals projections',
-        'Real-time line updates',
-        'NFL, NBA, NHL, NCAAF coverage',
+        'Basic Bet Tracker',
+        'NFL, NBA, NHL, NCAAF, NCAAB coverage',
         'Game momentum tracking',
-        '5-second refresh rate',
-        'Community Discord access',
+        '15 Second Updates',
       ],
       limitations: [
         'No advanced tools',
@@ -86,15 +106,15 @@ export function Pricing() {
       edge: '2-4%',
       edgeColor: 'green',
       features: [
-        'Everything in Free, plus:',
+        'Everything in Trial, plus:',
         'No-Vig Calculator',
         'Expected Value Calculator',
         'Basic Line Movement Tracker',
         'All major sports coverage',
-        '2-second refresh rate',
+        '10 Second Refresh',
         'Historical data (7 days)',
-        'Email alerts',
-        'Bet tracking (up to 50 bets/month)',
+        'Email Notifications',
+        'Advanced Bet Tracker 100 Bets a month',
         'Export to CSV',
       ],
       limitations: [
@@ -109,7 +129,7 @@ export function Pricing() {
       annualSavings: 70,
     },
     {
-      name: 'Pro',
+      name: 'Semi Pro',
       price: 79,
       period: 'month',
       description: 'For serious bettors who want every edge',
@@ -117,6 +137,7 @@ export function Pricing() {
       edgeColor: 'blue',
       features: [
         'Everything in Starter, plus:',
+        'Advanced Analytics Dashboard',
         'Advanced Line Movement Tracker',
         'Steam Move Alerts (real-time)',
         'Market Consensus Line',
@@ -130,7 +151,6 @@ export function Pricing() {
         'Historical line data (90 days)',
         'SMS + Push notifications',
         'Position sizing calculator',
-        'Bankroll management tools',
       ],
       limitations: [],
       cta: 'Start 7-Day Trial',
@@ -140,14 +160,16 @@ export function Pricing() {
       annualSavings: 190,
     },
     {
-      name: 'Elite',
+      name: 'Professional',
       price: 149,
       period: 'month',
       description: 'Maximum firepower for sharp bettors',
       edge: '6-8%',
       edgeColor: 'purple',
       features: [
-        'Everything in Pro, plus:',
+        'Everything in Semi Pro, plus:',
+        'Tech Stack: OpticOdds API, Cloud ML, Redis Cache, Sub-30s WebSocket',
+        'Browser Extension Tool',
         'Player Props Module (all sports)',
         'SGP Builder with correlation analysis',
         'PrizePicks/Underdog/Sleeper comparison',
@@ -172,16 +194,17 @@ export function Pricing() {
       annualSavings: 358,
     },
     {
-      name: 'Professional',
+      name: 'Elite',
       price: 299,
       period: 'month',
-      description: 'For syndicates and professional operations',
+      description: 'For professional operations and serious bettors',
       edge: '8-10%',
       edgeColor: 'amber',
       features: [
-        'Everything in Elite, plus:',
+        'Everything in Professional, plus:',
+        'Tech Stack: Sportradar Full, GPU ML, PostgreSQL + Redis, Sub-1s Push',
+        'Downloadable Desktop Client',
         'Full API access (unlimited calls)',
-        'Multi-user accounts (up to 10 seats)',
         'Custom model integration',
         'Dedicated account manager',
         'Custom sportsbook integrations',
@@ -212,7 +235,9 @@ export function Pricing() {
       edge: '10-15%',
       edgeColor: 'red',
       features: [
-        'Everything in Professional, plus:',
+        'Everything in Elite, plus:',
+        'Tech Stack: Sportradar Elite, Dedicated GPU, Distributed DB + Redis, Sub-50ms',
+        'Enhanced Desktop Client (Windows/Mac/Linux)',
         'Offshore server access (millisecond advantage)',
         'Direct sportsbook API connections',
         'Fastest AI prediction engine',
@@ -222,12 +247,11 @@ export function Pricing() {
         'Dedicated GPU processing',
         'Proprietary sharp action alerts',
         'Private syndicate data feeds',
-        'Unlimited seats (up to 25 users)',
         'Personal trading desk support',
         'Custom algorithm development',
         'Institutional-grade infrastructure',
         'Reserved server capacity',
-        'VIP hotline (direct access)',
+        'Annual VIP Invitation to Circa Survivor Week 1 Party',
       ],
       limitations: [],
       cta: 'Apply for Access',
@@ -255,11 +279,11 @@ export function Pricing() {
     },
     {
       q: 'Is there a discount for annual plans?',
-      a: 'Yes! Save 20% when you pay annually. Pro: $470/year (save $118), Elite: $950/year (save $238)'
+      a: 'Yes! Save 20% when you pay annually. Semi Pro: $758/year (save $190), Professional: $1,430/year (save $358), Elite: $2,870/year (save $718), Elite Pro: $7,670/year (save $1,918)'
     },
     {
       q: 'Do you have an API?',
-      a: 'API access is included with Elite plans. Pro users can add API access for $20/month.'
+      a: 'Full REST API access is available for Professional, Elite, and Elite Pro plans for $99/month. Includes 10,000 requests/day, real-time odds data, historical data access, and webhook support.'
     },
     {
       q: 'Can I upgrade or downgrade later?',
@@ -308,13 +332,17 @@ export function Pricing() {
             </div>
           </div>
 
-          <div className="inline-flex items-center gap-3 bg-green-900/30 border border-green-700 rounded-lg px-6 py-3">
-            <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          {/* Beta Launch Promotion Banner */}
+          <div className="inline-flex items-center gap-3 bg-gradient-to-r from-green-900/40 to-blue-900/40 border border-green-500 rounded-lg px-6 py-4 shadow-lg shadow-green-500/20">
+            <svg className="w-7 h-7 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
             </svg>
-            <span className="text-green-300 font-semibold">
-              Launch Special: 50% OFF first 3 months with code LAUNCH50
-            </span>
+            <div>
+              <span className="text-green-300 font-bold text-xl">
+                🎉 Beta Launch Special: 50% OFF FOR LIFE 🎉
+              </span>
+              <p className="text-green-400 text-sm mt-1">Lock in this price forever! Join our early members and help us build the future of sports betting analytics!</p>
+            </div>
           </div>
         </div>
 
@@ -370,25 +398,55 @@ export function Pricing() {
                   {plan.edge} Edge
                 </div>
 
-                <div className="flex items-baseline justify-center gap-1 mb-1">
+                <div className="mb-1">
                   {billingCycle === 'monthly' ? (
-                    <>
-                      <span className="text-3xl font-bold text-slate-100">${plan.price}</span>
-                      {plan.price > 0 && (
-                        <span className="text-slate-400 text-xs">/ month</span>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      {plan.annualPrice ? (
+                    <div className="flex flex-col items-center gap-1">
+                      {plan.price > 0 ? (
                         <>
-                          <span className="text-3xl font-bold text-slate-100">${plan.annualPrice}</span>
-                          <span className="text-slate-400 text-xs">/ year</span>
+                          {/* Original price struck through */}
+                          <div className="text-slate-500 text-sm line-through">
+                            ${plan.price}/mo
+                          </div>
+                          {/* Discounted price */}
+                          <div className="flex items-baseline gap-1">
+                            <span className="text-4xl font-bold text-green-400">
+                              ${Math.round(plan.price * (1 - discountPercent / 100))}
+                            </span>
+                            <span className="text-slate-400 text-xs">/ month</span>
+                          </div>
+                          {/* Discount badge */}
+                          <div className="text-xs font-bold px-2 py-0.5 rounded-full bg-green-500 text-white">
+                            {discountPercent}% OFF FOR LIFE
+                          </div>
                         </>
                       ) : (
                         <span className="text-3xl font-bold text-slate-100">Free</span>
                       )}
-                    </>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-1">
+                      {plan.annualPrice ? (
+                        <>
+                          {/* Original annual price struck through */}
+                          <div className="text-slate-500 text-sm line-through">
+                            ${plan.annualPrice}/yr
+                          </div>
+                          {/* Discounted annual price */}
+                          <div className="flex items-baseline gap-1">
+                            <span className="text-4xl font-bold text-green-400">
+                              ${Math.round(plan.annualPrice * (1 - discountPercent / 100))}
+                            </span>
+                            <span className="text-slate-400 text-xs">/ year</span>
+                          </div>
+                          {/* Discount badge */}
+                          <div className="text-xs font-bold px-2 py-0.5 rounded-full bg-green-500 text-white">
+                            {discountPercent}% OFF FOR LIFE
+                          </div>
+                        </>
+                      ) : (
+                        <span className="text-3xl font-bold text-slate-100">Free</span>
+                      )}
+                    </div>
                   )}
                 </div>
                 {billingCycle === 'annual' && plan.annualPrice && (
@@ -406,15 +464,21 @@ export function Pricing() {
 
               <button
                 onClick={() => {
-                  if (plan.name === 'Pro') {
-                    handleSubscribe('pro');
+                  if (plan.name === 'Trial') {
+                    alert('Trial tier is free! Just sign up to get started.');
+                  } else if (plan.name === 'Starter') {
+                    handleSubscribe('starter');
+                  } else if (plan.name === 'Semi Pro') {
+                    handleSubscribe('semipro');
+                  } else if (plan.name === 'Professional') {
+                    handleSubscribe('professional');
                   } else if (plan.name === 'Elite') {
                     handleSubscribe('elite');
-                  } else {
-                    alert(`${plan.name} tier coming soon!`);
+                  } else if (plan.name === 'Elite Pro') {
+                    handleSubscribe('elitepro');
                   }
                 }}
-                disabled={loading === 'pro' || loading === 'elite'}
+                disabled={loading !== null}
                 className={`w-full py-3 rounded-lg font-bold text-xs mb-5 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
                   plan.exclusive
                     ? 'bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white shadow-lg shadow-red-600/30'
@@ -434,7 +498,7 @@ export function Pricing() {
 
               <div className="space-y-2 flex-grow">
                 <div className="font-semibold text-slate-200 mb-2 text-sm">Features:</div>
-                {plan.features.slice(0, 8).map((feature, idx) => (
+                {(expandedCards.has(plan.name) ? plan.features : plan.features.slice(0, 8)).map((feature, idx) => (
                   <div key={idx} className="flex items-start gap-2">
                     <svg className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -445,9 +509,26 @@ export function Pricing() {
                   </div>
                 ))}
                 {plan.features.length > 8 && (
-                  <div className="text-xs text-blue-400 font-semibold pt-1">
-                    + {plan.features.length - 8} more features
-                  </div>
+                  <button
+                    onClick={() => toggleCardExpansion(plan.name)}
+                    className="text-xs text-blue-400 hover:text-blue-300 font-semibold pt-1 flex items-center gap-1 transition-colors"
+                  >
+                    {expandedCards.has(plan.name) ? (
+                      <>
+                        Show less
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                        </svg>
+                      </>
+                    ) : (
+                      <>
+                        + {plan.features.length - 8} more features
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </>
+                    )}
+                  </button>
                 )}
 
                 {plan.limitations.length > 0 && (
@@ -473,27 +554,16 @@ export function Pricing() {
           <h2 className="text-2xl font-bold text-slate-100 mb-6 text-center">
             Premium Add-Ons
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 gap-6 max-w-2xl mx-auto">
             <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
               <h3 className="text-lg font-bold text-slate-100 mb-2">API Access</h3>
-              <div className="text-3xl font-bold text-slate-100 mb-3">$29<span className="text-sm text-slate-400">/month</span></div>
-              <p className="text-sm text-slate-300 mb-4">Full REST API access for custom integrations. Included free with Professional tier.</p>
+              <div className="text-3xl font-bold text-slate-100 mb-3">$99<span className="text-sm text-slate-400">/month</span></div>
+              <p className="text-sm text-slate-300 mb-4">Full REST API access for custom integrations. Available for Professional, Elite, and Elite Pro plans.</p>
               <ul className="space-y-2 text-xs text-slate-400">
                 <li>• 10,000 requests/day</li>
                 <li>• Real-time odds data</li>
                 <li>• Historical data access</li>
                 <li>• Webhook support</li>
-              </ul>
-            </div>
-            <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
-              <h3 className="text-lg font-bold text-slate-100 mb-2">Additional Seats</h3>
-              <div className="text-3xl font-bold text-slate-100 mb-3">$49<span className="text-sm text-slate-400">/seat/month</span></div>
-              <p className="text-sm text-slate-300 mb-4">Add team members to your Professional account.</p>
-              <ul className="space-y-2 text-xs text-slate-400">
-                <li>• Shared workspace</li>
-                <li>• Individual logins</li>
-                <li>• Role-based permissions</li>
-                <li>• Activity tracking</li>
               </ul>
             </div>
           </div>
@@ -506,7 +576,7 @@ export function Pricing() {
             <div className="text-sm text-slate-400 font-medium">Odds analyzed daily</div>
           </div>
           <div className="text-center p-6 bg-slate-800/30 rounded-lg border border-slate-700/50">
-            <div className="text-2xl font-bold text-slate-100 mb-1">10+</div>
+            <div className="text-2xl font-bold text-slate-100 mb-1">60+</div>
             <div className="text-sm text-slate-400 font-medium">Sportsbooks tracked</div>
           </div>
           <div className="text-center p-6 bg-slate-800/30 rounded-lg border border-slate-700/50">
@@ -517,6 +587,437 @@ export function Pricing() {
             <div className="text-2xl font-bold text-slate-100 mb-1">4.9/5</div>
             <div className="text-sm text-slate-400 font-medium">User rating</div>
           </div>
+        </div>
+
+        {/* Competitor Comparison */}
+        <div className="mb-16 bg-gradient-to-br from-blue-900/20 via-slate-800/50 to-purple-900/20 border-2 border-blue-700/50 rounded-2xl p-8">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-slate-100 mb-3">
+              Why Max EV Sports Beats The Competition
+            </h2>
+            <p className="text-lg text-slate-300 max-w-3xl mx-auto">
+              We deliver more features, faster data, and better value than any competitor in the market
+            </p>
+          </div>
+
+          {/* Comparison Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-base">
+              <thead>
+                <tr className="border-b-2 border-blue-600">
+                  <th className="text-left py-4 px-4 text-slate-100 font-bold">Feature</th>
+                  <th className="text-center py-4 px-4 bg-blue-900/30">
+                    <div className="font-bold text-blue-300 text-xl">Max EV Sports</div>
+                    <div className="text-sm text-blue-200 mt-1">Semi Pro $79/mo</div>
+                  </th>
+                  <th className="text-center py-4 px-4 text-slate-300">
+                    <div className="font-bold text-slate-100 text-lg">OddsJam</div>
+                    <div className="text-sm text-slate-400 mt-1">Premium $99/mo</div>
+                  </th>
+                  <th className="text-center py-4 px-4 text-slate-300">
+                    <div className="font-bold text-slate-100 text-lg">Action Network</div>
+                    <div className="text-sm text-slate-400 mt-1">Pro $149/mo</div>
+                  </th>
+                  <th className="text-center py-4 px-4 text-slate-300">
+                    <div className="font-bold text-slate-100 text-lg">Unabated</div>
+                    <div className="text-sm text-slate-400 mt-1">Elite $99/mo</div>
+                  </th>
+                  <th className="text-center py-4 px-4 text-slate-300">
+                    <div className="font-bold text-slate-100 text-lg">BetQL</div>
+                    <div className="text-sm text-slate-400 mt-1">Premium $49/mo</div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {/* Price Row */}
+                <tr className="border-b border-slate-700/50">
+                  <td className="py-4 px-4 font-semibold text-slate-100 text-base">Monthly Price</td>
+                  <td className="text-center py-4 px-4 bg-blue-900/10">
+                    <span className="text-green-400 font-bold text-xl">$79</span>
+                  </td>
+                  <td className="text-center py-4 px-4 text-slate-200 text-base">$99</td>
+                  <td className="text-center py-4 px-4 text-slate-200 text-base">$149</td>
+                  <td className="text-center py-4 px-4 text-slate-200 text-base">$99</td>
+                  <td className="text-center py-4 px-4 text-slate-200 text-base">$49</td>
+                </tr>
+
+                {/* Sportsbooks Tracked */}
+                <tr className="border-b border-slate-700/50 hover:bg-slate-700/20">
+                  <td className="py-4 px-4 text-slate-100 text-base">Sportsbooks Tracked</td>
+                  <td className="text-center py-4 px-4 bg-blue-900/10">
+                    <span className="text-green-400 font-bold text-lg">60+</span>
+                  </td>
+                  <td className="text-center py-4 px-4 text-slate-200 text-base">40+</td>
+                  <td className="text-center py-4 px-4 text-slate-200 text-base">25+</td>
+                  <td className="text-center py-4 px-4 text-slate-200 text-base">35+</td>
+                  <td className="text-center py-4 px-4 text-slate-200 text-base">20+</td>
+                </tr>
+
+                {/* Refresh Speed */}
+                <tr className="border-b border-slate-700/50 hover:bg-slate-700/20">
+                  <td className="py-4 px-4 text-slate-100 text-base">Refresh Speed</td>
+                  <td className="text-center py-4 px-4 bg-blue-900/10">
+                    <span className="text-green-400 font-bold text-base">&lt;1s WebSocket</span>
+                  </td>
+                  <td className="text-center py-4 px-4 text-slate-200 text-base">5-10s polling</td>
+                  <td className="text-center py-4 px-4 text-slate-200 text-base">15-30s polling</td>
+                  <td className="text-center py-4 px-4 text-slate-200 text-base">10-15s polling</td>
+                  <td className="text-center py-4 px-4 text-slate-200 text-base">30-60s polling</td>
+                </tr>
+
+                {/* Arbitrage Finder */}
+                <tr className="border-b border-slate-700/50 hover:bg-slate-700/20">
+                  <td className="py-4 px-4 text-slate-100 text-base">Arbitrage Finder</td>
+                  <td className="text-center py-4 px-4 bg-blue-900/10">
+                    <svg className="w-7 h-7 text-green-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </td>
+                  <td className="text-center py-4 px-4">
+                    <svg className="w-7 h-7 text-green-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </td>
+                  <td className="text-center py-4 px-4">
+                    <svg className="w-6 h-6 text-red-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </td>
+                  <td className="text-center py-4 px-4">
+                    <svg className="w-6 h-6 text-red-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </td>
+                  <td className="text-center py-4 px-4">
+                    <svg className="w-6 h-6 text-red-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </td>
+                </tr>
+
+                {/* Middle Finder */}
+                <tr className="border-b border-slate-700/50 hover:bg-slate-700/20">
+                  <td className="py-4 px-4 text-slate-100 text-base">Middle Finder</td>
+                  <td className="text-center py-4 px-4 bg-blue-900/10">
+                    <svg className="w-7 h-7 text-green-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </td>
+                  <td className="text-center py-4 px-4">
+                    <svg className="w-6 h-6 text-red-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </td>
+                  <td className="text-center py-4 px-4">
+                    <svg className="w-6 h-6 text-red-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </td>
+                  <td className="text-center py-4 px-4">
+                    <svg className="w-6 h-6 text-red-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </td>
+                  <td className="text-center py-4 px-4">
+                    <svg className="w-6 h-6 text-red-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </td>
+                </tr>
+
+                {/* Steam Move Alerts */}
+                <tr className="border-b border-slate-700/50 hover:bg-slate-700/20">
+                  <td className="py-4 px-4 text-slate-100 text-base">Steam Move Alerts (Real-time)</td>
+                  <td className="text-center py-4 px-4 bg-blue-900/10">
+                    <svg className="w-7 h-7 text-green-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </td>
+                  <td className="text-center py-4 px-4">
+                    <span className="text-sm text-slate-300">Limited</span>
+                  </td>
+                  <td className="text-center py-4 px-4">
+                    <svg className="w-7 h-7 text-green-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </td>
+                  <td className="text-center py-4 px-4">
+                    <span className="text-sm text-slate-300">Limited</span>
+                  </td>
+                  <td className="text-center py-4 px-4">
+                    <svg className="w-6 h-6 text-red-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </td>
+                </tr>
+
+                {/* Advanced Analytics */}
+                <tr className="border-b border-slate-700/50 hover:bg-slate-700/20">
+                  <td className="py-4 px-4 text-slate-100 text-base">Advanced Analytics Dashboard</td>
+                  <td className="text-center py-4 px-4 bg-blue-900/10">
+                    <svg className="w-7 h-7 text-green-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </td>
+                  <td className="text-center py-4 px-4">
+                    <span className="text-sm text-slate-300">Basic</span>
+                  </td>
+                  <td className="text-center py-4 px-4">
+                    <svg className="w-7 h-7 text-green-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </td>
+                  <td className="text-center py-4 px-4">
+                    <svg className="w-7 h-7 text-green-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </td>
+                  <td className="text-center py-4 px-4">
+                    <span className="text-sm text-slate-300">Basic</span>
+                  </td>
+                </tr>
+
+                {/* ROI Tracking */}
+                <tr className="border-b border-slate-700/50 hover:bg-slate-700/20">
+                  <td className="py-4 px-4 text-slate-100 text-base">ROI & CLV Tracking (Unlimited)</td>
+                  <td className="text-center py-4 px-4 bg-blue-900/10">
+                    <svg className="w-7 h-7 text-green-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </td>
+                  <td className="text-center py-4 px-4">
+                    <span className="text-sm text-slate-300">Limited</span>
+                  </td>
+                  <td className="text-center py-4 px-4">
+                    <svg className="w-7 h-7 text-green-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </td>
+                  <td className="text-center py-4 px-4">
+                    <svg className="w-6 h-6 text-red-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </td>
+                  <td className="text-center py-4 px-4">
+                    <span className="text-sm text-slate-300">Limited</span>
+                  </td>
+                </tr>
+
+                {/* Historical Data */}
+                <tr className="border-b border-slate-700/50 hover:bg-slate-700/20">
+                  <td className="py-4 px-4 text-slate-100 text-base">Historical Line Data</td>
+                  <td className="text-center py-4 px-4 bg-blue-900/10">
+                    <span className="text-green-400 font-bold text-lg">90 days</span>
+                  </td>
+                  <td className="text-center py-4 px-4 text-slate-200 text-base">30 days</td>
+                  <td className="text-center py-4 px-4 text-slate-200 text-base">14 days</td>
+                  <td className="text-center py-4 px-4 text-slate-200 text-base">30 days</td>
+                  <td className="text-center py-4 px-4 text-slate-200 text-base">7 days</td>
+                </tr>
+
+                {/* Betting Strategies */}
+                <tr className="hover:bg-slate-700/20">
+                  <td className="py-4 px-4 text-slate-100 text-base">Pre-Built Betting Strategies</td>
+                  <td className="text-center py-4 px-4 bg-blue-900/10">
+                    <span className="text-green-400 font-bold text-lg">20+</span>
+                  </td>
+                  <td className="text-center py-4 px-4 text-slate-200 text-base">5</td>
+                  <td className="text-center py-4 px-4 text-slate-200 text-base">8</td>
+                  <td className="text-center py-4 px-4 text-slate-200 text-base">12</td>
+                  <td className="text-center py-4 px-4 text-slate-200 text-base">3</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* Value Proposition Callout */}
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-green-900/30 border-2 border-green-600 rounded-xl p-6 text-center">
+              <div className="text-3xl font-bold text-green-400 mb-2">$20-70</div>
+              <div className="text-sm text-green-300 font-semibold">CHEAPER per month than competitors</div>
+              <div className="text-xs text-slate-400 mt-2">Same tier features at lower cost</div>
+            </div>
+            <div className="bg-blue-900/30 border-2 border-blue-600 rounded-xl p-6 text-center">
+              <div className="text-3xl font-bold text-blue-400 mb-2">50-75%</div>
+              <div className="text-sm text-blue-300 font-semibold">MORE sportsbooks tracked</div>
+              <div className="text-xs text-slate-400 mt-2">60+ vs 20-40 for competitors</div>
+            </div>
+            <div className="bg-purple-900/30 border-2 border-purple-600 rounded-xl p-6 text-center">
+              <div className="text-3xl font-bold text-purple-400 mb-2">10-100x</div>
+              <div className="text-sm text-purple-300 font-semibold">FASTER data refresh</div>
+              <div className="text-xs text-slate-400 mt-2">Sub-1s WebSocket vs 5-60s polling</div>
+            </div>
+          </div>
+
+          {/* Bottom CTA */}
+          <div className="mt-8 text-center">
+            <p className="text-lg text-slate-300 mb-4">
+              <span className="font-bold text-blue-400">Bottom Line:</span> Get more features, faster data, and better support — all for less money.
+            </p>
+            <p className="text-sm text-slate-400">
+              Our Semi Pro tier at $79/mo beats OddsJam Premium ($99), Unabated Elite ($99), and BetQL Premium ($49) on every metric that matters.
+            </p>
+          </div>
+        </div>
+
+        {/* Feature Comparison Table */}
+        <div className="mb-16">
+          <div className="text-center mb-6">
+            <button
+              onClick={() => setShowFeatureComparison(!showFeatureComparison)}
+              className="inline-flex items-center gap-3 px-8 py-4 bg-slate-800/70 hover:bg-slate-800 border border-slate-600 hover:border-blue-500 rounded-xl transition-all group"
+            >
+              <span className="text-lg font-semibold text-slate-100">
+                {showFeatureComparison ? 'Hide' : 'Show'} Detailed Feature Comparison
+              </span>
+              <svg
+                className={`w-5 h-5 text-slate-400 transition-transform ${showFeatureComparison ? 'rotate-180' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+          </div>
+
+          {showFeatureComparison && (
+            <div className="bg-slate-800/30 border border-slate-700 rounded-2xl p-6 overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-600">
+                    <th className="text-left py-4 px-4 text-slate-300 font-bold">Tier</th>
+                    <th className="text-left py-4 px-4 text-slate-300 font-bold">Price</th>
+                    <th className="text-left py-4 px-4 text-slate-300 font-bold">Data Source / Speed</th>
+                    <th className="text-left py-4 px-4 text-slate-300 font-bold">Key Features Unlocked</th>
+                    <th className="text-left py-4 px-4 text-slate-300 font-bold">Not Included</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {/* Trial Tier */}
+                  <tr className="border-b border-slate-700/50 hover:bg-slate-700/20">
+                    <td className="py-4 px-4">
+                      <span className="font-bold text-slate-100">Trial</span>
+                    </td>
+                    <td className="py-4 px-4 text-slate-300">$0</td>
+                    <td className="py-4 px-4 text-slate-300 text-xs">
+                      The Odds API Free<br />
+                      <span className="text-slate-500">(45-60s polling)</span>
+                    </td>
+                    <td className="py-4 px-4 text-slate-300 text-xs">
+                      Basic odds (60+ books), totals, lines, NFL/NBA/NHL/NCAAF/NCAAB, Basic Bet Tracker, 15s updates, 5 strategies
+                    </td>
+                    <td className="py-4 px-4 text-slate-400 text-xs">
+                      ML, props, injuries, historical, push alerts
+                    </td>
+                  </tr>
+
+                  {/* Starter Tier */}
+                  <tr className="border-b border-slate-700/50 hover:bg-slate-700/20">
+                    <td className="py-4 px-4">
+                      <span className="font-bold text-green-400">Starter</span>
+                    </td>
+                    <td className="py-4 px-4 text-slate-300">$19.99/mo</td>
+                    <td className="py-4 px-4 text-slate-300 text-xs">
+                      The Odds API Starter<br />
+                      <span className="text-slate-500">(30-45s polling)</span>
+                    </td>
+                    <td className="py-4 px-4 text-slate-300 text-xs">
+                      Trial + EV/No-Vig Calc, line tracker, all sports, 10s refresh, Advanced Bet Tracker (100 bets/mo), Email Notifications, 7-day historical, 10 strategies
+                    </td>
+                    <td className="py-4 px-4 text-slate-400 text-xs">
+                      Advanced ML, props, sub-1s alerts
+                    </td>
+                  </tr>
+
+                  {/* Semi Pro Tier */}
+                  <tr className="border-b border-slate-700/50 hover:bg-slate-700/20 bg-blue-900/10">
+                    <td className="py-4 px-4">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-blue-400">Semi Pro</span>
+                        <span className="text-xs bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full">Most Popular</span>
+                      </div>
+                    </td>
+                    <td className="py-4 px-4 text-slate-300">$59.99/mo</td>
+                    <td className="py-4 px-4 text-slate-300 text-xs">
+                      SportsGameOdds<br />
+                      <span className="text-slate-500">(&lt;1s WebSocket option)</span>
+                    </td>
+                    <td className="py-4 px-4 text-slate-300 text-xs">
+                      Starter + Advanced Analytics Dashboard, steam alerts (&lt;1s), arbitrage/middle finder, consensus line, 20 strategies, full Kelly, 15 articles
+                    </td>
+                    <td className="py-4 px-4 text-slate-400 text-xs">
+                      Full props, injuries, dedicated API
+                    </td>
+                  </tr>
+
+                  {/* Professional Tier */}
+                  <tr className="border-b border-slate-700/50 hover:bg-slate-700/20">
+                    <td className="py-4 px-4">
+                      <span className="font-bold text-purple-400">Professional</span>
+                    </td>
+                    <td className="py-4 px-4 text-slate-300">$129.99/mo</td>
+                    <td className="py-4 px-4 text-slate-300 text-xs">
+                      OpticOdds<br />
+                      <span className="text-slate-500">(Sub-30s WebSocket)</span>
+                    </td>
+                    <td className="py-4 px-4 text-slate-300 text-xs">
+                      Semi Pro + Tech: OpticOdds API/Cloud ML/Redis/Sub-30s WebSocket, Browser Extension, props module, SGP builder, ML true odds, injury/weather alerts, 30+ strategies, 30+ articles
+                    </td>
+                    <td className="py-4 px-4 text-slate-400 text-xs">
+                      Sub-50ms, offshore servers
+                    </td>
+                  </tr>
+
+                  {/* Elite Tier */}
+                  <tr className="border-b border-slate-700/50 hover:bg-slate-700/20">
+                    <td className="py-4 px-4">
+                      <span className="font-bold text-amber-400">Elite</span>
+                    </td>
+                    <td className="py-4 px-4 text-slate-300">$249.99/mo</td>
+                    <td className="py-4 px-4 text-slate-300 text-xs">
+                      Sportradar Full<br />
+                      <span className="text-slate-500">(Sub-1s push)</span>
+                    </td>
+                    <td className="py-4 px-4 text-slate-300 text-xs">
+                      Professional + Tech: Sportradar Full/GPU ML/PostgreSQL+Redis/Sub-1s, Browser Extension, Desktop Client, API access (10K calls/day), custom models, backtesting, ML arbitrage
+                    </td>
+                    <td className="py-4 px-4 text-slate-400 text-xs">
+                      Sub-50ms, dedicated GPUs
+                    </td>
+                  </tr>
+
+                  {/* Elite Pro Tier */}
+                  <tr className="hover:bg-slate-700/20">
+                    <td className="py-4 px-4">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-red-400">Elite Pro</span>
+                        <span className="text-xs bg-red-500/20 text-red-300 px-2 py-0.5 rounded-full">Invite-only</span>
+                      </div>
+                    </td>
+                    <td className="py-4 px-4 text-slate-300">$599.99/mo</td>
+                    <td className="py-4 px-4 text-slate-300 text-xs">
+                      Sportradar Elite<br />
+                      <span className="text-slate-500">(Sub-50ms)</span>
+                    </td>
+                    <td className="py-4 px-4 text-slate-300 text-xs">
+                      Elite + Tech: Sportradar Elite/Dedicated GPU/Distributed DB+Redis/Sub-50ms, Browser Extension, Enhanced Desktop Client (Win/Mac/Linux), direct sportsbook APIs, fastest AI, offshore servers, premium consultation
+                    </td>
+                    <td className="py-4 px-4 text-slate-400 text-xs">
+                      Invite-only
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              {/* Additional Info */}
+              <div className="mt-6 p-4 bg-blue-900/20 border border-blue-700/50 rounded-lg">
+                <p className="text-xs text-blue-300">
+                  <strong>💡 Pro Tip:</strong> Higher tiers use faster data sources giving you a competitive edge. Sub-second speeds are crucial for arbitrage and live betting opportunities.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* FAQs */}
