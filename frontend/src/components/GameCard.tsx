@@ -2253,8 +2253,8 @@ export function GameCard({ game }: GameCardProps) {
         </div>
       )}
 
-      {/* Team Stats Section - Moved to bottom */}
-      {(away_team_stats || home_team_stats) && (
+      {/* NBA Season Stats Section */}
+      {sportBadge === 'NBA' && (away_team_stats || home_team_stats) && (
         <div className={`${dividerClass} mt-3 pt-3`}>
           <div className="mb-3">
             <div className={`text-base ${textLabel} mb-2`}>NBA Season Stats</div>
