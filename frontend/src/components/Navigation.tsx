@@ -29,6 +29,7 @@ export function Navigation() {
     { path: '/analytics', label: 'Analytics', emoji: uiEmojis.search },
     { path: '/alerts', label: 'Alerts', emoji: uiEmojis.lightning },
     { path: '/props', label: 'Props', emoji: uiEmojis.book },
+    { path: '/handicapper-picks', label: 'Cappers Picks', emoji: '📝' },
     { path: '/tools', label: 'Tools', emoji: uiEmojis.wrench },
   ];
 
@@ -42,6 +43,7 @@ export function Navigation() {
   const learnItems = [
     { path: '/learn', label: 'Learn Articles', emoji: uiEmojis.graduation },
     { path: '/getting-started', label: 'Getting Started', emoji: uiEmojis.rocket },
+    { path: '/odds-explained', label: 'Odds Explained', emoji: uiEmojis.chart },
   ];
 
   const isActive = (path: string) => {
@@ -177,8 +179,8 @@ export function Navigation() {
                     : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
                 }`}
               >
-                <img src={uiEmojis.gear} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} />
-                Settings
+                <img src={uiEmojis.trophy} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} />
+                Strategies
                 <svg className={`w-5 h-5 transition-transform ${settingsDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>

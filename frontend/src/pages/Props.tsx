@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { OddsMetricsDashboard } from '../components/OddsMetricsDashboard';
 
 interface PlayerProp {
   event_id: string;
@@ -266,19 +267,61 @@ export function Props() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-slate-900 to-black py-8 px-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-3">
-            <h1 className="text-4xl font-bold text-white">Player Props</h1>
+    <div className="min-h-screen bg-gradient-to-br from-black via-slate-900 to-black p-4" style={{ fontFamily: 'Rubik, sans-serif' }}>
+      <div className="w-full mx-auto">
+        {/* Header with Prop Type Selector and View Mode */}
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-100 mb-2">Player Props</h1>
+            <p className="text-slate-400 text-sm">
+              {viewMode === 'all'
+                ? 'Compare player prop odds across multiple sportsbooks'
+                : 'Advanced projections with edge analysis and betting recommendations'}
+            </p>
+            {viewMode === 'edges' && selectedSport !== 'nba' && (
+              <div className="mt-2 bg-amber-900/20 border border-amber-700 p-2 text-amber-400 text-xs">
+                ⚠️ Edge analysis is currently only available for NBA. Select NBA to view advanced props.
+              </div>
+            )}
+          </div>
+
+          <div className="flex gap-2">
+            {/* Prop Type Selector */}
+            {viewMode === 'all' && (
+              <div className="flex gap-1 bg-slate-900 p-1 border border-slate-700">
+                <button
+                  onClick={() => setSelectedPropType('all')}
+                  className={`px-4 py-1.5 text-xs font-semibold transition-all ${
+                    selectedPropType === 'all'
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  All Props
+                </button>
+                {propTypes.slice(0, 5).map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => setSelectedPropType(type)}
+                    className={`px-4 py-1.5 text-xs font-semibold transition-all whitespace-nowrap ${
+                      selectedPropType === type
+                        ? 'bg-blue-600 text-white shadow-md'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    {formatPropType(type).split(' ').slice(0, 2).join(' ')}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {/* View Mode Toggle */}
-            <div className="flex gap-2 bg-slate-800 rounded-lg p-1">
+            <div className="flex gap-1 bg-slate-900 p-1 border border-slate-700">
               <button
                 onClick={() => setViewMode('all')}
-                className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                className={`px-4 py-1.5 text-xs font-semibold transition-all ${
                   viewMode === 'all'
-                    ? 'bg-blue-600 text-white shadow-lg'
+                    ? 'bg-blue-600 text-white shadow-md'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -286,81 +329,51 @@ export function Props() {
               </button>
               <button
                 onClick={() => setViewMode('edges')}
-                className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                className={`px-4 py-1.5 text-xs font-semibold transition-all ${
                   viewMode === 'edges'
-                    ? 'bg-green-600 text-white shadow-lg'
+                    ? 'bg-green-600 text-white shadow-md'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                🎯 Props with Edges
+                🎯 Edges
               </button>
             </div>
           </div>
-          <p className="text-lg text-slate-400">
-            {viewMode === 'all'
-              ? 'Compare player prop odds across multiple sportsbooks'
-              : 'Advanced projections with edge analysis and betting recommendations'}
-          </p>
-          {viewMode === 'edges' && selectedSport !== 'nba' && (
-            <div className="mt-3 bg-amber-900/20 border border-amber-700 rounded-lg p-3 text-amber-400 text-sm">
-              ⚠️ Edge analysis is currently only available for NBA. Select NBA to view advanced props.
-            </div>
-          )}
         </div>
 
-        {/* Sport Selector */}
-        <div className="mb-6">
-          <div className="flex gap-3">
+        {/* Sport Tabs & Metrics Dashboard - Side by Side */}
+        <div className="flex gap-4 mb-2">
+          {/* Sport Tabs - Vertical */}
+          <div className="flex flex-col gap-2">
             {sports.map((sport) => (
               <button
                 key={sport.key}
                 onClick={() => setSelectedSport(sport.key)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all ${
+                className={`px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 ${
                   selectedSport === sport.key
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
-                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
                 }`}
               >
-                <span className="text-xl">{sport.emoji}</span>
+                <span className="text-sm">{sport.emoji}</span>
                 {sport.name}
               </button>
             ))}
           </div>
-        </div>
 
-        {/* Filters */}
-        <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-lg p-4 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Search Player
-              </label>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by player name..."
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Prop Type
-              </label>
-              <select
-                value={selectedPropType}
-                onChange={(e) => setSelectedPropType(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
-              >
-                <option value="all">All Props</option>
-                {propTypes.map((type) => (
-                  <option key={type} value={type}>
-                    {formatPropType(type)}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
+          {/* Metrics Dashboard & Main Content */}
+          <div className="flex-1">
+            <OddsMetricsDashboard />
+
+        {/* Search Filter - Compact */}
+        <div className="bg-slate-800/50 border border-slate-700 p-2 mb-2">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search by player name..."
+            className="w-full bg-slate-900 border border-slate-700 px-2 py-1.5 text-white text-xs placeholder-slate-500 focus:outline-none focus:border-blue-500"
+          />
         </div>
 
         {/* RENDER: Edge Props View */}
@@ -575,68 +588,84 @@ export function Props() {
                 Loading props...
               </div>
             ) : filteredProps.length === 0 ? (
-          <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-lg p-12 text-center">
+          <div className="bg-slate-800/50 border border-slate-700 p-12 text-center">
             <div className="text-slate-400 text-lg mb-2">No props available</div>
             <div className="text-slate-500 text-sm">
               {searchQuery ? 'Try adjusting your search filters' : 'Check back later for updated props'}
             </div>
           </div>
         ) : (
-          <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-lg overflow-hidden">
+          <div className="bg-slate-900 overflow-hidden border-2 border-slate-700 shadow-2xl">
             <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-slate-900/80 sticky top-0">
-                  <tr className="border-b border-slate-700">
-                    <th className="text-left py-4 px-4 text-slate-300 font-semibold">Player</th>
-                    <th className="text-left py-4 px-4 text-slate-300 font-semibold">Prop</th>
-                    <th className="text-center py-4 px-4 text-slate-300 font-semibold">Line</th>
-                    <th className="text-left py-4 px-4 text-slate-300 font-semibold">Game</th>
-                    {allBookmakers.slice(0, 4).map((bookmaker) => (
-                      <th key={bookmaker} className="text-center py-4 px-4 text-slate-300 font-semibold min-w-[120px]">
+              <table className="w-full border-collapse">
+                <thead className="bg-slate-800">
+                  <tr>
+                    <th className="text-left py-2 px-1 text-slate-300 font-bold text-xs uppercase tracking-wider border-r border-b-2 border-slate-600 w-[100px]">
+                      Player
+                    </th>
+                    <th className="text-left py-2 px-1 text-slate-300 font-bold text-xs uppercase tracking-wider border-r border-b-2 border-slate-600 w-[90px]">
+                      Prop
+                    </th>
+                    <th className="text-center py-2 px-1 text-slate-300 font-bold text-xs uppercase tracking-wider border-r border-b-2 border-slate-600 w-[50px]">
+                      Line
+                    </th>
+                    <th className="text-left py-2 px-1 text-slate-300 font-bold text-xs uppercase tracking-wider border-r border-b-2 border-slate-600 w-[110px]">
+                      Game
+                    </th>
+                    {allBookmakers.slice(0, 5).map((bookmaker, index) => (
+                      <th key={bookmaker} className={`text-center py-2 px-1 text-slate-300 font-bold text-xs uppercase tracking-wider border-b-2 border-slate-600 w-[70px] ${
+                        index < allBookmakers.slice(0, 5).length - 1 ? 'border-r border-slate-600' : ''
+                      }`}>
                         {bookmaker}
                       </th>
                     ))}
-                    <th className="text-center py-4 px-4 text-slate-300 font-semibold">Best</th>
+                    <th className="text-center py-2 px-1 text-slate-300 font-bold text-xs uppercase tracking-wider border-b-2 border-slate-600 w-[70px]">
+                      Best
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredProps.map((prop, idx) => (
                     <tr
                       key={idx}
-                      className="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors"
+                      className={`hover:bg-slate-800/30 transition-colors ${
+                        idx < filteredProps.length - 1 ? 'border-b border-slate-700' : ''
+                      }`}
                     >
-                      <td className="py-4 px-4">
-                        <span className="text-white font-semibold">{prop.player_name}</span>
+                      <td className="py-0.5 px-1 border-r border-slate-600 w-[100px]">
+                        <span className="text-white font-semibold text-xs truncate block">{prop.player_name}</span>
                       </td>
-                      <td className="py-4 px-4 text-slate-300">
-                        {formatPropType(prop.prop_type)}
+                      <td className="py-0.5 px-1 border-r border-slate-600 w-[90px]">
+                        <span className="text-slate-300 text-xs truncate block">{formatPropType(prop.prop_type)}</span>
                       </td>
-                      <td className="py-4 px-4 text-center">
-                        <span className="text-white font-bold text-lg">{prop.line}</span>
+                      <td className="py-0.5 px-1 text-center border-r border-slate-600 w-[50px]">
+                        <span className="text-white font-bold text-sm">{prop.line}</span>
                       </td>
-                      <td className="py-4 px-4">
-                        <div className="text-slate-300 text-sm">{prop.game}</div>
-                        <div className="text-slate-500 text-xs">
+                      <td className="py-0.5 px-1 border-r border-slate-600 w-[110px]">
+                        <div className="text-slate-300 text-[10px] truncate">{prop.game}</div>
+                        <div className="text-slate-500 text-[9px] truncate">
                           {new Date(prop.commence_time).toLocaleString()}
                         </div>
                       </td>
-                      {allBookmakers.slice(0, 4).map((bookmaker) => (
-                        <td key={bookmaker} className="py-4 px-4">
-                          <div className="flex flex-col gap-1">
+                      {allBookmakers.slice(0, 5).map((bookmaker, bookIndex) => (
+                        <td key={bookmaker} className={`py-0.5 px-1 text-center ${
+                          bookIndex < allBookmakers.slice(0, 5).length - 1 ? 'border-r border-slate-700' : ''
+                        }`}>
+                          <div className="space-y-0.5">
                             {prop.bookmakers[bookmaker]?.over && (
-                              <div className={`text-center px-2 py-1 rounded-lg text-sm font-semibold ${
+                              <div className={`text-center px-1 py-0.5 text-xs font-semibold ${
                                 prop.best_over?.bookmaker === bookmaker
-                                  ? 'bg-green-900/50 text-green-400 border border-green-700'
-                                  : 'bg-slate-700/50 text-slate-300'
+                                  ? 'bg-green-900/30 text-green-400'
+                                  : 'text-slate-300'
                               }`}>
                                 O {formatOdds(prop.bookmakers[bookmaker].over!)}
                               </div>
                             )}
                             {prop.bookmakers[bookmaker]?.under && (
-                              <div className={`text-center px-2 py-1 rounded-lg text-sm font-semibold ${
+                              <div className={`text-center px-1 py-0.5 text-xs font-semibold ${
                                 prop.best_under?.bookmaker === bookmaker
-                                  ? 'bg-blue-900/50 text-blue-400 border border-blue-700'
-                                  : 'bg-slate-700/50 text-slate-300'
+                                  ? 'bg-blue-900/30 text-blue-400'
+                                  : 'text-slate-300'
                               }`}>
                                 U {formatOdds(prop.bookmakers[bookmaker].under!)}
                               </div>
@@ -644,15 +673,15 @@ export function Props() {
                           </div>
                         </td>
                       ))}
-                      <td className="py-4 px-4">
-                        <div className="flex flex-col gap-1">
+                      <td className="py-0.5 px-1">
+                        <div className="space-y-0.5">
                           {prop.best_over && (
-                            <div className="text-center px-2 py-1 rounded-lg text-sm font-bold bg-green-900/50 text-green-400 border border-green-700">
+                            <div className="text-center px-1 py-0.5 text-xs font-bold bg-green-900/50 text-green-400">
                               O {formatOdds(prop.best_over.odds)}
                             </div>
                           )}
                           {prop.best_under && (
-                            <div className="text-center px-2 py-1 rounded-lg text-sm font-bold bg-blue-900/50 text-blue-400 border border-blue-700">
+                            <div className="text-center px-1 py-0.5 text-xs font-bold bg-blue-900/50 text-blue-400">
                               U {formatOdds(prop.best_under.odds)}
                             </div>
                           )}
@@ -672,6 +701,9 @@ export function Props() {
             </div>
           </>
         )}
+
+          </div>
+        </div>
       </div>
     </div>
   );

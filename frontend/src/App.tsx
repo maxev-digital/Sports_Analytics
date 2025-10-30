@@ -19,6 +19,7 @@ import { GettingStarted } from './pages/GettingStarted';
 import { OddsExplained } from './pages/OddsExplained';
 import { MultiSport } from './pages/MultiSport';
 import { Odds } from './pages/Odds';
+import { HandicapperPicks } from './pages/HandicapperPicks';
 import { Settings } from './pages/Settings';
 import { StrategySettings } from './pages/StrategySettings';
 import SoundPreview from './pages/SoundPreview';
@@ -102,6 +103,7 @@ function App() {
                       <Route path="/alerts" element={<Alerts />} />
                       <Route path="/multi-sport" element={<MultiSport />} />
                       <Route path="/odds" element={<Odds />} />
+                      <Route path="/handicapper-picks" element={<HandicapperPicks />} />
                       <Route path="/settings" element={<Settings />} />
                       <Route path="/strategy-settings" element={<StrategySettings />} />
                       <Route path="/learn" element={<Learn />} />
