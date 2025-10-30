@@ -288,9 +288,14 @@ class BrevoClient:
             website_url = os.getenv("WEBSITE_URL", "https://max-ev-sports.com")
             extension_download_url = f"{website_url}/downloads/MAX-EV_Sports_Extension.zip"
             guide_download_url = f"{website_url}/downloads/Installation_Guide.pdf"
+            logo_url = f"{website_url}/logo2.png"
 
             # Email HTML content
             html_content = f"""
+            <div style="text-align: center; margin-bottom: 30px;">
+                <img src="{logo_url}" alt="Max EV Sports" style="width: 200px; height: auto; max-width: 100%;" />
+            </div>
+
             <h2>Hi {firstname},</h2>
 
             <p>Welcome to MAX-EV Sports! 🎉</p>
@@ -399,6 +404,126 @@ class BrevoClient:
             logger.error(f"Unexpected error sending welcome email: {e}")
             return False
 
+    def send_admin_notification(
+        self,
+        notification_type: str,
+        subject: str,
+        details: Dict[str, Any]
+    ) -> bool:
+        """
+        Send notification email to admin
+
+        Args:
+            notification_type: Type of notification (signup, payment, etc.)
+            subject: Email subject
+            details: Dictionary of notification details
+
+        Returns:
+            bool: True if successful
+        """
+        if not self.enabled:
+            return False
+
+        try:
+            # Get admin email from environment
+            admin_email = os.getenv("ADMIN_EMAIL", "gte.apw@gmail.com")
+            website_url = os.getenv("WEBSITE_URL", "https://max-ev-sports.com")
+            logo_url = f"{website_url}/logo2.png"
+
+            # Build HTML content based on notification type
+            if notification_type == "signup":
+                html_content = f"""
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <img src="{logo_url}" alt="Max EV Sports" style="width: 150px; height: auto; max-width: 100%;" />
+                </div>
+
+                <h2>🎉 New User Signup</h2>
+                <p>A new user just signed up for MAX-EV Sports!</p>
+
+                <table style="border-collapse: collapse; width: 100%; max-width: 500px;">
+                    <tr style="background-color: #f8f9fa;">
+                        <td style="padding: 10px; border: 1px solid #dee2e6; font-weight: bold;">Username</td>
+                        <td style="padding: 10px; border: 1px solid #dee2e6;">{details.get('username', 'N/A')}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid #dee2e6; font-weight: bold;">Full Name</td>
+                        <td style="padding: 10px; border: 1px solid #dee2e6;">{details.get('full_name', 'N/A')}</td>
+                    </tr>
+                    <tr style="background-color: #f8f9fa;">
+                        <td style="padding: 10px; border: 1px solid #dee2e6; font-weight: bold;">Email</td>
+                        <td style="padding: 10px; border: 1px solid #dee2e6;">{details.get('email', 'N/A')}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid #dee2e6; font-weight: bold;">Timestamp</td>
+                        <td style="padding: 10px; border: 1px solid #dee2e6;">{details.get('timestamp', 'N/A')}</td>
+                    </tr>
+                </table>
+
+                <p style="margin-top: 20px;">
+                    <a href="https://www.max-ev-sports.com/admin" style="display: inline-block; background-color: #4CAF50; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px;">View in Admin Panel</a>
+                </p>
+                """
+
+            elif notification_type == "payment":
+                html_content = f"""
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <img src="{logo_url}" alt="Max EV Sports" style="width: 150px; height: auto; max-width: 100%;" />
+                </div>
+
+                <h2>💰 New Payment Received</h2>
+                <p>A user just completed a payment!</p>
+
+                <table style="border-collapse: collapse; width: 100%; max-width: 500px;">
+                    <tr style="background-color: #f8f9fa;">
+                        <td style="padding: 10px; border: 1px solid #dee2e6; font-weight: bold;">Full Name</td>
+                        <td style="padding: 10px; border: 1px solid #dee2e6;">{details.get('full_name', 'N/A')}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid #dee2e6; font-weight: bold;">Email</td>
+                        <td style="padding: 10px; border: 1px solid #dee2e6;">{details.get('email', 'N/A')}</td>
+                    </tr>
+                    <tr style="background-color: #f8f9fa;">
+                        <td style="padding: 10px; border: 1px solid #dee2e6; font-weight: bold;">Tier</td>
+                        <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>{details.get('tier', 'N/A')}</strong></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid #dee2e6; font-weight: bold;">Amount</td>
+                        <td style="padding: 10px; border: 1px solid #dee2e6;"><strong style="color: #28a745; font-size: 18px;">{details.get('amount', 'N/A')}</strong></td>
+                    </tr>
+                    <tr style="background-color: #f8f9fa;">
+                        <td style="padding: 10px; border: 1px solid #dee2e6; font-weight: bold;">Timestamp</td>
+                        <td style="padding: 10px; border: 1px solid #dee2e6;">{details.get('timestamp', 'N/A')}</td>
+                    </tr>
+                </table>
+
+                <p style="margin-top: 20px;">
+                    <a href="https://dashboard.stripe.com/payments" style="display: inline-block; background-color: #6772e5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px;">View in Stripe</a>
+                </p>
+                """
+            else:
+                html_content = f"<p>{details}</p>"
+
+            # Create email object
+            sender_email = os.getenv("BREVO_SENDER_EMAIL", "noreply@max-ev-sports.com")
+            send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
+                to=[{"email": admin_email}],
+                sender={"email": sender_email, "name": "MAX-EV Sports Notifications"},
+                subject=subject,
+                html_content=html_content
+            )
+
+            # Send email
+            api_response = self.transactional_api.send_transac_email(send_smtp_email)
+            logger.info(f"Successfully sent admin notification: {notification_type}")
+            return True
+
+        except ApiException as e:
+            logger.error(f"Error sending admin notification via Brevo: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"Unexpected error sending admin notification: {e}")
+            return False
+
 
 # Load environment variables before initializing client
 from dotenv import load_dotenv
@@ -432,3 +557,32 @@ def sync_cancellation_to_brevo(email: str):
 def send_welcome_email(email: str, full_name: str):
     """Send welcome email with Chrome extension download links"""
     return brevo_client.send_welcome_email_with_extension(email, full_name)
+
+
+def send_admin_signup_notification(email: str, full_name: str, username: str):
+    """Send admin notification for new user signup"""
+    return brevo_client.send_admin_notification(
+        notification_type="signup",
+        subject="🎉 New User Signup - MAX-EV Sports",
+        details={
+            "email": email,
+            "full_name": full_name,
+            "username": username,
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
+    )
+
+
+def send_admin_payment_notification(email: str, full_name: str, tier: str, amount: float):
+    """Send admin notification for successful payment"""
+    return brevo_client.send_admin_notification(
+        notification_type="payment",
+        subject="💰 New Payment Received - MAX-EV Sports",
+        details={
+            "email": email,
+            "full_name": full_name,
+            "tier": tier,
+            "amount": f"${amount:.2f}",
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
+    )
