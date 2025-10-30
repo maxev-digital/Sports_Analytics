@@ -81,7 +81,7 @@ export function Settings() {
       <div className="max-w-7xl mx-auto px-4 py-6">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Settings</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">Bookmaker Settings</h1>
           <p className="text-slate-400">
             Select which bookmakers you want to see in odds feeds and alerts. You need at least 2 bookmakers enabled for comparison.
           </p>

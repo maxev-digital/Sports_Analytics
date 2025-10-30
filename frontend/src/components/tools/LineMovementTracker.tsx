@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getApiUrl } from '../../config';
 
 interface LineEntry {
   id: number;
@@ -33,7 +34,7 @@ export function LineMovementTracker() {
   useEffect(() => {
     const fetchLiveLineMovements = async () => {
       try {
-        const response = await fetch('/api/alerts/line-movements');
+        const response = await fetch(getApiUrl('alerts/line-movements'));
         if (response.ok) {
           const data = await response.json();
           setLiveLineMovements(data.alerts || []);

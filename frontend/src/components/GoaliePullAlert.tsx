@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getApiUrl } from '../config';
 
 interface GoaliePullPrediction {
   trailing_team: string;
@@ -54,7 +55,7 @@ export const GoaliePullAlerts: React.FC = () => {
   useEffect(() => {
     const fetchOpportunities = async () => {
       try {
-        const response = await fetch('/api/goalie-pull-opportunities');
+        const response = await fetch(getApiUrl('goalie-pull-opportunities'));
         if (!response.ok) {
           throw new Error('Failed to fetch goalie pull opportunities');
         }

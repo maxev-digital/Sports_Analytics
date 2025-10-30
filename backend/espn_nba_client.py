@@ -19,6 +19,17 @@ class ESPNnbaClient:
             'Referer': 'https://www.espn.com/'
         })
 
+    def fetch_scoreboard(self) -> Dict:
+        """Fetch NBA scoreboard with all live and upcoming games"""
+        try:
+            url = f"{self.BASE_URL}/scoreboard"
+            response = self.session.get(url, timeout=10)
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            logger.error(f"Error fetching ESPN NBA scoreboard: {e}")
+            return {}
+
     def fetch_teams_data(self) -> Optional[Dict]:
         """Fetch NBA teams and their season statistics"""
         try:
@@ -186,36 +197,48 @@ class ESPNnbaClient:
 
                     recent_games = []
                     for event in reversed(events):
-                        competitions = event.get('competitions', [])
-                        if not competitions:
+                        try:
+                            competitions = event.get('competitions', [])
+                            if not competitions:
+                                continue
+
+                            comp = competitions[0]
+                            status = comp.get('status', {}).get('type', {}).get('state', '')
+
+                            if status == 'post':
+                                competitors = comp.get('competitors', [])
+                                team_score = None
+                                opponent_score = None
+
+                                for team_comp in competitors:
+                                    team_data = team_comp.get('team', {})
+                                    score_raw = team_comp.get('score', '0')
+
+                                    # Handle different score formats from ESPN API
+                                    try:
+                                        if isinstance(score_raw, dict):
+                                            score = int(score_raw.get('value', 0))
+                                        elif isinstance(score_raw, str):
+                                            score = int(score_raw)
+                                        else:
+                                            score = int(score_raw)
+                                    except (ValueError, TypeError):
+                                        score = 0
+
+                                    if team_data.get('abbreviation', '').upper() == team_abbr.upper():
+                                        team_score = score
+                                    else:
+                                        opponent_score = score
+
+                                if team_score is not None and opponent_score is not None:
+                                    result = 'W' if team_score > opponent_score else ('L' if team_score < opponent_score else 'T')
+                                    recent_games.append(result)
+
+                                    if len(recent_games) >= 5:
+                                        break
+                        except Exception as event_error:
+                            # Skip this event if there's any error processing it
                             continue
-
-                        comp = competitions[0]
-                        status = comp.get('status', {}).get('type', {}).get('state', '')
-
-                        if status == 'post':
-                            competitors = comp.get('competitors', [])
-                            team_score = None
-                            opponent_score = None
-
-                            for team_comp in competitors:
-                                team_data = team_comp.get('team', {})
-                                score = team_comp.get('score', 0)
-
-                                if team_data.get('abbreviation', '').upper() == team_abbr.upper():
-                                    team_score = score
-                                else:
-                                    opponent_score = score
-
-                            if team_score is not None and opponent_score is not None:
-                                # Convert to numbers for comparison
-                                team_score_num = int(team_score) if isinstance(team_score, str) else team_score
-                                opponent_score_num = int(opponent_score) if isinstance(opponent_score, str) else opponent_score
-                                result = 'W' if team_score_num > opponent_score_num else ('L' if team_score_num < opponent_score_num else 'T')
-                                recent_games.append(result)
-
-                                if len(recent_games) >= 5:
-                                    break
 
                     if recent_games:
                         wins = recent_games.count('W')
@@ -229,7 +252,7 @@ class ESPNnbaClient:
             return f"{wins}-{losses}"
 
         except Exception as e:
-            logger.error(f"Error calculating last 5 for {team_abbr}: {e}")
+            logger.debug(f"Using fallback for last 5 calculation for {team_abbr}: {e}")
             return "3-2"  # Placeholder
 
     def get_live_game_stats(self, game_id: str) -> Optional[Dict]:

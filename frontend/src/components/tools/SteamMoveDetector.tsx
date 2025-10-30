@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getApiUrl } from '../../config';
 
 interface BookLine {
   id: number;
@@ -34,7 +35,7 @@ export function SteamMoveDetector() {
   useEffect(() => {
     const fetchLiveSteamMoves = async () => {
       try {
-        const response = await fetch('/api/alerts/steam-moves');
+        const response = await fetch(getApiUrl('alerts/steam-moves'));
         if (response.ok) {
           const data = await response.json();
           setLiveSteamMoves(data.alerts || []);

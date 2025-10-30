@@ -26,7 +26,7 @@ export function Login() {
 
       // Redirect after bull sound finishes (giving it time to play)
       setTimeout(() => {
-        navigate('/');
+        navigate('/live-games');
       }, 5000);
     }
   };
@@ -147,17 +147,7 @@ export function Login() {
         </div>
 
         <div className="text-center text-xs text-slate-600 mt-4">
-          <p>© 2025 Casino Tears - MAX EV SPORTS™. All Rights Reserved.</p>
-        </div>
-
-        {/* Casino Tears Branding */}
-        <div className="text-center mt-6">
-          <p className="text-slate-400 text-sm mb-3">Brought to you by:</p>
-          <img 
-            src="/casino-tears.png" 
-            alt="Casino Tears" 
-            className="mx-auto w-64 h-auto"
-          />
+          <p>© 2025 Max EV Holdings, LLC. All rights reserved.</p>
         </div>
       </div>
     </div>

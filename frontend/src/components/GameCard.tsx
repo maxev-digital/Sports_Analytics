@@ -495,11 +495,11 @@ export function GameCard({ game }: GameCardProps) {
                   <>
                     <div
                       className="absolute left-0 top-0 h-full transition-all"
-                      style={{ width: `${awayPercent}%`, backgroundColor: awayTeamColors.primary }}
+                      style={{ width: `${awayPercent}%`, backgroundColor: '#dc2626' }}
                     />
                     <div
                       className="absolute right-0 top-0 h-full transition-all"
-                      style={{ width: `${homePercent}%`, backgroundColor: homeTeamColors.primary }}
+                      style={{ width: `${homePercent}%`, backgroundColor: '#10b981' }}
                     />
                     {/* Center line */}
                     <div className="absolute left-1/2 top-0 h-full w-0.5 bg-white/30" style={{ transform: 'translateX(-50%)' }} />
@@ -696,11 +696,11 @@ export function GameCard({ game }: GameCardProps) {
                       <>
                         <div
                           className="absolute left-0 top-0 h-full transition-all"
-                          style={{ width: `${awayPercent}%`, backgroundColor: awayTeamColors.primary }}
+                          style={{ width: `${awayPercent}%`, backgroundColor: '#dc2626' }}
                         />
                         <div
                           className="absolute right-0 top-0 h-full transition-all"
-                          style={{ width: `${homePercent}%`, backgroundColor: homeTeamColors.primary }}
+                          style={{ width: `${homePercent}%`, backgroundColor: '#10b981' }}
                         />
                         <div className="absolute left-1/2 top-0 h-full w-0.5 bg-white/30" style={{ transform: 'translateX(-50%)' }} />
                       </>
@@ -2917,8 +2917,6 @@ export function GameCard({ game }: GameCardProps) {
                 ? (game.away_nhl_momentum?.momentum_score || 50)
                 : (game.away_nba_momentum?.momentum_score || 50)
             }
-            homeColor={getTeamColors(state.home_team.name).primary}
-            awayColor={getTeamColors(state.away_team.name).primary}
           />
         </div>
       )}

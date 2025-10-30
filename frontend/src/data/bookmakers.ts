@@ -24,15 +24,27 @@ const getLogoUrl = (key: string, useLocal: boolean = false): string => {
     // Production: Use self-hosted logos
     return `/assets/bookmaker-logos/${key}.png`;
   }
+
   // Development: Use Google S2 Favicon API (proven reliable)
-  const domain = key
-    .replace('_us', '')
-    .replace('ag', '.ag')
-    .replace('mybookie', 'mybookie.ag')
-    .replace('betonline', 'betonline.ag')
-    .replace('lowvig', 'lowvig.ag')
-    .replace('betus', 'betus.com.pa');
-  return `https://www.google.com/s2/favicons?domain=${domain}.com&sz=128`;
+  // Handle special cases first
+  let domain: string;
+
+  if (key === 'betonlineag') {
+    domain = 'betonline.ag';
+  } else if (key === 'mybookieag') {
+    domain = 'mybookie.ag';
+  } else if (key === 'lowvig') {
+    domain = 'lowvig.ag';
+  } else if (key === 'betus') {
+    domain = 'betus.com.pa';
+  } else if (key === 'bovada') {
+    domain = 'bovada.lv';
+  } else {
+    // Default: remove _us suffix and add .com
+    domain = key.replace('_us', '') + '.com';
+  }
+
+  return `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
 };
 
 /**

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getApiUrl } from '../config';
 
 interface RegressionFactor {
   name: string;
@@ -55,7 +56,7 @@ export const FavoriteComebackAlerts: React.FC = () => {
   useEffect(() => {
     const fetchOpportunities = async () => {
       try {
-        const response = await fetch('/api/favorite-comeback-opportunities');
+        const response = await fetch(getApiUrl('favorite-comeback-opportunities'));
         if (!response.ok) {
           throw new Error('Failed to fetch favorite comeback opportunities');
         }

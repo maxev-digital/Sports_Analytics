@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getApiUrl } from '../../config';
 
 interface BookOdds {
   id: number;
@@ -52,7 +53,7 @@ export function ArbitrageFinder() {
   useEffect(() => {
     const fetchLiveArbitrage = async () => {
       try {
-        const response = await fetch('/api/alerts/arbitrage');
+        const response = await fetch(getApiUrl('alerts/arbitrage'));
         if (response.ok) {
           const data = await response.json();
           setLiveOpportunities(data.alerts || []);
@@ -74,7 +75,7 @@ export function ArbitrageFinder() {
   useEffect(() => {
     const fetchPerformance = async () => {
       try {
-        const response = await fetch('/api/alerts/performance');
+        const response = await fetch(getApiUrl('alerts/performance'));
         if (response.ok) {
           const data = await response.json();
           setPerformanceStats(data.arbitrage);

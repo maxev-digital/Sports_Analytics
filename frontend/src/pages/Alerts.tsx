@@ -3,6 +3,52 @@ import { GoaliePullAlerts } from '../components/GoaliePullAlert';
 import { FavoriteComebackAlerts } from '../components/FavoriteComebackAlert';
 import { HalftimeTrackerAlerts } from '../components/HalftimeTrackerAlert';
 import { MomentumAlerts } from '../components/MomentumAlert';
+import { GenericStrategyAlert } from '../components/GenericStrategyAlert';
+import { getApiUrl } from '../config';
+
+interface StrategyInfo {
+  id: string;
+  name: string;
+  description: string;
+  sport: string;
+  sportColor: string;
+  category: 'pregame' | 'live';
+  hasComponent: boolean;
+}
+
+const ALL_STRATEGIES: StrategyInfo[] = [
+  // LIVE STRATEGIES
+  { id: 'comeback', name: 'NBA Favorite Comeback', description: 'Regression to mean when favorites trail underdogs after hot starts', sport: 'NBA', sportColor: 'bg-orange-600', category: 'live', hasComponent: true },
+  { id: 'goalie', name: 'NHL Empty Net Goals', description: 'Predict empty net goal opportunities when goalies are pulled', sport: 'NHL', sportColor: 'bg-blue-600', category: 'live', hasComponent: true },
+  { id: 'halftime', name: 'NBA Halftime Adjustments', description: 'Track period transitions and 1Q under opportunities', sport: 'NBA', sportColor: 'bg-orange-600', category: 'live', hasComponent: true },
+  { id: 'momentum', name: 'Momentum Detector', description: '5-minute sliding window to detect scoring runs and momentum shifts', sport: 'NBA', sportColor: 'bg-orange-600', category: 'live', hasComponent: true },
+  { id: 'nhl-period', name: 'NHL Period Tracking', description: 'Period-specific betting opportunities and transitions', sport: 'NHL', sportColor: 'bg-blue-600', category: 'live', hasComponent: false },
+
+  // PRE-GAME STRATEGIES
+  { id: 'steam', name: 'Steam Plays', description: 'Track sudden line movements from sharp money hitting the market', sport: 'Multi-Sport', sportColor: 'bg-purple-600', category: 'pregame', hasComponent: true },
+  { id: 'arbitrage', name: 'Arbitrage', description: 'Risk-free profit opportunities across different sportsbooks', sport: 'Multi-Sport', sportColor: 'bg-purple-600', category: 'pregame', hasComponent: true },
+  { id: 'lines', name: 'Middles', description: 'Bet both sides with a gap to win both or push one', sport: 'Multi-Sport', sportColor: 'bg-purple-600', category: 'pregame', hasComponent: true },
+  { id: 'sharp-money', name: 'Sharp Money Tracking', description: 'Identify where professional bettors are placing their money', sport: 'Multi-Sport', sportColor: 'bg-purple-600', category: 'pregame', hasComponent: false },
+  { id: 'clv', name: 'Closing Line Value (CLV)', description: 'Beat the closing line to ensure long-term profitability', sport: 'Multi-Sport', sportColor: 'bg-purple-600', category: 'pregame', hasComponent: false },
+  { id: 'fatigue', name: 'Schedule Fatigue', description: 'Back-to-back games and rest differential analysis', sport: 'Multi-Sport', sportColor: 'bg-purple-600', category: 'pregame', hasComponent: false },
+  { id: 'weather', name: 'NFL Weather Impact', description: 'Rain, snow, wind, and temperature effects on totals', sport: 'NFL', sportColor: 'bg-green-600', category: 'pregame', hasComponent: false },
+  { id: 'pace', name: 'NBA Pace Mismatches', description: 'Identify tempo mismatches for over/under value', sport: 'NBA', sportColor: 'bg-orange-600', category: 'pregame', hasComponent: false },
+  { id: 'matchup-history', name: 'Matchup History', description: 'Head-to-head trends and situational matchup analysis', sport: 'Multi-Sport', sportColor: 'bg-purple-600', category: 'pregame', hasComponent: false },
+  { id: 'props', name: 'Player Props', description: 'Usage rates and matchup analysis for player markets', sport: 'NBA', sportColor: 'bg-orange-600', category: 'pregame', hasComponent: false },
+  { id: 'regression', name: 'Regression Analysis', description: 'Identify teams due for positive or negative regression', sport: 'Multi-Sport', sportColor: 'bg-purple-600', category: 'pregame', hasComponent: false },
+  { id: 'b2b-rested', name: 'NBA Back-to-Back vs Rested', description: 'Fade teams on B2B against fully rested opponents', sport: 'NBA', sportColor: 'bg-orange-600', category: 'pregame', hasComponent: false },
+  { id: 'nhl-b2b-rested', name: 'NHL Back-to-Back vs Rested', description: 'NHL teams on B2B lose win rate vs rested teams', sport: 'NHL', sportColor: 'bg-blue-600', category: 'pregame', hasComponent: false },
+  { id: 'home-away', name: 'Home/Away Splits', description: 'Exploit extreme home/away performance differentials', sport: 'Multi-Sport', sportColor: 'bg-purple-600', category: 'pregame', hasComponent: false },
+  { id: 'divisional', name: 'Divisional Rivalries', description: 'Division games trend under due to defensive familiarity', sport: 'Multi-Sport', sportColor: 'bg-purple-600', category: 'pregame', hasComponent: false },
+  { id: 'revenge', name: 'Revenge Games', description: 'Teams seeking revenge after lopsided losses', sport: 'Multi-Sport', sportColor: 'bg-purple-600', category: 'pregame', hasComponent: false },
+  { id: 'fade-public', name: 'Fade the Public', description: 'Bet against teams with 70%+ public betting support', sport: 'Multi-Sport', sportColor: 'bg-purple-600', category: 'pregame', hasComponent: false },
+  { id: 'rlm', name: 'Reverse Line Movement', description: 'Line moves opposite of public betting percentages', sport: 'Multi-Sport', sportColor: 'bg-purple-600', category: 'pregame', hasComponent: false },
+  { id: 'blowout-bounce', name: 'After Blowout Loss', description: 'NBA teams bounce back strong ATS after losing big', sport: 'NBA', sportColor: 'bg-orange-600', category: 'pregame', hasComponent: false },
+  { id: 'letdown', name: 'Letdown Spot', description: 'Fade teams coming off big emotional wins', sport: 'Multi-Sport', sportColor: 'bg-purple-600', category: 'pregame', hasComponent: false },
+  { id: 'lookahead', name: 'Lookahead Spot', description: 'Fade teams before major games', sport: 'Multi-Sport', sportColor: 'bg-purple-600', category: 'pregame', hasComponent: false },
+  { id: 'primetime', name: 'NFL Primetime Unders', description: 'NFL primetime games trend under the total', sport: 'NFL', sportColor: 'bg-green-600', category: 'pregame', hasComponent: false },
+  { id: 'conference', name: 'Conference Mismatches', description: 'Exploit talent gaps between East and West', sport: 'NBA', sportColor: 'bg-orange-600', category: 'pregame', hasComponent: false },
+];
 
 interface ArbitrageAlert {
   game_id: string;
@@ -85,7 +131,8 @@ export function Alerts() {
   const [momentumCount, setMomentumCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'arbitrage' | 'steam' | 'lines' | 'goalie' | 'comeback' | 'halftime' | 'momentum'>('comeback');
+  const [activeTab, setActiveTab] = useState<string>('comeback');
+  const [categoryTab, setCategoryTab] = useState<'live' | 'pregame'>('live');
   const [autoRefresh, setAutoRefresh] = useState(true);
   const alertBellRef = useRef<HTMLAudioElement>(null);
   const sirenRef = useRef<HTMLAudioElement>(null);
@@ -94,11 +141,11 @@ export function Alerts() {
   const fetchAlerts = async () => {
     try {
       const [alertsResponse, goalieResponse, comebackResponse, halftimeResponse, momentumResponse] = await Promise.all([
-        fetch('/api/alerts/all?user_id=default'),
-        fetch('/api/goalie-pull-opportunities'),
-        fetch('/api/favorite-comeback-opportunities'),
-        fetch('/api/halftime-opportunities'),
-        fetch('/api/momentum-opportunities')
+        fetch(getApiUrl('alerts/all?user_id=default')),
+        fetch(getApiUrl('goalie-pull-opportunities')),
+        fetch(getApiUrl('favorite-comeback-opportunities')),
+        fetch(getApiUrl('halftime-opportunities')),
+        fetch(getApiUrl('momentum-opportunities'))
       ]);
 
       if (!alertsResponse.ok) throw new Error('Failed to fetch alerts');
@@ -198,7 +245,7 @@ export function Alerts() {
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setAutoRefresh(!autoRefresh)}
-                className={`px-4 py-2 rounded-lg border-4 font-bold tracking-wide transition-colors ${
+                className={`px-4 py-2 border font-bold tracking-wide transition-colors ${
                   autoRefresh
                     ? 'bg-gradient-to-br from-green-600 via-green-700 to-green-800 text-white border-green-500'
                     : 'bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 text-slate-300 border-slate-600 hover:border-blue-500'
@@ -208,7 +255,7 @@ export function Alerts() {
               </button>
               <button
                 onClick={fetchAlerts}
-                className="px-4 py-2 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 hover:from-blue-500 hover:via-blue-600 hover:to-blue-700 text-white border-4 border-blue-500 rounded-lg font-bold tracking-wide transition-all"
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white border-2 border-blue-500 font-bold tracking-wide transition-all"
               >
                 REFRESH NOW
               </button>
@@ -217,128 +264,102 @@ export function Alerts() {
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-            <div className="bg-gradient-to-br from-orange-900 via-orange-700 to-orange-900 border-4 border-orange-500 rounded-lg p-6 hover:shadow-lg hover:shadow-orange-600/30 transition-all">
+            <div className="bg-slate-900 border-2 border-orange-700 p-6 hover:border-orange-500 transition-all">
               <div className="text-base text-white font-bold tracking-wide mb-1">🔥 NBA COMEBACKS</div>
               <div className="text-3xl font-bold text-white">{favoriteComebackCount}</div>
             </div>
-            <div className="bg-gradient-to-br from-red-900 via-red-700 to-red-900 border-4 border-red-500 rounded-lg p-6 hover:shadow-lg hover:shadow-red-600/30 transition-all">
+            <div className="bg-slate-900 border-2 border-red-700 p-6 hover:border-red-500 transition-all">
               <div className="text-base text-white font-bold tracking-wide mb-1">🚨 NHL GOALIE PULLS</div>
               <div className="text-3xl font-bold text-white">{goaliePullCount}</div>
             </div>
-            <div className="bg-gradient-to-br from-purple-900 via-purple-700 to-purple-900 border-4 border-purple-500 rounded-lg p-6 hover:shadow-lg hover:shadow-purple-600/30 transition-all">
+            <div className="bg-slate-900 border-2 border-purple-600 p-6 hover:border-purple-400 transition-all">
               <div className="text-base text-white font-bold tracking-wide mb-1">⏰ NBA HALFTIME 2H</div>
               <div className="text-3xl font-bold text-white">{halftimeCount}</div>
             </div>
-            <div className="bg-gradient-to-br from-red-900 via-orange-700 to-red-900 border-4 border-orange-500 rounded-lg p-6 hover:shadow-lg hover:shadow-orange-600/30 transition-all">
+            <div className="bg-slate-900 border-2 border-orange-700 p-6 hover:border-orange-500 transition-all">
               <div className="text-base text-white font-bold tracking-wide mb-1">🔥 MOMENTUM SURGES</div>
               <div className="text-3xl font-bold text-white">{momentumCount}</div>
             </div>
-            <div className="bg-gradient-to-br from-green-900 via-green-700 to-green-900 border-4 border-green-600 rounded-lg p-6 hover:shadow-lg hover:shadow-green-600/30 transition-all">
+            <div className="bg-slate-900 border-2 border-green-700 p-6 hover:border-green-500 transition-all">
               <div className="text-base text-white font-bold tracking-wide mb-1">ARBITRAGE OPPORTUNITIES</div>
               <div className="text-3xl font-bold text-white">{alertsData?.arbitrage.count || 0}</div>
             </div>
-            <div className="bg-gradient-to-br from-blue-900 via-blue-700 to-blue-900 border-4 border-blue-500 rounded-lg p-6 hover:shadow-lg hover:shadow-blue-600/30 transition-all">
+            <div className="bg-slate-900 border-2 border-blue-500 p-6 hover:border-blue-400 transition-all">
               <div className="text-base text-white font-bold tracking-wide mb-1">STEAM MOVES</div>
               <div className="text-3xl font-bold text-white">{alertsData?.steam_moves.count || 0}</div>
             </div>
-            <div className="bg-gradient-to-br from-slate-900 via-slate-700 to-slate-900 border-4 border-slate-600 rounded-lg p-6 hover:shadow-lg hover:shadow-slate-600/30 transition-all">
+            <div className="bg-slate-900 border-2 border-slate-700 p-6 hover:border-slate-500 transition-all">
               <div className="text-base text-white font-bold tracking-wide mb-1">MIDDLES</div>
               <div className="text-3xl font-bold text-white">{alertsData?.middles.count || 0}</div>
             </div>
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-2 mb-6">
+        {/* Category Tabs */}
+        <div className="flex gap-4 mb-6">
           <button
-            onClick={() => setActiveTab('comeback')}
-            className={`px-6 py-3 rounded-lg border-4 font-bold tracking-wide transition-colors ${
-              activeTab === 'comeback'
-                ? 'bg-gradient-to-br from-orange-600 via-orange-700 to-orange-800 text-white border-orange-500 shadow-lg shadow-orange-600/30'
-                : 'bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800 hover:border-blue-600'
-            }`}
-          >
-            🔥 NBA COMEBACKS ({favoriteComebackCount})
-          </button>
-          <button
-            onClick={() => setActiveTab('goalie')}
-            className={`px-6 py-3 rounded-lg border-4 font-bold tracking-wide transition-colors ${
-              activeTab === 'goalie'
+            onClick={() => { setCategoryTab('live'); setActiveTab('comeback'); }}
+            className={`px-8 py-4 border-2 font-bold text-lg tracking-wide transition-all ${
+              categoryTab === 'live'
                 ? 'bg-gradient-to-br from-red-600 via-red-700 to-red-800 text-white border-red-500 shadow-lg shadow-red-600/30'
                 : 'bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800 hover:border-blue-600'
             }`}
           >
-            🚨 NHL GOALIE PULLS ({goaliePullCount})
+            🔴 LIVE STRATEGIES ({ALL_STRATEGIES.filter(s => s.category === 'live').length})
           </button>
           <button
-            onClick={() => setActiveTab('halftime')}
-            className={`px-6 py-3 rounded-lg border-4 font-bold tracking-wide transition-colors ${
-              activeTab === 'halftime'
-                ? 'bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 text-white border-purple-500 shadow-lg shadow-purple-600/30'
+            onClick={() => { setCategoryTab('pregame'); setActiveTab('steam'); }}
+            className={`px-8 py-4 border-2 font-bold text-lg tracking-wide transition-all ${
+              categoryTab === 'pregame'
+                ? 'bg-gradient-to-br from-green-600 via-green-700 to-green-800 text-white border-green-500 shadow-lg shadow-green-600/30'
                 : 'bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800 hover:border-blue-600'
             }`}
           >
-            ⏰ NBA HALFTIME 2H ({halftimeCount})
+            📊 PRE-GAME STRATEGIES ({ALL_STRATEGIES.filter(s => s.category === 'pregame').length})
           </button>
-          <button
-            onClick={() => setActiveTab('momentum')}
-            className={`px-6 py-3 rounded-lg border-4 font-bold tracking-wide transition-colors ${
-              activeTab === 'momentum'
-                ? 'bg-gradient-to-br from-red-600 via-orange-700 to-red-800 text-white border-orange-500 shadow-lg shadow-orange-600/30'
-                : 'bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800 hover:border-blue-600'
-            }`}
-          >
-            🔥 MOMENTUM SURGES ({momentumCount})
-          </button>
-          <button
-            onClick={() => setActiveTab('arbitrage')}
-            className={`px-6 py-3 rounded-lg border-4 font-bold tracking-wide transition-colors ${
-              activeTab === 'arbitrage'
-                ? 'bg-gradient-to-br from-green-600 via-green-700 to-green-800 text-white border-green-500'
-                : 'bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800 hover:border-blue-600'
-            }`}
-          >
-            ARBITRAGE ({alertsData?.arbitrage.count || 0})
-          </button>
-          <button
-            onClick={() => setActiveTab('steam')}
-            className={`px-6 py-3 rounded-lg border-4 font-bold tracking-wide transition-colors ${
-              activeTab === 'steam'
-                ? 'bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 text-white border-blue-500'
-                : 'bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800 hover:border-blue-600'
-            }`}
-          >
-            STEAM MOVES ({alertsData?.steam_moves.count || 0})
-          </button>
-          <button
-            onClick={() => setActiveTab('lines')}
-            className={`px-6 py-3 rounded-lg border-4 font-bold tracking-wide transition-colors ${
-              activeTab === 'lines'
-                ? 'bg-gradient-to-br from-slate-600 via-slate-700 to-slate-800 text-white border-slate-500'
-                : 'bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800 hover:border-blue-600'
-            }`}
-          >
-            MIDDLES ({alertsData?.middles.count || 0})
-          </button>
+        </div>
+
+        {/* Strategy Tabs */}
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+          {ALL_STRATEGIES.filter(s => s.category === categoryTab).map((strategy) => (
+            <button
+              key={strategy.id}
+              onClick={() => setActiveTab(strategy.id)}
+              className={`px-4 py-2 border font-semibold whitespace-nowrap transition-colors ${
+                activeTab === strategy.id
+                  ? `${strategy.sportColor} text-white border-white shadow-lg`
+                  : 'bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800 hover:border-blue-600'
+              }`}
+            >
+              {strategy.name}
+              {strategy.id === 'comeback' && ` (${favoriteComebackCount})`}
+              {strategy.id === 'goalie' && ` (${goaliePullCount})`}
+              {strategy.id === 'halftime' && ` (${halftimeCount})`}
+              {strategy.id === 'momentum' && ` (${momentumCount})`}
+              {strategy.id === 'arbitrage' && ` (${alertsData?.arbitrage.count || 0})`}
+              {strategy.id === 'steam' && ` (${alertsData?.steam_moves.count || 0})`}
+              {strategy.id === 'lines' && ` (${alertsData?.middles.count || 0})`}
+            </button>
+          ))}
         </div>
 
         {/* Arbitrage Alerts */}
         {activeTab === 'arbitrage' && (
           <div className="space-y-4">
             {alertsData?.arbitrage.alerts.length === 0 ? (
-              <div className="bg-slate-800 border-4 border-slate-700 rounded-lg p-12 text-center">
+              <div className="bg-slate-800 border-2 border-slate-700 p-12 text-center">
                 <div className="text-slate-400 text-lg">No arbitrage opportunities detected</div>
                 <div className="text-slate-500 text-sm mt-2">Scanning every 10 seconds...</div>
               </div>
             ) : (
               alertsData?.arbitrage.alerts.map((alert, idx) => (
-                <div key={idx} className="bg-gradient-to-br from-red-900 to-black border-4 border-red-600 rounded-lg p-6">
+                <div key={idx} className="bg-slate-900 border-2 border-red-700 p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold text-white ${getSportBadgeColor(alert.sport)}`}>
+                      <span className={`px-3 py-1 text-xs font-bold text-white ${getSportBadgeColor(alert.sport)}`}>
                         {alert.sport.toUpperCase()}
                       </span>
-                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-green-600 text-white">
+                      <span className="px-3 py-1 text-xs font-bold bg-green-600 text-white">
                         {getMarketLabel(alert.market_type)}
                       </span>
                       <span className="text-lg font-bold text-white">
@@ -356,7 +377,7 @@ export function Alerts() {
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div className="bg-slate-800 border-4 border-slate-700 rounded-lg p-4">
+                    <div className="bg-slate-800 border-2 border-slate-700 p-4">
                       <div className="text-sm text-slate-400 mb-2">Book A: {alert.book_a}</div>
                       <div className="text-xl font-bold text-white mb-1">
                         {alert.odds_a > 0 ? `+${alert.odds_a}` : alert.odds_a}
@@ -365,7 +386,7 @@ export function Alerts() {
                         Stake: ${alert.stake_a.toFixed(2)}
                       </div>
                     </div>
-                    <div className="bg-slate-800 border-4 border-slate-700 rounded-lg p-4">
+                    <div className="bg-slate-800 border-2 border-slate-700 p-4">
                       <div className="text-sm text-slate-400 mb-2">Book B: {alert.book_b}</div>
                       <div className="text-xl font-bold text-white mb-1">
                         {alert.odds_b > 0 ? `+${alert.odds_b}` : alert.odds_b}
@@ -397,19 +418,19 @@ export function Alerts() {
         {activeTab === 'steam' && (
           <div className="space-y-4">
             {alertsData?.steam_moves.alerts.length === 0 ? (
-              <div className="bg-slate-800 border-4 border-slate-700 rounded-lg p-12 text-center">
+              <div className="bg-slate-800 border-2 border-slate-700 p-12 text-center">
                 <div className="text-slate-400 text-lg">No steam moves detected</div>
                 <div className="text-slate-500 text-sm mt-2">Scanning every 10 seconds...</div>
               </div>
             ) : (
               alertsData?.steam_moves.alerts.map((alert, idx) => (
-                <div key={idx} className="bg-gradient-to-br from-blue-900 to-slate-800 border-4 border-blue-500 rounded-lg p-6">
+                <div key={idx} className="bg-slate-900 border-2 border-blue-500 p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold text-white ${getSportBadgeColor(alert.sport)}`}>
+                      <span className={`px-3 py-1 text-xs font-bold text-white ${getSportBadgeColor(alert.sport)}`}>
                         {alert.sport.toUpperCase()}
                       </span>
-                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-orange-600 text-white">
+                      <span className="px-3 py-1 text-xs font-bold bg-orange-600 text-white">
                         {getMarketLabel(alert.market_type)}
                       </span>
                       <span className="text-lg font-bold text-white">
@@ -424,7 +445,7 @@ export function Alerts() {
                     </div>
                   </div>
 
-                  <div className="bg-slate-800 border-4 border-slate-700 rounded-lg p-4 mb-4">
+                  <div className="bg-slate-800 border-2 border-slate-700 p-4 mb-4">
                     <div className="grid grid-cols-3 gap-4 text-center">
                       <div>
                         <div className="text-sm text-slate-400 mb-1">Original Line</div>
@@ -461,19 +482,19 @@ export function Alerts() {
         {activeTab === 'lines' && (
           <div className="space-y-4">
             {alertsData?.middles.alerts.length === 0 ? (
-              <div className="bg-slate-800 border-4 border-slate-700 rounded-lg p-12 text-center">
+              <div className="bg-slate-800 border-2 border-slate-700 p-12 text-center">
                 <div className="text-slate-400 text-lg">No middle opportunities detected</div>
                 <div className="text-slate-500 text-sm mt-2">Scanning every 10 seconds...</div>
               </div>
             ) : (
               alertsData?.middles.alerts.map((alert, idx) => (
-                <div key={idx} className="bg-gradient-to-br from-purple-900 to-black border-4 border-purple-600 rounded-lg p-6">
+                <div key={idx} className="bg-slate-900 border-2 border-purple-600 p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold text-white ${getSportBadgeColor(alert.sport)}`}>
+                      <span className={`px-3 py-1 text-xs font-bold text-white ${getSportBadgeColor(alert.sport)}`}>
                         {alert.sport.toUpperCase()}
                       </span>
-                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-purple-600 text-white">
+                      <span className="px-3 py-1 text-xs font-bold bg-purple-600 text-white">
                         {getMarketLabel(alert.market_type)}
                       </span>
                       <span className="text-lg font-bold text-white">
@@ -491,7 +512,7 @@ export function Alerts() {
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div className="bg-slate-800 border-4 border-slate-700 rounded-lg p-4">
+                    <div className="bg-slate-800 border-2 border-slate-700 p-4">
                       <div className="text-sm text-slate-400 mb-2">Low: {alert.book_low}</div>
                       <div className="text-lg font-bold text-white mb-1">
                         {alert.side_low}
@@ -500,7 +521,7 @@ export function Alerts() {
                         Odds: {alert.odds_low > 0 ? `+${alert.odds_low}` : alert.odds_low}
                       </div>
                     </div>
-                    <div className="bg-slate-800 border-4 border-slate-700 rounded-lg p-4">
+                    <div className="bg-slate-800 border-2 border-slate-700 p-4">
                       <div className="text-sm text-slate-400 mb-2">High: {alert.book_high}</div>
                       <div className="text-lg font-bold text-white mb-1">
                         {alert.side_high}
@@ -539,6 +560,18 @@ export function Alerts() {
         {activeTab === 'momentum' && (
           <MomentumAlerts />
         )}
+
+        {/* Generic Strategy Alerts (for strategies without dedicated components) */}
+        {ALL_STRATEGIES.filter(s => !s.hasComponent && s.id === activeTab).map((strategy) => (
+          <GenericStrategyAlert
+            key={strategy.id}
+            strategyName={strategy.name}
+            strategyDescription={strategy.description}
+            sport={strategy.sport}
+            sportColor={strategy.sportColor}
+            category={strategy.category}
+          />
+        ))}
       </div>
     </div>
   );

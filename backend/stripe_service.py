@@ -5,7 +5,6 @@ Handles all Stripe-related operations for subscription management
 
 import os
 import stripe
-from stripe.error import StripeError, SignatureVerificationError
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 from dotenv import load_dotenv
@@ -172,7 +171,7 @@ class StripeService:
                 ]
             }
 
-        except StripeError as e:
+        except stripe.error.StripeError as e:
             print(f"Error retrieving subscription: {str(e)}")
             return None
 
@@ -197,7 +196,7 @@ class StripeService:
                 'metadata': customer.metadata
             }
 
-        except StripeError as e:
+        except stripe.error.StripeError as e:
             print(f"Error retrieving customer: {str(e)}")
             return None
 
@@ -226,7 +225,7 @@ class StripeService:
             
             return True
 
-        except StripeError as e:
+        except stripe.error.StripeError as e:
             print(f"Error cancelling subscription: {str(e)}")
             return False
 
@@ -257,7 +256,7 @@ class StripeService:
             # Invalid payload
             print("Invalid webhook payload")
             return None
-        except SignatureVerificationError:
+        except stripe.error.SignatureVerificationError:
             # Invalid signature
             print("Invalid webhook signature")
             return None
@@ -310,7 +309,7 @@ class StripeService:
             
             return customer.id
 
-        except StripeError as e:
+        except stripe.error.StripeError as e:
             print(f"Error creating customer: {str(e)}")
             return None
 
@@ -346,7 +345,7 @@ class StripeService:
                 for invoice in invoices.data
             ]
 
-        except StripeError as e:
+        except stripe.error.StripeError as e:
             print(f"Error listing invoices: {str(e)}")
             return []
 

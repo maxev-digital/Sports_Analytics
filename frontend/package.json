@@ -1,12 +1,20 @@
 {
-  "name": "nba-live-betting-dashboard",
+  "name": "max-ev-sports-desktop",
   "private": true,
-  "version": "0.0.1",
-  "type": "module",
+  "version": "1.0.0",
+  "description": "MAX EV SPORTS - Professional Sports Betting Analytics Desktop Client",
+  "author": "Casino Tears - MAX EV SPORTS",
+  "main": "electron/main.js",
   "scripts": {
     "dev": "vite",
+    "dev:electron": "cross-env NODE_ENV=development electron .",
+    "dev:electron:win": "set NODE_ENV=development&& electron .",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "build:electron": "npm run build && electron-builder",
+    "preview": "vite preview",
+    "electron:start": "electron .",
+    "electron:pack": "electron-builder --dir",
+    "electron:dist": "electron-builder"
   },
   "dependencies": {
     "react": "^18.3.1",
@@ -18,9 +26,50 @@
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.3",
     "autoprefixer": "^10.4.20",
+    "electron": "^39.0.0",
+    "electron-builder": "^24.13.3",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.15",
     "typescript": "^5.6.3",
     "vite": "^6.0.1"
+  },
+  "build": {
+    "appId": "com.maxevsports.desktop",
+    "productName": "MAX EV SPORTS",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "portable",
+      "icon": "public/logo2.png"
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "icon": "public/logo2.png",
+      "category": "public.app-category.finance"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "icon": "public/logo2.png",
+      "category": "Office"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "MAX EV SPORTS"
+    }
   }
 }

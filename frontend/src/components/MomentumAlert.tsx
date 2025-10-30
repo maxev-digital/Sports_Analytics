@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getApiUrl } from '../config';
 
 interface MomentumFactor {
   name: string;
@@ -45,7 +46,7 @@ export const MomentumAlerts: React.FC = () => {
   useEffect(() => {
     const fetchOpportunities = async () => {
       try {
-        const response = await fetch('/api/momentum-opportunities');
+        const response = await fetch(getApiUrl('momentum-opportunities'));
         if (!response.ok) {
           throw new Error('Failed to fetch momentum opportunities');
         }

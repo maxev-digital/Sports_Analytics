@@ -8,6 +8,7 @@ from momentum_calculator import MomentumCalculator
 from nba_live_client import NBALiveClient
 # from nba_momentum_client import NBAMomentumClient
 from espn_nfl_client import ESPNNFLClient
+from espn_nba_client import ESPNnbaClient
 from nfl_stats_client import NFLStatsClient
 from nfl_momentum_client import NFLMomentumClient
 from nhl_stats_client import NHLStatsClient
@@ -34,6 +35,7 @@ class GameTracker:
         # self.nba_stats_client = NBAStatsClient()
         self.nba_live_client = NBALiveClient()
         # self.nba_momentum_client = NBAMomentumClient()
+        self.espn_nba_client = ESPNnbaClient()
         self.espn_nfl_client = ESPNNFLClient()
         self.nfl_stats_client = NFLStatsClient()
         self.nfl_momentum_client = NFLMomentumClient()
@@ -46,7 +48,8 @@ class GameTracker:
         self.nhl_team_stats_cache: Dict[str, NHLTeamStats] = {}  # Cache NHL team stats
         self.mlb_team_stats_cache: Dict[str, MLBTeamStats] = {}  # Cache MLB team stats
         self.pregame_totals_cache: Dict[str, float] = {}  # Cache pregame totals per game_id
-        self.espn_scoreboard_cache: Dict = {}  # Cache ESPN scoreboard data
+        self.espn_nfl_scoreboard_cache: Dict = {}  # Cache ESPN NFL scoreboard data
+        self.espn_nba_scoreboard_cache: Dict = {}  # Cache ESPN NBA scoreboard data
         self.odds_timestamp_cache: Dict[str, Dict[str, float]] = {}  # Track when each book updates odds: {game_id: {bookmaker: timestamp}}
         self.goalie_pull_opportunities: List[Dict] = []  # Track goalie pull betting opportunities
         self.favorite_comeback_opportunities: List[Dict] = []  # Track NBA favorite comeback opportunities
@@ -404,10 +407,82 @@ class GameTracker:
             return None
 
     def _get_team_stats(self, team_name: str) -> Optional[TeamStats]:
-        """Get team stats with caching - DISABLED: NBA API causes timeouts"""
-        # DISABLED: Return None to avoid NBA API calls
-        logger.info(f"NBA stats disabled - skipping stats for {team_name}")
-        return None
+        """Get NBA team stats from ESPN with caching"""
+        # Check cache first
+        if team_name in self.team_stats_cache:
+            logger.info(f"Using cached stats for {team_name}")
+            return self.team_stats_cache[team_name]
+
+        try:
+            # Convert team name to abbreviation for ESPN
+            team_abbr = self._convert_team_name_to_abbr(team_name)
+            if not team_abbr:
+                logger.warning(f"Could not find abbreviation for {team_name}")
+                return None
+
+            # Fetch from ESPN
+            logger.info(f"Fetching ESPN NBA stats for {team_name} ({team_abbr})")
+            espn_data = self.espn_nba_client.fetch_team_season_stats(team_abbr)
+
+            if not espn_data:
+                return None
+
+            # Convert ESPN data to TeamStats model
+            season_stats = espn_data.get('season_stats', {})
+            team_stats = TeamStats(
+                team_id=str(espn_data.get('team_id', '')),
+                team_name=team_name,
+                games_played=espn_data.get('games_played', 0),
+                wins=espn_data.get('wins', 0),
+                losses=espn_data.get('losses', 0),
+                win_pct=espn_data.get('win_pct', 0.0),
+                off_rating=season_stats.get('offensive_rating', 0.0),
+                def_rating=season_stats.get('defensive_rating', 0.0),
+                net_rating=season_stats.get('net_rating', 0.0),
+                pace=season_stats.get('pace', 0.0),
+                fg_pct=season_stats.get('fg_pct', 0.0),
+                fg3_pct=season_stats.get('fg3_pct', 0.0),
+                ft_pct=season_stats.get('ft_pct', 0.0),
+                pts_per_game=season_stats.get('points_per_game', 0.0),
+                pts_allowed=season_stats.get('points_allowed_per_game', 0.0),
+                last_5_record=espn_data.get('last_5_record'),
+                last_5_avg_pts=None,
+                last_5_avg_margin=None,
+                form_trend=espn_data.get('form_trend'),
+                pts_per_game_rank=espn_data.get('rankings', {}).get('points_per_game_rank'),
+                off_rating_rank=espn_data.get('rankings', {}).get('offensive_rating_rank'),
+                def_rating_rank=espn_data.get('rankings', {}).get('defensive_rating_rank'),
+                net_rating_rank=espn_data.get('rankings', {}).get('net_rating_rank'),
+                pace_rank=espn_data.get('rankings', {}).get('pace_rank'),
+                fg_pct_rank=espn_data.get('rankings', {}).get('fg_pct_rank'),
+                fg3_pct_rank=espn_data.get('rankings', {}).get('fg3_pct_rank'),
+                ft_pct_rank=espn_data.get('rankings', {}).get('ft_pct_rank')
+            )
+
+            # Cache the stats
+            self.team_stats_cache[team_name] = team_stats
+            return team_stats
+
+        except Exception as e:
+            logger.error(f"Error fetching ESPN NBA stats for {team_name}: {e}")
+            return None
+
+    def _convert_team_name_to_abbr(self, team_name: str) -> Optional[str]:
+        """Convert full team name to abbreviation for ESPN"""
+        name_to_abbr = {
+            'Atlanta Hawks': 'ATL', 'Boston Celtics': 'BOS', 'Brooklyn Nets': 'BKN',
+            'Charlotte Hornets': 'CHA', 'Chicago Bulls': 'CHI', 'Cleveland Cavaliers': 'CLE',
+            'Dallas Mavericks': 'DAL', 'Denver Nuggets': 'DEN', 'Detroit Pistons': 'DET',
+            'Golden State Warriors': 'GSW', 'Houston Rockets': 'HOU', 'Indiana Pacers': 'IND',
+            'LA Clippers': 'LAC', 'Los Angeles Clippers': 'LAC', 'Los Angeles Lakers': 'LAL',
+            'Memphis Grizzlies': 'MEM', 'Miami Heat': 'MIA', 'Milwaukee Bucks': 'MIL',
+            'Minnesota Timberwolves': 'MIN', 'New Orleans Pelicans': 'NOP', 'New York Knicks': 'NYK',
+            'Oklahoma City Thunder': 'OKC', 'Orlando Magic': 'ORL', 'Philadelphia 76ers': 'PHI',
+            'Phoenix Suns': 'PHX', 'Portland Trail Blazers': 'POR', 'Sacramento Kings': 'SAC',
+            'San Antonio Spurs': 'SAS', 'Toronto Raptors': 'TOR', 'Utah Jazz': 'UTA',
+            'Washington Wizards': 'WAS'
+        }
+        return name_to_abbr.get(team_name)
 
         # OLD CODE - DISABLED
         # Check if we have cached stats
@@ -465,8 +540,10 @@ class GameTracker:
 
         # Check if we're in quiet hours (11 PM - 9 AM EST) to save API costs
         if self._is_quiet_hours():
-            logger.info("Quiet hours active (11 PM - 9 AM EST) - using cached data, skipping Odds API calls")
-            # Return early without making API calls - frontend will show cached games
+            logger.info("Quiet hours active (11 PM - 9 AM EST) - clearing stale games, skipping Odds API calls")
+            # Clear all games during quiet hours to avoid showing stale "live" games
+            self.games = {}
+            logger.info("✓ Cleared all games during quiet hours - no games will be displayed")
             return
 
         # Fetch odds and scores
@@ -477,12 +554,16 @@ class GameTracker:
         live_scoreboard = self.nba_live_client.fetch_live_scoreboard()
 
         # Fetch ESPN NFL scoreboard for real-time NFL data
-        self.espn_scoreboard_cache = self.espn_nfl_client.fetch_scoreboard()
+        self.espn_nfl_scoreboard_cache = self.espn_nfl_client.fetch_scoreboard()
+
+        # Fetch ESPN NBA scoreboard for real-time NBA data
+        self.espn_nba_scoreboard_cache = self.espn_nba_client.fetch_scoreboard()
 
         logger.info(f"Fetched {len(odds_data)} games from odds API")
         logger.info(f"Scores data type: {type(scores_data)}, length: {len(scores_data) if scores_data else 0}")
         logger.info(f"Fetched live scoreboard with {len(live_scoreboard)} team entries")
-        logger.info(f"Fetched ESPN NFL scoreboard with {len(self.espn_scoreboard_cache.get('events', []))} games")
+        logger.info(f"Fetched ESPN NFL scoreboard with {len(self.espn_nfl_scoreboard_cache.get('events', []))} games")
+        logger.info(f"Fetched ESPN NBA scoreboard with {len(self.espn_nba_scoreboard_cache.get('events', []))} games")
 
         # FILTER: Process LIVE games (all sports) + UPCOMING games (NBA, NHL, NCAAF only)
         # This shows live action + allows users to prepare for upcoming games in key sports
@@ -718,7 +799,7 @@ class GameTracker:
                     if game_data.get('sport_key', '').startswith('americanfootball'):
                         espn_live_info = self.espn_nfl_client.get_live_game_info(
                             game_data['home_team'],
-                            self.espn_scoreboard_cache
+                            self.espn_nfl_scoreboard_cache
                         )
                         if espn_live_info and espn_live_info['is_live']:
                             quarter = espn_live_info['period']
@@ -786,8 +867,13 @@ class GameTracker:
                     logger.info(f"Cached pregame total for {game_id}: {pregame_total}")
 
                 # Get team stats (fetch early so projector can use them)
-                home_stats = self._get_team_stats(game_state.home_team.name)
-                away_stats = self._get_team_stats(game_state.away_team.name)
+                # Only fetch for NBA games - ESPN NBA stats
+                home_stats = None
+                away_stats = None
+                if game_state.sport_key == 'basketball_nba':
+                    home_stats = self._get_team_stats(game_state.home_team.name)
+                    away_stats = self._get_team_stats(game_state.away_team.name)
+                    logger.info(f"NBA stats fetched - Home: {home_stats is not None} ({home_stats.team_name if home_stats else 'None'}), Away: {away_stats is not None} ({away_stats.team_name if away_stats else 'None'})")
 
                 # Calculate projection
                 if game_state.status == 'live' and game_state.quarter and game_state.time_remaining:
@@ -956,7 +1042,7 @@ class GameTracker:
                     logger.info(f"NHL stats fetched - Home: {home_nhl_stats is not None}, Away: {away_nhl_stats is not None}")
 
                     # Fetch live momentum stats only for live games
-                    if False and game_state.status == 'live':
+                    if game_state.status == 'live':
                         try:
                             # Get NHL game ID (format might need adjustment based on API)
                             # For now, use our game_id directly

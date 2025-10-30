@@ -141,7 +141,7 @@ export function PersonalBetAnalytics({
       <div className="mb-6 flex justify-end">
         <button
           onClick={() => setShowManualEntry(true)}
-          className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold rounded-lg shadow-lg hover:shadow-blue-600/50 transition-all border-2 border-blue-500"
+          className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all border-2 border-blue-500"
         >
           <span className="text-2xl">📖</span>
           Manual Bet Entry
@@ -151,7 +151,7 @@ export function PersonalBetAnalytics({
       {/* Manual Entry Modal */}
       {showManualEntry && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-          <div className="bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 border-4 border-blue-600 rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-slate-900 border-2 border-blue-600 p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-white flex items-center gap-2">
                 <span className="text-3xl">📖</span>
@@ -174,7 +174,7 @@ export function PersonalBetAnalytics({
                 <select
                   value={manualBetForm.sport}
                   onChange={(e) => setManualBetForm({ ...manualBetForm, sport: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 text-white focus:border-blue-500 focus:outline-none"
                   required
                 >
                   <option value="NBA">NBA</option>
@@ -196,7 +196,7 @@ export function PersonalBetAnalytics({
                     type="text"
                     value={manualBetForm.awayTeam}
                     onChange={(e) => setManualBetForm({ ...manualBetForm, awayTeam: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                    className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 text-white focus:border-blue-500 focus:outline-none"
                     placeholder="e.g., Lakers"
                     required
                   />
@@ -209,7 +209,7 @@ export function PersonalBetAnalytics({
                     type="text"
                     value={manualBetForm.homeTeam}
                     onChange={(e) => setManualBetForm({ ...manualBetForm, homeTeam: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                    className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 text-white focus:border-blue-500 focus:outline-none"
                     placeholder="e.g., Warriors"
                     required
                   />
@@ -225,7 +225,7 @@ export function PersonalBetAnalytics({
                   type="datetime-local"
                   value={manualBetForm.commenceTime}
                   onChange={(e) => setManualBetForm({ ...manualBetForm, commenceTime: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 text-white focus:border-blue-500 focus:outline-none"
                   required
                 />
               </div>
@@ -239,7 +239,7 @@ export function PersonalBetAnalytics({
                   <select
                     value={manualBetForm.betType}
                     onChange={(e) => setManualBetForm({ ...manualBetForm, betType: e.target.value as any })}
-                    className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                    className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 text-white focus:border-blue-500 focus:outline-none"
                     required
                   >
                     <option value="spread">Spread</option>
@@ -256,7 +256,7 @@ export function PersonalBetAnalytics({
                     type="text"
                     value={manualBetForm.betSide}
                     onChange={(e) => setManualBetForm({ ...manualBetForm, betSide: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                    className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 text-white focus:border-blue-500 focus:outline-none"
                     placeholder="e.g., OVER 220.5, Lakers -5.5"
                     required
                   />
@@ -274,7 +274,7 @@ export function PersonalBetAnalytics({
                     step="1"
                     value={manualBetForm.odds}
                     onChange={(e) => setManualBetForm({ ...manualBetForm, odds: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                    className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 text-white focus:border-blue-500 focus:outline-none"
                     placeholder="-110"
                     required
                   />
@@ -288,7 +288,7 @@ export function PersonalBetAnalytics({
                     step="0.01"
                     value={manualBetForm.stake}
                     onChange={(e) => setManualBetForm({ ...manualBetForm, stake: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                    className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 text-white focus:border-blue-500 focus:outline-none"
                     placeholder="100.00"
                     required
                   />
@@ -301,7 +301,7 @@ export function PersonalBetAnalytics({
                     type="text"
                     value={manualBetForm.bookmaker}
                     onChange={(e) => setManualBetForm({ ...manualBetForm, bookmaker: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                    className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 text-white focus:border-blue-500 focus:outline-none"
                     placeholder="DraftKings"
                     required
                   />
@@ -317,7 +317,7 @@ export function PersonalBetAnalytics({
                   <select
                     value={manualBetForm.confidence}
                     onChange={(e) => setManualBetForm({ ...manualBetForm, confidence: e.target.value as any })}
-                    className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                    className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 text-white focus:border-blue-500 focus:outline-none"
                   >
                     <option value="">None</option>
                     <option value="HIGH">HIGH</option>
@@ -334,7 +334,7 @@ export function PersonalBetAnalytics({
                     step="0.1"
                     value={manualBetForm.edgePercent}
                     onChange={(e) => setManualBetForm({ ...manualBetForm, edgePercent: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                    className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 text-white focus:border-blue-500 focus:outline-none"
                     placeholder="5.2"
                   />
                 </div>
@@ -348,7 +348,7 @@ export function PersonalBetAnalytics({
                 <textarea
                   value={manualBetForm.notes}
                   onChange={(e) => setManualBetForm({ ...manualBetForm, notes: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 text-white focus:border-blue-500 focus:outline-none"
                   rows={3}
                   placeholder="Any additional notes about this bet..."
                 />
@@ -358,14 +358,14 @@ export function PersonalBetAnalytics({
               <div className="flex gap-3 pt-4">
                 <button
                   type="submit"
-                  className="flex-1 px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-all"
+                  className="flex-1 px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-bold transition-all"
                 >
                   Add Bet
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowManualEntry(false)}
-                  className="px-6 py-3 bg-slate-600 hover:bg-slate-700 text-white font-semibold rounded-lg transition-all"
+                  className="px-6 py-3 bg-slate-600 hover:bg-slate-700 text-white font-semibold transition-all"
                 >
                   Cancel
                 </button>
@@ -377,7 +377,7 @@ export function PersonalBetAnalytics({
 
       {/* Overall Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-gradient-to-br from-green-900 via-green-700 to-green-900 border-4 border-green-700 rounded-lg p-6 hover:shadow-lg hover:shadow-green-600/20 hover:border-green-600 transition-all">
+        <div className="bg-slate-900 border-2 border-green-700 p-6 hover:border-green-600 transition-all">
           <div className="flex items-center justify-between mb-3">
             <div className="text-sm text-white font-bold tracking-wide">NET PROFIT/LOSS</div>
           </div>
@@ -387,7 +387,7 @@ export function PersonalBetAnalytics({
           <div className="text-xs text-green-300/60">{stats.settled_bets} settled bets</div>
         </div>
 
-        <div className="bg-gradient-to-br from-blue-900 via-blue-700 to-blue-900 border-4 border-blue-700 rounded-lg p-6 hover:shadow-lg hover:shadow-blue-600/20 hover:border-blue-600 transition-all">
+        <div className="bg-slate-900 border-2 border-blue-700 p-6 hover:border-blue-600 transition-all">
           <div className="flex items-center justify-between mb-3">
             <div className="text-sm text-white font-bold tracking-wide">WIN RATE</div>
           </div>
@@ -397,7 +397,7 @@ export function PersonalBetAnalytics({
           <div className="text-xs text-blue-300/60">{stats.won_bets}W / {stats.lost_bets}L / {stats.push_bets}P</div>
         </div>
 
-        <div className="bg-gradient-to-br from-purple-900 via-purple-700 to-purple-900 border-4 border-purple-700 rounded-lg p-6 hover:shadow-lg hover:shadow-purple-600/20 hover:border-purple-600 transition-all">
+        <div className="bg-slate-900 border-2 border-purple-700 p-6 hover:border-purple-600 transition-all">
           <div className="flex items-center justify-between mb-3">
             <div className="text-sm text-white font-bold tracking-wide">ROI</div>
           </div>
@@ -407,7 +407,7 @@ export function PersonalBetAnalytics({
           <div className="text-xs text-purple-300/60">Return on investment</div>
         </div>
 
-        <div className="bg-gradient-to-br from-slate-900 via-slate-700 to-slate-900 border-4 border-slate-700 rounded-lg p-6 hover:shadow-lg hover:shadow-blue-600/20 hover:border-blue-600 transition-all">
+        <div className="bg-slate-900 border-2 border-slate-700 p-6 hover:border-blue-600 transition-all">
           <div className="flex items-center justify-between mb-3">
             <div className="text-sm text-white font-bold tracking-wide">TOTAL WAGERED</div>
           </div>
@@ -427,7 +427,7 @@ export function PersonalBetAnalytics({
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {pendingBets.map((bet) => (
-              <div key={bet.id} className="bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 border-4 border-yellow-600 rounded-lg p-4">
+              <div key={bet.id} className="bg-slate-900 border-2 border-orange-600 p-4">
                 <div className="flex justify-between items-start mb-3">
                   <div>
                     <div className="text-lg font-bold text-white mb-1">
@@ -458,17 +458,17 @@ export function PersonalBetAnalytics({
                     placeholder="Stake amount ($)"
                     value={stakes[bet.id] || ''}
                     onChange={(e) => setStakes({ ...stakes, [bet.id]: e.target.value })}
-                    className="flex-1 px-3 py-2 bg-slate-900 border-2 border-slate-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                    className="flex-1 px-3 py-2 bg-slate-900 border-2 border-slate-600 text-white focus:border-blue-500 focus:outline-none"
                   />
                   <button
                     onClick={() => handleAddStake(bet.id)}
-                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-all"
+                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold transition-all"
                   >
                     Log Bet
                   </button>
                   <button
                     onClick={() => handleDeleteBet(bet.id)}
-                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-all"
+                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold transition-all"
                   >
                     Remove
                   </button>
@@ -488,7 +488,7 @@ export function PersonalBetAnalytics({
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {activeBets.map((bet) => (
-              <div key={bet.id} className="bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 border-4 border-blue-600 rounded-lg p-4">
+              <div key={bet.id} className="bg-slate-900 border-2 border-blue-600 p-4">
                 <div className="flex justify-between items-start mb-3">
                   <div>
                     <div className="text-lg font-bold text-white mb-1">
@@ -526,7 +526,7 @@ export function PersonalBetAnalytics({
             <h2 className="text-2xl font-bold text-white">✅ Settled Bets</h2>
             <span className="text-sm text-slate-400">({settledBets.length}) - Last 50 shown</span>
           </div>
-          <div className="bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 border-4 border-slate-700 rounded-lg p-6 overflow-x-auto">
+          <div className="bg-slate-900 border-2 border-slate-700 p-6 overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-slate-700">
@@ -558,7 +558,7 @@ export function PersonalBetAnalytics({
                       {bet.odds > 0 ? '+' : ''}{bet.odds}
                     </td>
                     <td className="text-center py-3 px-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                      <span className={`px-3 py-1 text-xs font-bold ${
                         bet.status === 'won' ? 'bg-green-900 text-green-300' :
                         bet.status === 'lost' ? 'bg-red-900 text-red-300' :
                         'bg-slate-700 text-slate-300'
@@ -589,7 +589,7 @@ export function PersonalBetAnalytics({
           <p className="text-slate-400 mb-6">
             Start tracking your bets by clicking bookmaker icons on game cards
           </p>
-          <div className="bg-blue-900/30 border-2 border-blue-700 rounded-lg p-6 max-w-2xl mx-auto">
+          <div className="bg-blue-900/30 border-2 border-blue-700 p-6 max-w-2xl mx-auto">
             <h4 className="text-lg font-semibold text-blue-300 mb-3">How it works:</h4>
             <ol className="text-left text-slate-300 space-y-2">
               <li>1. Click a bookmaker icon on any game card</li>

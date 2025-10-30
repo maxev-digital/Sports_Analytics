@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getApiUrl } from '../config';
 
 interface RegressionFactor {
   name: string;
@@ -53,7 +54,7 @@ export const HalftimeTrackerAlerts: React.FC = () => {
   useEffect(() => {
     const fetchOpportunities = async () => {
       try {
-        const response = await fetch('/api/halftime-opportunities');
+        const response = await fetch(getApiUrl('halftime-opportunities'));
         if (!response.ok) {
           throw new Error('Failed to fetch halftime opportunities');
         }

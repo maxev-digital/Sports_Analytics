@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BookmakerLogo } from '../components/BookmakerLogo';
+import { getBookmaker } from '../data/bookmakers';
+import { OddsMetricsDashboard } from '../components/OddsMetricsDashboard';
 
 interface GameOdds {
   id: string;
@@ -44,18 +46,13 @@ export function Odds() {
     setLoading(true);
     console.log('🎮 Loading games for sport:', activeSport);
 
-    // Use mock data for testing (VPS is off)
-    const mockGames = mockData[activeSport] || [];
-    console.log('📊 Using mock data:', mockGames.length, 'games');
-    setGames(mockGames);
-    setLoading(false);
-
-    /* Uncomment when VPS is back online:
     try {
       const response = await fetch(`/api/games`);
       if (!response.ok) throw new Error('API not available');
 
       const apiGames = await response.json();
+      console.log('📊 API returned:', apiGames.length, 'total games');
+
       const transformedGames = apiGames.map((game: any) => ({
         id: game.state.id,
         sport_key: game.state.sport_key,
@@ -70,14 +67,14 @@ export function Odds() {
 
       const filteredGames = transformedGames.filter((game: GameOdds) => game.sport_key === activeSport);
       filteredGames.sort((a, b) => new Date(a.commence_time).getTime() - new Date(b.commence_time).getTime());
+      console.log('✅ Showing', filteredGames.length, 'games for', activeSport);
       setGames(filteredGames);
     } catch (error) {
-      console.error('API error, using mock data:', error);
-      setGames(mockData[activeSport] || []);
+      console.error('❌ API error:', error);
+      setGames([]);
     } finally {
       setLoading(false);
     }
-    */
   };
 
   const getSportDisplayName = (sport: SportKey): string => {
@@ -129,6 +126,40 @@ export function Odds() {
     return price.toString();
   };
 
+  // Find best odds for a game based on bet type
+  const getBestOdds = (game: GameOdds) => {
+    if (game.odds.length === 0) return null;
+
+    if (activeBetType === 'moneyline') {
+      // Best is highest value (most positive or least negative)
+      const bestAway = game.odds.reduce((best, curr) =>
+        curr.away_ml > best.away_ml ? curr : best
+      );
+      const bestHome = game.odds.reduce((best, curr) =>
+        curr.home_ml > best.home_ml ? curr : best
+      );
+      return { away: bestAway, home: bestHome };
+    } else if (activeBetType === 'spread') {
+      // Best is highest price (most positive or least negative)
+      const bestAway = game.odds.reduce((best, curr) =>
+        curr.away_spread_price > best.away_spread_price ? curr : best
+      );
+      const bestHome = game.odds.reduce((best, curr) =>
+        curr.home_spread_price > best.home_spread_price ? curr : best
+      );
+      return { away: bestAway, home: bestHome };
+    } else {
+      // Total - best is highest price
+      const bestOver = game.odds.reduce((best, curr) =>
+        curr.over_price > best.over_price ? curr : best
+      );
+      const bestUnder = game.odds.reduce((best, curr) =>
+        curr.under_price > best.under_price ? curr : best
+      );
+      return { over: bestOver, under: bestUnder };
+    }
+  };
+
   const getTimeUntilGame = (dateStr: string): string => {
     const now = new Date();
     const gameTime = new Date(dateStr);
@@ -151,73 +182,92 @@ export function Odds() {
     );
   }
 
+  // Normalize bookmaker keys to match bookmakers.ts format
+  const normalizeBookmakerKey = (bookmaker: string): string => {
+    return bookmaker
+      .toLowerCase()
+      .replace(/\s+/g, '')
+      .replace(/\./g, '')
+      .replace(/\(au\)/g, '');
+  };
+
   // Get all available bookmakers from the games
   const allBookmakers = Array.from(new Set(games.flatMap(game =>
-    game.odds.map(odd => odd.bookmaker)
+    game.odds.map(odd => normalizeBookmakerKey(odd.bookmaker))
   ))).sort();
 
-  // Select top 10 bookmakers for display
-  const bookmakers = allBookmakers.slice(0, 10);
+  // Show all bookmakers (no limit)
+  const bookmakers = allBookmakers;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-slate-900 to-black p-4">
-      <div className="max-w-[1600px] mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-slate-100 mb-2">Odds Comparison</h1>
-          <p className="text-slate-400 text-sm">Real-time betting lines across top sportsbooks</p>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-black via-slate-900 to-black p-4" style={{ fontFamily: 'Rubik, sans-serif' }}>
+      <div className="w-full mx-auto">
+        {/* Header with Bet Type Selector */}
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-100 mb-2">Odds Comparison</h1>
+            <p className="text-slate-400 text-sm">Real-time betting lines across top sportsbooks</p>
+          </div>
 
-        {/* Sport Tabs */}
-        <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
-          {(['basketball_nba', 'basketball_ncaab', 'americanfootball_nfl', 'americanfootball_ncaaf', 'icehockey_nhl', 'baseball_mlb'] as SportKey[]).map((sport) => (
+          {/* Bet Type Selector */}
+          <div className="flex gap-1 bg-slate-900 p-1 rounded border border-slate-700">
             <button
-              key={sport}
-              onClick={() => setActiveSport(sport)}
-              className={`px-4 py-2 rounded text-sm font-semibold whitespace-nowrap transition-all flex items-center gap-2 ${
-                activeSport === sport
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
-                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
+              onClick={() => setActiveBetType('moneyline')}
+              className={`px-4 py-1.5 rounded text-xs font-semibold transition-all ${
+                activeBetType === 'moneyline'
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <span className="text-lg">{getSportIcon(sport)}</span>
-              {getSportDisplayName(sport)}
+              Moneyline
             </button>
-          ))}
+            <button
+              onClick={() => setActiveBetType('spread')}
+              className={`px-4 py-1.5 rounded text-xs font-semibold transition-all ${
+                activeBetType === 'spread'
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Spread
+            </button>
+            <button
+              onClick={() => setActiveBetType('total')}
+              className={`px-4 py-1.5 rounded text-xs font-semibold transition-all ${
+                activeBetType === 'total'
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Total
+            </button>
+          </div>
         </div>
 
-        {/* Bet Type Selector */}
-        <div className="flex gap-2 mb-6 bg-slate-900 p-1 rounded-lg border border-slate-700 w-fit">
-          <button
-            onClick={() => setActiveBetType('moneyline')}
-            className={`px-6 py-2 rounded-md text-sm font-semibold transition-all ${
-              activeBetType === 'moneyline'
-                ? 'bg-blue-600 text-white shadow-md'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            Moneyline
-          </button>
-          <button
-            onClick={() => setActiveBetType('spread')}
-            className={`px-6 py-2 rounded-md text-sm font-semibold transition-all ${
-              activeBetType === 'spread'
-                ? 'bg-blue-600 text-white shadow-md'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            Spread
-          </button>
-          <button
-            onClick={() => setActiveBetType('total')}
-            className={`px-6 py-2 rounded-md text-sm font-semibold transition-all ${
-              activeBetType === 'total'
-                ? 'bg-blue-600 text-white shadow-md'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            Total
-          </button>
+        {/* Sport Tabs & Metrics Dashboard - Side by Side */}
+        <div className="flex gap-4 mb-2">
+          {/* Sport Tabs */}
+          <div className="flex flex-col gap-2">
+            {(['basketball_nba', 'basketball_ncaab', 'americanfootball_nfl', 'americanfootball_ncaaf', 'icehockey_nhl', 'baseball_mlb'] as SportKey[]).map((sport) => (
+              <button
+                key={sport}
+                onClick={() => setActiveSport(sport)}
+                className={`px-3 py-1.5 rounded text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 ${
+                  activeSport === sport
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
+                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
+                }`}
+              >
+                <span className="text-sm">{getSportIcon(sport)}</span>
+                {getSportDisplayName(sport)}
+              </button>
+            ))}
+          </div>
+
+          {/* Metrics Dashboard */}
+          <div className="flex-1">
+            <OddsMetricsDashboard />
+          </div>
         </div>
 
         {/* Compact Odds Grid */}
@@ -227,23 +277,45 @@ export function Odds() {
               {/* Header Row with Bookmaker Logos */}
               <thead className="bg-slate-800">
                 <tr>
-                  <th className="text-left py-2 px-3 text-slate-300 font-bold text-xs uppercase tracking-wider sticky left-0 bg-slate-800 z-10 min-w-[220px] border-r border-b-2 border-slate-600">
+                  <th className="text-left py-2 px-3 text-slate-300 font-bold text-xs uppercase tracking-wider sticky left-0 bg-slate-800 z-20 min-w-[280px] border-r border-b-2 border-slate-600">
                     <div className="flex items-center gap-2">
                       <span className="text-lg">{getSportIcon(activeSport)}</span>
                       {getSportDisplayName(activeSport)} Games
                     </div>
                   </th>
-                  {bookmakers.map((bookmaker, index) => (
-                    <th key={bookmaker} className={`py-2 px-2 text-center min-w-[95px] border-b-2 border-slate-600 ${
-                      index < bookmakers.length - 1 ? 'border-r border-slate-600' : ''
-                    }`}>
-                      <BookmakerLogo
-                        bookmakerKey={bookmaker}
-                        size="md"
-                        showName={false}
-                      />
-                    </th>
-                  ))}
+                  <th className="py-2 px-3 text-center min-w-[140px] border-r border-b-2 border-slate-600 bg-slate-800">
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="text-slate-300 font-bold text-xs uppercase tracking-wider">📅 Date & Time</span>
+                    </div>
+                  </th>
+                  <th className="py-2 px-3 text-center min-w-[180px] border-r border-b-2 border-slate-600 bg-slate-800">
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="text-slate-300 font-bold text-xs uppercase tracking-wider">⭐ Best Line</span>
+                    </div>
+                  </th>
+                  {bookmakers.map((bookmaker, index) => {
+                    const bookmakerData = getBookmaker(bookmaker);
+                    return (
+                      <th key={bookmaker} className={`py-1 px-0.5 text-center min-w-[95px] border-b-2 border-slate-600 ${
+                        index < bookmakers.length - 1 ? 'border-r border-slate-600' : ''
+                      }`}>
+                        <a
+                          href={bookmakerData?.url || '#'}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-1 hover:opacity-80 transition-opacity cursor-pointer"
+                          title={`Visit ${bookmakerData?.name || bookmaker}`}
+                        >
+                          <BookmakerLogo
+                            bookmakerKey={bookmaker}
+                            size="sm"
+                            showName={false}
+                          />
+                          <span className="text-[10px] font-semibold text-slate-200">{bookmakerData?.name || bookmaker}</span>
+                        </a>
+                      </th>
+                    );
+                  })}
                 </tr>
               </thead>
 
@@ -256,42 +328,26 @@ export function Odds() {
                     } ${gameIndex < games.length - 1 ? 'border-b border-slate-700' : ''}`}
                   >
                     {/* Game Info Column */}
-                    <td className="py-2 px-3 sticky left-0 bg-slate-900/95 backdrop-blur-sm z-10 border-r border-slate-600">
-                      <div className="flex flex-col">
-                        {/* Time Badge */}
-                        <div className="flex items-center gap-1.5 mb-1">
-                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                            game.status === 'live'
-                              ? 'bg-red-600 text-white animate-pulse'
-                              : 'bg-slate-700 text-slate-300'
-                          }`}>
-                            {game.status === 'live' ? 'LIVE' : getTimeUntilGame(game.commence_time)}
-                          </span>
-                          {game.status !== 'live' && (
-                            <span className="text-[10px] text-slate-500">
-                              {formatDate(game.commence_time)}
-                            </span>
-                          )}
-                        </div>
-
+                    <td className="py-1 px-3 sticky left-0 bg-slate-900/95 backdrop-blur-sm z-10 border-r border-slate-600">
+                      <div className="flex flex-col justify-center h-full">
                         {/* Teams */}
                         <div className="space-y-1">
                           <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-slate-100">
+                            <span className="text-xl font-normal text-slate-50 tracking-wide leading-tight">
                               {game.away_team}
                             </span>
                             {game.away_score !== undefined && (
-                              <span className="text-xs font-bold text-blue-400 ml-2">
+                              <span className="text-xl font-medium text-blue-400 ml-2 tabular-nums leading-tight">
                                 {game.away_score}
                               </span>
                             )}
                           </div>
                           <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-slate-100">
+                            <span className="text-xl font-normal text-slate-50 tracking-wide leading-tight">
                               {game.home_team}
                             </span>
                             {game.home_score !== undefined && (
-                              <span className="text-xs font-bold text-blue-400 ml-2">
+                              <span className="text-xl font-medium text-blue-400 ml-2 tabular-nums leading-tight">
                                 {game.home_score}
                               </span>
                             )}
@@ -300,12 +356,176 @@ export function Odds() {
                       </div>
                     </td>
 
+                    {/* Date & Time Column */}
+                    <td className="py-1 px-3 text-center border-r border-slate-600">
+                      <div className="flex flex-col items-center gap-1">
+                        {/* Status or Date */}
+                        {game.status === 'live' ? (
+                          <span className="text-xl font-medium px-3 py-1 rounded bg-red-600 text-white animate-pulse">
+                            🔴 LIVE
+                          </span>
+                        ) : (
+                          <>
+                            <span className="text-xl font-normal text-slate-200 tracking-wide leading-tight">
+                              {new Date(game.commence_time).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric'
+                              })}
+                            </span>
+                            <span className="text-xl font-normal text-slate-300 tracking-wide tabular-nums leading-tight">
+                              {new Date(game.commence_time).toLocaleTimeString('en-US', {
+                                hour: 'numeric',
+                                minute: '2-digit',
+                                hour12: true
+                              })}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </td>
+
+                    {/* Best Line Column */}
+                    <td className="py-1 px-2 border-r border-slate-600 bg-gradient-to-r from-green-900/20 to-slate-900/50">
+                      {(() => {
+                        const bestOdds = getBestOdds(game);
+                        if (!bestOdds) return <div className="text-slate-600 text-xs">—</div>;
+
+                        return (
+                          <div>
+                            {/* Moneyline */}
+                            {activeBetType === 'moneyline' && 'away' in bestOdds && (
+                              <div className="space-y-0.5">
+                                <div className="flex items-center justify-between gap-2 bg-slate-800/50 rounded px-3 py-0.5">
+                                  <a
+                                    href={getBookmaker(normalizeBookmakerKey(bestOdds.away.bookmaker))?.url || '#'}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="hover:opacity-70 transition-opacity"
+                                    title={`Visit ${getBookmaker(normalizeBookmakerKey(bestOdds.away.bookmaker))?.name}`}
+                                  >
+                                    <BookmakerLogo bookmakerKey={normalizeBookmakerKey(bestOdds.away.bookmaker)} size="sm" />
+                                  </a>
+                                  <div className="text-lg font-bold text-green-300 leading-tight">
+                                    {formatOdds(bestOdds.away.away_ml)}
+                                  </div>
+                                </div>
+                                <div className="flex items-center justify-between gap-2 bg-slate-800/50 rounded px-3 py-0.5">
+                                  <a
+                                    href={getBookmaker(normalizeBookmakerKey(bestOdds.home.bookmaker))?.url || '#'}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="hover:opacity-70 transition-opacity"
+                                    title={`Visit ${getBookmaker(normalizeBookmakerKey(bestOdds.home.bookmaker))?.name}`}
+                                  >
+                                    <BookmakerLogo bookmakerKey={normalizeBookmakerKey(bestOdds.home.bookmaker)} size="sm" />
+                                  </a>
+                                  <div className="text-lg font-bold text-green-300 leading-tight">
+                                    {formatOdds(bestOdds.home.home_ml)}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Spread */}
+                            {activeBetType === 'spread' && 'away' in bestOdds && (
+                              <div className="space-y-0.5">
+                                <div className="flex items-center justify-between gap-3 bg-slate-800/50 rounded px-3 py-0.5">
+                                  <a
+                                    href={getBookmaker(normalizeBookmakerKey(bestOdds.away.bookmaker))?.url || '#'}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="hover:opacity-70 transition-opacity"
+                                    title={`Visit ${getBookmaker(normalizeBookmakerKey(bestOdds.away.bookmaker))?.name}`}
+                                  >
+                                    <BookmakerLogo bookmakerKey={normalizeBookmakerKey(bestOdds.away.bookmaker)} size="sm" />
+                                  </a>
+                                  <div className="flex items-center gap-2">
+                                    <div className="text-base font-bold text-slate-100 leading-tight">
+                                      {bestOdds.away.away_spread > 0 ? '+' : ''}{bestOdds.away.away_spread}
+                                    </div>
+                                    <div className="text-sm text-green-300 font-semibold leading-tight">
+                                      {formatOdds(bestOdds.away.away_spread_price)}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="flex items-center justify-between gap-3 bg-slate-800/50 rounded px-3 py-0.5">
+                                  <a
+                                    href={getBookmaker(normalizeBookmakerKey(bestOdds.home.bookmaker))?.url || '#'}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="hover:opacity-70 transition-opacity"
+                                    title={`Visit ${getBookmaker(normalizeBookmakerKey(bestOdds.home.bookmaker))?.name}`}
+                                  >
+                                    <BookmakerLogo bookmakerKey={normalizeBookmakerKey(bestOdds.home.bookmaker)} size="sm" />
+                                  </a>
+                                  <div className="flex items-center gap-2">
+                                    <div className="text-base font-bold text-slate-100 leading-tight">
+                                      {bestOdds.home.home_spread > 0 ? '+' : ''}{bestOdds.home.home_spread}
+                                    </div>
+                                    <div className="text-sm text-green-300 font-semibold leading-tight">
+                                      {formatOdds(bestOdds.home.home_spread_price)}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Total */}
+                            {activeBetType === 'total' && 'over' in bestOdds && (
+                              <div className="space-y-0.5">
+                                <div className="flex items-center gap-3 bg-slate-800/50 rounded px-3 py-0.5">
+                                  <a
+                                    href={getBookmaker(normalizeBookmakerKey(bestOdds.over.bookmaker))?.url || '#'}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="hover:opacity-70 transition-opacity"
+                                    title={`Visit ${getBookmaker(normalizeBookmakerKey(bestOdds.over.bookmaker))?.name}`}
+                                  >
+                                    <BookmakerLogo bookmakerKey={normalizeBookmakerKey(bestOdds.over.bookmaker)} size="sm" />
+                                  </a>
+                                  <span className="text-base font-bold text-green-300 leading-tight w-4">
+                                    O
+                                  </span>
+                                  <span className="text-base font-medium text-green-200 leading-tight flex-1">
+                                    {bestOdds.over.total}
+                                  </span>
+                                  <span className="text-base font-medium text-green-100 leading-tight">
+                                    {formatOdds(bestOdds.over.over_price)}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-3 bg-slate-800/50 rounded px-3 py-0.5">
+                                  <a
+                                    href={getBookmaker(normalizeBookmakerKey(bestOdds.under.bookmaker))?.url || '#'}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="hover:opacity-70 transition-opacity"
+                                    title={`Visit ${getBookmaker(normalizeBookmakerKey(bestOdds.under.bookmaker))?.name}`}
+                                  >
+                                    <BookmakerLogo bookmakerKey={normalizeBookmakerKey(bestOdds.under.bookmaker)} size="sm" />
+                                  </a>
+                                  <span className="text-base font-bold text-red-300 leading-tight w-4">
+                                    U
+                                  </span>
+                                  <span className="text-base font-medium text-red-200 leading-tight flex-1">
+                                    {bestOdds.under.total}
+                                  </span>
+                                  <span className="text-base font-medium text-red-100 leading-tight">
+                                    {formatOdds(bestOdds.under.under_price)}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </td>
+
                     {/* Bookmaker Odds Cells */}
                     {bookmakers.map((bookmaker, bookIndex) => {
-                      const bookOdds = game.odds.find(o => o.bookmaker === bookmaker);
+                      const bookOdds = game.odds.find(o => normalizeBookmakerKey(o.bookmaker) === bookmaker);
 
                       return (
-                        <td key={bookmaker} className={`py-1.5 px-1.5 text-center ${
+                        <td key={bookmaker} className={`py-0.5 px-0.5 text-center ${
                           bookIndex < bookmakers.length - 1 ? 'border-r border-slate-700' : ''
                         }`}>
                           {bookOdds ? (
@@ -313,69 +533,115 @@ export function Odds() {
                               {/* Moneyline */}
                               {activeBetType === 'moneyline' && (
                                 <div className="grid grid-cols-2 divide-x divide-slate-700">
-                                  <div className="hover:bg-slate-800 transition-colors cursor-pointer px-1 py-1.5">
-                                    <div className="text-base font-bold text-blue-300">
+                                  <a
+                                    href={getBookmaker(bookmaker)?.url || '#'}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="hover:bg-slate-800 transition-colors cursor-pointer px-0.5 py-0.5 block"
+                                    title={`Bet ${game.away_team} ${formatOdds(bookOdds.away_ml)} on ${getBookmaker(bookmaker)?.name}`}
+                                  >
+                                    <div className="text-sm font-bold text-blue-300 leading-tight">
                                       {formatOdds(bookOdds.away_ml)}
                                     </div>
-                                  </div>
-                                  <div className="hover:bg-slate-800 transition-colors cursor-pointer px-1 py-1.5">
-                                    <div className="text-base font-bold text-green-300">
+                                  </a>
+                                  <a
+                                    href={getBookmaker(bookmaker)?.url || '#'}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="hover:bg-slate-800 transition-colors cursor-pointer px-0.5 py-0.5 block"
+                                    title={`Bet ${game.home_team} ${formatOdds(bookOdds.home_ml)} on ${getBookmaker(bookmaker)?.name}`}
+                                  >
+                                    <div className="text-sm font-bold text-green-300 leading-tight">
                                       {formatOdds(bookOdds.home_ml)}
                                     </div>
-                                  </div>
+                                  </a>
                                 </div>
                               )}
 
                               {/* Spread */}
                               {activeBetType === 'spread' && (
                                 <div className="grid grid-cols-2 divide-x divide-slate-700">
-                                  <div className="hover:bg-slate-800 transition-colors cursor-pointer px-1 py-1.5">
-                                    <div className="text-sm font-bold text-slate-100">
+                                  <a
+                                    href={getBookmaker(bookmaker)?.url || '#'}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="hover:bg-slate-800 transition-colors cursor-pointer px-0.5 py-0.5 block"
+                                    title={`Bet ${game.away_team} ${bookOdds.away_spread > 0 ? '+' : ''}${bookOdds.away_spread} on ${getBookmaker(bookmaker)?.name}`}
+                                  >
+                                    <div className="text-sm font-bold text-slate-100 leading-tight">
                                       {bookOdds.away_spread > 0 ? '+' : ''}{bookOdds.away_spread}
                                     </div>
-                                    <div className="text-xs text-slate-400 mt-0.5">
+                                    <div className="text-xs text-slate-400 mt-0.5 leading-tight">
                                       {formatOdds(bookOdds.away_spread_price)}
                                     </div>
-                                  </div>
-                                  <div className="hover:bg-slate-800 transition-colors cursor-pointer px-1 py-1.5">
-                                    <div className="text-sm font-bold text-slate-100">
+                                  </a>
+                                  <a
+                                    href={getBookmaker(bookmaker)?.url || '#'}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="hover:bg-slate-800 transition-colors cursor-pointer px-0.5 py-0.5 block"
+                                    title={`Bet ${game.home_team} ${bookOdds.home_spread > 0 ? '+' : ''}${bookOdds.home_spread} on ${getBookmaker(bookmaker)?.name}`}
+                                  >
+                                    <div className="text-sm font-bold text-slate-100 leading-tight">
                                       {bookOdds.home_spread > 0 ? '+' : ''}{bookOdds.home_spread}
                                     </div>
-                                    <div className="text-xs text-slate-400 mt-0.5">
+                                    <div className="text-xs text-slate-400 mt-0.5 leading-tight">
                                       {formatOdds(bookOdds.home_spread_price)}
                                     </div>
-                                  </div>
+                                  </a>
                                 </div>
                               )}
 
                               {/* Total */}
                               {activeBetType === 'total' && (
-                                <div className="grid grid-cols-2 divide-x divide-slate-700">
-                                  <div className={`hover:bg-slate-800 transition-colors cursor-pointer px-1 py-1.5 ${
-                                    bookOdds.is_best_over ? 'bg-green-900/30' : ''
-                                  }`}>
-                                    <div className={`text-[10px] ${bookOdds.is_best_over ? 'text-green-300 font-semibold' : 'text-slate-400'}`}>
-                                      O {bookOdds.total}
+                                <div className="space-y-0.5">
+                                  <a
+                                    href={getBookmaker(bookmaker)?.url || '#'}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className={`hover:bg-slate-800 transition-colors cursor-pointer px-0.5 py-0.5 block ${
+                                      bookOdds.is_best_over ? 'bg-green-900/30' : ''
+                                    }`}
+                                    title={`Bet Over ${bookOdds.total} ${formatOdds(bookOdds.over_price)} on ${getBookmaker(bookmaker)?.name}`}
+                                  >
+                                    <div className="flex items-center gap-1">
+                                      <span className={`text-xs font-bold ${bookOdds.is_best_over ? 'text-green-300' : 'text-slate-400'} leading-tight w-3`}>
+                                        O
+                                      </span>
+                                      <span className={`text-xs font-medium ${bookOdds.is_best_over ? 'text-green-200' : 'text-slate-200'} leading-tight flex-1`}>
+                                        {bookOdds.total}
+                                      </span>
+                                      <span className={`text-xs font-medium ${bookOdds.is_best_over ? 'text-green-100' : 'text-slate-100'} leading-tight`}>
+                                        {formatOdds(bookOdds.over_price)}
+                                      </span>
                                     </div>
-                                    <div className={`text-base font-bold mt-0.5 ${bookOdds.is_best_over ? 'text-green-200' : 'text-slate-100'}`}>
-                                      {formatOdds(bookOdds.over_price)}
+                                  </a>
+                                  <a
+                                    href={getBookmaker(bookmaker)?.url || '#'}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className={`hover:bg-slate-800 transition-colors cursor-pointer px-0.5 py-0.5 block ${
+                                      bookOdds.is_best_under ? 'bg-red-900/30' : ''
+                                    }`}
+                                    title={`Bet Under ${bookOdds.total} ${formatOdds(bookOdds.under_price)} on ${getBookmaker(bookmaker)?.name}`}
+                                  >
+                                    <div className="flex items-center gap-1">
+                                      <span className={`text-xs font-bold ${bookOdds.is_best_under ? 'text-red-300' : 'text-slate-400'} leading-tight w-3`}>
+                                        U
+                                      </span>
+                                      <span className={`text-xs font-medium ${bookOdds.is_best_under ? 'text-red-200' : 'text-slate-200'} leading-tight flex-1`}>
+                                        {bookOdds.total}
+                                      </span>
+                                      <span className={`text-xs font-medium ${bookOdds.is_best_under ? 'text-red-100' : 'text-slate-100'} leading-tight`}>
+                                        {formatOdds(bookOdds.under_price)}
+                                      </span>
                                     </div>
-                                  </div>
-                                  <div className={`hover:bg-slate-800 transition-colors cursor-pointer px-1 py-1.5 ${
-                                    bookOdds.is_best_under ? 'bg-red-900/30' : ''
-                                  }`}>
-                                    <div className={`text-[10px] ${bookOdds.is_best_under ? 'text-red-300 font-semibold' : 'text-slate-400'}`}>
-                                      U {bookOdds.total}
-                                    </div>
-                                    <div className={`text-base font-bold mt-0.5 ${bookOdds.is_best_under ? 'text-red-200' : 'text-slate-100'}`}>
-                                      {formatOdds(bookOdds.under_price)}
-                                    </div>
-                                  </div>
+                                  </a>
                                 </div>
                               )}
                             </div>
                           ) : (
-                            <div className="text-slate-600 text-xs py-3">—</div>
+                            <div className="text-slate-600 text-xs py-1">—</div>
                           )}
                         </td>
                       );

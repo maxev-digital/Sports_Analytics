@@ -13,8 +13,8 @@ interface MomentumBarProps {
  * MomentumBar component displays a visual representation of game momentum
  *
  * The bar shows which team has momentum:
- * - Shifts left when away team has momentum
- * - Shifts right when home team has momentum
+ * - Shifts left when away team has momentum (RED)
+ * - Shifts right when home team has momentum (GREEN)
  * - Shows team colors to make it instantly recognizable
  */
 export const MomentumBar: React.FC<MomentumBarProps> = ({
@@ -22,9 +22,15 @@ export const MomentumBar: React.FC<MomentumBarProps> = ({
   awayTeam,
   homeMomentum,
   awayMomentum,
-  homeColor = '#1e40af', // Default blue for home
-  awayColor = '#dc2626',  // Default red for away
+  homeColor,
+  awayColor,
 }) => {
+  // HARDCODED: Always use green for home, red for away
+  const finalHomeColor = '#10b981'; // Green for home - HARDCODED
+  const finalAwayColor = '#dc2626';  // Red for away - HARDCODED
+
+  console.log(`MomentumBar HARDCODED colors - Home: ${finalHomeColor}, Away: ${finalAwayColor}`);
+
   // Normalize momentum to 0-100 scale
   // If home has +50 momentum and away has -50, home gets 75% of bar
   const totalMomentum = Math.abs(homeMomentum) + Math.abs(awayMomentum);
@@ -67,7 +73,7 @@ export const MomentumBar: React.FC<MomentumBarProps> = ({
           className="absolute left-0 top-0 h-full flex items-center justify-start px-2 text-white font-semibold text-sm transition-all duration-500 ease-in-out"
           style={{
             width: `${awayPercentage}%`,
-            backgroundColor: awayColor,
+            backgroundColor: finalAwayColor,
             opacity: awayPercentage > 10 ? 1 : 0.5,
           }}
         >
@@ -81,7 +87,7 @@ export const MomentumBar: React.FC<MomentumBarProps> = ({
           className="absolute right-0 top-0 h-full flex items-center justify-end px-2 text-white font-semibold text-sm transition-all duration-500 ease-in-out"
           style={{
             width: `${homePercentage}%`,
-            backgroundColor: homeColor,
+            backgroundColor: finalHomeColor,
             opacity: homePercentage > 10 ? 1 : 0.5,
           }}
         >
