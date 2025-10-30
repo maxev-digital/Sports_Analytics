@@ -1,11 +1,14 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { getApiUrl } from '../config';
 
 interface AuthContextType {
   isAuthenticated: boolean;
   username: string | null;
   token: string | null;
+  subscriptionTier: string;
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
+  refreshSubscription: () => Promise<void>;
   loading: boolean;
   error: string | null;
 }
@@ -16,35 +19,75 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [username, setUsername] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [subscriptionTier, setSubscriptionTier] = useState<string>('free');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Fetch subscription status
+  const fetchSubscription = async (userId: string) => {
+    try {
+      const response = await fetch(getApiUrl(`subscription/status?user_id=${userId}`));
+      if (response.ok) {
+        const data = await response.json();
+        const tier = data.tier || 'free';
+        setSubscriptionTier(tier);
+        localStorage.setItem('subscription_tier', tier);
+        return tier;
+      }
+    } catch (err) {
+      console.error('Error fetching subscription:', err);
+    }
+    return 'free';
+  };
+
+  const refreshSubscription = async () => {
+    if (username) {
+      await fetchSubscription(username);
+    }
+  };
+
   // Check for existing session on mount
   useEffect(() => {
-    // Auto-login for localhost development (but not if user manually logged out)
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      const manualLogout = sessionStorage.getItem('manual_logout');
-      if (!manualLogout) {
-        console.log('🔓 Local development mode: Auto-login enabled');
-        setIsAuthenticated(true);
-        setUsername('dev-user');
-        setToken('dev-token');
-        localStorage.setItem('auth_token', 'dev-token');
-        localStorage.setItem('auth_username', 'dev-user');
-        setLoading(false);
-        return;
-      } else {
-        console.log('🔒 Manual logout detected - staying logged out');
-        setLoading(false);
-        return;
+    console.log('🔍 AuthContext: Checking authentication...');
+    console.log('🔍 Current hostname:', window.location.hostname);
+    console.log('🔍 Current protocol:', window.location.protocol);
+
+    // DEV MODE: Auto-login ONLY for localhost development (not production Electron build)
+    const isDev =
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1';
+
+    console.log('🔍 isDev?', isDev);
+
+    if (isDev) {
+      // Check if we need to set up dev credentials
+      const storedToken = localStorage.getItem('auth_token');
+      if (!storedToken) {
+        console.log('🔧 DEV MODE: Setting up auto-login...');
+        localStorage.setItem('auth_token', 'dev_token_12345');
+        localStorage.setItem('auth_username', 'admin');
+        localStorage.setItem('subscription_tier', 'elite');
       }
+
+      // Set auth state immediately in dev mode
+      setIsAuthenticated(true);
+      setUsername(localStorage.getItem('auth_username') || 'admin');
+      setToken(localStorage.getItem('auth_token') || 'dev_token_12345');
+      setSubscriptionTier(localStorage.getItem('subscription_tier') || 'elite');
+      setLoading(false);
+      console.log('✅ DEV MODE: Auto-logged in as admin with elite tier');
+      console.log('✅ Auth state:', { isAuthenticated: true, username: 'admin', tier: 'elite' });
+      return;
     }
 
+    // PRODUCTION: Normal auth flow
+    console.log('🔒 PRODUCTION MODE: Using normal auth flow');
     const storedToken = localStorage.getItem('auth_token');
     const storedUsername = localStorage.getItem('auth_username');
+    const storedTier = localStorage.getItem('subscription_tier') || 'free';
 
     if (storedToken && storedUsername) {
-      // Verify the token is still valid
+      setSubscriptionTier(storedTier);
       verifyToken(storedToken, storedUsername);
     } else {
       setLoading(false);
@@ -53,7 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const verifyToken = async (token: string, username: string) => {
     try {
-      const response = await fetch(`/api/auth/verify?token=${token}`);
+      const response = await fetch(getApiUrl(`auth/verify?token=${token}`));
 
       if (response.ok) {
         const data = await response.json();
@@ -61,20 +104,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setIsAuthenticated(true);
           setUsername(username);
           setToken(token);
+          await fetchSubscription(username);
         } else {
-          // Token invalid, clear storage
           localStorage.removeItem('auth_token');
           localStorage.removeItem('auth_username');
+          localStorage.removeItem('subscription_tier');
         }
       } else {
-        // Token invalid, clear storage
         localStorage.removeItem('auth_token');
         localStorage.removeItem('auth_username');
+        localStorage.removeItem('subscription_tier');
       }
     } catch (err) {
       console.error('Error verifying token:', err);
       localStorage.removeItem('auth_token');
       localStorage.removeItem('auth_username');
+      localStorage.removeItem('subscription_tier');
     } finally {
       setLoading(false);
     }
@@ -85,7 +130,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch(getApiUrl('auth/login'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -96,13 +141,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        // Store token and username
         localStorage.setItem('auth_token', data.token);
         localStorage.setItem('auth_username', data.username);
 
         setIsAuthenticated(true);
         setUsername(data.username);
         setToken(data.token);
+
+        await fetchSubscription(data.username);
+
         setLoading(false);
         return true;
       } else {
@@ -121,7 +168,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     if (token) {
       try {
-        await fetch('/api/auth/logout', {
+        await fetch(getApiUrl('auth/logout'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -133,14 +180,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // Clear local state and storage
     setIsAuthenticated(false);
     setUsername(null);
     setToken(null);
+    setSubscriptionTier('free');
     localStorage.removeItem('auth_token');
     localStorage.removeItem('auth_username');
-    
-    // Set flag to prevent auto-login on localhost
+    localStorage.removeItem('subscription_tier');
+
     sessionStorage.setItem('manual_logout', 'true');
   };
 
@@ -150,8 +197,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAuthenticated,
         username,
         token,
+        subscriptionTier,
         login,
         logout,
+        refreshSubscription,
         loading,
         error,
       }}
