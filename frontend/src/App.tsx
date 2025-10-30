@@ -45,20 +45,17 @@ function App() {
             </>
           } />
 
-          {/* Root redirect to login */}
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          {/* Root redirect to pricing page */}
+          <Route path="/" element={<Navigate to="/pricing" replace />} />
 
-          {/* Auth-only routes - require login but NOT subscription (for subscribing) */}
+          {/* Pricing page - public, no auth required */}
           <Route
             path="/pricing"
             element={
-              <ProtectedRoute requireSubscription={false}>
-                <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col">
-                  <Navigation />
-                  <Pricing />
-                  <Footer />
-                </div>
-              </ProtectedRoute>
+              <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col">
+                <Pricing />
+                <Footer />
+              </div>
             }
           />
           <Route

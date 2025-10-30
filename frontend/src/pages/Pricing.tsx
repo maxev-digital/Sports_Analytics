@@ -98,19 +98,20 @@ export function Pricing() {
     subscriptionStatus.status === 'active' &&
     subscriptionStatus.tier !== 'free';
 
-  // Stripe Price IDs (from backend .env) - Original prices
-  // Using promo code for 50% OFF FOR LIFE discount
+  // Stripe Price IDs - LIVE MODE (Correct Account - Final)
+  // EARLY50 promo code auto-applied for 50% OFF FOR LIFE
   const STRIPE_PRICE_IDS = {
-    starter: 'price_1SL6DfR4L082TOJBCtBGFXgA',
-    semipro: 'price_1SL6D2R4L082TOJBUP6iO2g7',
-    professional: 'price_1SL6E4R4L082TOJBLphpsfhx',
-    elite: 'price_1SL6ERR4L082TOJBz91Q9hBM',
-    elitepro: 'price_1SL6EtR4L082TOJB2Pzx9Mgq',
+    starter: 'price_1SNuPeR1TzxiBDhG2poLUgpO',
+    semipro: 'price_1SNuQhR1TzxiBDhG1Qe8ZwGN',
+    professional: 'price_1SNuRQR1TzxiBDhGo6UuEf6f',
+    elite: 'price_1SNuRrR1TzxiBDhG2sGWFocn',
+    elitepro: 'price_1SNuSRR1TzxiBDhGaBhjKZXJ',
   };
 
   const handleSubscribe = async (tier: 'starter' | 'semipro' | 'professional' | 'elite' | 'elitepro') => {
     if (!isAuthenticated || !username) {
-      alert('Please log in to subscribe');
+      // Redirect to signup page for new users
+      window.location.href = '/signup';
       return;
     }
 
@@ -173,7 +174,7 @@ export function Pricing() {
         'No advanced models',
         'No API access',
       ],
-      cta: 'Start 7-Day Trial',
+      cta: 'Sign Me Up for 50% Off',
       popular: false,
       color: 'green',
       annualPrice: 278,
@@ -204,7 +205,7 @@ export function Pricing() {
         'Position sizing calculator',
       ],
       limitations: [],
-      cta: 'Start 7-Day Trial',
+      cta: 'Sign Me Up for 50% Off',
       popular: true,
       color: 'blue',
       annualPrice: 758,
@@ -238,7 +239,7 @@ export function Pricing() {
         'Multi-account tracking',
       ],
       limitations: [],
-      cta: 'Start 7-Day Trial',
+      cta: 'Sign Me Up for 50% Off',
       popular: false,
       color: 'purple',
       annualPrice: 1430,
@@ -682,6 +683,15 @@ export function Pricing() {
               >
                 {loading === plan.name.toLowerCase() ? 'Loading...' : plan.cta}
               </button>
+
+              {/* 30-Day Money-Back Guarantee */}
+              {plan.name !== 'Elite' && plan.name !== 'Elite Pro' && (
+                <div className="text-center mb-4 px-4 py-2 bg-green-900/20 border border-green-600/30 rounded-lg">
+                  <p className="text-xs text-green-400 font-semibold">
+                    ✅ 30-Day Money-Back Guarantee
+                  </p>
+                </div>
+              )}
 
               <div className="space-y-2 flex-grow">
                 <div className="font-semibold text-slate-200 mb-3 text-base">Features:</div>

@@ -140,7 +140,7 @@ export function Login() {
                 onClick={() => navigate('/signup')}
                 className="text-blue-400 hover:text-blue-300 font-semibold underline transition-colors"
               >
-                Start 7-Day Free Trial
+                Create Account
               </button>
             </div>
           </div>

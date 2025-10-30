@@ -108,10 +108,10 @@ export function SignUp() {
             className={`mx-auto h-64 w-auto mb-6 transition-all duration-500 ${showFireRing ? 'scale-110 brightness-125 drop-shadow-[0_0_30px_rgba(59,130,246,0.8)]' : 'drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)]'}`}
           />
           <h2 className="text-center text-4xl font-bold text-white">
-            Start Your 7-Day Free Trial
+            Sign Me up for Early Subscriber 50% Off for Life
           </h2>
           <p className="mt-2 text-center text-sm text-slate-400">
-            No credit card required • Full access to all features
+            Lock in 50% off forever • Cancel anytime
           </p>
         </div>
 
@@ -231,7 +231,7 @@ export function SignUp() {
                     Creating your account...
                   </span>
                 ) : (
-                  '🔥 Start Free Trial Now'
+                  '🔥 Create Account & Get 50% Off'
                 )}
               </button>
             </div>
@@ -239,8 +239,8 @@ export function SignUp() {
 
           <div className="mt-6 text-center">
             <div className="text-xs text-slate-400 mb-4 space-y-1">
-              <p>✓ Full access to all features for 7 days</p>
-              <p>✓ No credit card required</p>
+              <p>✓ 50% off for life - locked in forever</p>
+              <p>✓ Choose your plan after signup</p>
               <p>✓ Cancel anytime</p>
             </div>
             <div className="flex items-center justify-center gap-2 text-sm pt-4 border-t border-slate-700">
