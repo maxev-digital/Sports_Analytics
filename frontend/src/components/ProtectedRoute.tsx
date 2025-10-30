@@ -1,11 +1,13 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { SubscriptionGuard } from './SubscriptionGuard';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
+  requireSubscription?: boolean;
 }
 
-export function ProtectedRoute({ children }: ProtectedRouteProps) {
+export function ProtectedRoute({ children, requireSubscription = true }: ProtectedRouteProps) {
   const { isAuthenticated, loading } = useAuth();
 
   // Show loading spinner while checking authentication
@@ -28,6 +30,11 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     return <Navigate to="/login" replace />;
   }
 
-  // If authenticated, render the protected content
+  // If authenticated and subscription required, check subscription tier
+  if (requireSubscription) {
+    return <SubscriptionGuard>{children}</SubscriptionGuard>;
+  }
+
+  // If authenticated and no subscription required, render directly
   return <>{children}</>;
 }

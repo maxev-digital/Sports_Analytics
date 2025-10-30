@@ -1,0 +1,68 @@
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+
+const SubscriptionSuccess: React.FC = () => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const sessionId = searchParams.get('session_id');
+  const [countdown, setCountdown] = useState(5);
+  const { refreshSubscription } = useAuth();
+
+  useEffect(() => {
+    // Refresh subscription status immediately after successful payment
+    refreshSubscription();
+
+    // Countdown redirect to dashboard
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          navigate('/dashboard');
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [navigate, refreshSubscription]);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center p-4">
+      <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-black border border-green-500 rounded-lg p-8 max-w-md w-full text-center">
+        <div className="text-7xl mb-4">✅</div>
+
+        <h1 className="text-3xl font-bold text-white mb-4">
+          Payment Successful!
+        </h1>
+
+        <p className="text-slate-300 mb-6">
+          Thank you for subscribing to MAX-EV Sports! Your account has been upgraded and you now have access to all premium features.
+        </p>
+
+        {sessionId && (
+          <div className="bg-slate-800 border border-slate-700 rounded p-3 mb-6">
+            <p className="text-xs text-slate-400">Session ID:</p>
+            <p className="text-xs text-slate-300 font-mono break-all">{sessionId}</p>
+          </div>
+        )}
+
+        <div className="bg-blue-900/30 border border-blue-700 rounded-lg p-4 mb-6">
+          <p className="text-blue-300 text-sm">
+            Redirecting to dashboard in <span className="font-bold text-white">{countdown}</span> seconds...
+          </p>
+        </div>
+
+        <button
+          onClick={() => navigate('/dashboard')}
+          className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-6 py-3 rounded-lg font-semibold transition-all"
+        >
+          Go to Dashboard Now
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default SubscriptionSuccess;
