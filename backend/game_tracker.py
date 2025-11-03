@@ -7,6 +7,7 @@ from momentum_calculator import MomentumCalculator
 # from nba_stats_client import NBAStatsClient
 from nba_live_client import NBALiveClient
 # from nba_momentum_client import NBAMomentumClient
+from espn_nba_client import ESPNnbaClient  # ESPN NBA stats client
 from config import POLL_INTERVAL, ENABLE_ESPN_STATS
 # Conditionally import ESPN clients based on feature flag
 if ENABLE_ESPN_STATS:
@@ -34,6 +35,7 @@ class GameTracker:
         # self.nba_stats_client = NBAStatsClient()
         self.nba_live_client = NBALiveClient()
         # self.nba_momentum_client = NBAMomentumClient()
+        self.espn_nba_client = ESPNnbaClient()  # ESPN NBA stats client (always enabled)
         # Conditionally initialize ESPN clients based on feature flag
         if ENABLE_ESPN_STATS:
             self.espn_nfl_client = ESPNNFLClient()
@@ -396,60 +398,91 @@ class GameTracker:
             return None
 
     def _get_team_stats(self, team_name: str) -> Optional[TeamStats]:
-        """Get team stats with caching - DISABLED: NBA API causes timeouts"""
-        # DISABLED: Return None to avoid NBA API calls
-        logger.info(f"NBA stats disabled - skipping stats for {team_name}")
-        return None
+        """Get NBA team stats from ESPN with caching"""
+        # Check cache first
+        if team_name in self.team_stats_cache:
+            return self.team_stats_cache[team_name]
 
-        # OLD CODE - DISABLED
-        # Check if we have cached stats
-        if False:  # Disabled
-            # Fetch all team stats (this is cached in the client)
-            # all_stats = self.nba_stats_client.fetch_team_season_stats()
+        try:
+            # Convert team name to ESPN abbreviation
+            team_abbr = self._nba_team_name_to_abbr(team_name)
+            if not team_abbr:
+                logger.warning(f"Could not map NBA team name to abbreviation: {team_name}")
+                return None
 
-            # Convert to TeamStats models
-            for name, stats_dict in {}:  # all_stats.items():
-                try:
-                    # Fetch last 5 games
-                    last_5 = []  # self.nba_stats_client.fetch_last_n_games(name, 5)
+            # Fetch from ESPN
+            espn_data = self.espn_nba_client.fetch_team_season_stats(team_abbr)
+            if not espn_data:
+                logger.warning(f"No ESPN stats available for {team_name} ({team_abbr})")
+                return None
 
-                    # Calculate last 5 stats
-                    if last_5:
-                        wins = sum(1 for g in last_5 if g['wl'] == 'W')
-                        losses = len(last_5) - wins
-                        stats_dict['last_5_record'] = f"{wins}-{losses}"
-                        stats_dict['last_5_avg_pts'] = sum(g['pts'] for g in last_5) / len(last_5)
-                        stats_dict['last_5_avg_margin'] = sum(g['plus_minus'] for g in last_5) / len(last_5)
+            season_stats = espn_data.get('season_stats', {})
+            rankings = espn_data.get('rankings', {})
 
-                        # Determine trend
-                        if wins >= 4:
-                            stats_dict['form_trend'] = "HOT"
-                        elif wins <= 1:
-                            stats_dict['form_trend'] = "COLD"
-                        else:
-                            stats_dict['form_trend'] = "NEUTRAL"
-                    else:
-                        # Generate sample L5 data for demonstration
-                        import random
-                        sample_wins = random.choice([0, 1, 2, 3, 4, 5])
-                        sample_losses = 5 - sample_wins
-                        stats_dict['last_5_record'] = f"{sample_wins}-{sample_losses}"
-                        stats_dict['last_5_avg_pts'] = round(stats_dict['pts_per_game'] + random.uniform(-5, 5), 1)
-                        stats_dict['last_5_avg_margin'] = round(random.uniform(-10, 10), 1)
+            # Map ESPN data to TeamStats model
+            team_stats = TeamStats(
+                team_id=str(espn_data.get('team_id', '')),
+                team_name=team_name,
+                games_played=season_stats.get('games_played', 0),
+                wins=espn_data.get('wins', 0),
+                losses=espn_data.get('losses', 0),
+                win_pct=espn_data.get('win_pct', 0.0),
+                # ESPN provides these, use fallback if missing
+                off_rating=season_stats.get('offensive_rating', 110.0),
+                def_rating=season_stats.get('defensive_rating', 110.0),
+                net_rating=season_stats.get('offensive_rating', 110.0) - season_stats.get('defensive_rating', 110.0),
+                pace=season_stats.get('pace', 100.0),
+                fg_pct=season_stats.get('fg_pct', 45.0),
+                fg3_pct=season_stats.get('fg3_pct', 35.0),
+                ft_pct=season_stats.get('ft_pct', 75.0),
+                pts_per_game=season_stats.get('points_per_game', 110.0),
+                pts_allowed=season_stats.get('points_allowed_per_game', 110.0),
+                last_5_record=espn_data.get('last_5_record'),
+                last_5_avg_pts=season_stats.get('points_per_game'),  # ESPN doesn't separate L5
+                last_5_avg_margin=season_stats.get('point_differential_per_game'),
+                form_trend=espn_data.get('form_trend', 'NEUTRAL'),
+                # Rankings
+                pts_per_game_rank=rankings.get('points_per_game_rank'),
+                off_rating_rank=rankings.get('offensive_rating_rank'),
+                def_rating_rank=rankings.get('defensive_rating_rank'),
+                net_rating_rank=rankings.get('net_rating_rank'),
+                pace_rank=rankings.get('pace_rank'),
+                fg_pct_rank=rankings.get('field_goal_pct_rank'),
+                fg3_pct_rank=rankings.get('three_point_pct_rank'),
+                ft_pct_rank=rankings.get('free_throw_pct_rank')
+            )
 
-                        # Determine trend based on sample wins
-                        if sample_wins >= 4:
-                            stats_dict['form_trend'] = "HOT"
-                        elif sample_wins <= 1:
-                            stats_dict['form_trend'] = "COLD"
-                        else:
-                            stats_dict['form_trend'] = "NEUTRAL"
+            # Cache it
+            self.team_stats_cache[team_name] = team_stats
+            logger.info(f"✅ Fetched ESPN NBA stats for {team_name}: {team_stats.pts_per_game} PPG, {team_stats.pace} pace")
 
-                    self.team_stats_cache[name] = TeamStats(**stats_dict)
-                except Exception as e:
-                    logger.warning(f"Error processing stats for {name}: {e}")
+            return team_stats
 
-        return self.team_stats_cache.get(team_name)
+        except Exception as e:
+            logger.error(f"Error fetching ESPN NBA stats for {team_name}: {e}")
+            return None
+
+    def _nba_team_name_to_abbr(self, team_name: str) -> Optional[str]:
+        """Convert NBA team name to ESPN abbreviation"""
+        # Normalize team name for matching
+        name_lower = team_name.lower()
+
+        # ESPN abbreviation mapping
+        team_map = {
+            'atlanta hawks': 'ATL', 'boston celtics': 'BOS', 'brooklyn nets': 'BKN',
+            'charlotte hornets': 'CHA', 'chicago bulls': 'CHI', 'cleveland cavaliers': 'CLE',
+            'dallas mavericks': 'DAL', 'denver nuggets': 'DEN', 'detroit pistons': 'DET',
+            'golden state warriors': 'GSW', 'houston rockets': 'HOU', 'indiana pacers': 'IND',
+            'la clippers': 'LAC', 'los angeles clippers': 'LAC', 'la lakers': 'LAL',
+            'los angeles lakers': 'LAL', 'memphis grizzlies': 'MEM', 'miami heat': 'MIA',
+            'milwaukee bucks': 'MIL', 'minnesota timberwolves': 'MIN', 'new orleans pelicans': 'NOP',
+            'new york knicks': 'NYK', 'oklahoma city thunder': 'OKC', 'orlando magic': 'ORL',
+            'philadelphia 76ers': 'PHI', 'phoenix suns': 'PHX', 'portland trail blazers': 'POR',
+            'sacramento kings': 'SAC', 'san antonio spurs': 'SAS', 'toronto raptors': 'TOR',
+            'utah jazz': 'UTA', 'washington wizards': 'WAS'
+        }
+
+        return team_map.get(name_lower)
 
     async def update_games(self):
         """Fetch and update all games"""
