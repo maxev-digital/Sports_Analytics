@@ -216,6 +216,26 @@ export function PersonalBetAnalytics({
     return betSide.includes('OVER') || betSide.includes('UNDER');
   };
 
+  const handleQuickToggleBetSide = async (bet: any) => {
+    // Quickly toggle OVER/UNDER without entering edit mode
+    let newBetSide = bet.bet_side;
+
+    if (bet.bet_side.includes('OVER')) {
+      newBetSide = bet.bet_side.replace('OVER', 'UNDER');
+    } else if (bet.bet_side.includes('UNDER')) {
+      newBetSide = bet.bet_side.replace('UNDER', 'OVER');
+    } else {
+      // For spreads and moneylines, can't toggle
+      return;
+    }
+
+    // Update the bet directly
+    const success = await updateBet(bet.id, { betSide: newBetSide });
+    if (success) {
+      onRefresh();
+    }
+  };
+
   const handleSettleBet = async (betId: string, result: 'win' | 'loss' | 'push') => {
     const confirmMessage = result === 'win' ? 'Mark this bet as WON?' :
                           result === 'loss' ? 'Mark this bet as LOST?' :
@@ -654,15 +674,26 @@ export function PersonalBetAnalytics({
                   // View Mode
                   <>
                     <div className="flex justify-between items-start mb-3">
-                      <div>
+                      <div className="flex-1">
                         <div className="text-lg font-bold text-white mb-1">
                           {bet.away_team} @ {bet.home_team}
                         </div>
-                        <div className="text-sm text-slate-400 mb-1">
+                        <div className="text-sm text-slate-400 mb-2">
                           {bet.sport} • {new Date(bet.clicked_at).toLocaleDateString()}
                         </div>
-                        <div className="text-sm text-yellow-400 font-semibold">
-                          {bet.bet_side} ({bet.odds > 0 ? '+' : ''}{bet.odds})
+                        <div className="flex items-center gap-2">
+                          <div className="text-sm text-yellow-400 font-semibold">
+                            {bet.bet_side} ({bet.odds > 0 ? '+' : ''}{bet.odds})
+                          </div>
+                          {canToggleBetSide(bet.bet_side) && (
+                            <button
+                              onClick={() => handleQuickToggleBetSide(bet)}
+                              className="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold transition-all"
+                              title="Switch to opposite side"
+                            >
+                              ⇅ Switch Side
+                            </button>
+                          )}
                         </div>
                       </div>
                       <div className="text-right">
