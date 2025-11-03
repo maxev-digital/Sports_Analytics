@@ -419,37 +419,49 @@ class GameTracker:
             season_stats = espn_data.get('season_stats', {})
             rankings = espn_data.get('rankings', {})
 
+            # Extract stats using ESPN's actual field names
+            games_played = int(season_stats.get('gamesplayed', 0))
+            ppg = round(season_stats.get('avgpointsfor', 110.0), 1)
+            opp_ppg = round(season_stats.get('avgpointsagainst', 110.0), 1)
+
+            # Calculate approximate ratings (ESPN doesn't provide these)
+            # Use simple approximation: offensive rating ≈ PPG * 100 / league_avg_pace
+            # For now, use league average pace of ~100
+            approx_off_rating = round(ppg * 100 / 100, 1)
+            approx_def_rating = round(opp_ppg * 100 / 100, 1)
+
             # Map ESPN data to TeamStats model
             team_stats = TeamStats(
                 team_id=str(espn_data.get('team_id', '')),
                 team_name=team_name,
-                games_played=season_stats.get('games_played', 0),
+                games_played=games_played,
                 wins=espn_data.get('wins', 0),
                 losses=espn_data.get('losses', 0),
                 win_pct=espn_data.get('win_pct', 0.0),
-                # ESPN provides these, use fallback if missing
-                off_rating=season_stats.get('offensive_rating', 110.0),
-                def_rating=season_stats.get('defensive_rating', 110.0),
-                net_rating=season_stats.get('offensive_rating', 110.0) - season_stats.get('defensive_rating', 110.0),
-                pace=season_stats.get('pace', 100.0),
-                fg_pct=season_stats.get('fg_pct', 45.0),
-                fg3_pct=season_stats.get('fg3_pct', 35.0),
-                ft_pct=season_stats.get('ft_pct', 75.0),
-                pts_per_game=season_stats.get('points_per_game', 110.0),
-                pts_allowed=season_stats.get('points_allowed_per_game', 110.0),
+                # Approximate ratings (ESPN doesn't provide actual pace/ratings)
+                off_rating=approx_off_rating,
+                def_rating=approx_def_rating,
+                net_rating=round(approx_off_rating - approx_def_rating, 1),
+                pace=100.0,  # ESPN doesn't provide pace, use league average
+                # ESPN field names
+                fg_pct=round(season_stats.get('fieldgoalpct', 45.0) * 100, 1),
+                fg3_pct=round(season_stats.get('threepoint​pct', 35.0) * 100, 1),
+                ft_pct=round(season_stats.get('freethrowpct', 75.0) * 100, 1),
+                pts_per_game=ppg,
+                pts_allowed=opp_ppg,
                 last_5_record=espn_data.get('last_5_record'),
-                last_5_avg_pts=season_stats.get('points_per_game'),  # ESPN doesn't separate L5
-                last_5_avg_margin=season_stats.get('point_differential_per_game'),
+                last_5_avg_pts=ppg,  # ESPN doesn't separate L5
+                last_5_avg_margin=round(season_stats.get('differential', 0.0), 1),
                 form_trend=espn_data.get('form_trend', 'NEUTRAL'),
-                # Rankings
-                pts_per_game_rank=rankings.get('points_per_game_rank'),
-                off_rating_rank=rankings.get('offensive_rating_rank'),
-                def_rating_rank=rankings.get('defensive_rating_rank'),
-                net_rating_rank=rankings.get('net_rating_rank'),
-                pace_rank=rankings.get('pace_rank'),
-                fg_pct_rank=rankings.get('field_goal_pct_rank'),
-                fg3_pct_rank=rankings.get('three_point_pct_rank'),
-                ft_pct_rank=rankings.get('free_throw_pct_rank')
+                # Rankings (ESPN may not provide all of these)
+                pts_per_game_rank=rankings.get('avgpointsfor_rank'),
+                off_rating_rank=None,  # Not available from ESPN
+                def_rating_rank=None,  # Not available from ESPN
+                net_rating_rank=None,  # Not available from ESPN
+                pace_rank=None,  # Not available from ESPN
+                fg_pct_rank=rankings.get('fieldgoalpct_rank'),
+                fg3_pct_rank=rankings.get('threepointpct_rank'),
+                ft_pct_rank=rankings.get('freethrowpct_rank')
             )
 
             # Cache it
