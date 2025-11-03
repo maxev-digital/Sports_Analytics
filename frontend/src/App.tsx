@@ -55,8 +55,8 @@ function App() {
             </>
           } />
 
-          {/* Root redirect to live-games (main app) */}
-          <Route path="/" element={<Navigate to="/live-games" replace />} />
+          {/* Root redirect to pricing page (public landing) */}
+          <Route path="/" element={<Navigate to="/pricing" replace />} />
 
           {/* Pricing page - public, no auth required */}
           <Route

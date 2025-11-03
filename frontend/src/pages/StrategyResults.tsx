@@ -114,7 +114,7 @@ const AlertModal = ({ strategy, onClose }: { strategy: Strategy; onClose: () => 
 
   const handleSubscribe = async () => {
     try {
-      const response = await fetch(getApiUrl('strategies/subscribe'), {
+      const response = await fetch(getApiUrl('/strategies/subscribe'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ strategy_id: strategy.id, email }),
@@ -234,7 +234,7 @@ export function StrategyResults() {
       try {
         setLoading(true);
 
-        const strategiesResponse = await fetchWithRetry(getApiUrl('strategies/'));
+        const strategiesResponse = await fetchWithRetry(getApiUrl('/strategies/'));
         const strategiesData = await strategiesResponse.json();
 
         // Helper function to determine edge decay rate
@@ -270,7 +270,7 @@ export function StrategyResults() {
 
         setStrategies(enhancedStrategies);
 
-        const summaryResponse = await fetchWithRetry(getApiUrl('strategies/performance/summary'));
+        const summaryResponse = await fetchWithRetry(getApiUrl('/strategies/performance/summary'));
         const summaryData = await summaryResponse.json();
 
         // Add mock ROI history (replace with real API data)
