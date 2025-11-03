@@ -5,7 +5,6 @@ Handles all Stripe-related operations for subscription management
 
 import os
 import stripe
-from stripe.error import StripeError
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 from dotenv import load_dotenv
@@ -110,7 +109,7 @@ class StripeService:
                 'url': session.url
             }
 
-        except StripeError as e:
+        except stripe.StripeError as e:
             raise Exception(f"Stripe error: {str(e)}")
 
     @staticmethod
@@ -137,7 +136,7 @@ class StripeService:
 
             return {'url': session.url}
 
-        except StripeError as e:
+        except stripe.StripeError as e:
             raise Exception(f"Stripe error: {str(e)}")
 
     @staticmethod
@@ -171,7 +170,7 @@ class StripeService:
                 ]
             }
 
-        except StripeError as e:
+        except stripe.StripeError as e:
             print(f"Error retrieving subscription: {str(e)}")
             return None
 
@@ -196,7 +195,7 @@ class StripeService:
                 'metadata': customer.metadata
             }
 
-        except StripeError as e:
+        except stripe.StripeError as e:
             print(f"Error retrieving customer: {str(e)}")
             return None
 
@@ -225,7 +224,7 @@ class StripeService:
             
             return True
 
-        except StripeError as e:
+        except stripe.StripeError as e:
             print(f"Error cancelling subscription: {str(e)}")
             return False
 
@@ -309,7 +308,7 @@ class StripeService:
             
             return customer.id
 
-        except StripeError as e:
+        except stripe.StripeError as e:
             print(f"Error creating customer: {str(e)}")
             return None
 
@@ -345,7 +344,7 @@ class StripeService:
                 for invoice in invoices.data
             ]
 
-        except StripeError as e:
+        except stripe.StripeError as e:
             print(f"Error listing invoices: {str(e)}")
             return []
 
