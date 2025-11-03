@@ -37,8 +37,27 @@ const SubscriptionSuccess: React.FC = () => {
         console.error('Error verifying checkout:', error);
       }
 
-      // Refresh subscription status from database
-      await refreshSubscription();
+      // Retry subscription refresh up to 5 times to ensure it's updated
+      let retries = 5;
+      let subscriptionUpdated = false;
+
+      while (retries > 0 && !subscriptionUpdated) {
+        await refreshSubscription();
+
+        // Wait 1 second between retries
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Check if subscription tier has been updated (not 'free' or 'trial')
+        const currentTier = localStorage.getItem('subscription_tier');
+        if (currentTier && currentTier !== 'free' && currentTier !== 'trial') {
+          subscriptionUpdated = true;
+          console.log('✅ Subscription successfully updated to:', currentTier);
+        } else {
+          retries--;
+          console.log(`⏳ Waiting for subscription update... ${retries} retries left`);
+        }
+      }
+
       setVerifying(false);
 
       // Countdown redirect to dashboard

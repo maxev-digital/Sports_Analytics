@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 interface SubscriptionGuardProps {
@@ -9,17 +9,23 @@ interface SubscriptionGuardProps {
 export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
   const { subscriptionTier, username, refreshSubscription } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     refreshSubscription();
   }, []);
 
   useEffect(() => {
+    // Don't redirect if user is on subscription success page (they just paid!)
+    if (location.pathname === '/subscription/success') {
+      return;
+    }
+
     if (subscriptionTier === 'free' || subscriptionTier === 'trial') {
       console.log(`User ${username} has tier ${subscriptionTier} - redirecting to pricing`);
       navigate('/pricing', { replace: true });
     }
-  }, [subscriptionTier, navigate, username]);
+  }, [subscriptionTier, navigate, username, location.pathname]);
 
   if (subscriptionTier !== 'free' && subscriptionTier !== 'trial') {
     return <>{children}</>;
