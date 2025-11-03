@@ -979,8 +979,7 @@ async def get_subscription_status(user_id: str):
         if not subscription:
             return {
                 "tier": "free",
-                "status": "none",
-                "features": SubscriptionDB.has_feature_access.__code__.co_consts[1]['free']
+                "status": "none"
             }
 
         return {
