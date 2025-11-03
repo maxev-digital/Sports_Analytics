@@ -13,7 +13,7 @@ interface SubscriptionStatus {
 }
 
 export function Pricing() {
-  const { username, isAuthenticated } = useAuth();
+  const { username, email, isAuthenticated } = useAuth();
   const [loading, setLoading] = useState<string | null>(null);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   const [showFeatureComparison, setShowFeatureComparison] = useState(false);
@@ -126,7 +126,7 @@ export function Pricing() {
         body: JSON.stringify({
           price_id: STRIPE_PRICE_IDS[tier],
           user_id: username,
-          user_email: `${username.replace(/\s+/g, '.')}@max-ev-sports.com`,
+          user_email: email || `${username.replace(/\s+/g, '.')}@max-ev-sports.com`, // Use real email, fallback to generated
           apply_beta_discount: true, // Automatically apply 50% OFF promo code
         }),
       });

@@ -4,6 +4,7 @@ import { getApiUrl } from '../config';
 interface AuthContextType {
   isAuthenticated: boolean;
   username: string | null;
+  email: string | null;
   token: string | null;
   subscriptionTier: string;
   login: (username: string, password: string) => Promise<boolean>;
@@ -18,6 +19,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [username, setUsername] = useState<string | null>(null);
+  const [email, setEmail] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [subscriptionTier, setSubscriptionTier] = useState<string>('free');
   const [loading, setLoading] = useState(true);
@@ -84,9 +86,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     console.log('🔒 PRODUCTION MODE: Using normal auth flow');
     const storedToken = localStorage.getItem('auth_token');
     const storedUsername = localStorage.getItem('auth_username');
+    const storedEmail = localStorage.getItem('auth_email');
     const storedTier = localStorage.getItem('subscription_tier') || 'free';
 
     if (storedToken && storedUsername) {
+      setEmail(storedEmail);
       setSubscriptionTier(storedTier);
       verifyToken(storedToken, storedUsername);
     } else {
@@ -108,6 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else {
           localStorage.removeItem('auth_token');
           localStorage.removeItem('auth_username');
+          localStorage.removeItem('auth_email');
           localStorage.removeItem('subscription_tier');
         }
       } else {
@@ -143,9 +148,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (response.ok && data.success) {
         localStorage.setItem('auth_token', data.token);
         localStorage.setItem('auth_username', data.username);
+        localStorage.setItem('auth_email', data.email || '');
 
         setIsAuthenticated(true);
         setUsername(data.username);
+        setEmail(data.email || null);
         setToken(data.token);
 
         await fetchSubscription(data.username);
@@ -182,10 +189,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     setIsAuthenticated(false);
     setUsername(null);
+    setEmail(null);
     setToken(null);
     setSubscriptionTier('free');
     localStorage.removeItem('auth_token');
     localStorage.removeItem('auth_username');
+    localStorage.removeItem('auth_email');
     localStorage.removeItem('subscription_tier');
 
     sessionStorage.setItem('manual_logout', 'true');
@@ -196,6 +205,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         isAuthenticated,
         username,
+        email,
         token,
         subscriptionTier,
         login,
