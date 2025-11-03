@@ -660,7 +660,8 @@ async def register(request: Request):
             "success": True,
             "message": "Registration successful",
             "token": token,
-            "username": username
+            "username": username,
+            "email": email
         }
         
     except HTTPException:
