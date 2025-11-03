@@ -136,7 +136,9 @@ class SubscriptionDB:
                 cursor = conn.cursor()
                 cursor.execute('SELECT * FROM users WHERE id = ?', (user_id,))
                 row = cursor.fetchone()
-                return dict(row) if row else None
+                if row:
+                    return {key: row[key] for key in row.keys()}
+                return None
         except Exception as e:
             print(f"Error getting user: {e}")
             return None
@@ -149,7 +151,9 @@ class SubscriptionDB:
                 cursor = conn.cursor()
                 cursor.execute('SELECT * FROM users WHERE email = ?', (email,))
                 row = cursor.fetchone()
-                return dict(row) if row else None
+                if row:
+                    return {key: row[key] for key in row.keys()}
+                return None
         except Exception as e:
             print(f"Error getting user by email: {e}")
             return None
@@ -261,13 +265,15 @@ class SubscriptionDB:
             with get_db_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute('''
-                    SELECT * FROM subscriptions 
-                    WHERE user_id = ? 
-                    ORDER BY created_at DESC 
+                    SELECT * FROM subscriptions
+                    WHERE user_id = ?
+                    ORDER BY created_at DESC
                     LIMIT 1
                 ''', (user_id,))
                 row = cursor.fetchone()
-                return dict(row) if row else None
+                if row:
+                    return {key: row[key] for key in row.keys()}
+                return None
         except Exception as e:
             print(f"Error getting subscription: {e}")
             return None
@@ -279,11 +285,13 @@ class SubscriptionDB:
             with get_db_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute('''
-                    SELECT * FROM subscriptions 
+                    SELECT * FROM subscriptions
                     WHERE stripe_subscription_id = ?
                 ''', (stripe_subscription_id,))
                 row = cursor.fetchone()
-                return dict(row) if row else None
+                if row:
+                    return {key: row[key] for key in row.keys()}
+                return None
         except Exception as e:
             print(f"Error getting subscription by Stripe ID: {e}")
             return None
@@ -350,13 +358,13 @@ class SubscriptionDB:
             with get_db_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute('''
-                    SELECT * FROM payment_history 
-                    WHERE user_id = ? 
-                    ORDER BY created_at DESC 
+                    SELECT * FROM payment_history
+                    WHERE user_id = ?
+                    ORDER BY created_at DESC
                     LIMIT ?
                 ''', (user_id, limit))
                 rows = cursor.fetchall()
-                return [dict(row) for row in rows]
+                return [{key: row[key] for key in row.keys()} for row in rows]
         except Exception as e:
             print(f"Error getting user payments: {e}")
             return []
