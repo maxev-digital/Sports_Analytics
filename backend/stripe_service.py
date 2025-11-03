@@ -175,6 +175,24 @@ class StripeService:
             return None
 
     @staticmethod
+    def retrieve_checkout_session(session_id: str):
+        """
+        Retrieve a Stripe checkout session
+
+        Args:
+            session_id: Stripe checkout session ID
+
+        Returns:
+            Stripe Session object or None
+        """
+        try:
+            session = stripe.checkout.Session.retrieve(session_id)
+            return session
+        except stripe.StripeError as e:
+            print(f"Error retrieving checkout session: {str(e)}")
+            return None
+
+    @staticmethod
     def get_customer(customer_id: str) -> Optional[Dict[str, Any]]:
         """
         Retrieve customer details from Stripe

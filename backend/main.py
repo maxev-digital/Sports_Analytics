@@ -18,6 +18,7 @@ from bet_grader import initialize_bet_grader
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
 import asyncio
+import stripe
 import logging
 import time
 import json
@@ -963,6 +964,86 @@ async def stripe_webhook(request: Request):
         raise HTTPException(status_code=500, detail=f"Webhook processing failed: {str(e)}")
 
 
+@app.post("/api/subscription/verify-checkout")
+async def verify_checkout(request: Request):
+    """
+    Verify Stripe checkout session and create/update subscription
+    This is a backup system in case the webhook hasn't fired yet
+    """
+    try:
+        data = await request.json()
+        session_id = data.get('session_id')
+        user_id = data.get('user_id')
+
+        if not session_id or not user_id:
+            raise HTTPException(status_code=400, detail="Missing session_id or user_id")
+
+        # Retrieve Stripe session
+        session = StripeService.retrieve_checkout_session(session_id)
+        if not session:
+            raise HTTPException(status_code=404, detail="Checkout session not found")
+
+        # Check if payment was successful
+        if session.payment_status != 'paid':
+            logger.warning(f"Payment not completed for session {session_id}, status: {session.payment_status}")
+            return {
+                "success": False,
+                "message": "Payment not yet completed",
+                "payment_status": session.payment_status
+            }
+
+        # Get subscription details from session
+        stripe_subscription_id = session.subscription
+        stripe_customer_id = session.customer
+
+        # Get the price_id from the session to determine tier
+        line_items = stripe.checkout.Session.list_line_items(session_id, limit=1)
+        if not line_items or not line_items.data:
+            raise HTTPException(status_code=500, detail="No line items found in session")
+
+        price_id = line_items.data[0].price.id
+        tier = StripeService.get_price_tier(price_id)
+
+        logger.info(f"Verifying checkout for user {user_id}: tier={tier}, subscription_id={stripe_subscription_id}")
+
+        # Check if subscription already exists
+        existing_sub = SubscriptionDB.get_subscription(user_id)
+
+        if existing_sub and existing_sub.get('stripe_subscription_id') == stripe_subscription_id:
+            # Subscription already created (probably by webhook)
+            logger.info(f"Subscription already exists for user {user_id}")
+            return {
+                "success": True,
+                "message": "Subscription already active",
+                "tier": tier,
+                "created_by": "webhook"
+            }
+
+        # Create or update subscription
+        SubscriptionDB.create_subscription(
+            user_id=user_id,
+            stripe_subscription_id=stripe_subscription_id,
+            stripe_customer_id=stripe_customer_id,
+            tier=tier,
+            status='active'
+        )
+
+        logger.info(f"✅ Created subscription for user {user_id}, tier {tier} via manual verification")
+
+        return {
+            "success": True,
+            "message": "Subscription activated",
+            "tier": tier,
+            "created_by": "manual_verification"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error verifying checkout: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to verify checkout: {str(e)}")
+
+
 @app.get("/api/subscription/status")
 async def get_subscription_status(user_id: str):
     """
@@ -971,7 +1052,7 @@ async def get_subscription_status(user_id: str):
     """
     try:
         subscription = SubscriptionDB.get_subscription(user_id)
-        
+
         if not subscription:
             return {
                 "tier": "free",
