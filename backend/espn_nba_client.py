@@ -64,8 +64,9 @@ class ESPNnbaClient:
             team_data = response.json()
             team_info = team_data.get('team', {})
 
-            # Get season statistics
-            stats_data = team_info.get('record', {}).get('stats', [])
+            # Get season statistics from correct location
+            record_items = team_info.get('record', {}).get('items', [])
+            stats_data = record_items[0].get('stats', []) if record_items else []
 
             # Parse season statistics
             season_stats = {}
