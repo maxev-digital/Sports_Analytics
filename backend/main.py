@@ -480,29 +480,25 @@ async def get_games(user_id: str = 'default', show_all: bool = False):
     show_all=True: Returns all games regardless of odds availability (for testing)
     """
     try:
-        # TEMPORARY FIX: Always return all games without filtering to avoid performance issues
-        # TODO: Optimize bookmaker filtering to not use deep copies
-        logger.info("Returning all games without bookmaker filtering (temporary fix for performance)")
-        return tracker.get_all_games()
+        # If show_all parameter is set, return all games (bypasses bookmaker filtering)
+        if show_all:
+            logger.info("Bypassing bookmaker filter - showing all games for odds testing")
+            return tracker.get_all_games()
 
-        # # If show_all parameter is set, return all games (bypasses bookmaker filtering)
-        # if show_all:
-        #     logger.info("Bypassing bookmaker filter - showing all games for odds testing")
-        #     return tracker.get_all_games()
+        # Get user settings
+        settings = settings_db.get_settings(user_id)
+        if not settings:
+            # If no settings found, return all games (backwards compatible)
+            logger.info(f"No settings found for user {user_id}, returning all games")
+            return tracker.get_all_games()
 
-        # # Get user settings
-        # settings = settings_db.get_settings(user_id)
-        # if not settings:
-        #     # If no settings found, return all games (backwards compatible)
-        #     return tracker.get_all_games()
+        # Get all games
+        all_games = tracker.get_all_games()
 
-        # # Get all games
-        # all_games = tracker.get_all_games()
+        # Filter by enabled bookmakers (uses model_copy for performance)
+        filtered_games = filter_games_by_bookmakers(all_games, settings['enabled_bookmakers'])
 
-        # # Filter by enabled bookmakers
-        # filtered_games = filter_games_by_bookmakers(all_games, settings['enabled_bookmakers'])
-
-        # return filtered_games
+        return filtered_games
 
     except Exception as e:
         logger.error(f"Error filtering games: {str(e)}")
