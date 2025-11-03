@@ -39,5 +39,5 @@ QUIET_HOURS_END = 9     # 9 AM (24-hour format)
 # Edge detection
 MIN_EDGE = 5.0  # points
 
-# EMERGENCY: Disable ESPN stats fetching (blocking calls cause event loop freeze)
-ENABLE_ESPN_STATS = False  # Set to True to re-enable ESPN enrichment
+# ESPN stats now enabled - NBA working, adding NFL/NHL back
+ENABLE_ESPN_STATS = True  # Enables NFL, NHL, MLB stats fetching from ESPN
