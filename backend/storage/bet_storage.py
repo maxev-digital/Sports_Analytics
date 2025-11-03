@@ -7,6 +7,7 @@ from pathlib import Path
 import uuid
 
 from models.user_bet import UserBet, CreateBetRequest, calculate_profit_loss
+from storage.alert_storage import alert_storage
 
 
 class BetStorage:
@@ -145,6 +146,56 @@ class BetStorage:
                 bet_data['profit_loss'] = profit_loss
                 bet_data['settled_at'] = datetime.utcnow().isoformat()
                 bet_data['status'] = result  # 'won', 'lost', or 'push'
+
+                # If bet was from an alert, settle the alert too
+                alert_id = bet_data.get('alert_id')
+                if alert_id:
+                    try:
+                        alert_storage.settle_alert(
+                            alert_id=alert_id,
+                            outcome='win' if result == 'won' else result,
+                            actual_result=f"Bet settled: {result}"
+                        )
+                    except Exception as e:
+                        # Log but don't fail bet settlement if alert update fails
+                        import logging
+                        logging.error(f"Failed to settle alert {alert_id}: {e}")
+
+                # Save changes
+                bets[i] = bet_data
+                self._write_bets(bets)
+
+                return UserBet(**bet_data)
+
+        return None
+
+    def update_bet(self, bet_id: str, updates: dict) -> Optional[UserBet]:
+        """
+        Update bet details (bet_side, odds, stake, bookmaker, confidence, edge_percent)
+
+        Args:
+            bet_id: ID of the bet to update
+            updates: Dictionary of fields to update
+
+        Returns:
+            Updated UserBet if found, None otherwise
+        """
+        bets = self._read_bets()
+
+        for i, bet_data in enumerate(bets):
+            if bet_data['id'] == bet_id:
+                # Only allow updating certain fields
+                allowed_fields = ['bet_side', 'odds', 'stake', 'bookmaker', 'confidence', 'edge_percent']
+
+                for key, value in updates.items():
+                    if key in allowed_fields and value is not None:
+                        bet_data[key] = value
+
+                # If stake was added/updated and bet was pending, change status to active
+                if 'stake' in updates and updates['stake'] is not None:
+                    if bet_data['status'] == 'pending':
+                        bet_data['status'] = 'active'
+                        bet_data['logged_at'] = datetime.utcnow().isoformat()
 
                 # Save changes
                 bets[i] = bet_data

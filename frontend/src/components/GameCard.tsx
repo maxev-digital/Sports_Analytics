@@ -2098,36 +2098,37 @@ export function GameCard({ game }: GameCardProps) {
                     }`}
                   >
                     <div className="flex items-center gap-2">
-                      {bookmakerInfo.logo ? (
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            handleBookmakerClick(odd.bookmaker, odd, bookmakerUrl);
-                          }}
-                          className="inline-block hover:opacity-70 transition-opacity cursor-pointer border-0 bg-transparent p-0"
-                          title={`Track bet & visit ${odd.bookmaker}`}
-                        >
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleBookmakerClick(odd.bookmaker, odd, bookmakerUrl);
+                        }}
+                        className="inline-block hover:opacity-70 transition-opacity cursor-pointer border-0 bg-transparent p-0"
+                        title={`Track bet & visit ${odd.bookmaker}`}
+                      >
+                        {bookmakerInfo.logo ? (
                           <img
                             src={bookmakerInfo.logo}
                             alt={odd.bookmaker}
                             className="w-5 h-5 object-contain"
-                            onError={(e) => e.currentTarget.style.display = 'none'}
+                            onError={(e) => {
+                              // Replace broken image with fallback badge
+                              const parent = e.currentTarget.parentElement;
+                              if (parent) {
+                                e.currentTarget.style.display = 'none';
+                                const fallback = document.createElement('span');
+                                fallback.className = `px-2 py-0.5 rounded font-bold text-xs ${bookmakerInfo.bg} ${bookmakerInfo.text}`;
+                                fallback.textContent = bookmakerInfo.short;
+                                parent.appendChild(fallback);
+                              }
+                            }}
                           />
-                        </button>
-                      ) : (
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            handleBookmakerClick(odd.bookmaker, odd, bookmakerUrl);
-                          }}
-                          className="inline-block hover:opacity-70 transition-opacity cursor-pointer border-0 bg-transparent p-0"
-                          title={`Track bet & visit ${odd.bookmaker}`}
-                        >
-                          <span className={`px-2 py-0.5 rounded font-bold text-base ${bookmakerInfo.bg} ${bookmakerInfo.text}`}>
+                        ) : (
+                          <span className={`px-2 py-0.5 rounded font-bold text-xs ${bookmakerInfo.bg} ${bookmakerInfo.text}`}>
                             {bookmakerInfo.short}
                           </span>
-                        </button>
-                      )}
+                        )}
+                      </button>
                       <span className={`${textSecondary} text-base`}>{odd.bookmaker}</span>
                       {shouldHighlight && <span className="text-blue-300">⭐</span>}
                     </div>

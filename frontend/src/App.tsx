@@ -11,13 +11,13 @@ import { Tools } from './pages/Tools';
 import { Analytics } from './pages/Analytics';
 import { AnalyticsSample } from './pages/AnalyticsSample';
 import { Props } from './pages/Props';
+import { StrategyResults } from './pages/StrategyResults';
 import { Pricing } from './pages/Pricing';
 import { Alerts } from './pages/Alerts';
 import { Learn } from './pages/Learn';
 import { ArticleDetail } from './pages/ArticleDetail';
 import { GettingStarted } from './pages/GettingStarted';
 import { OddsExplained } from './pages/OddsExplained';
-import { MultiSport } from './pages/MultiSport';
 import { Odds } from './pages/Odds';
 import { HandicapperPicks } from './pages/HandicapperPicks';
 import { Settings } from './pages/Settings';
@@ -25,8 +25,18 @@ import { StrategySettings } from './pages/StrategySettings';
 import SoundPreview from './pages/SoundPreview';
 import SubscriptionSuccess from './pages/SubscriptionSuccess';
 import SubscriptionCancel from './pages/SubscriptionCancel';
+import { Terms } from './pages/Terms';
+import { Privacy } from './pages/Privacy';
+import { Disclaimer } from './pages/Disclaimer';
+import { FloatingFeedbackButton } from './components/FloatingFeedbackButton';
+import { LiveChatWidget } from './components/LiveChatWidget';
+import { AdminDashboard } from './pages/AdminDashboard';
+import { isElectron } from './utils/isElectron';
 
 function App() {
+  // Check if running in desktop (Electron) mode
+  const isDesktop = isElectron();
+
   return (
     <Router>
       <AuthProvider>
@@ -45,8 +55,8 @@ function App() {
             </>
           } />
 
-          {/* Root redirect to pricing page */}
-          <Route path="/" element={<Navigate to="/pricing" replace />} />
+          {/* Root redirect to live-games (main app) */}
+          <Route path="/" element={<Navigate to="/live-games" replace />} />
 
           {/* Pricing page - public, no auth required */}
           <Route
@@ -59,6 +69,31 @@ function App() {
               </div>
             }
           />
+
+          {/* Strategy Results - public for testing */}
+          <Route
+            path="/strategy-results"
+            element={
+              <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col">
+                <Navigation />
+                <StrategyResults />
+                <Footer />
+                {/* Floating Feedback & Chat - visible on Strategy Results page (hidden in desktop) */}
+                {!isDesktop && (
+                  <>
+                    <FloatingFeedbackButton />
+                    <LiveChatWidget />
+                  </>
+                )}
+              </div>
+            }
+          />
+
+          {/* Legal pages - public */}
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/disclaimer" element={<Disclaimer />} />
+
           <Route
             path="/subscription/success"
             element={
@@ -98,20 +133,30 @@ function App() {
                       <Route path="/analytics" element={<Analytics />} />
                       <Route path="/analytics-sample" element={<AnalyticsSample />} />
                       <Route path="/props" element={<Props />} />
+
                       <Route path="/alerts" element={<Alerts />} />
-                      <Route path="/multi-sport" element={<MultiSport />} />
                       <Route path="/odds" element={<Odds />} />
                       <Route path="/handicapper-picks" element={<HandicapperPicks />} />
                       <Route path="/settings" element={<Settings />} />
                       <Route path="/strategy-settings" element={<StrategySettings />} />
-                      <Route path="/learn" element={<Learn />} />
-                      <Route path="/learn/:articleId" element={<ArticleDetail />} />
-                      <Route path="/getting-started" element={<GettingStarted />} />
-                      <Route path="/odds-explained" element={<OddsExplained />} />
+                      {/* Learn pages - redirect to home in desktop mode */}
+                      <Route path="/learn" element={isDesktop ? <Navigate to="/live-games" replace /> : <Learn />} />
+                      <Route path="/learn/:articleId" element={isDesktop ? <Navigate to="/live-games" replace /> : <ArticleDetail />} />
+                      <Route path="/getting-started" element={isDesktop ? <Navigate to="/live-games" replace /> : <GettingStarted />} />
+                      <Route path="/odds-explained" element={isDesktop ? <Navigate to="/live-games" replace /> : <OddsExplained />} />
+                      {/* Admin and sample pages - redirect to home in desktop mode */}
                       <Route path="/sound-preview" element={<SoundPreview />} />
+                      <Route path="/admin-dashboard" element={isDesktop ? <Navigate to="/live-games" replace /> : <AdminDashboard />} />
                     </Routes>
                   </div>
                   <Footer />
+                  {/* Floating Feedback Button - visible on all protected pages (hidden in desktop) */}
+                  {!isDesktop && (
+                    <>
+                      <FloatingFeedbackButton />
+                      <LiveChatWidget />
+                    </>
+                  )}
                 </div>
               </ProtectedRoute>
             }

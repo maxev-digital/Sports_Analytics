@@ -34,49 +34,31 @@
         <div class="stat-value" id="goalieCount">0</div>
         <div class="stat-label">Goalie Pull</div>
       </div>
-    </div>
-
-    <div class="tabs">
-      <button class="tab-btn active" data-tab="arbitrage">
-        <img src="https://em-content.zobj.net/source/microsoft-teams/363/direct-hit_1f3af.png" alt="Target" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 4px;">
-        Arbitrage
-      </button>
-      <button class="tab-btn" data-tab="steam">
-        <img src="https://em-content.zobj.net/source/microsoft-teams/363/fire_1f525.png" alt="Fire" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 4px;">
-        Steam
-      </button>
-      <button class="tab-btn" data-tab="middles">
-        <img src="https://em-content.zobj.net/source/microsoft-teams/363/bullseye_1f3af.png" alt="Bullseye" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 4px;">
-        Middles
-      </button>
-      <button class="tab-btn" data-tab="goalie">
-        <img src="https://em-content.zobj.net/source/microsoft-teams/363/ice-hockey_1f3d2.png" alt="Hockey" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 4px;">
-        Goalie Pull
-      </button>
-    </div>
-
-    <div class="tab-content active" id="arbitrage-tab">
-      <div class="opportunities" id="opportunitiesList">
-        <!-- Arbitrage opportunities will be inserted here -->
+      <div class="stat" id="statQuarterReversal">
+        <div class="stat-value" id="quarterReversalCount">0</div>
+        <div class="stat-label">Q Reversal</div>
+      </div>
+      <div class="stat" id="statInjuryProps" style="background: linear-gradient(135deg, #dc2626, #991b1b); animation: pulse 2s ease-in-out infinite;">
+        <div class="stat-value" id="injuryPropsCount">0</div>
+        <div class="stat-label">⚡ Injury Props</div>
       </div>
     </div>
 
-    <div class="tab-content" id="steam-tab">
-      <div class="opportunities" id="steamMovesList">
-        <!-- Steam moves will be inserted here -->
-      </div>
+    <!-- Filter Bar -->
+    <div class="filter-bar">
+      <input type="text" id="strategy-search" placeholder="🔍 Search strategies..." class="search-input">
+      <select id="category-filter" class="category-dropdown">
+        <option value="all">All Categories</option>
+        <option value="live">⚡ Live Betting</option>
+        <option value="arbitrage">🎯 Arbitrage</option>
+        <option value="props">📊 Props</option>
+        <option value="movement">📈 Line Movement</option>
+      </select>
     </div>
 
-    <div class="tab-content" id="middles-tab">
-      <div class="opportunities" id="middlesList">
-        <!-- Middle opportunities will be inserted here -->
-      </div>
-    </div>
-
-    <div class="tab-content" id="goalie-tab">
-      <div class="opportunities" id="goaliePullList">
-        <!-- Goalie pull opportunities will be inserted here -->
-      </div>
+    <!-- Unified Alert Feed (all strategies) -->
+    <div class="alert-feed" id="alertFeed">
+      <!-- All alerts from all strategies will be inserted here, sorted by urgency -->
     </div>
 
     <div class="controls">

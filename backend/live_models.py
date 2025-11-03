@@ -292,6 +292,7 @@ class LiveGame(BaseModel):
     away_ncaaf_momentum: Optional[NFLMomentumStats] = None  # NCAAF-specific momentum (uses same model as NFL)
     home_mlb_stats: Optional[MLBTeamStats] = None  # MLB-specific season stats
     away_mlb_stats: Optional[MLBTeamStats] = None  # MLB-specific season stats
+    quarters: Optional[dict] = None  # NBA quarter-by-quarter scores: {'Q1': {'home': 25, 'away': 22}, ...}
 
 
 # ============================================================================

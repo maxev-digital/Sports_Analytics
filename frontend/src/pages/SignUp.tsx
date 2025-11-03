@@ -10,6 +10,7 @@ export function SignUp() {
     password: '',
     confirmPassword: '',
   });
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [showFireRing, setShowFireRing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -35,6 +36,11 @@ export function SignUp() {
 
     if (formData.password.length < 6) {
       setError('Password must be at least 6 characters');
+      return;
+    }
+
+    if (!agreedToTerms) {
+      setError('You must agree to the Terms of Service and Privacy Policy to continue');
       return;
     }
 
@@ -208,15 +214,63 @@ export function SignUp() {
               />
             </div>
 
+            {/* Terms Agreement Checkbox */}
+            <div className="pt-2">
+              <label className="flex items-start space-x-3 cursor-pointer group">
+                <div className="flex items-center h-5 mt-0.5">
+                  <input
+                    type="checkbox"
+                    checked={agreedToTerms}
+                    onChange={(e) => setAgreedToTerms(e.target.checked)}
+                    disabled={loading}
+                    className="w-5 h-5 border-2 border-slate-600 rounded bg-slate-700 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer disabled:opacity-50"
+                  />
+                </div>
+                <span className="text-sm text-slate-300 leading-tight">
+                  I am 21 years or older and agree to the{' '}
+                  <a
+                    href="/terms"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-400 hover:text-blue-300 underline font-semibold"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    Terms of Service
+                  </a>
+                  {', '}
+                  <a
+                    href="/privacy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-400 hover:text-blue-300 underline font-semibold"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    Privacy Policy
+                  </a>
+                  {', and '}
+                  <a
+                    href="/disclaimer"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-400 hover:text-blue-300 underline font-semibold"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    Disclaimer
+                  </a>
+                  .
+                </span>
+              </label>
+            </div>
+
             <div className="pt-2">
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || !agreedToTerms}
                 className={`
                   group relative w-full flex justify-center py-3 px-4
                   border-2 border-blue-700 rounded-lg text-white text-sm font-bold
-                  ${loading
-                    ? 'bg-slate-600 cursor-not-allowed'
+                  ${loading || !agreedToTerms
+                    ? 'bg-slate-600 cursor-not-allowed opacity-60'
                     : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
                   }
                   transition-all duration-200

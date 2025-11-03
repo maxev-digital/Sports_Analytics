@@ -3,8 +3,13 @@ import { GoaliePullAlerts } from '../components/GoaliePullAlert';
 import { FavoriteComebackAlerts } from '../components/FavoriteComebackAlert';
 import { HalftimeTrackerAlerts } from '../components/HalftimeTrackerAlert';
 import { MomentumAlerts } from '../components/MomentumAlert';
+import { PaceMismatchAlerts } from '../components/PaceMismatchAlert';
+import { WeatherImpactAlerts } from '../components/WeatherImpactAlert';
+import { QuarterReversalAlerts } from '../components/QuarterReversalAlert';
+import { InjuryPropsAlerts } from '../components/InjuryPropsAlert';
 import { GenericStrategyAlert } from '../components/GenericStrategyAlert';
 import { getApiUrl } from '../config';
+import { useSoundEffect } from '../hooks/useSoundEffect';
 
 interface StrategyInfo {
   id: string;
@@ -18,10 +23,12 @@ interface StrategyInfo {
 
 const ALL_STRATEGIES: StrategyInfo[] = [
   // LIVE STRATEGIES
-  { id: 'comeback', name: 'NBA Favorite Comeback', description: 'Regression to mean when favorites trail underdogs after hot starts', sport: 'NBA', sportColor: 'bg-orange-600', category: 'live', hasComponent: true },
+  { id: 'injury-props', name: 'Injury Props (60s Window)', description: 'ML-powered props arbitrage when star players ruled out via Twitter', sport: 'Multi-Sport', sportColor: 'bg-red-600', category: 'live', hasComponent: true },
+  { id: 'comeback', name: 'NBA Favorite Comeback', description: 'Regression to mean when favorites trail underdogs after hot starts', sport: 'Basketball', sportColor: 'bg-orange-600', category: 'live', hasComponent: true },
+  { id: 'quarter-reversal', name: 'Basketball Quarter Reversal', description: 'Teams winning 2 consecutive quarters lose the next (55-61%% hit rate, +8-35%% ROI) - NBA & NCAA', sport: 'Basketball', sportColor: 'bg-orange-600', category: 'live', hasComponent: true },
   { id: 'goalie', name: 'NHL Empty Net Goals', description: 'Predict empty net goal opportunities when goalies are pulled', sport: 'NHL', sportColor: 'bg-blue-600', category: 'live', hasComponent: true },
-  { id: 'halftime', name: 'NBA Halftime Adjustments', description: 'Track period transitions and 1Q under opportunities', sport: 'NBA', sportColor: 'bg-orange-600', category: 'live', hasComponent: true },
-  { id: 'momentum', name: 'Momentum Detector', description: '5-minute sliding window to detect scoring runs and momentum shifts', sport: 'NBA', sportColor: 'bg-orange-600', category: 'live', hasComponent: true },
+  { id: 'halftime', name: 'NBA Halftime Adjustments', description: 'Track period transitions and 1Q under opportunities', sport: 'Basketball', sportColor: 'bg-orange-600', category: 'live', hasComponent: true },
+  { id: 'momentum', name: 'Momentum Detector', description: '5-minute sliding window to detect scoring runs and momentum shifts', sport: 'Basketball', sportColor: 'bg-orange-600', category: 'live', hasComponent: true },
   { id: 'nhl-period', name: 'NHL Period Tracking', description: 'Period-specific betting opportunities and transitions', sport: 'NHL', sportColor: 'bg-blue-600', category: 'live', hasComponent: false },
 
   // PRE-GAME STRATEGIES
@@ -31,8 +38,8 @@ const ALL_STRATEGIES: StrategyInfo[] = [
   { id: 'sharp-money', name: 'Sharp Money Tracking', description: 'Identify where professional bettors are placing their money', sport: 'Multi-Sport', sportColor: 'bg-purple-600', category: 'pregame', hasComponent: false },
   { id: 'clv', name: 'Closing Line Value (CLV)', description: 'Beat the closing line to ensure long-term profitability', sport: 'Multi-Sport', sportColor: 'bg-purple-600', category: 'pregame', hasComponent: false },
   { id: 'fatigue', name: 'Schedule Fatigue', description: 'Back-to-back games and rest differential analysis', sport: 'Multi-Sport', sportColor: 'bg-purple-600', category: 'pregame', hasComponent: false },
-  { id: 'weather', name: 'NFL Weather Impact', description: 'Rain, snow, wind, and temperature effects on totals', sport: 'NFL', sportColor: 'bg-green-600', category: 'pregame', hasComponent: false },
-  { id: 'pace', name: 'NBA Pace Mismatches', description: 'Identify tempo mismatches for over/under value', sport: 'NBA', sportColor: 'bg-orange-600', category: 'pregame', hasComponent: false },
+  { id: 'weather', name: 'NFL Weather Impact', description: 'Rain, snow, wind, and temperature effects on totals', sport: 'NFL', sportColor: 'bg-green-600', category: 'pregame', hasComponent: true },
+  { id: 'pace', name: 'NBA Pace Mismatches', description: 'Identify tempo mismatches for over/under value', sport: 'NBA', sportColor: 'bg-orange-600', category: 'pregame', hasComponent: true },
   { id: 'matchup-history', name: 'Matchup History', description: 'Head-to-head trends and situational matchup analysis', sport: 'Multi-Sport', sportColor: 'bg-purple-600', category: 'pregame', hasComponent: false },
   { id: 'props', name: 'Player Props', description: 'Usage rates and matchup analysis for player markets', sport: 'NBA', sportColor: 'bg-orange-600', category: 'pregame', hasComponent: false },
   { id: 'regression', name: 'Regression Analysis', description: 'Identify teams due for positive or negative regression', sport: 'Multi-Sport', sportColor: 'bg-purple-600', category: 'pregame', hasComponent: false },
@@ -129,23 +136,32 @@ export function Alerts() {
   const [favoriteComebackCount, setFavoriteComebackCount] = useState(0);
   const [halftimeCount, setHalftimeCount] = useState(0);
   const [momentumCount, setMomentumCount] = useState(0);
+  const [paceMismatchCount, setPaceMismatchCount] = useState(0);
+  const [weatherCount, setWeatherCount] = useState(0);
+  const [injuryPropsCount, setInjuryPropsCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<string>('comeback');
+  const [activeTab, setActiveTab] = useState<string>('injury-props');
   const [categoryTab, setCategoryTab] = useState<'live' | 'pregame'>('live');
   const [autoRefresh, setAutoRefresh] = useState(true);
   const alertBellRef = useRef<HTMLAudioElement>(null);
   const sirenRef = useRef<HTMLAudioElement>(null);
-  const previousCountRef = useRef({ arbitrage: 0, steam: 0, lines: 0 });
+  const previousCountRef = useRef({ arbitrage: 0, steam: 0, lines: 0, goaliePull: 0 });
+
+  // Sound effects for different alert types
+  const playGoaliePullSound = useSoundEffect('alert-bell.mp3', 0.6);
 
   const fetchAlerts = async () => {
     try {
-      const [alertsResponse, goalieResponse, comebackResponse, halftimeResponse, momentumResponse] = await Promise.all([
+      const [alertsResponse, goalieResponse, comebackResponse, halftimeResponse, momentumResponse, paceResponse, weatherResponse, injuryPropsResponse] = await Promise.all([
         fetch(getApiUrl('alerts/all?user_id=default')),
         fetch(getApiUrl('goalie-pull-opportunities')),
         fetch(getApiUrl('favorite-comeback-opportunities')),
         fetch(getApiUrl('halftime-opportunities')),
-        fetch(getApiUrl('momentum-opportunities'))
+        fetch(getApiUrl('momentum-opportunities')),
+        fetch(getApiUrl('pace-mismatch-opportunities')),
+        fetch(getApiUrl('weather-opportunities')),
+        fetch(getApiUrl('injuries/props'))
       ]);
 
       if (!alertsResponse.ok) throw new Error('Failed to fetch alerts');
@@ -173,6 +189,21 @@ export function Alerts() {
         setMomentumCount(momentumData.count || 0);
       }
 
+      if (paceResponse.ok) {
+        const paceData = await paceResponse.json();
+        setPaceMismatchCount(paceData.count || 0);
+      }
+
+      if (weatherResponse.ok) {
+        const weatherData = await weatherResponse.json();
+        setWeatherCount(weatherData.count || 0);
+      }
+
+      if (injuryPropsResponse.ok) {
+        const injuryPropsData = await injuryPropsResponse.json();
+        setInjuryPropsCount(injuryPropsData.count || 0);
+      }
+
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
@@ -189,6 +220,15 @@ export function Alerts() {
       return () => clearInterval(interval);
     }
   }, [autoRefresh]);
+
+  // Play sound when new goalie pull alerts arrive
+  useEffect(() => {
+    if (goaliePullCount > previousCountRef.current.goaliePull && previousCountRef.current.goaliePull > 0) {
+      console.log('[GOALIE PULL ALERT] New alert detected! Playing sound...');
+      playGoaliePullSound();
+    }
+    previousCountRef.current.goaliePull = goaliePullCount;
+  }, [goaliePullCount, playGoaliePullSound]);
 
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
@@ -264,6 +304,10 @@ export function Alerts() {
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+            <div className="bg-slate-900 border-2 border-red-700 p-6 hover:border-red-500 transition-all animate-pulse">
+              <div className="text-base text-white font-bold tracking-wide mb-1">⚡ INJURY PROPS (60s)</div>
+              <div className="text-3xl font-bold text-white">{injuryPropsCount}</div>
+            </div>
             <div className="bg-slate-900 border-2 border-orange-700 p-6 hover:border-orange-500 transition-all">
               <div className="text-base text-white font-bold tracking-wide mb-1">🔥 NBA COMEBACKS</div>
               <div className="text-3xl font-bold text-white">{favoriteComebackCount}</div>
@@ -332,16 +376,24 @@ export function Alerts() {
               }`}
             >
               {strategy.name}
+              {strategy.id === 'injury-props' && ` (${injuryPropsCount})`}
               {strategy.id === 'comeback' && ` (${favoriteComebackCount})`}
               {strategy.id === 'goalie' && ` (${goaliePullCount})`}
               {strategy.id === 'halftime' && ` (${halftimeCount})`}
               {strategy.id === 'momentum' && ` (${momentumCount})`}
+              {strategy.id === 'pace' && ` (${paceMismatchCount})`}
+              {strategy.id === 'weather' && ` (${weatherCount})`}
               {strategy.id === 'arbitrage' && ` (${alertsData?.arbitrage.count || 0})`}
               {strategy.id === 'steam' && ` (${alertsData?.steam_moves.count || 0})`}
               {strategy.id === 'lines' && ` (${alertsData?.middles.count || 0})`}
             </button>
           ))}
         </div>
+
+        {/* Injury Props Alerts */}
+        {activeTab === 'injury-props' && (
+          <InjuryPropsAlerts />
+        )}
 
         {/* Arbitrage Alerts */}
         {activeTab === 'arbitrage' && (
@@ -559,6 +611,21 @@ export function Alerts() {
         {/* Momentum Surge Alerts */}
         {activeTab === 'momentum' && (
           <MomentumAlerts />
+        )}
+
+        {/* Pace Mismatch Alerts */}
+        {activeTab === 'pace' && (
+          <PaceMismatchAlerts />
+        )}
+
+        {/* Weather Impact Alerts */}
+        {activeTab === 'weather' && (
+          <WeatherImpactAlerts />
+        )}
+
+        {/* NBA Quarter Reversal Alerts */}
+        {activeTab === 'quarter-reversal' && (
+          <QuarterReversalAlerts />
         )}
 
         {/* Generic Strategy Alerts (for strategies without dedicated components) */}

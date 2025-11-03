@@ -35,13 +35,18 @@ class OddsAPIClient:
                     logger.info(f"API requests remaining: {remaining}")
 
                 games = response.json()
+                logger.info(f"Fetched {len(games) if isinstance(games, list) else 'NON-LIST'} games for {sport}")
+
                 # Add sport key to each game
-                for game in games:
-                    game['sport_key'] = sport
-                all_games.extend(games)
+                if isinstance(games, list):
+                    for game in games:
+                        game['sport_key'] = sport
+                    all_games.extend(games)
+                else:
+                    logger.warning(f"Expected list of games for {sport}, got: {type(games)}")
 
             except Exception as e:
-                logger.error(f"Error fetching odds for {sport}: {e}")
+                logger.error(f"Error fetching odds for {sport}: {e}", exc_info=True)
 
         return all_games
 

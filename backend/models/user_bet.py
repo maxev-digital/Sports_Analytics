@@ -81,6 +81,16 @@ class AddStakeRequest(BaseModel):
     stake: float = Field(gt=0, description="Stake amount must be greater than 0")
 
 
+class UpdateBetRequest(BaseModel):
+    """Request model for updating bet details"""
+    bet_side: Optional[str] = None
+    odds: Optional[float] = None
+    stake: Optional[float] = Field(None, gt=0, description="Stake amount must be greater than 0")
+    bookmaker: Optional[str] = None
+    confidence: Optional[Literal['HIGH', 'MEDIUM', 'LOW']] = None
+    edge_percent: Optional[float] = None
+
+
 class SettleBetRequest(BaseModel):
     """Request model for settling a bet"""
     result: Literal['win', 'loss', 'push']

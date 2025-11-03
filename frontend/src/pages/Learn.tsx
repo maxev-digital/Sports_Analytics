@@ -198,9 +198,9 @@ const articles: Article[] = [
   {
     id: 'nhl-goalie-pull-strategy',
     title: 'NHL Goalie Pull Strategy: Winning with 48% Success Rate',
-    description: 'Master the most profitable NHL betting strategy. Learn how positive expected value (EV) makes you profitable even with a 48% win rate. Real-world examples, full math breakdowns, and why this beats the closing line 90%+ of the time.',
+    description: 'Master the most profitable NHL betting strategy with REAL 2023-24 season data (581 goalie pulls analyzed). 80.4% chance goal is scored after pull. Learn how positive expected value (EV) makes you profitable even with a 48% win rate, backed by Moneypuck statistics.',
     category: 'Advanced',
-    readTime: '25 min'
+    readTime: '28 min'
   },
   {
     id: 'nba-favorite-comeback-strategy',
@@ -208,6 +208,13 @@ const articles: Article[] = [
     description: 'When favorites trail underdogs after hot starts, regression creates value. Historical data: 60.3% ATS at halftime. Learn the regression scoring system, when to bet 2H spreads, and why underdogs shooting 15% above average always regress.',
     category: 'Advanced',
     readTime: '22 min'
+  },
+  {
+    id: 'quarter-reversal-strategy',
+    title: 'The Quarter Reversal Strategy: A +EV Live Betting Edge in NBA',
+    description: 'Real backtested edge: Teams winning Q1+Q2 lose Q3 at 55.3% rate (+12.1% ROI). 1,230 games of real data from balldontlie.io. No fake 89% win rates, just proven quarter-by-quarter patterns with Kelly Criterion bet sizing.',
+    category: 'Advanced',
+    readTime: '15 min'
   },
   {
     id: 'middling-opportunities',

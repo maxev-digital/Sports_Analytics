@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSettings } from '../hooks/useSettings';
+import { useAuth } from '../contexts/AuthContext';
 import { BOOKMAKERS, getPopularBookmakers, getAllBookmakerKeys } from '../data/bookmakers';
 
 interface BookmakersByRegion {
@@ -22,6 +23,49 @@ export function Settings() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRegion, setSelectedRegion] = useState<string>('all');
+
+  // Subscription management
+  const { username, subscriptionTier } = useAuth();
+  const [subscriptionStatus, setSubscriptionStatus] = useState<any>(null);
+  const [loadingPortal, setLoadingPortal] = useState(false);
+
+  // Fetch subscription status
+  useEffect(() => {
+    if (username) {
+      fetch(`/api/subscription/status?user_id=${encodeURIComponent(username)}`)
+        .then(res => res.json())
+        .then(data => setSubscriptionStatus(data))
+        .catch(err => console.error('Error fetching subscription:', err));
+    }
+  }, [username]);
+
+  const handleManageSubscription = async () => {
+    if (!username) return;
+
+    setLoadingPortal(true);
+    try {
+      const response = await fetch('/api/stripe/portal-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: username,
+          return_url: window.location.href
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        window.location.href = data.url;
+      } else {
+        alert('Failed to open subscription management portal');
+      }
+    } catch (error) {
+      console.error('Error opening portal:', error);
+      alert('Error opening subscription portal');
+    } finally {
+      setLoadingPortal(false);
+    }
+  };
 
   // Group bookmakers by region for organized display
   const bookmakersByRegion: BookmakersByRegion = {};
@@ -81,7 +125,59 @@ export function Settings() {
       <div className="max-w-7xl mx-auto px-4 py-6">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Bookmaker Settings</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">Settings</h1>
+          <p className="text-slate-400">
+            Manage your subscription and bookmaker preferences
+          </p>
+        </div>
+
+        {/* Subscription Management Section */}
+        {subscriptionStatus && subscriptionStatus.tier !== 'free' && (
+          <div className="bg-gradient-to-br from-blue-900/30 via-slate-800/50 to-blue-900/30 rounded-lg p-6 mb-8 border border-blue-600/30">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div>
+                <h2 className="text-xl font-bold text-white mb-2">Subscription Management</h2>
+                <div className="space-y-1">
+                  <p className="text-slate-300">
+                    <span className="text-slate-400">Current Plan:</span>{' '}
+                    <span className="font-semibold text-blue-400 capitalize">{subscriptionStatus.tier}</span>
+                  </p>
+                  <p className="text-slate-300">
+                    <span className="text-slate-400">Status:</span>{' '}
+                    <span className={`font-semibold capitalize ${
+                      subscriptionStatus.status === 'active' ? 'text-green-400' :
+                      subscriptionStatus.status === 'trialing' ? 'text-yellow-400' :
+                      'text-red-400'
+                    }`}>
+                      {subscriptionStatus.status}
+                    </span>
+                  </p>
+                  {subscriptionStatus.cancel_at_period_end && (
+                    <p className="text-yellow-400 text-sm font-semibold">
+                      ⚠️ Subscription will cancel at end of billing period
+                    </p>
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={handleManageSubscription}
+                disabled={loadingPortal}
+                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-600/30"
+              >
+                {loadingPortal ? 'Loading...' : 'Manage Subscription'}
+              </button>
+            </div>
+            <div className="mt-4 pt-4 border-t border-slate-700">
+              <p className="text-sm text-slate-400">
+                Update payment method, view billing history, or cancel your subscription
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Bookmaker Settings Header */}
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-white mb-2">Bookmaker Preferences</h2>
           <p className="text-slate-400">
             Select which bookmakers you want to see in odds feeds and alerts. You need at least 2 bookmakers enabled for comparison.
           </p>

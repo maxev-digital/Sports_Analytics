@@ -2,6 +2,8 @@ let opportunities = [];
 let steamMoves = [];
 let middles = [];
 let goaliePulls = [];
+let quarterReversals = [];
+let injuryProps = [];
 
 // Sport emoji helper - using Microsoft Fluent Emoji CDN
 function getSportEmoji(sport) {
@@ -130,6 +132,8 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('statArbitrage').addEventListener('click', () => switchTab('arbitrage'));
   document.getElementById('statSteam').addEventListener('click', () => switchTab('steam'));
   document.getElementById('statMiddles').addEventListener('click', () => switchTab('middles'));
+  document.getElementById('statGoalie').addEventListener('click', () => switchTab('goalie'));
+  document.getElementById('statQuarterReversal').addEventListener('click', () => switchTab('quarterreversal'));
 });
 
 async function loadOpportunities(forceRefresh = false) {
@@ -150,20 +154,21 @@ async function loadOpportunities(forceRefresh = false) {
         steamMoves = response.steamMoves || [];
         middles = response.middles || [];
         goaliePulls = response.goaliePulls || [];
+        quarterReversals = response.quarterReversals || [];
+        injuryProps = response.injuryProps || [];
 
         console.log('[POPUP] Opportunities count:', opportunities.length);
         console.log('[POPUP] Steam moves count:', steamMoves.length);
         console.log('[POPUP] Middles count:', middles.length);
         console.log('[POPUP] Goalie pulls count:', goaliePulls.length);
+        console.log('[POPUP] Quarter reversals count:', quarterReversals.length);
+        console.log('[POPUP] Injury props count:', injuryProps.length);
 
         if (opportunities.length > 0) {
           console.log('[POPUP] First opportunity:', opportunities[0]);
         }
 
-        renderOpportunities();
-        renderSteamMoves();
-        renderMiddles();
-        renderGoaliePulls();
+        renderAlertFeed();
         updateStats();
       } else {
         console.warn('[POPUP] No response from background script');
@@ -173,6 +178,134 @@ async function loadOpportunities(forceRefresh = false) {
     console.error('[POPUP] Error loading opportunities:', error);
   }
 }
+
+// UNIFIED ALERT FEED (Priority-Based, Filterable, Scales to 50+ strategies)
+function renderAlertFeed() {
+  const container = document.getElementById('alertFeed');
+  const searchInput = document.getElementById('strategy-search');
+  const categoryFilter = document.getElementById('category-filter');
+
+  // Combine all alerts into unified array with metadata
+  const allAlerts = [
+    ...injuryProps.map(alert => ({ type: 'injury-props', data: alert, strategy: 'Injury Props', category: 'live', urgency: 100 - (alert.time_since_tweet || 60) })),
+    ...goaliePulls.map(alert => ({ type: 'goalie-pull', data: alert, strategy: 'Goalie Pull', category: 'live', urgency: alert.urgency || 50 })),
+    ...quarterReversals.map(alert => ({ type: 'quarter-reversal', data: alert, strategy: 'Q Reversal', category: 'live', urgency: alert.alert_level === 'CRITICAL' ? 90 : alert.alert_level === 'HIGH' ? 70 : 50 })),
+    ...opportunities.map(alert => ({ type: 'arbitrage', data: alert, strategy: 'Arbitrage', category: 'arbitrage', urgency: alert.profit_percentage || 0 })),
+    ...steamMoves.map(alert => ({ type: 'steam', data: alert, strategy: 'Steam Move', category: 'movement', urgency: 60 })),
+    ...middles.map(alert => ({ type: 'middle', data: alert, strategy: 'Middle', category: 'arbitrage', urgency: alert.profit_percentage || 0 }))
+  ];
+
+  // Get filter values
+  const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+  const selectedCategory = categoryFilter ? categoryFilter.value : 'all';
+
+  // Apply filters
+  let filteredAlerts = allAlerts.filter(alert => {
+    // Search filter
+    const matchesSearch = !searchTerm || alert.strategy.toLowerCase().includes(searchTerm);
+
+    // Category filter
+    const matchesCategory = selectedCategory === 'all' || alert.category === selectedCategory;
+
+    return matchesSearch && matchesCategory;
+  });
+
+  // Sort by urgency (highest first)
+  filteredAlerts.sort((a, b) => b.urgency - a.urgency);
+
+  // Empty state
+  if (filteredAlerts.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">
+          <img src="https://em-content.zobj.net/source/microsoft-teams/363/magnifying-glass-tilted-left_1f50d.png" alt="Search" style="width: 64px; height: 64px;">
+        </div>
+        <div>No alerts found</div>
+        <div style="font-size: 11px; margin-top: 8px;">
+          ${allAlerts.length > 0 ? 'Try adjusting your filters' : 'Monitoring for new opportunities...'}
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  // Render alerts with strategy badges
+  container.innerHTML = filteredAlerts.map((alert, index) => {
+    const badgeClass = alert.category;
+    const badge = `<div class="strategy-badge ${badgeClass}">${alert.strategy}</div>`;
+
+    // Render alert card based on type
+    let alertCard = '';
+
+    if (alert.type === 'injury-props') {
+      const ip = alert.data;
+      const timeRemaining = Math.max(0, Math.floor(60 - ip.time_since_tweet));
+      const alertTime = formatTimeAgo(ip.timestamp);
+      const urgencyClass = timeRemaining <= 15 ? 'qr-card-critical' : timeRemaining <= 30 ? 'qr-card-high' : 'qr-card-medium';
+      const urgencyBadge = timeRemaining <= 15 ? '🚨 CRITICAL' : timeRemaining <= 30 ? '🔥 URGENT' : '⚡ LIVE';
+      const sportEmoji = ip.sport === 'NBA' ? '🏀' : ip.sport === 'NFL' ? '🏈' : ip.sport === 'NHL' ? '🏒' : '🎯';
+      const formattedOdds = ip.best_odds > 0 ? `+${ip.best_odds}` : `${ip.best_odds}`;
+
+      alertCard = `
+        <div class="${urgencyClass}" style="border: 3px solid ${timeRemaining <= 15 ? '#ef4444' : timeRemaining <= 30 ? '#f97316' : '#eab308'};">
+          <div class="qr-header">
+            <div class="qr-title">${sportEmoji} ${ip.player_name} - ${ip.team}</div>
+            <div class="qr-alert-badge" style="background: ${timeRemaining <= 15 ? '#dc2626' : timeRemaining <= 30 ? '#ea580c' : '#ca8a04'};">${urgencyBadge}</div>
+          </div>
+          <div style="background: rgba(239, 68, 68, 0.2); border: 2px solid #ef4444; border-radius: 8px; padding: 12px; margin-bottom: 12px; text-align: center;">
+            <div style="font-size: 32px; font-weight: bold; color: #fca5a5;">⏱️ ${timeRemaining}s</div>
+            <div style="font-size: 11px; color: #fecaca; margin-top: 4px;">REMAINING</div>
+          </div>
+          <div class="qr-trigger"><strong>Status:</strong> ${ip.injury_status}</div>
+          <div class="qr-details">
+            <div class="qr-detail-row">
+              <span><strong>Prop:</strong> ${ip.prop_type.toUpperCase()}</span>
+              <span><strong>Line:</strong> ${ip.prop_side.toUpperCase()} ${ip.prop_line}</span>
+            </div>
+          </div>
+          <div class="qr-stats">
+            <div class="qr-stat">
+              <div class="qr-stat-label">Expected Value</div>
+              <div class="qr-stat-value critical-text">+${ip.expected_value.toFixed(1)}%</div>
+            </div>
+            <div class="qr-stat">
+              <div class="qr-stat-label">Confidence</div>
+              <div class="qr-stat-value">${ip.confidence}%</div>
+            </div>
+          </div>
+        </div>
+      `;
+    } else {
+      // Placeholder for other strategies - will be fully implemented later
+      alertCard = `
+        <div class="qr-card-medium">
+          <div class="qr-header">
+            <div class="qr-title">Alert from ${alert.strategy}</div>
+          </div>
+          <div style="padding: 12px; text-align: center; color: #94a3b8;">
+            ${alert.strategy} rendering - Full implementation coming soon
+          </div>
+        </div>
+      `;
+    }
+
+    return `<div style="margin-bottom: 12px;">${badge}${alertCard}</div>`;
+  }).join('');
+}
+
+// Set up filter listeners
+document.addEventListener('DOMContentLoaded', () => {
+  const searchInput = document.getElementById('strategy-search');
+  const categoryFilter = document.getElementById('category-filter');
+
+  if (searchInput) {
+    searchInput.addEventListener('input', () => renderAlertFeed());
+  }
+
+  if (categoryFilter) {
+    categoryFilter.addEventListener('change', () => renderAlertFeed());
+  }
+});
 
 function renderOpportunities() {
   console.log('[POPUP] renderOpportunities() called with', opportunities.length, 'opportunities');
@@ -290,11 +423,130 @@ function renderOpportunities() {
   });
 }
 
+function renderInjuryProps() {
+  const container = document.getElementById('injuryPropsList');
+
+  if (injuryProps.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">
+          <img src="https://em-content.zobj.net/source/microsoft-teams/363/high-voltage_26a1.png" alt="Lightning" style="width: 64px; height: 64px;">
+        </div>
+        <div>⚡ Monitoring Twitter for Injuries</div>
+        <div style="font-size: 11px; margin-top: 8px;">Watching 11 Tier 1 reporters (Woj, Shams, Schefter, etc.) for instant injury updates</div>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = injuryProps.map((ip, index) => {
+    const timeRemaining = Math.max(0, Math.floor(60 - ip.time_since_tweet));
+    const alertTime = formatTimeAgo(ip.timestamp);
+
+    // Urgency styling based on time remaining
+    const urgencyClass = timeRemaining <= 15 ? 'qr-card-critical' :
+                         timeRemaining <= 30 ? 'qr-card-high' :
+                         'qr-card-medium';
+    const urgencyBadge = timeRemaining <= 15 ? '🚨 CRITICAL' :
+                         timeRemaining <= 30 ? '🔥 URGENT' :
+                         '⚡ LIVE';
+
+    // Sport emoji
+    const sportEmoji = ip.sport === 'NBA' ? '🏀' :
+                       ip.sport === 'NFL' ? '🏈' :
+                       ip.sport === 'NHL' ? '🏒' :
+                       ip.sport === 'MLB' ? '⚾' : '🎯';
+
+    // Format odds
+    const formattedOdds = ip.best_odds > 0 ? `+${ip.best_odds}` : `${ip.best_odds}`;
+
+    return `
+      <div class="${urgencyClass}" data-index="${index}" style="border: 3px solid ${timeRemaining <= 15 ? '#ef4444' : timeRemaining <= 30 ? '#f97316' : '#eab308'}; animation: ${timeRemaining <= 15 ? 'pulse 1s infinite' : 'none'};">
+        <div class="qr-header">
+          <div class="qr-title">${sportEmoji} ${ip.player_name} - ${ip.team}</div>
+          <div class="qr-alert-badge" style="background: ${timeRemaining <= 15 ? '#dc2626' : timeRemaining <= 30 ? '#ea580c' : '#ca8a04'};">
+            ${urgencyBadge}
+          </div>
+        </div>
+
+        <!-- COUNTDOWN TIMER (60-second window!) -->
+        <div style="background: rgba(239, 68, 68, 0.2); border: 2px solid #ef4444; border-radius: 8px; padding: 12px; margin-bottom: 12px; text-align: center;">
+          <div style="font-size: 32px; font-weight: bold; color: #fca5a5;">⏱️ ${timeRemaining}s</div>
+          <div style="font-size: 11px; color: #fecaca; margin-top: 4px;">REMAINING TO PLACE BET</div>
+        </div>
+
+        <!-- Injury Status -->
+        <div class="qr-trigger">
+          <strong>Status:</strong> ${ip.injury_status}
+        </div>
+
+        <!-- Prop Details -->
+        <div class="qr-details">
+          <div class="qr-detail-row">
+            <span><strong>Prop:</strong> ${ip.prop_type.toUpperCase()}</span>
+            <span><strong>Line:</strong> ${ip.prop_side.toUpperCase()} ${ip.prop_line}</span>
+          </div>
+          <div class="qr-detail-row">
+            <span><strong>Best Book:</strong> ${ip.best_book}</span>
+            <span><strong>Odds:</strong> ${formattedOdds}</span>
+          </div>
+        </div>
+
+        <!-- EV & Confidence Stats -->
+        <div class="qr-stats">
+          <div class="qr-stat">
+            <div class="qr-stat-label">Expected Value</div>
+            <div class="qr-stat-value critical-text">+${ip.expected_value.toFixed(1)}%</div>
+          </div>
+          <div class="qr-stat">
+            <div class="qr-stat-label">Confidence</div>
+            <div class="qr-stat-value ${ip.confidence >= 75 ? 'high-text' : 'medium-text'}">${ip.confidence}%</div>
+          </div>
+        </div>
+
+        <!-- ML Reasoning -->
+        <div class="qr-recommendation">
+          <div class="qr-rec-header">🤖 ML Analysis</div>
+          <div style="font-size: 12px; color: #cbd5e1; line-height: 1.4; margin-top: 6px;">
+            ${ip.reasoning}
+          </div>
+        </div>
+
+        <!-- Place Bet Button -->
+        <div style="margin-top: 12px;">
+          <button class="qr-place-bet-btn" onclick="window.open('https://www.draftkings.com', '_blank')" style="width: 100%; background: linear-gradient(135deg, #dc2626, #991b1b); border: none; padding: 12px; font-weight: bold; font-size: 14px; cursor: pointer; border-radius: 6px; color: white;">
+            ⚡ PLACE BET NOW (${timeRemaining}s) →
+          </button>
+        </div>
+
+        <!-- Alert Time -->
+        <div style="font-size: 10px; color: #94a3b8; margin-top: 8px; text-align: center;">
+          Detected ${alertTime}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Add click handlers for cards
+  container.querySelectorAll('[data-index]').forEach(card => {
+    card.addEventListener('click', (e) => {
+      if (e.target.tagName === 'BUTTON') return; // Skip if clicking button
+      const index = parseInt(card.dataset.index);
+      const injuryProp = injuryProps[index];
+      if (injuryProp) {
+        console.log('[POPUP] Clicked injury prop:', injuryProp);
+      }
+    });
+  });
+}
+
 function updateStats() {
   document.getElementById('opportunityCount').textContent = opportunities.length;
   document.getElementById('steamCount').textContent = steamMoves.length;
   document.getElementById('middlesCount').textContent = middles.length;
   document.getElementById('goalieCount').textContent = goaliePulls.length;
+  document.getElementById('quarterReversalCount').textContent = quarterReversals.length;
+  document.getElementById('injuryPropsCount').textContent = injuryProps.length;
 }
 
 function switchTab(tabName) {
@@ -532,6 +784,156 @@ function renderGoaliePulls() {
       }
     });
   });
+}
+
+function renderQuarterReversals() {
+  const container = document.getElementById('quarterReversalList');
+
+  if (quarterReversals.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">
+          <img src="https://em-content.zobj.net/source/microsoft-teams/363/basketball_1f3c0.png" alt="Basketball" style="width: 64px; height: 64px;">
+        </div>
+        <div>No quarter reversal opportunities</div>
+        <div style="font-size: 11px; margin-top: 8px;">Monitoring live NBA games...</div>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = quarterReversals.map((qr, index) => {
+    const isCritical = qr.alert_level === 'CRITICAL';
+    const isHigh = qr.alert_level === 'HIGH';
+    const matchup = qr.matchup || 'Unknown game';
+    const alertTime = formatTimeAgo(qr.timestamp);
+
+    // Card styling based on alert level
+    const cardClass = isCritical ? 'qr-card-critical' : isHigh ? 'qr-card-high' : 'qr-card-medium';
+    const badgeEmoji = isCritical ? '🚨' : isHigh ? '🔥' : '📈';
+    const badgeText = isCritical ? 'CRITICAL' : isHigh ? 'HIGH' : 'MEDIUM';
+
+    // Top recommendation
+    const topRec = qr.recommendations && qr.recommendations.length > 0 ? qr.recommendations[0] : null;
+
+    return `
+      <div class="${cardClass}" data-index="${index}">
+        <div class="qr-header">
+          <div class="qr-title">🏀 ${matchup}</div>
+          <div class="qr-alert-badge ${isCritical ? 'critical-badge' : isHigh ? 'high-badge' : 'medium-badge'}">
+            ${badgeEmoji} ${badgeText}
+          </div>
+        </div>
+
+        <div class="qr-trigger">
+          <strong>Trigger:</strong> ${qr.trigger || 'N/A'}
+        </div>
+
+        <div class="qr-details">
+          <div class="qr-detail-row">
+            <span><strong>Hot Team:</strong> ${qr.hot_team || 'N/A'}</span>
+            <span><strong>Reversal Team:</strong> ${qr.reversal_team || 'N/A'}</span>
+          </div>
+          <div class="qr-detail-row">
+            <span><strong>Quarter:</strong> ${qr.quarter || 'N/A'}</span>
+            <span><strong>Strategy:</strong> ${qr.strategy || 'N/A'}</span>
+          </div>
+        </div>
+
+        <div class="qr-stats">
+          <div class="qr-stat">
+            <div class="qr-stat-label">Win Probability</div>
+            <div class="qr-stat-value">${qr.reversal_prob || 'N/A'}</div>
+          </div>
+          <div class="qr-stat">
+            <div class="qr-stat-label">Expected ROI</div>
+            <div class="qr-stat-value ${isCritical ? 'critical-text' : 'high-text'}">${qr.expected_roi || 'N/A'}</div>
+          </div>
+        </div>
+
+        ${topRec ? `
+          <div class="qr-recommendation">
+            <div class="qr-rec-header">💰 Top Recommendation</div>
+            <div class="qr-rec-bet">${topRec.label || 'N/A'}</div>
+            <div class="qr-rec-details">
+              <span>Win Prob: ${(topRec.probability * 100).toFixed(1)}%</span>
+              <span>EV: ${topRec.expected_value > 0 ? '+' : ''}${(topRec.expected_value * 100).toFixed(1)}%</span>
+              ${topRec.kelly_size ? `<span>Kelly: $${topRec.kelly_size.toFixed(2)}</span>` : ''}
+            </div>
+
+            ${topRec.bookmaker ? `
+              <div class="qr-bookmakers">
+                <div class="qr-book-label">📍 Best Odds:</div>
+                <div class="qr-primary-book">
+                  <img src="${getBookmaker(topRec.bookmaker).logo}" alt="${topRec.bookmaker_title || getBookmaker(topRec.bookmaker).name}" class="book-logo">
+                  <span class="book-name">${topRec.bookmaker_title || getBookmaker(topRec.bookmaker).name}</span>
+                  <span class="book-odds">${topRec.odds || 'N/A'}</span>
+                  <button class="qr-place-bet-btn" data-bookmaker="${topRec.bookmaker}" data-qr-index="${index}">
+                    Place Bet →
+                  </button>
+                </div>
+
+                ${topRec.alt_bookmakers && topRec.alt_bookmakers.length > 0 ? `
+                  <div class="qr-alt-books">
+                    <div class="qr-alt-label">Also available at:</div>
+                    ${topRec.alt_bookmakers.map(alt => `
+                      <div class="qr-alt-book">
+                        <img src="${getBookmaker(alt.bookmaker).logo}" alt="${alt.bookmaker_title || getBookmaker(alt.bookmaker).name}" class="book-logo-sm">
+                        <span class="alt-book-name">${alt.bookmaker_title || getBookmaker(alt.bookmaker).name}</span>
+                        <span class="alt-book-odds">${alt.odds}</span>
+                      </div>
+                    `).join('')}
+                  </div>
+                ` : ''}
+              </div>
+            ` : ''}
+          </div>
+        ` : ''}
+
+        <div class="qr-reasoning">
+          <strong>Why this works:</strong> ${qr.reasoning || 'N/A'}
+        </div>
+
+        <div class="alert-timestamps">
+          <span class="timestamp-alert">⏰ Alert: ${alertTime}</span>
+          <span class="timestamp-game">🏀 Live Game</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Add click handlers for Place Bet buttons
+  document.querySelectorAll('.qr-place-bet-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const bookmaker = btn.dataset.bookmaker;
+      const qrIndex = parseInt(btn.dataset.qrIndex);
+      if (bookmaker && quarterReversals[qrIndex]) {
+        openQuarterReversalBet(bookmaker, quarterReversals[qrIndex]);
+      }
+    });
+  });
+}
+
+function openQuarterReversalBet(bookmaker, qr) {
+  // Map bookmaker to URL
+  const bookmakerUrls = {
+    'draftkings': 'https://sportsbook.draftkings.com/leagues/basketball/nba',
+    'fanduel': 'https://sportsbook.fanduel.com/navigation/nba',
+    'betmgm': 'https://sports.betmgm.com/en/sports/basketball-7/betting/usa-9/nba-6004',
+    'caesars': 'https://www.williamhill.com/us/nj/bet/basketball',
+    'betrivers': 'https://nj.betrivers.com/?page=sportsbook#basketball',
+    'espnbet': 'https://espnbet.com/sport/basketball/organization/united-states/competition/nba',
+    'fanatics': 'https://fanatics.com/sports/basketball/nba',
+    'pointsbet': 'https://nj.pointsbet.com/sports/basketball/NBA',
+    'bovada': 'https://www.bovada.lv/sports/basketball/nba'
+  };
+
+  const url = bookmakerUrls[bookmaker] || `https://${bookmaker}.com`;
+
+  console.log('[POPUP] Opening Quarter Reversal bet at:', bookmaker, 'for game:', qr.matchup);
+  chrome.tabs.create({ url: url, active: true });
+  window.close(); // Close popup after opening
 }
 
 function openGoaliePull(goaliePull) {

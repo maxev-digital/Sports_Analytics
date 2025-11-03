@@ -294,6 +294,18 @@ const STRATEGIES: Strategy[] = [
     defaultEnabled: true
   },
   {
+    id: 'quarter-reversal',
+    name: 'Quarter Reversal',
+    sport: 'NBA',
+    sportColor: 'bg-orange-600',
+    category: 'live',
+    description: 'Teams winning 2 consecutive quarters lose the next (55-61% hit rate, +8-35% ROI)',
+    sampleSize: '1,230 games',
+    edge: '+13.6%',
+    winRate: '54.4% (backtested 2023-24)',
+    defaultEnabled: true
+  },
+  {
     id: 'nba-halftime-tracker',
     name: 'Halftime Adjustments',
     sport: 'NBA',

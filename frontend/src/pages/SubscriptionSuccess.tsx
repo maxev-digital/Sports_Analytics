@@ -7,26 +7,57 @@ const SubscriptionSuccess: React.FC = () => {
   const [searchParams] = useSearchParams();
   const sessionId = searchParams.get('session_id');
   const [countdown, setCountdown] = useState(5);
-  const { refreshSubscription } = useAuth();
+  const { refreshSubscription, username } = useAuth();
+  const [verifying, setVerifying] = useState(true);
 
   useEffect(() => {
-    // Refresh subscription status immediately after successful payment
-    refreshSubscription();
+    const verifyAndActivate = async () => {
+      if (!sessionId || !username) {
+        console.error('Missing session ID or username');
+        setVerifying(false);
+        return;
+      }
 
-    // Countdown redirect to dashboard
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          navigate('/dashboard');
-          return 0;
+      try {
+        // Call backend to verify checkout and update subscription
+        const response = await fetch('/api/subscription/verify-checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            session_id: sessionId,
+            user_id: username
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Subscription verified:', data);
         }
-        return prev - 1;
-      });
-    }, 1000);
+      } catch (error) {
+        console.error('Error verifying checkout:', error);
+      }
 
-    return () => clearInterval(timer);
-  }, [navigate, refreshSubscription]);
+      // Refresh subscription status from database
+      await refreshSubscription();
+      setVerifying(false);
+
+      // Countdown redirect to dashboard
+      const timer = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            navigate('/dashboard');
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => clearInterval(timer);
+    };
+
+    verifyAndActivate();
+  }, [navigate, refreshSubscription, sessionId, username]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center p-4">
@@ -37,9 +68,15 @@ const SubscriptionSuccess: React.FC = () => {
           Payment Successful!
         </h1>
 
-        <p className="text-slate-300 mb-6">
-          Thank you for subscribing to MAX-EV Sports! Your account has been upgraded and you now have access to all premium features.
-        </p>
+        {verifying ? (
+          <p className="text-slate-300 mb-6">
+            Activating your subscription... Please wait.
+          </p>
+        ) : (
+          <p className="text-slate-300 mb-6">
+            Thank you for subscribing to MAX-EV Sports! Your account has been upgraded and you now have access to all premium features.
+          </p>
+        )}
 
         {sessionId && (
           <div className="bg-slate-800 border border-slate-700 rounded p-3 mb-6">

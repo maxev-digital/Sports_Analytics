@@ -5,6 +5,7 @@ Handles all Stripe-related operations for subscription management
 
 import os
 import stripe
+from stripe.error import StripeError
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 from dotenv import load_dotenv
@@ -88,8 +89,7 @@ class StripeService:
                     'metadata': {
                         'user_id': user_id,
                     },
-                    # Optional: Add trial period (7 days)
-                    'trial_period_days': 7,
+                    # No trial - immediate payment with 50% discount
                 },
                 # Collect billing address
                 'billing_address_collection': 'required',
@@ -171,7 +171,7 @@ class StripeService:
                 ]
             }
 
-        except stripe.error.StripeError as e:
+        except StripeError as e:
             print(f"Error retrieving subscription: {str(e)}")
             return None
 
@@ -196,7 +196,7 @@ class StripeService:
                 'metadata': customer.metadata
             }
 
-        except stripe.error.StripeError as e:
+        except StripeError as e:
             print(f"Error retrieving customer: {str(e)}")
             return None
 
@@ -225,7 +225,7 @@ class StripeService:
             
             return True
 
-        except stripe.error.StripeError as e:
+        except StripeError as e:
             print(f"Error cancelling subscription: {str(e)}")
             return False
 
@@ -309,7 +309,7 @@ class StripeService:
             
             return customer.id
 
-        except stripe.error.StripeError as e:
+        except StripeError as e:
             print(f"Error creating customer: {str(e)}")
             return None
 
@@ -345,7 +345,7 @@ class StripeService:
                 for invoice in invoices.data
             ]
 
-        except stripe.error.StripeError as e:
+        except StripeError as e:
             print(f"Error listing invoices: {str(e)}")
             return []
 

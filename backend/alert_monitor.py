@@ -14,6 +14,8 @@ from dataclasses import dataclass, asdict
 import httpx
 import json
 
+from storage.alert_storage import alert_storage
+
 logger = logging.getLogger(__name__)
 
 @dataclass
@@ -119,42 +121,9 @@ class AlertMonitor:
             'middles': []  # Replaced line_movements with middles
         }
 
-        # Performance tracking - simulated data for demo purposes
-        self.performance_stats = {
-            'arbitrage': AlertPerformance(
-                alert_type='arbitrage',
-                total_alerts=847,
-                successful_alerts=723,
-                failed_alerts=89,
-                pending_alerts=35,
-                win_rate=85.4,
-                avg_profit=2.3,
-                total_profit=1662.90,
-                last_updated=datetime.now()
-            ),
-            'steam_moves': AlertPerformance(
-                alert_type='steam_moves',
-                total_alerts=1243,
-                successful_alerts=891,
-                failed_alerts=267,
-                pending_alerts=85,
-                win_rate=71.7,
-                avg_profit=1.8,
-                total_profit=1603.80,
-                last_updated=datetime.now()
-            ),
-            'middles': AlertPerformance(
-                alert_type='middles',
-                total_alerts=2156,
-                successful_alerts=1534,
-                failed_alerts=498,
-                pending_alerts=124,
-                win_rate=71.1,
-                avg_profit=1.4,
-                total_profit=2147.60,
-                last_updated=datetime.now()
-            )
-        }
+        # Performance tracking - NOW USING REAL DATA from alert_storage
+        # Stats are calculated dynamically from tracked alerts
+        self.performance_stats = {}  # Will be loaded from storage
 
         # Historical alert log
         self.alert_history = []
@@ -192,6 +161,54 @@ class AlertMonitor:
             return 100 / (odds + 100)
         else:
             return abs(odds) / (abs(odds) + 100)
+
+    def _store_alert(self, alert: Any, alert_type: str, sport: str) -> str:
+        """Store an alert in the database for performance tracking"""
+        try:
+            # Determine recommended side and bookmaker based on alert type
+            if isinstance(alert, ArbitrageAlert):
+                recommended_side = alert.side_a
+                recommended_odds = alert.odds_a
+                recommended_bookmaker = alert.book_a
+                edge_percent = alert.profit_percent
+                profit_potential = alert.guaranteed_profit
+            elif isinstance(alert, SteamMoveAlert):
+                recommended_side = alert.side
+                recommended_odds = alert.best_stale_odds
+                recommended_bookmaker = alert.best_stale_book
+                edge_percent = None
+                profit_potential = None
+            elif isinstance(alert, MiddleAlert):
+                recommended_side = alert.side_low
+                recommended_odds = alert.odds_low
+                recommended_bookmaker = alert.book_low
+                edge_percent = None
+                profit_potential = None
+            else:
+                return None
+
+            # Create tracked alert
+            tracked_alert = alert_storage.create_alert(
+                alert_type=alert_type,
+                game_id=alert.game_id,
+                sport=sport,
+                home_team=alert.home_team,
+                away_team=alert.away_team,
+                commence_time=alert.timestamp.isoformat() if hasattr(alert.timestamp, 'isoformat') else str(alert.timestamp),
+                market_type=alert.market_type,
+                recommended_side=recommended_side,
+                recommended_odds=recommended_odds,
+                recommended_bookmaker=recommended_bookmaker,
+                edge_percent=edge_percent,
+                profit_potential=profit_potential,
+                expires_at=None,  # Can add expiry logic later
+                strategy_details=asdict(alert) if hasattr(alert, '__dataclass_fields__') else None
+            )
+
+            return tracked_alert.id
+        except Exception as e:
+            logger.error(f"Error storing alert: {e}")
+            return None
 
     def detect_arbitrage(self, game_odds: Dict) -> List[ArbitrageAlert]:
         """Detect arbitrage opportunities in a single game"""
@@ -310,6 +327,9 @@ class AlertMonitor:
                             timestamp=datetime.now(),
                             expires_in=expires_in
                         )
+
+                        # Store alert for performance tracking
+                        self._store_alert(alert, 'arbitrage', sport)
 
                         alerts.append(alert)
 
@@ -439,6 +459,9 @@ class AlertMonitor:
                         timestamp=datetime.now()
                     )
 
+                    # Store alert for performance tracking
+                    self._store_alert(alert, 'steam_move', current_odds.get('sport_key'))
+
                     alerts.append(alert)
 
         # Update history
@@ -548,6 +571,10 @@ class AlertMonitor:
                                     timestamp=datetime.now(),
                                     expires_in=expires_in
                                 )
+
+                                # Store alert for performance tracking
+                                self._store_alert(alert, 'middle', sport_key)
+
                                 alerts.append(alert)
 
             else:  # spreads
@@ -616,6 +643,14 @@ class AlertMonitor:
                         gap = abs(high_point - low_point)
 
                         if gap >= min_gap:
+                            # CRITICAL FIX: Only create middles when both lines are on the SAME side
+                            # Valid: Both favorites (both negative) OR both underdogs (both positive)
+                            # Invalid: One favorite, one underdog (opposite signs)
+                            # Example: Team -1.5 and Team +1.5 can NEVER both win - not a middle!
+                            same_side = (low_point < 0 and high_point < 0) or (low_point > 0 and high_point > 0)
+                            if not same_side:
+                                continue  # Skip this invalid "middle"
+
                             # Get one representative from each group
                             low_lines = point_groups[low_point]
                             high_lines = point_groups[high_point]
@@ -653,6 +688,9 @@ class AlertMonitor:
                                         timestamp=datetime.now(),
                                         expires_in=expires_in
                                     )
+
+                                    # Store alert for performance tracking
+                                    self._store_alert(alert, 'middle', sport_key)
 
                                     alerts.append(alert)
 

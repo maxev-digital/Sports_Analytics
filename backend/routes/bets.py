@@ -7,6 +7,7 @@ from models.user_bet import (
     CreateBetRequest,
     ManualBetRequest,
     AddStakeRequest,
+    UpdateBetRequest,
     SettleBetRequest
 )
 from storage.bet_storage import bet_storage
@@ -141,6 +142,29 @@ async def add_stake_to_bet(bet_id: str, request: AddStakeRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.put("/{bet_id}/update", response_model=UserBet)
+async def update_bet(bet_id: str, request: UpdateBetRequest):
+    """
+    Update bet details (odds, stake, bet_side, bookmaker, etc.)
+
+    Args:
+        bet_id: ID of the bet to update
+        request: Contains fields to update
+    """
+    try:
+        # Convert request to dict, excluding None values
+        updates = {k: v for k, v in request.dict().items() if v is not None}
+
+        bet = bet_storage.update_bet(bet_id, updates)
+        if not bet:
+            raise HTTPException(status_code=404, detail="Bet not found")
+        return bet
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.put("/{bet_id}/settle", response_model=UserBet)
 async def settle_bet(bet_id: str, request: SettleBetRequest):
     """
@@ -189,11 +213,13 @@ async def get_user_betting_stats(user_id: str):
 
         # Financial stats
         total_wagered = sum(b.stake for b in all_bets if b.stake is not None)
+        settled_wagered = sum(b.stake for b in settled_bets if b.stake is not None)
         total_payout = sum(b.payout for b in settled_bets if b.payout is not None)
         total_profit_loss = sum(b.profit_loss for b in settled_bets if b.profit_loss is not None)
 
         win_rate = (won_bets / len(settled_bets) * 100) if settled_bets else 0
-        roi = (total_profit_loss / total_wagered * 100) if total_wagered > 0 else 0
+        # ROI should only use settled bets in denominator
+        roi = (total_profit_loss / settled_wagered * 100) if settled_wagered > 0 else 0
 
         # Find biggest win and loss
         biggest_win = max(
@@ -215,6 +241,7 @@ async def get_user_betting_stats(user_id: str):
             "push_bets": push_bets,
             "win_rate": round(win_rate, 1),
             "total_wagered": round(total_wagered, 2),
+            "settled_wagered": round(settled_wagered, 2),
             "total_returned": round(total_payout, 2),
             "net_profit_loss": round(total_profit_loss, 2),
             "roi_percent": round(roi, 1),

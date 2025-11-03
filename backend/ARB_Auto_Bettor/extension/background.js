@@ -150,6 +150,14 @@ let seenMiddleIds = new Set();
 let currentGoaliePulls = [];
 let seenGoaliePullIds = new Set();
 
+// Quarter reversal opportunities
+let currentQuarterReversals = [];
+let seenQuarterReversalIds = new Set();
+
+// Injury props opportunities
+let currentInjuryProps = [];
+let seenInjuryPropIds = new Set();
+
 let settings = {
   autoOpen: true,  // Auto-open sportsbook tabs
   autoFill: true,  // Auto-fill bet slips
@@ -165,6 +173,7 @@ let settings = {
   enableSteamAlerts: true,
   enableLineAlerts: true,
   enableGoalieAlerts: true,
+  enableQuarterReversalAlerts: true,
   enabledBooks: {
     draftkings: true,
     fanduel: true,
@@ -713,9 +722,112 @@ function handleGoaliePullsUpdate(goaliePulls) {
   updateBadge();
 }
 
+// Handle quarter reversal opportunities update
+function handleQuarterReversalsUpdate(quarterReversals) {
+  console.log(`[QR] 🏀 Quarter reversal opportunities: ${quarterReversals.length} active`);
+
+  currentQuarterReversals = quarterReversals;
+
+  // Build set of current quarter reversal IDs
+  const currentQRIds = new Set(
+    quarterReversals.map(qr => `${qr.game_id}_${qr.strategy}_${qr.quarter}`)
+  );
+
+  // Remove old quarter reversal IDs
+  for (const qrId of seenQuarterReversalIds) {
+    if (!currentQRIds.has(qrId)) {
+      seenQuarterReversalIds.delete(qrId);
+    }
+  }
+
+  // Check for NEW quarter reversals and play alerts (ONLY if QR alerts enabled)
+  if (settings.enableQuarterReversalAlerts) {
+    quarterReversals.forEach(qr => {
+      const qrId = `${qr.game_id}_${qr.strategy}_${qr.quarter}`;
+      const isNew = !seenQuarterReversalIds.has(qrId);
+
+      if (isNew) {
+        seenQuarterReversalIds.add(qrId);
+        // Play quarter reversal alert
+        playQuarterReversalAlert(qr);
+        console.log(`[QR] 🆕 NEW quarter reversal: ${qr.matchup} - ${qr.strategy} (${qr.alert_level})`);
+      }
+    });
+  } else {
+    console.log('[QR] ⏭️ Quarter reversal alerts disabled, skipping sound alerts');
+  }
+
+  updateBadge();
+}
+
+function handleInjuryPropsUpdate(injuryProps) {
+  console.log(`[INJURY] ⚡ Injury props opportunities: ${injuryProps.length} active`);
+
+  currentInjuryProps = injuryProps;
+
+  // Build set of current injury prop IDs
+  const currentInjuryIds = new Set(
+    injuryProps.map(ip => `${ip.player_name}_${ip.prop_type}_${ip.timestamp}`)
+  );
+
+  // Remove old injury prop IDs
+  for (const ipId of seenInjuryPropIds) {
+    if (!currentInjuryIds.has(ipId)) {
+      seenInjuryPropIds.delete(ipId);
+    }
+  }
+
+  // Check for NEW injury props and play alerts
+  injuryProps.forEach(ip => {
+    const ipId = `${ip.player_name}_${ip.prop_type}_${ip.timestamp}`;
+    const isNew = !seenInjuryPropIds.has(ipId);
+
+    if (isNew) {
+      seenInjuryPropIds.add(ipId);
+      // Play injury props alert (CRITICAL - 60-second window!)
+      playInjuryPropAlert(ip);
+      console.log(`[INJURY] 🆕 NEW injury prop: ${ip.player_name} ${ip.prop_type} (EV: +${ip.expected_value.toFixed(1)}%)`);
+    }
+  });
+
+  updateBadge();
+}
+
+// Play injury prop alert (CRITICAL PRIORITY)
+async function playInjuryPropAlert(injuryProp) {
+  if (!settings.soundEnabled && !settings.voiceEnabled) return;
+
+  // Play CRITICAL alert sound (highest priority - 60-second window!)
+  if (settings.soundEnabled) {
+    await soundAlerts.playSequence([
+      { f: 1600, d: 0.12, t: 'square' },
+      { f: 1800, d: 0.12, t: 'square', g: 0.03 },
+      { f: 1600, d: 0.12, t: 'square', g: 0.03 },
+      { f: 2000, d: 0.15, t: 'square' }
+    ]);
+  }
+
+  // Voice announcement for injury props with time urgency
+  const timeRemaining = Math.floor(60 - injuryProp.time_since_tweet);
+
+  if (settings.voiceEnabled) {
+    const announcement = `Injury props alert! ${injuryProp.player_name} ruled ${injuryProp.injury_status}. ${injuryProp.prop_type} ${injuryProp.prop_side} ${injuryProp.prop_line}. Expected value plus ${injuryProp.expected_value.toFixed(0)} percent. ${timeRemaining} seconds remaining!`;
+    await soundAlerts.speak(announcement);
+  }
+
+  // Show notification
+  chrome.notifications.create({
+    type: 'basic',
+    iconUrl: 'logo.png',
+    title: `🚨 INJURY PROPS - ${timeRemaining}s REMAINING`,
+    message: `${injuryProp.player_name} (${injuryProp.team}) ${injuryProp.injury_status}\n${injuryProp.prop_type.toUpperCase()} ${injuryProp.prop_side} ${injuryProp.prop_line} @ ${injuryProp.best_book}\nEV: +${injuryProp.expected_value.toFixed(1)}%`,
+    priority: 2
+  });
+}
+
 // Update badge with total alert count
 function updateBadge() {
-  const totalAlerts = currentOpportunities.length + currentSteamMoves.length + currentMiddles.length + currentGoaliePulls.length;
+  const totalAlerts = currentOpportunities.length + currentSteamMoves.length + currentMiddles.length + currentGoaliePulls.length + currentQuarterReversals.length + currentInjuryProps.length;
 
   if (totalAlerts > 0) {
     chrome.action.setBadgeText({ text: totalAlerts.toString() });
@@ -805,6 +917,63 @@ async function playGoaliePullAlert(goaliePull) {
     const announcement = `Goalie pull alert! ${game}. Score: ${score}. Time: ${time} remaining. Two goal game. Prepare Bovada now!`;
 
     await soundAlerts.speak(announcement);
+  }
+}
+
+// Play alert for quarter reversal opportunity
+async function playQuarterReversalAlert(qr) {
+  if (!settings.soundEnabled && !settings.voiceEnabled) return;
+
+  const isCritical = qr.alert_level === 'CRITICAL'; // OT reversals
+
+  // Play alert sound - more urgent for CRITICAL (OT) reversals
+  if (settings.soundEnabled) {
+    if (isCritical) {
+      // Critical OT reversal - urgent pulsing sound
+      await soundAlerts.playSequence([
+        { f: 900, d: 0.1, t: 'square' },
+        { f: 1100, d: 0.1, t: 'square', g: 0.15 },
+        { f: 900, d: 0.1, t: 'square', g: 0.15 },
+        { f: 1100, d: 0.1, t: 'square', g: 0.15 },
+        { f: 1300, d: 0.4, t: 'square' }
+      ]);
+    } else {
+      // High priority Q3 reversal - standard alert
+      await soundAlerts.playSequence([
+        { f: 700, d: 0.2, t: 'sine' },
+        { f: 900, d: 0.3, t: 'sine' }
+      ]);
+    }
+  }
+
+  // Voice announcement
+  if (settings.voiceEnabled) {
+    const matchup = qr.matchup || 'Unknown game';
+    const strategy = qr.strategy || '';
+    const quarter = qr.quarter || '';
+    const reversalTeam = qr.reversal_team || '';
+    const prob = qr.reversal_prob || '';
+    const roi = qr.expected_roi || '';
+
+    let announcement = '';
+    if (isCritical) {
+      announcement = `CRITICAL quarter reversal alert! ${matchup}. ${reversalTeam} ${quarter} reversal. ${strategy}. Win probability: ${prob}. Expected ROI: ${roi}. This is a high value opportunity!`;
+    } else {
+      announcement = `Quarter reversal alert. ${matchup}. ${reversalTeam} ${quarter} reversal. Win probability: ${prob}. Expected ROI: ${roi}.`;
+    }
+
+    await soundAlerts.speak(announcement);
+  }
+
+  // Send browser notification for CRITICAL alerts
+  if (isCritical) {
+    chrome.notifications.create({
+      type: 'basic',
+      iconUrl: '/icons/icon128.png',
+      title: '🚨 CRITICAL Quarter Reversal Alert!',
+      message: `${qr.matchup}\n${qr.reversal_team} ${qr.quarter} - ${qr.expected_roi} ROI\n${qr.strategy}`,
+      priority: 2
+    });
   }
 }
 
@@ -922,7 +1091,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       opportunities: currentOpportunities,
       steamMoves: currentSteamMoves,
       middles: currentMiddles,
-      goaliePulls: currentGoaliePulls
+      goaliePulls: currentGoaliePulls,
+      quarterReversals: currentQuarterReversals,
+      injuryProps: currentInjuryProps
     });
     return true;
   }
@@ -934,7 +1105,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         opportunities: currentOpportunities,
         steamMoves: currentSteamMoves,
         middles: currentMiddles,
-        goaliePulls: currentGoaliePulls
+        goaliePulls: currentGoaliePulls,
+        quarterReversals: currentQuarterReversals,
+        injuryProps: currentInjuryProps
       });
     }).catch(error => {
       console.error('[ARB] Error refreshing:', error);
@@ -1119,13 +1292,39 @@ async function fetchOpportunities() {
       console.error('[ARB] Error fetching goalie pull opportunities:', error);
     }
 
-    console.log(`[ARB] Received: ${opportunities.length} arbitrage, ${steamMoves.length} steam moves, ${middles.length} middles, ${goaliePulls.length} goalie pulls`);
+    // Fetch quarter reversal opportunities separately
+    let quarterReversals = [];
+    try {
+      const qrResponse = await fetch(`${BACKEND_URL}/api/quarter-reversal-opportunities`);
+      if (qrResponse.ok) {
+        const qrData = await qrResponse.json();
+        quarterReversals = qrData.opportunities || [];
+      }
+    } catch (error) {
+      console.error('[ARB] Error fetching quarter reversal opportunities:', error);
+    }
+
+    // Fetch injury props opportunities separately
+    let injuryProps = [];
+    try {
+      const injuryResponse = await fetch(`${BACKEND_URL}/api/injuries/props`);
+      if (injuryResponse.ok) {
+        const injuryData = await injuryResponse.json();
+        injuryProps = injuryData.opportunities || [];
+      }
+    } catch (error) {
+      console.error('[ARB] Error fetching injury props opportunities:', error);
+    }
+
+    console.log(`[ARB] Received: ${opportunities.length} arbitrage, ${steamMoves.length} steam moves, ${middles.length} middles, ${goaliePulls.length} goalie pulls, ${quarterReversals.length} quarter reversals, ${injuryProps.length} injury props`);
 
     // Update opportunities and UI
     handleOpportunitiesUpdate(opportunities);
     handleSteamMovesUpdate(steamMoves);
     handleMiddlesUpdate(middles);
     handleGoaliePullsUpdate(goaliePulls);
+    handleQuarterReversalsUpdate(quarterReversals);
+    handleInjuryPropsUpdate(injuryProps);
 
     // Update badge to show connected status
     chrome.action.setBadgeBackgroundColor({ color: '#93c5fd' }); // Blue 300

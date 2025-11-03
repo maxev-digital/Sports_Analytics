@@ -72,7 +72,8 @@ export const Footer = () => {
       <p className="mt-4 text-xs">
         <a href="/terms" className="underline hover:text-yellow-400">Terms of Service</a> • {' '}
         <a href="/privacy" className="underline hover:text-yellow-400">Privacy Policy</a> • {' '}
-        <a href="/disclaimer" className="underline hover:text-yellow-400">Full Disclaimer</a>
+        <a href="/disclaimer" className="underline hover:text-yellow-400">Full Disclaimer</a> • {' '}
+        <a href="mailto:support@max-ev-sports.com" className="underline hover:text-yellow-400">Support</a>
       </p>
     </footer>
   );

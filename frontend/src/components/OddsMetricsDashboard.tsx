@@ -115,21 +115,21 @@ export function OddsMetricsDashboard() {
 
   const fetchMetrics = async () => {
     try {
-      // Fetch user betting metrics
-      const userResponse = await fetch('/api/user/metrics');
-      const userData = userResponse.ok ? await userResponse.json() : null;
+      // Fetch user betting metrics (suppress 404 errors - endpoint may not exist yet)
+      const userResponse = await fetch('/api/user/metrics').catch(() => null);
+      const userData = userResponse?.ok ? await userResponse.json().catch(() => null) : null;
 
-      // Fetch system/alerts metrics
-      const systemResponse = await fetch('/api/system/metrics');
-      const systemData = systemResponse.ok ? await systemResponse.json() : null;
+      // Fetch system/alerts metrics (suppress 404 errors - endpoint may not exist yet)
+      const systemResponse = await fetch('/api/system/metrics').catch(() => null);
+      const systemData = systemResponse?.ok ? await systemResponse.json().catch(() => null) : null;
 
       // Fetch current games for live count
-      const gamesResponse = await fetch('/api/games');
-      const gamesData = gamesResponse.ok ? await gamesResponse.json() : [];
+      const gamesResponse = await fetch('/api/games').catch(() => null);
+      const gamesData = gamesResponse?.ok ? await gamesResponse.json().catch(() => []) : [];
 
-      // Fetch alerts for today
-      const alertsResponse = await fetch('/api/alerts');
-      const alertsData = alertsResponse.ok ? await alertsResponse.json() : [];
+      // Fetch alerts for today (suppress 404 errors - endpoint may not exist yet)
+      const alertsResponse = await fetch('/api/alerts').catch(() => null);
+      const alertsData = alertsResponse?.ok ? await alertsResponse.json().catch(() => []) : [];
 
       setMetrics({
         userMetrics: {

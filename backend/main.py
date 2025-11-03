@@ -80,6 +80,11 @@ print(f"DEBUG: Bet router imported successfully: {bets_router}")
 app.include_router(bets_router)
 print(f"DEBUG: Bet router registered with prefix: {bets_router.prefix}")
 
+# Import and register strategies router
+from routes.strategies import router as strategies_router
+app.include_router(strategies_router)
+print(f"DEBUG: Strategies router registered with prefix: {strategies_router.prefix}")
+
 # Game tracker instance
 tracker = GameTracker()
 
@@ -460,7 +465,7 @@ def filter_games_by_bookmakers(games: List[LiveGame], enabled_bookmakers: List[s
         # ALWAYS show all games (upcoming and live)
         # The odds list will only contain the user's enabled bookmakers
         # Games without matching bookmakers will simply have an empty odds array
-        filtered_game = game.copy(deep=True)
+        filtered_game = game.model_copy()  # Use model_copy() instead of deep copy for better performance
         filtered_game.odds = filtered_odds
         filtered_games.append(filtered_game)
 
@@ -475,24 +480,29 @@ async def get_games(user_id: str = 'default', show_all: bool = False):
     show_all=True: Returns all games regardless of odds availability (for testing)
     """
     try:
-        # If show_all parameter is set, return all games (bypasses bookmaker filtering)
-        if show_all:
-            logger.info("Bypassing bookmaker filter - showing all games for odds testing")
-            return tracker.get_all_games()
+        # TEMPORARY FIX: Always return all games without filtering to avoid performance issues
+        # TODO: Optimize bookmaker filtering to not use deep copies
+        logger.info("Returning all games without bookmaker filtering (temporary fix for performance)")
+        return tracker.get_all_games()
 
-        # Get user settings
-        settings = settings_db.get_settings(user_id)
-        if not settings:
-            # If no settings found, return all games (backwards compatible)
-            return tracker.get_all_games()
+        # # If show_all parameter is set, return all games (bypasses bookmaker filtering)
+        # if show_all:
+        #     logger.info("Bypassing bookmaker filter - showing all games for odds testing")
+        #     return tracker.get_all_games()
 
-        # Get all games
-        all_games = tracker.get_all_games()
+        # # Get user settings
+        # settings = settings_db.get_settings(user_id)
+        # if not settings:
+        #     # If no settings found, return all games (backwards compatible)
+        #     return tracker.get_all_games()
 
-        # Filter by enabled bookmakers
-        filtered_games = filter_games_by_bookmakers(all_games, settings['enabled_bookmakers'])
+        # # Get all games
+        # all_games = tracker.get_all_games()
 
-        return filtered_games
+        # # Filter by enabled bookmakers
+        # filtered_games = filter_games_by_bookmakers(all_games, settings['enabled_bookmakers'])
+
+        # return filtered_games
 
     except Exception as e:
         logger.error(f"Error filtering games: {str(e)}")
@@ -517,7 +527,7 @@ async def get_game(game_id: str, user_id: str = 'default'):
         filtered_odds = [odd for odd in game.odds if odd.bookmaker in enabled_set]
 
         # Return game with filtered odds
-        filtered_game = game.copy(deep=True)
+        filtered_game = game.model_copy()  # Use model_copy() instead of deep copy for better performance
         filtered_game.odds = filtered_odds
         return filtered_game
 
@@ -968,7 +978,8 @@ async def get_subscription_status(user_id: str):
         if not subscription:
             return {
                 "tier": "free",
-                "status": "none"
+                "status": "none",
+                "features": SubscriptionDB.has_feature_access.__code__.co_consts[1]['free']
             }
 
         return {
@@ -1568,134 +1579,6 @@ async def get_alert_performance():
         }
     }
 
-# ========== METRICS ENDPOINTS ==========
-
-@app.get("/api/user/metrics")
-async def get_user_metrics(user_id: str = 'default'):
-    """Get user betting performance metrics"""
-    try:
-        # Load user bets from JSON file
-        bets_file = Path(__file__).parent / 'data' / 'bets' / 'user_bets.json'
-        if not bets_file.exists():
-            return {
-                "win_rate": 0,
-                "total_units": 0,
-                "roi": 0,
-                "active_bets": 0,
-                "week_pl": 0,
-                "win_streak": 0
-            }
-
-        with open(bets_file, 'r') as f:
-            all_bets = json.load(f)
-
-        # Filter bets for this user
-        user_bets = [bet for bet in all_bets if bet.get('user_id') == user_id]
-
-        # Calculate metrics
-        settled_bets = [bet for bet in user_bets if bet.get('status') == 'settled' and bet.get('result')]
-        active_bets = [bet for bet in user_bets if bet.get('status') in ['active', 'pending']]
-
-        # Win rate
-        wins = sum(1 for bet in settled_bets if bet['result'] == 'win')
-        losses = sum(1 for bet in settled_bets if bet['result'] == 'loss')
-        total_settled = len(settled_bets)
-        win_rate = (wins / total_settled * 100) if total_settled > 0 else 0
-
-        # Total units profit/loss
-        total_units = sum(bet.get('profit_loss', 0) for bet in settled_bets)
-
-        # ROI calculation
-        total_risk = sum(bet.get('stake', 1) for bet in settled_bets)
-        roi = (total_units / total_risk * 100) if total_risk > 0 else 0
-
-        # Week P/L (last 7 days)
-        from datetime import datetime, timedelta
-        week_ago = datetime.utcnow() - timedelta(days=7)
-        week_bets = [
-            bet for bet in settled_bets
-            if bet.get('settled_at') and datetime.fromisoformat(bet['settled_at'].replace('Z', '+00:00')) > week_ago
-        ]
-        week_pl = sum(bet.get('profit_loss', 0) for bet in week_bets)
-
-        # Win streak
-        streak = 0
-        for bet in reversed(settled_bets):
-            if bet.get('result') == 'win':
-                streak += 1
-            elif bet.get('result') == 'loss':
-                streak -= 1
-            else:
-                break
-
-        return {
-            "win_rate": round(win_rate, 1),
-            "total_units": round(total_units, 1),
-            "roi": round(roi, 1),
-            "active_bets": len(active_bets),
-            "week_pl": round(week_pl, 1),
-            "win_streak": streak
-        }
-
-    except Exception as e:
-        logger.error(f"Error calculating user metrics: {e}")
-        return {
-            "win_rate": 0,
-            "total_units": 0,
-            "roi": 0,
-            "active_bets": 0,
-            "week_pl": 0,
-            "win_streak": 0
-        }
-
-@app.get("/api/system/metrics")
-async def get_system_metrics():
-    """Get system-wide alert and opportunity metrics"""
-    try:
-        # Count current active alerts
-        arb_count = len(alert_monitor.active_alerts.get('arbitrage', []))
-        steam_count = len(alert_monitor.active_alerts.get('steam_moves', []))
-        middle_count = len(alert_monitor.active_alerts.get('middles', []))
-
-        total_alerts = arb_count + steam_count + middle_count
-
-        # Calculate high confidence alerts (arbitrage are always high confidence)
-        high_confidence = arb_count
-
-        # Get alert win rate from performance stats
-        total_successful = (
-            alert_monitor.performance_stats['arbitrage'].successful_alerts +
-            alert_monitor.performance_stats['steam_moves'].successful_alerts +
-            alert_monitor.performance_stats['middles'].successful_alerts
-        )
-        total_completed = (
-            alert_monitor.performance_stats['arbitrage'].successful_alerts +
-            alert_monitor.performance_stats['arbitrage'].failed_alerts +
-            alert_monitor.performance_stats['steam_moves'].successful_alerts +
-            alert_monitor.performance_stats['steam_moves'].failed_alerts +
-            alert_monitor.performance_stats['middles'].successful_alerts +
-            alert_monitor.performance_stats['middles'].failed_alerts
-        )
-
-        alert_win_rate = (total_successful / total_completed * 100) if total_completed > 0 else 0
-
-        # Value bets are steam moves + middles
-        value_bets = steam_count + middle_count
-
-        return {
-            "alert_win_rate": round(alert_win_rate, 1),
-            "arb_opportunities": arb_count,
-            "value_bets": value_bets
-        }
-
-    except Exception as e:
-        logger.error(f"Error calculating system metrics: {e}")
-        return {
-            "alert_win_rate": 0,
-            "arb_opportunities": 0,
-            "value_bets": 0
-        }
-
 # ========== PROPS CACHING SYSTEM ==========
 
 async def fetch_props_for_sport(sport: str, odds_api_sport: str) -> dict:
@@ -1957,157 +1840,6 @@ async def get_nba_props_with_edges(min_edge_pct: float = 5.0):
     except Exception as e:
         logger.error(f"Error fetching NBA props with edges: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
-
-
-# ========== HANDICAPPER PICKS ENDPOINTS ==========
-
-@app.get("/api/handicapper-picks/{sport}")
-async def get_handicapper_picks(sport: str):
-    """
-    Get expert handicapper picks for a specific sport
-
-    Returns traditional handicapper game analysis with paragraph-format writeups,
-    key factors, and betting recommendations.
-    """
-    sport_lower = sport.lower()
-
-    # Sample handicapper picks data
-    # In production, this would fetch from a database or external handicapper service
-    sample_picks = {
-        "nba": [
-            {
-                "id": "pick_nba_001",
-                "sport": "basketball_nba",
-                "game_id": "sample_game_1",
-                "home_team": "Los Angeles Lakers",
-                "away_team": "Boston Celtics",
-                "commence_time": datetime.now().isoformat(),
-                "pick_type": "spread",
-                "pick_side": "Lakers -5.5",
-                "pick_value": -5.5,
-                "odds": -110,
-                "bookmaker": "FanDuel",
-                "confidence": "HIGH",
-                "handicapper": "Mike Stevens",
-                "analysis": """The Lakers have been dominant at home this season with a 15-3 record at Crypto.com Arena. LeBron James and Anthony Davis have been playing at an elite level, combining for 55+ points per game over their last 10 contests.
-
-The Celtics are dealing with injury concerns as Jaylen Brown is listed as questionable with a hamstring issue. Even if he plays, his mobility will likely be limited. Boston has struggled on back-to-back games this season, going 4-9 ATS in the second game of B2Bs.
-
-The Lakers' defense has been stifling lately, holding opponents to just 105 PPG over the last two weeks. Their rim protection with Davis anchoring the paint will be crucial against Boston's drive-heavy offense. I expect LA to control the paint and win by double digits.""",
-                "key_factors": [
-                    "Lakers 15-3 at home this season with +8.2 average margin of victory",
-                    "Celtics on second night of back-to-back (4-9 ATS this season)",
-                    "Jaylen Brown questionable with hamstring injury",
-                    "Lakers defense allowing just 105 PPG over last 10 games",
-                    "LeBron + AD combining for 55+ PPG in recent stretch"
-                ],
-                "edge_percent": 8.5,
-                "created_at": datetime.now().isoformat()
-            },
-            {
-                "id": "pick_nba_002",
-                "sport": "basketball_nba",
-                "game_id": "sample_game_2",
-                "home_team": "Denver Nuggets",
-                "away_team": "Phoenix Suns",
-                "commence_time": datetime.now().isoformat(),
-                "pick_type": "total",
-                "pick_side": "OVER 225.5",
-                "pick_value": 225.5,
-                "odds": -108,
-                "bookmaker": "DraftKings",
-                "confidence": "MEDIUM",
-                "handicapper": "Sarah Chen",
-                "analysis": """This matchup screams high-scoring affair. Both teams rank in the top 8 for offensive rating and pace this season. The Nuggets average 118 PPG at altitude in Denver, while the Suns counter with 115 PPG on the road.
-
-Jokic vs Durant is must-see TV and both superstars will put up big numbers. The Nuggets' defense has been suspect lately, allowing 116+ PPG in 7 of their last 10 games. Phoenix exploits defensive weaknesses better than almost anyone with their elite three-point shooting (38.5% from deep).
-
-The altitude factor in Denver always boosts scoring, and with both teams playing at a top-5 pace, expect a track meet. These teams combined for 236 points in their first meeting this season.""",
-                "key_factors": [
-                    "Both teams top-8 in offensive rating and pace",
-                    "Nuggets averaging 118 PPG at home in high altitude",
-                    "Denver defense allowing 116+ PPG in 7 of last 10 games",
-                    "Phoenix shooting 38.5% from three-point range",
-                    "First meeting this season totaled 236 points"
-                ],
-                "edge_percent": 6.2,
-                "created_at": datetime.now().isoformat()
-            },
-            {
-                "id": "pick_nba_003",
-                "sport": "basketball_nba",
-                "game_id": "sample_game_3",
-                "home_team": "Milwaukee Bucks",
-                "away_team": "Miami Heat",
-                "commence_time": datetime.now().isoformat(),
-                "pick_type": "moneyline",
-                "pick_side": "Bucks ML",
-                "pick_value": None,
-                "odds": -145,
-                "bookmaker": "Bovada",
-                "confidence": "HIGH",
-                "handicapper": "Tony Marks",
-                "analysis": """The Bucks are simply the better team here and the line doesn't reflect their dominance. Giannis Antetokounmpo is playing MVP-caliber basketball, averaging 32/11/6 over his last month. Milwaukee's championship experience gives them a mental edge in close games.
-
-Miami is dealing with roster inconsistency and their defense has regressed from elite to merely average. The Heat rank 18th in defensive rating over the last 15 games, a far cry from their usual top-5 standard. Bam Adebayo is their only reliable defensive anchor.
-
-Milwaukee wins this matchup in the trenches. Their size advantage and superior depth will wear down Miami in the second half. The Bucks have won 8 straight home games and I expect that streak to continue. Take the ML even at a higher price - this should be a comfortable win.""",
-                "key_factors": [
-                    "Giannis averaging 32/11/6 over last month",
-                    "Miami defense ranked 18th in rating over last 15 games",
-                    "Bucks on 8-game home winning streak",
-                    "Milwaukee's championship experience in close games",
-                    "Bucks' size and depth advantage in the paint"
-                ],
-                "edge_percent": 12.3,
-                "created_at": datetime.now().isoformat()
-            }
-        ],
-        "nfl": [
-            {
-                "id": "pick_nfl_001",
-                "sport": "americanfootball_nfl",
-                "game_id": "sample_nfl_1",
-                "home_team": "Kansas City Chiefs",
-                "away_team": "Buffalo Bills",
-                "commence_time": datetime.now().isoformat(),
-                "pick_type": "spread",
-                "pick_side": "Chiefs -3",
-                "pick_value": -3.0,
-                "odds": -110,
-                "bookmaker": "FanDuel",
-                "confidence": "HIGH",
-                "handicapper": "Dan Morrison",
-                "analysis": """This is a heavyweight clash but Kansas City has the edge at Arrowhead. Patrick Mahomes is 14-3 in his career in prime time games and thrives under the bright lights. The Chiefs' offense has been unstoppable with Travis Kelce and new weapons clicking.
-
-Buffalo's defense has been gashed on the ground lately, allowing 4.8 yards per carry over their last 5 games. Isiah Pacheco and the Chiefs' rushing attack will exploit this weakness and control the clock. Ball control is critical in playoff-atmosphere games like this.
-
-The Bills struggle in hostile environments, going just 3-5 ATS on the road this season. Arrowhead will be deafening and that home-field advantage is worth at least 3-4 points. Chiefs win by a touchdown.""",
-                "key_factors": [
-                    "Mahomes 14-3 in prime time career games",
-                    "Bills allowing 4.8 YPC on the ground in last 5 games",
-                    "Kansas City 9-2 at Arrowhead this season",
-                    "Buffalo just 3-5 ATS in road games",
-                    "Chiefs averaging 28+ PPG at home"
-                ],
-                "edge_percent": 9.7,
-                "created_at": datetime.now().isoformat()
-            }
-        ],
-        "nhl": [],
-        "mlb": [],
-        "ncaab": [],
-        "ncaaf": []
-    }
-
-    picks = sample_picks.get(sport_lower, [])
-
-    return {
-        "sport": sport,
-        "picks": picks,
-        "total_picks": len(picks),
-        "last_updated": datetime.now().isoformat()
-    }
 
 
 # ========== ENSEMBLE BETTING ENGINE ENDPOINTS ==========

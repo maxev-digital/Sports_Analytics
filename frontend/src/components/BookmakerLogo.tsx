@@ -40,30 +40,65 @@ export const BookmakerLogo: React.FC<BookmakerLogoProps> = ({
     );
   }
 
+  // Get colored badge background based on bookmaker key
+  const getBadgeColors = (key: string) => {
+    const colorMap: Record<string, { bg: string; text: string }> = {
+      'draftkings': { bg: 'bg-green-900', text: 'text-green-200' },
+      'fanduel': { bg: 'bg-blue-900', text: 'text-blue-200' },
+      'betmgm': { bg: 'bg-yellow-900', text: 'text-yellow-200' },
+      'caesars': { bg: 'bg-purple-900', text: 'text-purple-200' },
+      'betrivers': { bg: 'bg-cyan-900', text: 'text-cyan-200' },
+      'bovada': { bg: 'bg-red-900', text: 'text-red-200' },
+      'betonlineag': { bg: 'bg-orange-900', text: 'text-orange-200' },
+      'mybookieag': { bg: 'bg-pink-900', text: 'text-pink-200' },
+      'betus': { bg: 'bg-indigo-900', text: 'text-indigo-200' },
+      'lowvig': { bg: 'bg-teal-900', text: 'text-teal-200' },
+    };
+    return colorMap[key] || { bg: 'bg-slate-800', text: 'text-slate-200' };
+  };
+
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
     if (!imgError) {
       // First error: try fallback favicon
       e.currentTarget.src = bookmaker.logoFallback;
       setImgError(true);
     } else {
-      // Second error: hide broken image
+      // Second error: show colored badge
+      setImgError(true);
       e.currentTarget.style.display = 'none';
     }
   };
 
+  const shortName = bookmaker.name.substring(0, 3).toUpperCase();
+  const badgeColors = getBadgeColors(bookmakerKey);
+
   if (showName) {
     return (
       <div className={`flex items-center gap-2 ${className}`}>
-        <img
-          src={bookmaker.logo}
-          alt={bookmaker.name}
-          className={`${sizeClasses[size]} object-contain rounded`}
-          onError={handleImageError}
-        />
+        {imgError ? (
+          <span className={`${sizeClasses[size]} flex items-center justify-center rounded px-1 py-0.5 font-bold text-xs ${badgeColors.bg} ${badgeColors.text}`}>
+            {shortName}
+          </span>
+        ) : (
+          <img
+            src={bookmaker.logo}
+            alt={bookmaker.name}
+            className={`${sizeClasses[size]} object-contain rounded`}
+            onError={handleImageError}
+          />
+        )}
         <span className="text-sm font-semibold text-slate-100">
           {bookmaker.name}
         </span>
       </div>
+    );
+  }
+
+  if (imgError) {
+    return (
+      <span className={`${sizeClasses[size]} flex items-center justify-center rounded px-1 py-0.5 font-bold text-xs ${badgeColors.bg} ${badgeColors.text} ${className}`} title={bookmaker.name}>
+        {shortName}
+      </span>
     );
   }
 

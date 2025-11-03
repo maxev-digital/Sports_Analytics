@@ -383,3 +383,142 @@ class ESPNnbaClient:
         except Exception as e:
             logger.error(f"Error getting pace data for {team_abbr}: {e}")
             return None
+
+    def get_game_info(self, team_name: str) -> Optional[Dict]:
+        """
+        Get live game info for a team (compatible with NBALiveClient interface)
+
+        Returns dict with:
+        - period: Current quarter (1-4+)
+        - time_remaining: Time in "MM:SS" format
+        - is_live: Boolean if game is currently live
+        - is_final: Boolean if game is final
+        - home_score: Home team score
+        - away_score: Away team score
+        - home_team: Home team name
+        - away_team: Away team name
+        """
+        try:
+            scoreboard = self.fetch_scoreboard()
+            events = scoreboard.get('events', [])
+
+            # Search for game with this team
+            for event in events:
+                competitions = event.get('competitions', [])
+                if not competitions:
+                    continue
+
+                comp = competitions[0]
+                competitors = comp.get('competitors', [])
+
+                # Check if team is in this game
+                team_found = False
+                home_team_name = None
+                away_team_name = None
+                home_score = 0
+                away_score = 0
+
+                for competitor in competitors:
+                    team = competitor.get('team', {})
+                    display_name = team.get('displayName', '')
+                    abbr = team.get('abbreviation', '')
+                    is_home = competitor.get('homeAway') == 'home'
+                    score = int(competitor.get('score', 0))
+
+                    # Check if this is the team we're looking for
+                    if team_name.lower() in display_name.lower() or team_name.upper() == abbr:
+                        team_found = True
+
+                    if is_home:
+                        home_team_name = display_name
+                        home_score = score
+                    else:
+                        away_team_name = display_name
+                        away_score = score
+
+                if not team_found:
+                    continue
+
+                # Get game status
+                status = comp.get('status', {})
+                type_detail = status.get('type', {})
+                state = type_detail.get('state', '')  # 'pre', 'in', 'post'
+                period = status.get('period', 0)
+                clock = status.get('displayClock', '0:00')
+
+                return {
+                    'period': period,
+                    'time_remaining': clock,
+                    'is_live': state == 'in',
+                    'is_final': state == 'post',
+                    'home_score': home_score,
+                    'away_score': away_score,
+                    'home_team': home_team_name or 'Home',
+                    'away_team': away_team_name or 'Away'
+                }
+
+            return None
+
+        except Exception as e:
+            logger.error(f"Error getting game info for {team_name}: {e}")
+            return None
+
+    def get_quarter_scores(self, game_id: str) -> Optional[Dict]:
+        """
+        Get quarter-by-quarter scores for a game from ESPN API
+
+        Args:
+            game_id: ESPN game ID (e.g., "401584953")
+
+        Returns:
+            Dict with quarter scores:
+            {
+                'Q1': {'home': 25, 'away': 22},
+                'Q2': {'home': 28, 'away': 26},
+                'Q3': {'home': 30, 'away': 24},
+                'Q4': {'home': 27, 'away': 31}
+            }
+        """
+        try:
+            # Fetch game summary from ESPN API
+            summary_url = f"https://site.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event={game_id}"
+            response = self.session.get(summary_url, timeout=10)
+
+            if response.status_code != 200:
+                logger.warning(f"Could not fetch game summary for {game_id}")
+                return None
+
+            data = response.json()
+
+            # Extract quarter scores from boxscore
+            boxscore = data.get('boxscore', {})
+            teams = boxscore.get('teams', [])
+
+            if len(teams) < 2:
+                logger.warning(f"Incomplete team data for game {game_id}")
+                return None
+
+            # ESPN orders teams: [away, home] typically
+            away_team = teams[0] if teams[0].get('homeAway') == 'away' else teams[1]
+            home_team = teams[1] if teams[1].get('homeAway') == 'home' else teams[0]
+
+            away_linescore = away_team.get('statistics', [{}])[0].get('linescores', [])
+            home_linescore = home_team.get('statistics', [{}])[0].get('linescores', [])
+
+            quarters = {}
+
+            # Parse quarter scores
+            for i, (away_q, home_q) in enumerate(zip(away_linescore, home_linescore)):
+                quarter_num = i + 1
+                quarter_key = f'Q{quarter_num}' if quarter_num <= 4 else f'OT{quarter_num - 4}'
+
+                quarters[quarter_key] = {
+                    'home': int(home_q.get('value', 0)),
+                    'away': int(away_q.get('value', 0))
+                }
+
+            return quarters if quarters else None
+
+        except Exception as e:
+            logger.error(f"Error getting quarter scores for game {game_id}: {e}")
+            return None

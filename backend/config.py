@@ -8,6 +8,10 @@ load_dotenv()
 # Odds API
 ODDS_API_KEY = os.getenv("ODDS_API_KEY", "")
 ODDS_API_BASE = "https://api.the-odds-api.com/v4"
+
+# BallDontLie API (NBA stats)
+BALLDONTLIE_API_KEY = os.getenv("BALLDONTLIE_API_KEY", "")
+BALLDONTLIE_API_BASE = "https://api.balldontlie.io/v1"
 SPORTS = [
     "basketball_nba",             # NBA
     "americanfootball_nfl",       # NFL
@@ -28,9 +32,12 @@ MARKETS = "h2h,spreads,totals"  # Fetch money lines, spreads, and totals
 POLL_INTERVAL = 5  # seconds (5 seconds - fastest recommended rate)
 
 # Quiet Hours - Stop Odds API calls during low-traffic hours to save costs
-QUIET_HOURS_ENABLED = True  # Set to False to disable quiet hours
+QUIET_HOURS_ENABLED = False  # Set to False to disable quiet hours
 QUIET_HOURS_START = 23  # 11 PM (24-hour format)
 QUIET_HOURS_END = 9     # 9 AM (24-hour format)
 
 # Edge detection
 MIN_EDGE = 5.0  # points
+
+# EMERGENCY: Disable ESPN stats fetching (blocking calls cause event loop freeze)
+ENABLE_ESPN_STATS = False  # Set to True to re-enable ESPN enrichment

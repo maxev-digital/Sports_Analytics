@@ -1,16 +1,16 @@
 import { useState } from 'react';
 
 export function ExpectedValueCalculator() {
-  const [odds, setOdds] = useState<string>('');
-  const [winProbability, setWinProbability] = useState<string>('');
+  const [bookmakerOdds, setBookmakerOdds] = useState<string>('');
+  const [fairOdds, setFairOdds] = useState<string>('');
   const [stake, setStake] = useState<string>('100');
   const [result, setResult] = useState<{
     expectedValue: number;
     expectedValuePercent: number;
     impliedProbability: number;
+    fairProbability: number;
     edgePercent: number;
     longTermProfit: number;
-    breakEvenProb: number;
   } | null>(null);
 
   // Convert American odds to decimal
@@ -32,35 +32,32 @@ export function ExpectedValueCalculator() {
   };
 
   const calculateEV = () => {
-    const oddsNum = parseFloat(odds);
-    const probNum = parseFloat(winProbability) / 100;
+    const bookmakerOddsNum = parseFloat(bookmakerOdds);
+    const fairOddsNum = parseFloat(fairOdds);
     const stakeNum = parseFloat(stake);
 
-    if (isNaN(oddsNum) || isNaN(probNum) || isNaN(stakeNum)) {
+    if (isNaN(bookmakerOddsNum) || isNaN(fairOddsNum) || isNaN(stakeNum)) {
       return;
     }
 
-    if (probNum < 0 || probNum > 1) {
-      alert('Win probability must be between 0 and 100');
-      return;
-    }
+    // Calculate implied probability from bookmaker odds
+    const impliedProb = americanToImpliedProb(bookmakerOddsNum);
+
+    // Calculate fair probability from fair odds
+    const fairProb = americanToImpliedProb(fairOddsNum);
+
+    // Calculate edge (fair probability - implied probability)
+    const edge = fairProb - impliedProb;
+    const edgePercent = edge * 100;
 
     // Calculate decimal odds and payout
-    const decimalOdds = americanToDecimal(oddsNum);
+    const decimalOdds = americanToDecimal(bookmakerOddsNum);
     const payout = stakeNum * decimalOdds;
     const profit = payout - stakeNum;
 
-    // Calculate EV: (Win Probability × Profit) - (Loss Probability × Stake)
-    const ev = (probNum * profit) - ((1 - probNum) * stakeNum);
+    // Calculate EV: (Fair Win Probability × Profit) - (Fair Loss Probability × Stake)
+    const ev = (fairProb * profit) - ((1 - fairProb) * stakeNum);
     const evPercent = (ev / stakeNum) * 100;
-
-    // Calculate implied probability and edge
-    const impliedProb = americanToImpliedProb(oddsNum);
-    const edge = probNum - impliedProb;
-    const edgePercent = edge * 100;
-
-    // Break-even probability (probability needed to break even)
-    const breakEvenProb = impliedProb;
 
     // Long-term profit per 100 bets
     const longTermProfit = ev * 100;
@@ -69,15 +66,15 @@ export function ExpectedValueCalculator() {
       expectedValue: ev,
       expectedValuePercent: evPercent,
       impliedProbability: impliedProb * 100,
+      fairProbability: fairProb * 100,
       edgePercent: edgePercent,
       longTermProfit: longTermProfit,
-      breakEvenProb: breakEvenProb * 100,
     });
   };
 
   const reset = () => {
-    setOdds('');
-    setWinProbability('');
+    setBookmakerOdds('');
+    setFairOdds('');
     setStake('100');
     setResult(null);
   };
@@ -86,7 +83,7 @@ export function ExpectedValueCalculator() {
     <div className="bg-slate-800 rounded-lg p-6">
       <h2 className="text-xl font-bold text-white mb-4">Expected Value (EV) Calculator</h2>
       <p className="text-slate-400 text-sm mb-6">
-        Calculate the expected value of a bet based on your estimated win probability
+        Compare bookmaker odds vs fair/true odds to find positive EV betting opportunities
       </p>
 
       <div className="space-y-4">
@@ -94,36 +91,35 @@ export function ExpectedValueCalculator() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
-              Odds (American)
+              Bookmaker Odds
             </label>
             <input
               type="number"
-              value={odds}
-              onChange={(e) => setOdds(e.target.value)}
-              placeholder="e.g., +150 or -110"
+              value={bookmakerOdds}
+              onChange={(e) => setBookmakerOdds(e.target.value)}
+              placeholder="e.g., -110"
               className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
             />
+            <p className="text-xs text-slate-500 mt-1">Odds you can bet at</p>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
-              Your Win Probability (%)
+              Fair/True Odds
             </label>
             <input
               type="number"
-              value={winProbability}
-              onChange={(e) => setWinProbability(e.target.value)}
-              placeholder="e.g., 55"
-              min="0"
-              max="100"
-              step="0.1"
+              value={fairOdds}
+              onChange={(e) => setFairOdds(e.target.value)}
+              placeholder="e.g., +100"
               className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
             />
+            <p className="text-xs text-slate-500 mt-1">No-vig fair market price</p>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
-              Stake ($)
+              Stake ($) <span className="text-slate-500 font-normal">(optional)</span>
             </label>
             <input
               type="number"
@@ -134,6 +130,7 @@ export function ExpectedValueCalculator() {
               step="0.01"
               className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
             />
+            <p className="text-xs text-slate-500 mt-1">For dollar amount display</p>
           </div>
         </div>
 
@@ -180,16 +177,12 @@ export function ExpectedValueCalculator() {
                 <h4 className="text-sm font-semibold text-slate-300 mb-3">Probability Analysis</h4>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-slate-400">Your Win Prob:</span>
-                    <span className="text-white font-medium">{winProbability}%</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-400">Implied Prob:</span>
+                    <span className="text-slate-400">Bookmaker Implied:</span>
                     <span className="text-white font-medium">{result.impliedProbability.toFixed(2)}%</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-400">Break-Even Prob:</span>
-                    <span className="text-white font-medium">{result.breakEvenProb.toFixed(2)}%</span>
+                    <span className="text-slate-400">Fair Probability:</span>
+                    <span className="text-white font-medium">{result.fairProbability.toFixed(2)}%</span>
                   </div>
                   <div className="border-t border-slate-600 pt-2 mt-2">
                     <div className="flex justify-between">
@@ -228,23 +221,26 @@ export function ExpectedValueCalculator() {
               </h4>
               <p className="text-sm text-slate-300">
                 {result.expectedValue > 0
-                  ? `This bet has a ${result.edgePercent.toFixed(2)}% edge over the bookmaker. You're getting value! Over 100 identical bets, you'd expect to profit $${result.longTermProfit.toFixed(2)}.`
-                  : `This bet has negative expected value. The bookmaker has a ${Math.abs(result.edgePercent).toFixed(2)}% edge over you. Pass on this bet or find better odds.`
+                  ? `The bookmaker odds imply ${result.impliedProbability.toFixed(2)}% probability, but the fair probability is ${result.fairProbability.toFixed(2)}%. This gives you a ${result.edgePercent.toFixed(2)}% edge! Over 100 identical $${stake} bets, you'd expect to profit $${result.longTermProfit.toFixed(2)}.`
+                  : `The bookmaker odds are worse than the fair price. The fair odds give you a ${Math.abs(result.edgePercent).toFixed(2)}% disadvantage. Pass on this bet or shop for better lines.`
                 }
               </p>
             </div>
 
             {/* Formula Explanation */}
             <div className="bg-blue-900/30 border border-blue-700/50 rounded-lg p-4">
-              <h4 className="text-sm font-semibold text-blue-400 mb-2">How is EV calculated?</h4>
+              <h4 className="text-sm font-semibold text-blue-400 mb-2">How to use this calculator</h4>
+              <p className="text-sm text-slate-300 mb-3">
+                <strong>Bookmaker Odds:</strong> The odds you can actually bet at<br/>
+                <strong>Fair Odds:</strong> The true market price (from no-vig calculator, Pinnacle closing line, or your models)
+              </p>
               <p className="text-sm text-slate-300 mb-2">
                 <span className="font-mono text-xs bg-slate-700 px-2 py-1 rounded">
-                  EV = (Win Prob × Profit) - (Loss Prob × Stake)
+                  EV = (Fair Probability × Profit) - (Loss Probability × Stake)
                 </span>
               </p>
               <p className="text-sm text-slate-300">
-                Positive EV means the bet is profitable long-term. The higher the EV%, the better the value.
-                Professional bettors only take bets with positive expected value.
+                If your bookmaker odds are better than fair odds, you have +EV. The EV% is the same regardless of stake amount - a 5% edge is 5% whether you bet $10 or $1000.
               </p>
             </div>
           </div>

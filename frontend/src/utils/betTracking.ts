@@ -136,6 +136,76 @@ export async function addStakeToBet(betId: string, stake: number): Promise<UserB
 }
 
 /**
+ * Update bet details (odds, stake, bet_side, bookmaker, etc.)
+ */
+export async function updateBet(
+  betId: string,
+  updates: {
+    betSide?: string;
+    odds?: number;
+    stake?: number;
+    bookmaker?: string;
+    confidence?: 'HIGH' | 'MEDIUM' | 'LOW';
+    edgePercent?: number;
+  }
+): Promise<UserBet | null> {
+  try {
+    const response = await fetch(`/api/bets/${betId}/update`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        bet_side: updates.betSide,
+        odds: updates.odds,
+        stake: updates.stake,
+        bookmaker: updates.bookmaker,
+        confidence: updates.confidence,
+        edge_percent: updates.edgePercent,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error('Failed to update bet');
+      return null;
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error updating bet:', error);
+    return null;
+  }
+}
+
+/**
+ * Settle a bet with win/loss/push result
+ */
+export async function settleBet(
+  betId: string,
+  result: 'win' | 'loss' | 'push'
+): Promise<UserBet | null> {
+  try {
+    const response = await fetch(`/api/bets/${betId}/settle`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ result }),
+    });
+
+    if (!response.ok) {
+      console.error('Failed to settle bet');
+      return null;
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error settling bet:', error);
+    return null;
+  }
+}
+
+/**
  * Delete a pending bet (user didn't actually place it)
  */
 export async function deleteBet(betId: string): Promise<boolean> {
