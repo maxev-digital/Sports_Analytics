@@ -49,7 +49,7 @@ export function LiveChatWidget() {
     try {
       if (!silent) setLoading(true);
 
-      const response = await fetch(`${getApiUrl()}/api/chat/messages`, {
+      const response = await fetch(getApiUrl('/api/chat/messages'), {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
         },
@@ -82,7 +82,7 @@ export function LiveChatWidget() {
     setLoading(true);
 
     try {
-      const response = await fetch(`${getApiUrl()}/api/chat/send`, {
+      const response = await fetch(getApiUrl('/api/chat/send'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

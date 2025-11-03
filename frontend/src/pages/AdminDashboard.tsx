@@ -61,7 +61,7 @@ export function AdminDashboard() {
 
   const loadFeedback = async () => {
     try {
-      const response = await fetch(`${getApiUrl()}/api/feedback/all?token=${adminToken}`);
+      const response = await fetch(getApiUrl(`/api/feedback/all?token=${adminToken}`));
       if (response.ok) {
         const data = await response.json();
         setFeedback(data.feedback || []);
@@ -75,7 +75,7 @@ export function AdminDashboard() {
 
   const loadConversations = async () => {
     try {
-      const response = await fetch(`${getApiUrl()}/api/chat/conversations?token=${adminToken}`);
+      const response = await fetch(getApiUrl(`/api/chat/conversations?token=${adminToken}`));
       if (response.ok) {
         const data = await response.json();
         setConversations(data.conversations || []);
@@ -89,7 +89,7 @@ export function AdminDashboard() {
 
   const loadConversation = async (username: string) => {
     try {
-      const response = await fetch(`${getApiUrl()}/api/chat/conversation/${username}?token=${adminToken}`);
+      const response = await fetch(getApiUrl(`/api/chat/conversation/${username}?token=${adminToken}`));
       if (response.ok) {
         const data = await response.json();
         setChatMessages(data.messages || []);
@@ -104,7 +104,7 @@ export function AdminDashboard() {
     if (!replyMessage.trim() || !selectedConversation) return;
 
     try {
-      const response = await fetch(`${getApiUrl()}/api/chat/admin/send?token=${adminToken}`, {
+      const response = await fetch(getApiUrl(`/api/chat/admin/send?token=${adminToken}`), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
