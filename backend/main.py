@@ -1549,34 +1549,36 @@ async def get_alert_config():
 @app.get("/api/alerts/performance")
 async def get_alert_performance():
     """Get performance stats for all alert types"""
+
+    def get_safe_stats(alert_type: str):
+        """Safely get stats for an alert type, returning defaults if not available"""
+        if alert_type in alert_monitor.performance_stats:
+            stats = alert_monitor.performance_stats[alert_type]
+            return {
+                "total_alerts": stats.total_alerts,
+                "successful_alerts": stats.successful_alerts,
+                "failed_alerts": stats.failed_alerts,
+                "pending_alerts": stats.pending_alerts,
+                "win_rate": stats.win_rate,
+                "avg_profit": stats.avg_profit,
+                "total_profit": stats.total_profit,
+            }
+        else:
+            # Return default values if stats not available
+            return {
+                "total_alerts": 0,
+                "successful_alerts": 0,
+                "failed_alerts": 0,
+                "pending_alerts": 0,
+                "win_rate": 0.0,
+                "avg_profit": 0.0,
+                "total_profit": 0.0,
+            }
+
     return {
-        "arbitrage": {
-            "total_alerts": alert_monitor.performance_stats['arbitrage'].total_alerts,
-            "successful_alerts": alert_monitor.performance_stats['arbitrage'].successful_alerts,
-            "failed_alerts": alert_monitor.performance_stats['arbitrage'].failed_alerts,
-            "pending_alerts": alert_monitor.performance_stats['arbitrage'].pending_alerts,
-            "win_rate": alert_monitor.performance_stats['arbitrage'].win_rate,
-            "avg_profit": alert_monitor.performance_stats['arbitrage'].avg_profit,
-            "total_profit": alert_monitor.performance_stats['arbitrage'].total_profit,
-        },
-        "steam_moves": {
-            "total_alerts": alert_monitor.performance_stats['steam_moves'].total_alerts,
-            "successful_alerts": alert_monitor.performance_stats['steam_moves'].successful_alerts,
-            "failed_alerts": alert_monitor.performance_stats['steam_moves'].failed_alerts,
-            "pending_alerts": alert_monitor.performance_stats['steam_moves'].pending_alerts,
-            "win_rate": alert_monitor.performance_stats['steam_moves'].win_rate,
-            "avg_profit": alert_monitor.performance_stats['steam_moves'].avg_profit,
-            "total_profit": alert_monitor.performance_stats['steam_moves'].total_profit,
-        },
-        "middles": {
-            "total_alerts": alert_monitor.performance_stats['middles'].total_alerts,
-            "successful_alerts": alert_monitor.performance_stats['middles'].successful_alerts,
-            "failed_alerts": alert_monitor.performance_stats['middles'].failed_alerts,
-            "pending_alerts": alert_monitor.performance_stats['middles'].pending_alerts,
-            "win_rate": alert_monitor.performance_stats['middles'].win_rate,
-            "avg_profit": alert_monitor.performance_stats['middles'].avg_profit,
-            "total_profit": alert_monitor.performance_stats['middles'].total_profit,
-        }
+        "arbitrage": get_safe_stats('arbitrage'),
+        "steam_moves": get_safe_stats('steam_moves'),
+        "middles": get_safe_stats('middles')
     }
 
 # ========== PROPS CACHING SYSTEM ==========
