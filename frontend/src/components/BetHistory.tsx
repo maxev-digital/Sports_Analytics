@@ -39,7 +39,8 @@ export function BetHistory() {
     }
 
     try {
-      const response = await fetch(getApiUrl(`bets/user/${username}`));
+      // Use my-bets endpoint with user_id parameter
+      const response = await fetch(getApiUrl(`bets/my-bets?user_id=${username}`));
       if (response.ok) {
         const allBets = await response.json();
         // Filter for only graded/settled bets
@@ -47,6 +48,8 @@ export function BetHistory() {
           ['win', 'loss', 'push'].includes(bet.status)
         );
         setBets(gradedBets);
+      } else {
+        console.error('Failed to fetch bet history:', response.status);
       }
     } catch (error) {
       console.error('Error fetching bet history:', error);

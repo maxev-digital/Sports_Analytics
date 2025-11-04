@@ -36,6 +36,10 @@ export function PersonalBetAnalytics({
   const [stakes, setStakes] = useState<Record<string, string>>({});
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [editingBetId, setEditingBetId] = useState<string | null>(null);
+  const [settleConfirmation, setSettleConfirmation] = useState<{
+    betId: string;
+    result: 'win' | 'loss' | 'push';
+  } | null>(null);
   const [editForm, setEditForm] = useState<{
     betSide: string;
     odds: string;
@@ -237,17 +241,21 @@ export function PersonalBetAnalytics({
   };
 
   const handleSettleBet = async (betId: string, result: 'win' | 'loss' | 'push') => {
-    const confirmMessage = result === 'win' ? 'Mark this bet as WON?' :
-                          result === 'loss' ? 'Mark this bet as LOST?' :
-                          'Mark this bet as PUSH (tie)?';
+    // Show custom confirmation modal instead of browser confirm
+    setSettleConfirmation({ betId, result });
+  };
 
-    if (confirm(confirmMessage)) {
-      const settled = await settleBet(betId, result);
-      if (settled) {
-        onRefresh();
-      } else {
-        alert('Failed to settle bet. Please try again.');
-      }
+  const confirmSettleBet = async () => {
+    if (!settleConfirmation) return;
+
+    const { betId, result } = settleConfirmation;
+    const settled = await settleBet(betId, result);
+
+    if (settled) {
+      setSettleConfirmation(null);
+      onRefresh();
+    } else {
+      alert('Failed to settle bet. Please try again.');
     }
   };
 
@@ -988,6 +996,42 @@ export function PersonalBetAnalytics({
               <li>3. Come here to add your stake amount</li>
               <li>4. Track your performance over time!</li>
             </ol>
+          </div>
+        </div>
+      )}
+
+      {/* Settle Bet Confirmation Modal */}
+      {settleConfirmation && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 border-2 border-blue-600 p-6 max-w-md w-full">
+            <h3 className="text-xl font-bold text-white mb-4">
+              {settleConfirmation.result === 'win' ? '✓ Mark as WON?' :
+               settleConfirmation.result === 'loss' ? '✗ Mark as LOST?' :
+               '↔ Mark as PUSH?'}
+            </h3>
+            <p className="text-slate-300 mb-6">
+              {settleConfirmation.result === 'win' ? 'This bet won and you will receive payout.' :
+               settleConfirmation.result === 'loss' ? 'This bet lost and you will lose your stake.' :
+               'This bet pushed (tie) and you will get your stake back.'}
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={confirmSettleBet}
+                className={`flex-1 px-6 py-3 font-bold transition-all ${
+                  settleConfirmation.result === 'win' ? 'bg-green-600 hover:bg-green-700 text-white' :
+                  settleConfirmation.result === 'loss' ? 'bg-red-600 hover:bg-red-700 text-white' :
+                  'bg-slate-600 hover:bg-slate-700 text-white'
+                }`}
+              >
+                Confirm
+              </button>
+              <button
+                onClick={() => setSettleConfirmation(null)}
+                className="px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white font-semibold transition-all"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}
