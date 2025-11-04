@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getApiUrl } from '../config';
 import { loadOddsLookupTable, getOddsWithColor, formatOddsDisplay } from '../utils/oddsTriggerLookup';
+import { useAuth } from '../contexts/AuthContext';
 
 // Strategy interfaces
 interface Strategy {
@@ -78,35 +79,6 @@ const Tooltip = ({ children, text }: { children: React.ReactNode; text: string }
   );
 };
 
-// Sparkline Component for ROI trends
-const Sparkline = ({ data }: { data: number[] }) => {
-  if (!data || data.length === 0) return <span className="text-slate-500 text-xs">-</span>;
-
-  const max = Math.max(...data);
-  const min = Math.min(...data);
-  const range = max - min || 1;
-
-  const points = data.map((value, index) => {
-    const x = (index / (data.length - 1)) * 100;
-    const y = 100 - ((value - min) / range) * 100;
-    return `${x},${y}`;
-  }).join(' ');
-
-  const isPositiveTrend = data[data.length - 1] >= data[0];
-
-  return (
-    <svg className="w-16 h-8 inline-block" viewBox="0 0 100 100" preserveAspectRatio="none">
-      <polyline
-        points={points}
-        fill="none"
-        stroke={isPositiveTrend ? '#4ade80' : '#f87171'}
-        strokeWidth="3"
-        vectorEffect="non-scaling-stroke"
-      />
-    </svg>
-  );
-};
-
 // Alert Subscription Modal
 const AlertModal = ({ strategy, onClose }: { strategy: Strategy; onClose: () => void }) => {
   const [email, setEmail] = useState('');
@@ -173,11 +145,25 @@ const AlertModal = ({ strategy, onClose }: { strategy: Strategy; onClose: () => 
   );
 };
 
+// User statistics interface
+interface UserStatistics {
+  total_bets: number;
+  wins: number;
+  losses: number;
+  pushes: number;
+  win_rate: number;
+  roi: number;
+  total_profit: number;
+  total_wagered: number;
+}
+
 export function StrategyResults() {
+  const { token, username } = useAuth();
   const [selectedSport, setSelectedSport] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const [strategies, setStrategies] = useState<Strategy[]>([]);
   const [performanceSummary, setPerformanceSummary] = useState<PerformanceSummary | null>(null);
+  const [userStats, setUserStats] = useState<UserStatistics | null>(null);
   const [sortField, setSortField] = useState<SortField>('ev');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [searchQuery, setSearchQuery] = useState('');
@@ -273,12 +259,6 @@ export function StrategyResults() {
         const summaryResponse = await fetchWithRetry(getApiUrl('/strategies/performance/summary'));
         const summaryData = await summaryResponse.json();
 
-        // Add mock ROI history (replace with real API data)
-        summaryData.strategies = summaryData.strategies.map((s: BacktestResult) => ({
-          ...s,
-          roi_history: Array.from({ length: 10 }, () => s.roi + (Math.random() - 0.5) * 5),
-        }));
-
         setPerformanceSummary(summaryData);
         setLoading(false);
       } catch (error) {
@@ -297,6 +277,36 @@ export function StrategyResults() {
       console.error('Failed to load odds lookup table:', error);
     });
   }, []);
+
+  // Fetch user bet statistics
+  useEffect(() => {
+    const fetchUserStats = async () => {
+      if (!token || !username) return;
+
+      try {
+        const response = await fetch(getApiUrl(`bets/user/${username}/stats`));
+
+        if (response.ok) {
+          const data = await response.json();
+          // Map backend field names to expected frontend names
+          setUserStats({
+            total_bets: data.settled_bets || 0,
+            wins: data.won_bets || 0,
+            losses: data.lost_bets || 0,
+            pushes: data.push_bets || 0,
+            win_rate: data.win_rate || 0,
+            roi: data.roi_percent || 0,
+            total_profit: data.net_profit_loss || 0,
+            total_wagered: data.settled_wagered || 0
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching user statistics:', error);
+      }
+    };
+
+    fetchUserStats();
+  }, [token, username]);
 
   // Create backtest results lookup
   const backtestResults: Record<number, BacktestResult> = {};
@@ -451,11 +461,18 @@ export function StrategyResults() {
     if (result) {
       const freqMap: Record<string, number> = { 'Daily': 7, '4x/week': 4, '2x/week': 2, '': 0 };
       const betsPerDay = (freqMap[strategy?.frequency || ''] || 0) / 7;
+
+      // Calculate profit_loss from ROI if not provided
+      // profit_loss = (roi / 100) * bets_placed * 100 (assuming $100 per bet)
+      const profitLoss = result.profit_loss !== undefined
+        ? result.profit_loss
+        : ((result.roi / 100) * (result.bets_placed || 0) * 100);
+
       return {
         totalBets: acc.totalBets + (result.bets_placed || 0),
         totalWins: acc.totalWins + result.wins,
         totalLosses: acc.totalLosses + result.losses,
-        totalProfit: acc.totalProfit + (result.profit_loss || 0),
+        totalProfit: acc.totalProfit + profitLoss,
         betsPerDay: acc.betsPerDay + betsPerDay,
       };
     }
@@ -570,40 +587,53 @@ export function StrategyResults() {
 
           {/* Main Content */}
           <div className="flex-1">
-            {/* Performance Metrics */}
+            {/* Users Results Section */}
+            <h2 className="text-sm font-bold text-blue-300 mb-2">Users Results</h2>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-2 mb-3">
-              <Tooltip text="Percentage of bets won across all strategies">
+              <Tooltip text="Your actual win rate from graded bets in My Bets">
                 <div className="bg-gradient-to-br from-green-900/50 to-green-800/30 border border-green-700 rounded-lg p-1.5 cursor-help">
                   <div className="text-green-400 text-xs font-semibold mb-0">Win Rate</div>
-                  <div className="text-white text-3xl font-bold leading-tight">{overallWinRate.toFixed(1)}%</div>
-                  <div className="text-green-300 text-xs mt-0">{totalWins}W-{totalLosses}L</div>
+                  <div className="text-white text-3xl font-bold leading-tight">
+                    {userStats ? `${userStats.win_rate.toFixed(1)}%` : '--'}
+                  </div>
+                  <div className="text-green-300 text-xs mt-0">
+                    {userStats ? `${userStats.wins}W-${userStats.losses}L` : 'No graded bets yet'}
+                  </div>
                 </div>
               </Tooltip>
 
-              <Tooltip text="Return on Investment - Profit/loss as percentage of total amount wagered">
+              <Tooltip text="Your actual ROI - Profit/loss as percentage of total amount wagered">
                 <div className="bg-gradient-to-br from-blue-900/50 to-blue-800/30 border border-blue-700 rounded-lg p-1.5 cursor-help">
-                  <div className="text-blue-400 text-xs font-semibold mb-0">Avg ROI</div>
-                  <div className="text-white text-3xl font-bold leading-tight">{avgROI >= 0 ? '+' : ''}{avgROI.toFixed(1)}%</div>
-                  <div className="text-blue-300 text-xs mt-0">Across {backtestedCount} strategies</div>
+                  <div className="text-blue-400 text-xs font-semibold mb-0">ROI</div>
+                  <div className="text-white text-3xl font-bold leading-tight">
+                    {userStats ? `${userStats.roi >= 0 ? '+' : ''}${userStats.roi.toFixed(1)}%` : '--'}
+                  </div>
+                  <div className="text-blue-300 text-xs mt-0">From My Bets</div>
                 </div>
               </Tooltip>
 
               <div className="bg-gradient-to-br from-purple-900/50 to-purple-800/30 border border-purple-700 rounded-lg p-1.5">
                 <div className="text-purple-400 text-xs font-semibold mb-0">Total Bets</div>
-                <div className="text-white text-3xl font-bold leading-tight">{totalOpportunities.toLocaleString()}</div>
-                <div className="text-purple-300 text-xs mt-0">Backtested</div>
+                <div className="text-white text-3xl font-bold leading-tight">
+                  {userStats ? userStats.total_bets : '--'}
+                </div>
+                <div className="text-purple-300 text-xs mt-0">Graded</div>
               </div>
 
-              <Tooltip text="Expected Value - Average edge over the bookmaker on each bet">
+              <Tooltip text="Your actual profit/loss from graded bets">
                 <div className="bg-gradient-to-br from-amber-900/50 to-amber-800/30 border border-amber-700 rounded-lg p-1.5 cursor-help">
                   <div className="text-amber-400 text-xs font-semibold mb-0">Total Profit</div>
-                  <div className="text-white text-3xl font-bold leading-tight">{totalProfit >= 0 ? '+' : ''}{totalProfit.toFixed(1)}u</div>
-                  <div className="text-amber-300 text-xs mt-0">Avg edge: {avgEdge >= 0 ? '+' : ''}{avgEdge.toFixed(1)}%</div>
+                  <div className="text-white text-3xl font-bold leading-tight">
+                    {userStats ? `${userStats.total_profit >= 0 ? '+' : ''}$${userStats.total_profit.toFixed(0)}` : '--'}
+                  </div>
+                  <div className="text-amber-300 text-xs mt-0">
+                    {userStats ? `Wagered: $${userStats.total_wagered.toFixed(0)}` : 'Place bets to track'}
+                  </div>
                 </div>
               </Tooltip>
             </div>
 
-            {/* Strategy Stack Metrics - Expected vs Actual */}
+            {/* Strategy Stack Metrics - Expected Performance */}
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-sm font-bold text-indigo-300">
                 Strategy Stack {selectedStrategies.size > 0 && `(${selectedStrategies.size} selected)`}
@@ -619,69 +649,53 @@ export function StrategyResults() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-2 mb-3">
-              {/* Win Rate - Expected vs Actual */}
-              <div className="bg-gradient-to-br from-green-900/50 to-green-800/30 border border-green-600 rounded p-1.5">
-                <div className="text-green-400 text-xs font-semibold mb-0.5">Win Rate</div>
-                <div className="grid grid-cols-2 gap-1.5">
-                  <div>
-                    <div className="text-green-300 text-[10px]">Expected</div>
-                    <div className="text-white text-lg font-bold">{stackWinRate.toFixed(1)}%</div>
+              {/* Expected Win Rate */}
+              <Tooltip text="Expected win rate based on historical backtest data for selected strategies">
+                <div className="bg-gradient-to-br from-green-900/50 to-green-800/30 border border-green-600 rounded-lg p-1.5 cursor-help">
+                  <div className="text-green-400 text-xs font-semibold mb-0">Expected Win Rate</div>
+                  <div className="text-white text-3xl font-bold leading-tight">
+                    {selectedStrategies.size > 0 ? `${stackWinRate.toFixed(1)}%` : '--'}
                   </div>
-                  <div>
-                    <div className="text-amber-300 text-[10px]">Actual</div>
-                    <div className="text-slate-400 text-lg font-bold">--%</div>
+                  <div className="text-green-300 text-xs mt-0">
+                    {selectedStrategies.size > 0 ? `${stackExpected.totalWins}W-${stackExpected.totalLosses}L` : 'Select strategies'}
                   </div>
                 </div>
-                <div className="text-green-300 text-[10px] mt-0.5">{stackExpected.totalWins}W-{stackExpected.totalLosses}L</div>
+              </Tooltip>
+
+              {/* Expected ROI */}
+              <Tooltip text="Expected return on investment for selected strategies">
+                <div className="bg-gradient-to-br from-blue-900/50 to-blue-800/30 border border-blue-600 rounded-lg p-1.5 cursor-help">
+                  <div className="text-blue-400 text-xs font-semibold mb-0">Expected ROI</div>
+                  <div className="text-white text-3xl font-bold leading-tight">
+                    {selectedStrategies.size > 0 ? `${stackROI >= 0 ? '+' : ''}${stackROI.toFixed(1)}%` : '--'}
+                  </div>
+                  <div className="text-blue-300 text-xs mt-0">
+                    {selectedStrategies.size > 0 ? `${stackExpected.betsPerDay.toFixed(1)} bets/day` : 'Historical avg'}
+                  </div>
+                </div>
+              </Tooltip>
+
+              {/* Total Bets */}
+              <div className="bg-gradient-to-br from-purple-900/50 to-purple-800/30 border border-purple-600 rounded-lg p-1.5">
+                <div className="text-purple-400 text-xs font-semibold mb-0">Total Bets</div>
+                <div className="text-white text-3xl font-bold leading-tight">
+                  {selectedStrategies.size > 0 ? stackExpected.totalBets.toLocaleString() : '--'}
+                </div>
+                <div className="text-purple-300 text-xs mt-0">Historical data</div>
               </div>
 
-              {/* ROI - Expected vs Actual */}
-              <div className="bg-gradient-to-br from-blue-900/50 to-blue-800/30 border border-blue-600 rounded p-1.5">
-                <div className="text-blue-400 text-xs font-semibold mb-0.5">ROI</div>
-                <div className="grid grid-cols-2 gap-1.5">
-                  <div>
-                    <div className="text-blue-300 text-[10px]">Expected</div>
-                    <div className="text-white text-lg font-bold">{stackROI >= 0 ? '+' : ''}{stackROI.toFixed(1)}%</div>
+              {/* Expected Profit */}
+              <Tooltip text="Expected profit based on historical performance">
+                <div className="bg-gradient-to-br from-amber-900/50 to-amber-800/30 border border-amber-600 rounded-lg p-1.5 cursor-help">
+                  <div className="text-amber-400 text-xs font-semibold mb-0">Expected Profit</div>
+                  <div className="text-white text-3xl font-bold leading-tight">
+                    {selectedStrategies.size > 0 ? `${stackExpected.totalProfit >= 0 ? '+' : ''}${stackExpected.totalProfit.toFixed(1)}u` : '--'}
                   </div>
-                  <div>
-                    <div className="text-amber-300 text-[10px]">Actual</div>
-                    <div className="text-slate-400 text-lg font-bold">--%</div>
+                  <div className="text-amber-300 text-xs mt-0">
+                    {selectedStrategies.size > 0 ? `${stackProfitPerUnit >= 0 ? '+' : ''}${stackProfitPerUnit.toFixed(2)}u per unit` : 'Based on backtest'}
                   </div>
                 </div>
-                <div className="text-blue-300 text-[10px] mt-0.5">{stackExpected.betsPerDay.toFixed(1)} bets/day</div>
-              </div>
-
-              {/* Total Bets - Expected vs Actual */}
-              <div className="bg-gradient-to-br from-purple-900/50 to-purple-800/30 border border-purple-600 rounded p-1.5">
-                <div className="text-purple-400 text-xs font-semibold mb-0.5">Total Bets</div>
-                <div className="grid grid-cols-2 gap-1.5">
-                  <div>
-                    <div className="text-purple-300 text-[10px]">Expected</div>
-                    <div className="text-white text-lg font-bold">{stackExpected.totalBets.toLocaleString()}</div>
-                  </div>
-                  <div>
-                    <div className="text-amber-300 text-[10px]">Actual</div>
-                    <div className="text-slate-400 text-lg font-bold">--</div>
-                  </div>
-                </div>
-                <div className="text-purple-300 text-[10px] mt-0.5">Historical data</div>
-              </div>
-
-              {/* Total Profit - Expected vs Actual */}
-              <div className="bg-gradient-to-br from-amber-900/50 to-amber-800/30 border border-amber-600 rounded p-1.5">
-                <div className="text-amber-400 text-xs font-semibold mb-0.5">Total Profit</div>
-                <div className="grid grid-cols-2 gap-1.5">
-                  <div>
-                    <div className="text-amber-300 text-[10px]">Expected</div>
-                    <div className="text-white text-lg font-bold">{stackExpected.totalProfit >= 0 ? '+' : ''}{stackExpected.totalProfit.toFixed(1)}u</div>
-                  </div>
-                  <div>
-                    <div className="text-amber-300 text-[10px]">Actual</div>
-                    <div className="text-slate-400 text-lg font-bold">--u</div>
-                  </div>
-                </div>
-                <div className="text-amber-300 text-[10px] mt-0.5">Profit/unit: {stackProfitPerUnit >= 0 ? '+' : ''}{stackProfitPerUnit.toFixed(2)}u</div>
-              </div>
+              </Tooltip>
             </div>
 
             {/* Search and Filters */}
@@ -939,17 +953,8 @@ export function StrategyResults() {
                             </td>
                             <td className="py-3 px-3 text-center border-r border-slate-600">
                               {result ? (
-                                <div>
-                                  <div className={`font-bold text-lg ${result.roi > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                    {result.roi > 0 ? '+' : ''}{result.roi.toFixed(1)}%
-                                  </div>
-                                  {result.roi_history && (
-                                    <Tooltip text="Rolling ROI trend over time">
-                                      <div className="cursor-help mt-1">
-                                        <Sparkline data={result.roi_history} />
-                                      </div>
-                                    </Tooltip>
-                                  )}
+                                <div className={`font-bold text-lg ${result.roi > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                  {result.roi > 0 ? '+' : ''}{result.roi.toFixed(1)}%
                                 </div>
                               ) : (
                                 <span className="text-slate-500">-</span>

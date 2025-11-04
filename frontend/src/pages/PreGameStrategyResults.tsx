@@ -79,35 +79,6 @@ const Tooltip = ({ children, text }: { children: React.ReactNode; text: string }
   );
 };
 
-// Sparkline Component for ROI trends
-const Sparkline = ({ data }: { data: number[] }) => {
-  if (!data || data.length === 0) return <span className="text-slate-500 text-xs">-</span>;
-
-  const max = Math.max(...data);
-  const min = Math.min(...data);
-  const range = max - min || 1;
-
-  const points = data.map((value, index) => {
-    const x = (index / (data.length - 1)) * 100;
-    const y = 100 - ((value - min) / range) * 100;
-    return `${x},${y}`;
-  }).join(' ');
-
-  const isPositiveTrend = data[data.length - 1] >= data[0];
-
-  return (
-    <svg className="w-16 h-8 inline-block" viewBox="0 0 100 100" preserveAspectRatio="none">
-      <polyline
-        points={points}
-        fill="none"
-        stroke={isPositiveTrend ? '#4ade80' : '#f87171'}
-        strokeWidth="3"
-        vectorEffect="non-scaling-stroke"
-      />
-    </svg>
-  );
-};
-
 // Alert Subscription Modal
 const AlertModal = ({ strategy, onClose }: { strategy: Strategy; onClose: () => void }) => {
   const [email, setEmail] = useState('');
@@ -290,32 +261,6 @@ export function PreGameStrategyResults() {
 
         const summaryResponse = await fetchWithRetry(getApiUrl('/strategies/performance/summary'));
         const summaryData = await summaryResponse.json();
-
-        // Generate realistic ROI history that trends toward final ROI value
-        summaryData.strategies = summaryData.strategies.map((s: BacktestResult) => {
-          const finalROI = s.roi;
-          const dataPoints = 10;
-
-          // Create a realistic progression toward the final ROI
-          const roiHistory = Array.from({ length: dataPoints }, (_, i) => {
-            // Start from a lower ROI and trend toward final value
-            const progress = i / (dataPoints - 1); // 0 to 1
-            const startROI = finalROI * 0.4; // Start at 40% of final ROI
-            const trendValue = startROI + (finalROI - startROI) * progress;
-
-            // Add small random variation (±10% of current value) but keep the upward trend
-            const variation = trendValue * 0.1 * (Math.random() - 0.5);
-            return Math.max(0, trendValue + variation); // Never go below 0
-          });
-
-          // Ensure last value matches the actual ROI
-          roiHistory[roiHistory.length - 1] = finalROI;
-
-          return {
-            ...s,
-            roi_history: roiHistory,
-          };
-        });
 
         setPerformanceSummary(summaryData);
         setLoading(false);
