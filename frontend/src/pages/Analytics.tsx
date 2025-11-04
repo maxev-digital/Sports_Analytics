@@ -3,6 +3,7 @@ import { sportEmojis, uiEmojis } from '../utils/sportDetection';
 import { useAuth } from '../contexts/AuthContext';
 import { getUserBets, getUserBettingStats, getPendingBets, addStakeToBet, deleteBet } from '../utils/betTracking';
 import { PersonalBetAnalytics } from '../components/PersonalBetAnalytics';
+import { BetHistory } from '../components/BetHistory';
 import { getApiUrl } from '../config';
 
 interface StrategyData {
@@ -44,8 +45,8 @@ interface LiveArbitrage {
 export function Analytics() {
   const { username } = useAuth();
 
-  // Tab state: 'system' or 'personal'
-  const [activeTab, setActiveTab] = useState<'system' | 'personal'>('system');
+  // Tab state: 'system', 'personal', or 'history'
+  const [activeTab, setActiveTab] = useState<'system' | 'personal' | 'history'>('system');
 
   // System Analytics State
   const [performanceData, setPerformanceData] = useState<PerformanceData | null>(null);
@@ -205,8 +206,8 @@ export function Analytics() {
 
       try {
         const [perfResponse, alertsResponse] = await Promise.all([
-          fetch(getApiUrl('alerts/performance')),
-          fetch(getApiUrl('alerts/arbitrage'))
+          fetch(getApiUrl('/alerts/performance')),
+          fetch(getApiUrl('/alerts/arbitrage'))
         ]);
 
         if (perfResponse.ok) {
@@ -348,6 +349,17 @@ export function Analytics() {
           >
             <img src={uiEmojis.dollar} alt="" className="w-6 h-6" style={{ imageRendering: 'crisp-edges' }} />
             My Bets
+          </button>
+          <button
+            onClick={() => setActiveTab('history')}
+            className={`flex items-center gap-2 px-6 py-3 font-semibold text-lg transition-all border-2 ${
+              activeTab === 'history'
+                ? 'bg-blue-600 text-white border-blue-400'
+                : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-slate-100 border-slate-600'
+            }`}
+          >
+            <img src={uiEmojis.book} alt="" className="w-6 h-6" style={{ imageRendering: 'crisp-edges' }} />
+            Bet History
           </button>
         </div>
 
@@ -578,7 +590,7 @@ export function Analytics() {
 
 
         </>
-      ) : (
+      ) : activeTab === 'personal' ? (
           /* PERSONAL BET ANALYTICS VIEW */
           <PersonalBetAnalytics
             stats={personalStats}
@@ -602,6 +614,9 @@ export function Analytics() {
               }
             }}
           />
+        ) : (
+          /* BET HISTORY VIEW */
+          <BetHistory />
         )}
       </div>
     </div>
