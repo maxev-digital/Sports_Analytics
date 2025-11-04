@@ -6,6 +6,7 @@ interface AuthContextType {
   username: string | null;
   email: string | null;
   token: string | null;
+  role: string | null;
   subscriptionTier: string;
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
@@ -21,6 +22,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [username, setUsername] = useState<string | null>(null);
   const [email, setEmail] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [role, setRole] = useState<string | null>(null);
   const [subscriptionTier, setSubscriptionTier] = useState<string>('free');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -87,10 +89,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const storedToken = localStorage.getItem('auth_token');
     const storedUsername = localStorage.getItem('auth_username');
     const storedEmail = localStorage.getItem('auth_email');
+    const storedRole = localStorage.getItem('auth_role');
     const storedTier = localStorage.getItem('subscription_tier') || 'free';
 
     if (storedToken && storedUsername) {
       setEmail(storedEmail);
+      setRole(storedRole);
       setSubscriptionTier(storedTier);
       verifyToken(storedToken, storedUsername);
     } else {
@@ -149,11 +153,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem('auth_token', data.token);
         localStorage.setItem('auth_username', data.username);
         localStorage.setItem('auth_email', data.email || '');
+        localStorage.setItem('auth_role', data.role || 'user');
 
         setIsAuthenticated(true);
         setUsername(data.username);
         setEmail(data.email || null);
         setToken(data.token);
+        setRole(data.role || 'user');
 
         await fetchSubscription(data.username);
 
@@ -191,10 +197,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUsername(null);
     setEmail(null);
     setToken(null);
+    setRole(null);
     setSubscriptionTier('free');
     localStorage.removeItem('auth_token');
     localStorage.removeItem('auth_username');
     localStorage.removeItem('auth_email');
+    localStorage.removeItem('auth_role');
     localStorage.removeItem('subscription_tier');
 
     sessionStorage.setItem('manual_logout', 'true');
@@ -207,6 +215,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         username,
         email,
         token,
+        role,
         subscriptionTier,
         login,
         logout,
