@@ -223,6 +223,12 @@ export function StrategyResults() {
         const strategiesResponse = await fetchWithRetry(getApiUrl('/strategies/'));
         const strategiesData = await strategiesResponse.json();
 
+        // Filter for live strategies only (1-16, 23-24)
+        // Exclude: 17 (Sharp Money - pre-game), 18-22 (pre-game), 25 (Pace Mismatch)
+        const liveStrategies = strategiesData.filter((s: Strategy) =>
+          (s.id >= 1 && s.id <= 16) || s.id === 23 || s.id === 24
+        );
+
         // Helper function to determine edge decay rate
         const getEdgeDecay = (strategy: Strategy): 'Low' | 'Medium' | 'High' => {
           const name = strategy.name.toLowerCase();
@@ -246,7 +252,7 @@ export function StrategyResults() {
         };
 
         // Add mock data for new fields (replace with real API data later)
-        const enhancedStrategies = strategiesData.map((s: Strategy, idx: number) => ({
+        const enhancedStrategies = liveStrategies.map((s: Strategy, idx: number) => ({
           ...s,
           bet_type: s.sports.includes('NBA') ? 'Live Total' : s.sports.includes('NFL') ? 'Spread' : 'Moneyline',
           frequency: idx % 3 === 0 ? '4x/week' : idx % 3 === 1 ? 'Daily' : '2x/week',

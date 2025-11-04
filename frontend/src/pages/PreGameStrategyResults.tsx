@@ -223,8 +223,12 @@ export function PreGameStrategyResults() {
         const strategiesResponse = await fetchWithRetry(getApiUrl('/strategies/'));
         const strategiesData = await strategiesResponse.json();
 
-        // Filter for pre-game strategies only (id >= 18)
-        const preGameStrategies = strategiesData.filter((s: Strategy) => s.id >= 18);
+        // Filter for pre-game strategies only (17-22, 25)
+        // Include: 17 (Sharp Money), 18-22 (CLV, Home/Away, Divisional, Key Numbers, Low-Hold), 25 (Pace Mismatch)
+        // Exclude: 23 (Halftime Tracker - live), 24 (Momentum Detector - live)
+        const preGameStrategies = strategiesData.filter((s: Strategy) =>
+          s.id === 17 || (s.id >= 18 && s.id <= 22) || s.id === 25
+        );
 
         // Helper function to determine edge decay rate
         const getEdgeDecay = (strategy: Strategy): 'Low' | 'Medium' | 'High' => {
