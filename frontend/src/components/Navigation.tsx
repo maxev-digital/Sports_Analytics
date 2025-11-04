@@ -8,12 +8,15 @@ import { isElectron } from '../utils/isElectron';
 export function Navigation() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { username, logout } = useAuth();
+  const { username, role, token, logout } = useAuth();
   const [strategyDropdownOpen, setStrategyDropdownOpen] = useState(false);
+  const [strategyResultsDropdownOpen, setStrategyResultsDropdownOpen] = useState(false);
   const [toolsDropdownOpen, setToolsDropdownOpen] = useState(false);
   const [learnDropdownOpen, setLearnDropdownOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [unreadFeedbackCount, setUnreadFeedbackCount] = useState(0);
   const strategyRef = useRef<HTMLDivElement>(null);
+  const strategyResultsRef = useRef<HTMLDivElement>(null);
   const toolsRef = useRef<HTMLDivElement>(null);
   const learnRef = useRef<HTMLDivElement>(null);
   const userRef = useRef<HTMLDivElement>(null);
@@ -24,6 +27,34 @@ export function Navigation() {
 
   // Check if running in desktop (Electron) mode
   const isDesktop = isElectron();
+
+  // Load unread feedback count
+  useEffect(() => {
+    const loadUnreadCount = async () => {
+      if (!token) return;
+      try {
+        const response = await fetch(`${window.location.origin}/api/feedback/my-feedback`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          const count = data.feedback.filter(
+            (f: any) => f.admin_response && !f.response_viewed
+          ).length;
+          setUnreadFeedbackCount(count);
+        }
+      } catch (error) {
+        console.error('Error loading unread feedback:', error);
+      }
+    };
+
+    loadUnreadCount();
+    // Check every minute for new responses
+    const interval = setInterval(loadUnreadCount, 60000);
+    return () => clearInterval(interval);
+  }, [token]);
 
   const handleNavClick = () => { playTabSwitch(); };
   const handleDropdownToggle = (dropdownSetter: (val: boolean) => void, currentState: boolean) => { playDropdown(); dropdownSetter(!currentState); };
@@ -36,11 +67,16 @@ export function Navigation() {
     { path: '/analytics', label: 'My Analytics', emoji: uiEmojis.search },
     { path: '/alerts', label: 'Alerts', emoji: uiEmojis.lightning },
     { path: '/props', label: 'Player Props', emoji: uiEmojis.book },
-    { path: '/strategy-results', label: 'Strategy Results', emoji: uiEmojis.trophy },
     { path: '/handicapper-picks', label: 'Cappers Picks', emoji: uiEmojis.star },
   ];
 
-  // Strategy dropdown items (just Strategy Settings now)
+  // Strategy Results dropdown items (Live vs Pre-Game)
+  const strategyResultsItems = [
+    { path: '/strategy-results', label: 'Live Strategies', emoji: uiEmojis.fire },
+    { path: '/pre-game-strategy-results', label: 'Pre-Game Strategies', emoji: uiEmojis.trophy },
+  ];
+
+  // Strategy Settings dropdown items
   const strategyItems = [
     { path: '/strategy-settings', label: 'Strategy Settings', emoji: uiEmojis.trophy },
   ];
@@ -49,6 +85,8 @@ export function Navigation() {
   const toolsItems = [
     { path: '/tools', label: 'Betting Tools', emoji: uiEmojis.wrench },
     { path: '/settings', label: 'Bookmaker Settings', emoji: uiEmojis.gear },
+    { path: '/my-feedback', label: 'My Feedback', emoji: uiEmojis.book, badge: unreadFeedbackCount },
+    ...(role === 'admin' ? [{ path: '/admin-dashboard', label: 'Admin Dashboard', emoji: uiEmojis.star }] : []),
   ];
 
   // Learn dropdown items
@@ -74,6 +112,9 @@ export function Navigation() {
     function handleClickOutside(event: MouseEvent) {
       if (strategyRef.current && !strategyRef.current.contains(event.target as Node)) {
         setStrategyDropdownOpen(false);
+      }
+      if (strategyResultsRef.current && !strategyResultsRef.current.contains(event.target as Node)) {
+        setStrategyResultsDropdownOpen(false);
       }
       if (toolsRef.current && !toolsRef.current.contains(event.target as Node)) {
         setToolsDropdownOpen(false);
@@ -133,7 +174,68 @@ export function Navigation() {
               </Link>
             ))}
 
-            {/* Strategies Dropdown - positioned before Strategy Results */}
+            {/* Strategy Results Dropdown - Live vs Pre-Game */}
+            <div className="relative" ref={strategyResultsRef}>
+              <button
+                onClick={() => handleDropdownToggle(setStrategyResultsDropdownOpen, strategyResultsDropdownOpen)}
+                className={`px-5 py-2.5 rounded-lg font-semibold transition-all text-base flex items-center gap-2 ${
+                  isDropdownActive(strategyResultsItems)
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+                    : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
+                }`}
+              >
+                <img src={uiEmojis.trophy} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} />
+                Strategy Results
+                <svg className={`w-5 h-5 transition-transform ${strategyResultsDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {strategyResultsDropdownOpen && (
+                <div className="absolute top-full mt-1 left-0 bg-slate-800 border border-slate-700 rounded-lg shadow-xl min-w-[220px] py-2 z-50">
+                  {strategyResultsItems.map((item) => (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      onClick={() => { playTabSwitch(); setStrategyResultsDropdownOpen(false); }}
+                      className={`px-4 py-2.5 flex items-center gap-3 transition-all ${
+                        isActive(item.path)
+                          ? 'bg-blue-600 text-white'
+                          : 'text-slate-300 hover:bg-slate-700 hover:text-slate-100'
+                      }`}
+                    >
+                      <img src={item.emoji} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} />
+                      <span className="font-semibold text-base">{item.label}</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Main Nav Items - Remaining items (Cappers Picks) */}
+            {mainNavItems.slice(5).map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`px-5 py-2.5 rounded-lg font-semibold transition-all text-base flex items-center gap-2 ${
+                  isActive(item.path)
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+                    : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
+                }`}
+              >
+                {item.emoji && (
+                  <img
+                    src={item.emoji}
+                    alt={item.label || 'Home'}
+                    className={item.label ? "w-5 h-5" : "w-8 h-8"}
+                    style={{ imageRendering: 'crisp-edges' }}
+                  />
+                )}
+                {item.label}
+              </Link>
+            ))}
+
+            {/* Strategies Dropdown - Strategy Settings */}
             <div className="relative" ref={strategyRef}>
               <button
                 onClick={() => handleDropdownToggle(setStrategyDropdownOpen, strategyDropdownOpen)}
@@ -171,34 +273,11 @@ export function Navigation() {
               )}
             </div>
 
-            {/* Main Nav Items - Remaining items (Strategy Results and Cappers Picks) */}
-            {mainNavItems.slice(5).map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`px-5 py-2.5 rounded-lg font-semibold transition-all text-base flex items-center gap-2 ${
-                  isActive(item.path)
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
-                    : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
-                }`}
-              >
-                {item.emoji && (
-                  <img
-                    src={item.emoji}
-                    alt={item.label || 'Home'}
-                    className={item.label ? "w-5 h-5" : "w-8 h-8"}
-                    style={{ imageRendering: 'crisp-edges' }}
-                  />
-                )}
-                {item.label}
-              </Link>
-            ))}
-
             {/* Tools Dropdown */}
             <div className="relative" ref={toolsRef}>
               <button
                 onClick={() => handleDropdownToggle(setToolsDropdownOpen, toolsDropdownOpen)}
-                className={`px-5 py-2.5 rounded-lg font-semibold transition-all text-base flex items-center gap-2 ${
+                className={`px-5 py-2.5 rounded-lg font-semibold transition-all text-base flex items-center gap-2 relative ${
                   isDropdownActive(toolsItems)
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
                     : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
@@ -209,6 +288,12 @@ export function Navigation() {
                 <svg className={`w-5 h-5 transition-transform ${toolsDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
+                {/* Notification Badge */}
+                {unreadFeedbackCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center animate-pulse">
+                    {unreadFeedbackCount}
+                  </span>
+                )}
               </button>
 
               {toolsDropdownOpen && (
@@ -225,7 +310,12 @@ export function Navigation() {
                       }`}
                     >
                       <img src={item.emoji} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} />
-                      <span className="font-semibold text-base">{item.label}</span>
+                      <span className="font-semibold text-base flex-1">{item.label}</span>
+                      {item.badge && item.badge > 0 && (
+                        <span className="bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full">
+                          {item.badge}
+                        </span>
+                      )}
                     </Link>
                   ))}
                 </div>
@@ -350,7 +440,7 @@ export function Navigation() {
               {item.label}
             </Link>
           ))}
-          {strategyItems.map((item) => (
+          {strategyResultsItems.map((item) => (
             <Link
               key={item.path}
               to={item.path}
@@ -367,6 +457,22 @@ export function Navigation() {
             </Link>
           ))}
           {mainNavItems.slice(5).map((item) => (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={`px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+                isActive(item.path)
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-slate-800 text-slate-300'
+              }`}
+            >
+              {item.emoji && (
+                <img src={item.emoji} alt="" className="w-3.5 h-3.5" style={{ imageRendering: 'crisp-edges' }} />
+              )}
+              {item.label}
+            </Link>
+          ))}
+          {strategyItems.map((item) => (
             <Link
               key={item.path}
               to={item.path}

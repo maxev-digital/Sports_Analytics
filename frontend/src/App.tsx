@@ -12,6 +12,7 @@ import { Analytics } from './pages/Analytics';
 import { AnalyticsSample } from './pages/AnalyticsSample';
 import { Props } from './pages/Props';
 import { StrategyResults } from './pages/StrategyResults';
+import { PreGameStrategyResults } from './pages/PreGameStrategyResults';
 import { Pricing } from './pages/Pricing';
 import { Alerts } from './pages/Alerts';
 import { Learn } from './pages/Learn';
@@ -31,6 +32,7 @@ import { Disclaimer } from './pages/Disclaimer';
 import { FloatingFeedbackButton } from './components/FloatingFeedbackButton';
 import { LiveChatWidget } from './components/LiveChatWidget';
 import { AdminDashboard } from './pages/AdminDashboard';
+import { MyFeedback } from './pages/MyFeedback';
 import { isElectron } from './utils/isElectron';
 
 function App() {
@@ -79,6 +81,25 @@ function App() {
                 <StrategyResults />
                 <Footer />
                 {/* Floating Feedback & Chat - visible on Strategy Results page (hidden in desktop) */}
+                {!isDesktop && (
+                  <>
+                    <FloatingFeedbackButton />
+                    <LiveChatWidget />
+                  </>
+                )}
+              </div>
+            }
+          />
+
+          {/* Pre-Game Strategy Results - public for testing */}
+          <Route
+            path="/pre-game-strategy-results"
+            element={
+              <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col">
+                <Navigation />
+                <PreGameStrategyResults />
+                <Footer />
+                {/* Floating Feedback & Chat - visible on Pre-Game Strategy Results page (hidden in desktop) */}
                 {!isDesktop && (
                   <>
                     <FloatingFeedbackButton />
@@ -139,6 +160,7 @@ function App() {
                       <Route path="/handicapper-picks" element={<HandicapperPicks />} />
                       <Route path="/settings" element={<Settings />} />
                       <Route path="/strategy-settings" element={<StrategySettings />} />
+                      <Route path="/my-feedback" element={<MyFeedback />} />
                       {/* Learn pages - redirect to home in desktop mode */}
                       <Route path="/learn" element={isDesktop ? <Navigate to="/live-games" replace /> : <Learn />} />
                       <Route path="/learn/:articleId" element={isDesktop ? <Navigate to="/live-games" replace /> : <ArticleDetail />} />
