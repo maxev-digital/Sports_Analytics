@@ -7,6 +7,7 @@ import { getGameSpecificUrl } from '../utils/gameUrls';
 import { trackBetClick } from '../utils/betTracking';
 import { useAuth } from '../contexts/AuthContext';
 import { MomentumBar } from './MomentumBar';
+import { formatTeamName } from '../utils/teamNames';
 
 interface GameCardProps {
   game: LiveGame;
