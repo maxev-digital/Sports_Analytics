@@ -36,9 +36,8 @@ export const useWebSocket = (userId: string = 'default'): UseWebSocketReturn => 
 
   const connect = useCallback(() => {
     // Build WebSocket URL with user_id query parameter inside callback
-    // Use api subdomain in production to bypass Cloudflare Bot Fight Mode
     const baseUrl = import.meta.env.PROD
-      ? 'wss://api.max-ev-sports.com/ws/live-odds'
+      ? 'wss://max-ev-sports.com/ws/live-odds'
       : 'ws://localhost:8000/ws/live-odds';
     const websocketUrl = `${baseUrl}?user_id=${userId}`;
 

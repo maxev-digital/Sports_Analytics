@@ -7,20 +7,20 @@ const isDevelopment =
   window.location.hostname === 'localhost' ||
   window.location.hostname === '127.0.0.1';
 
-// API base URL - use localhost in development, api subdomain in production
+// API base URL - use localhost in development, main domain in production
 export const API_BASE_URL = isDevelopment
   ? 'http://localhost:8000/api'
-  : 'https://api.max-ev-sports.com/api';
+  : 'https://max-ev-sports.com/api';
 
 // Helper function to build API URLs
 export function getApiUrl(endpoint: string): string {
   // Remove leading slash if present
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
 
-  // Use localhost in development, api subdomain in production (bypasses Cloudflare Bot Fight Mode)
+  // Use localhost in development, main domain in production
   return isDevelopment
     ? `http://localhost:8000/api/${cleanEndpoint}`
-    : `https://api.max-ev-sports.com/api/${cleanEndpoint}`;
+    : `https://max-ev-sports.com/api/${cleanEndpoint}`;
 }
 
 // Debug logging
