@@ -167,12 +167,12 @@ export function GameCard({ game }: GameCardProps) {
     } else if (selectedMarket === 'spread') {
       betType = 'spread';
       // Default to home team spread, but use projection if available
-      betSide = `${formatTeamName(home_team.name, state.sport_key)} ${odd.home_spread > 0 ? '+' : ''}${odd.home_spread}`;
+      betSide = `${formatTeamName(state.home_team.name, state.sport_key)} ${odd.home_spread > 0 ? '+' : ''}${odd.home_spread}`;
       betOdds = odd.home_spread_price;
     } else if (selectedMarket === 'moneyline') {
       betType = 'moneyline';
       // Default to home team ML
-      betSide = formatTeamName(home_team.name, state.sport_key);
+      betSide = formatTeamName(state.home_team.name, state.sport_key);
       betOdds = odd.home_ml;
     }
 
@@ -182,8 +182,8 @@ export function GameCard({ game }: GameCardProps) {
         userId: username,
         gameId: state.id,
         sport: state.sport_key,
-        homeTeam: formatTeamName(home_team.name, state.sport_key),
-        awayTeam: formatTeamName(away_team.name, state.sport_key),
+        homeTeam: formatTeamName(state.home_team.name, state.sport_key),
+        awayTeam: formatTeamName(state.away_team.name, state.sport_key),
         commenceTime: state.commence_time,
         betType,
         betSide,
@@ -258,8 +258,8 @@ export function GameCard({ game }: GameCardProps) {
     return nflColors[cleanName] || { primary: '#3B82F6', secondary: '#EF4444' }; // Default blue/red
   };
 
-  const awayTeamColors = getTeamColors(formatTeamName(away_team.name, state.sport_key));
-  const homeTeamColors = getTeamColors(formatTeamName(home_team.name, state.sport_key));
+  const awayTeamColors = getTeamColors(formatTeamName(state.away_team.name, state.sport_key));
+  const homeTeamColors = getTeamColors(formatTeamName(state.home_team.name, state.sport_key));
 
   // Format time
   const gameTime = new Date(state.commence_time).toLocaleTimeString('en-US', {
@@ -387,7 +387,7 @@ export function GameCard({ game }: GameCardProps) {
         <div>
           <div className="flex justify-between items-center mb-1">
             <div className="flex items-center gap-2">
-              <span className={`font-medium ${textPrimary}`}>{formatTeamName(away_team.name, state.sport_key)}</span>
+              <span className={`font-medium ${textPrimary}`}>{formatTeamName(state.away_team.name, state.sport_key)}</span>
             </div>
             {state.away_team.score !== null && (
               <span className={`text-3xl font-bold ${textPrimary}`}>{state.away_team.score}</span>
@@ -414,7 +414,7 @@ export function GameCard({ game }: GameCardProps) {
         <div>
           <div className="flex justify-between items-center mb-1">
             <div className="flex items-center gap-2">
-              <span className={`font-medium ${textPrimary}`}>{formatTeamName(home_team.name, state.sport_key)}</span>
+              <span className={`font-medium ${textPrimary}`}>{formatTeamName(state.home_team.name, state.sport_key)}</span>
             </div>
             {state.home_team.score !== null && (
               <span className={`text-3xl font-bold ${textPrimary}`}>{state.home_team.score}</span>
@@ -1217,7 +1217,7 @@ export function GameCard({ game }: GameCardProps) {
           <div className="grid grid-cols-2 gap-4 text-base">
             {/* Away Team Stats */}
             <div className="space-y-1">
-              <div className={`${textHeader} font-bold mb-2 text-center text-base`}>{formatTeamName(away_team.name, state.sport_key)}</div>
+              <div className={`${textHeader} font-bold mb-2 text-center text-base`}>{formatTeamName(state.away_team.name, state.sport_key)}</div>
               {away_nhl_stats && (
                 <>
                   {(statsView === 'stats' || statsView === 'combined') && (
@@ -1340,7 +1340,7 @@ export function GameCard({ game }: GameCardProps) {
 
             {/* Home Team Stats */}
             <div className="space-y-1">
-              <div className={`${textHeader} font-bold mb-2 text-center text-base`}>{formatTeamName(home_team.name, state.sport_key)}</div>
+              <div className={`${textHeader} font-bold mb-2 text-center text-base`}>{formatTeamName(state.home_team.name, state.sport_key)}</div>
               {home_nhl_stats && (
                 <>
                   {(statsView === 'stats' || statsView === 'combined') && (
@@ -1506,7 +1506,7 @@ export function GameCard({ game }: GameCardProps) {
           <div className="grid grid-cols-2 gap-4 text-base">
             {/* Away Team Stats */}
             <div className="space-y-1">
-              <div className={`${textHeader} font-bold mb-2 text-center text-base`}>{formatTeamName(away_team.name, state.sport_key)}</div>
+              <div className={`${textHeader} font-bold mb-2 text-center text-base`}>{formatTeamName(state.away_team.name, state.sport_key)}</div>
               {away_nfl_stats && (
                 <>
                   {/* RANKINGS VIEW - Show only rankings */}
@@ -1707,7 +1707,7 @@ export function GameCard({ game }: GameCardProps) {
 
             {/* Home Team Stats */}
             <div className="space-y-1">
-              <div className={`${textHeader} font-bold mb-2 text-center text-base`}>{formatTeamName(home_team.name, state.sport_key)}</div>
+              <div className={`${textHeader} font-bold mb-2 text-center text-base`}>{formatTeamName(state.home_team.name, state.sport_key)}</div>
               {home_nfl_stats && (
                 <>
                   {/* RANKINGS VIEW - Show only rankings */}
@@ -2094,8 +2094,8 @@ export function GameCard({ game }: GameCardProps) {
                 // Try to get game-specific URL first, fallback to generic sport URL
                 const gameSpecificUrl = getGameSpecificUrl(
                   normalizedKey,
-                  formatTeamName(home_team.name, state.sport_key),
-                  formatTeamName(away_team.name, state.sport_key),
+                  formatTeamName(state.home_team.name, state.sport_key),
+                  formatTeamName(state.away_team.name, state.sport_key),
                   state.sport_key,
                   state.commence_time
                 );
@@ -2395,7 +2395,7 @@ export function GameCard({ game }: GameCardProps) {
           <div className="grid grid-cols-2 gap-4 text-base">
             {/* Away Team Stats */}
             <div className="space-y-1">
-              <div className={`${textHeader} font-bold mb-2 text-center text-base`}>{formatTeamName(away_team.name, state.sport_key)}</div>
+              <div className={`${textHeader} font-bold mb-2 text-center text-base`}>{formatTeamName(state.away_team.name, state.sport_key)}</div>
               {away_team_stats && (
                 <>
                   {/* RANKINGS VIEW */}
@@ -2597,7 +2597,7 @@ export function GameCard({ game }: GameCardProps) {
 
             {/* Home Team Stats */}
             <div className="space-y-1">
-              <div className={`${textHeader} font-bold mb-2 text-center text-base`}>{formatTeamName(home_team.name, state.sport_key)}</div>
+              <div className={`${textHeader} font-bold mb-2 text-center text-base`}>{formatTeamName(state.home_team.name, state.sport_key)}</div>
               {home_team_stats && (
                 <>
                   {/* RANKINGS VIEW */}
@@ -2998,8 +2998,8 @@ export function GameCard({ game }: GameCardProps) {
       ) && (
         <div className="px-4 pb-4 pt-2">
           <MomentumBar
-            homeTeam={formatTeamName(home_team.name, state.sport_key)}
-            awayTeam={formatTeamName(away_team.name, state.sport_key)}
+            homeTeam={formatTeamName(state.home_team.name, state.sport_key)}
+            awayTeam={formatTeamName(state.away_team.name, state.sport_key)}
             homeMomentum={
               state.sport_key === 'icehockey_nhl'
                 ? (game.home_nhl_momentum?.momentum_score || 50)
