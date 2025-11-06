@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BOOKMAKERS, getAllBookmakerKeys } from '../data/bookmakers';
+import { getApiUrl } from '../config';
 
 export interface UserSettings {
   user_id: string;
@@ -29,7 +30,7 @@ export function useSettings(userId: string = 'default') {
   const fetchSettings = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/settings?user_id=${userId}`);
+      const response = await fetch(getApiUrl(`settings?user_id=${userId}`));
 
       if (!response.ok) {
         throw new Error('Failed to fetch settings');
@@ -49,7 +50,7 @@ export function useSettings(userId: string = 'default') {
   const updateBookmakers = async (enabledBookmakers: string[]) => {
     try {
       setSaving(true);
-      const response = await fetch(`/api/settings/bookmakers?user_id=${userId}`, {
+      const response = await fetch(getApiUrl(`settings/bookmakers?user_id=${userId}`), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -110,7 +111,7 @@ export function useSettings(userId: string = 'default') {
   const resetToDefaults = async () => {
     try {
       setSaving(true);
-      const response = await fetch(`/api/settings/reset?user_id=${userId}`, {
+      const response = await fetch(getApiUrl(`settings/reset?user_id=${userId}`), {
         method: 'POST',
       });
 

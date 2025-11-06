@@ -50,7 +50,7 @@ export function Pricing() {
       }
 
       try {
-        const response = await fetch(`/api/subscription/status?user_id=${encodeURIComponent(username)}`);
+        const response = await fetch(getApiUrl(`subscription/status?user_id=${encodeURIComponent(username)}`));
         if (response.ok) {
           const data = await response.json();
           setSubscriptionStatus(data);
@@ -106,7 +106,7 @@ export function Pricing() {
     setWaitlistLoading(true);
 
     try {
-      const response = await fetch('/api/waitlist/add', {
+      const response = await fetch(getApiUrl('waitlist/add'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

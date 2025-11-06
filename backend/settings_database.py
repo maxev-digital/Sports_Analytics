@@ -3,12 +3,14 @@ User Settings Database
 Stores user preferences including enabled bookmakers, bankroll, and display settings
 """
 import sqlite3
+import os
 from datetime import datetime
 from typing import Dict, List, Optional
 from contextlib import contextmanager
 import json
 
-DATABASE_PATH = "user_settings.db"
+# Use absolute path to ensure we always use the backend database file
+DATABASE_PATH = os.path.join(os.path.dirname(__file__), "user_settings.db")
 
 # Predefined bookmaker presets for quick selection
 BOOKMAKER_PRESETS = {

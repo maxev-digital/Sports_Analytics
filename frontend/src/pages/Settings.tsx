@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSettings } from '../hooks/useSettings';
 import { useAuth } from '../contexts/AuthContext';
 import { BOOKMAKERS, getPopularBookmakers, getAllBookmakerKeys } from '../data/bookmakers';
+import { getApiUrl } from '../config';
 
 interface BookmakersByRegion {
   [region: string]: typeof BOOKMAKERS;
@@ -32,7 +33,7 @@ export function Settings() {
   // Fetch subscription status
   useEffect(() => {
     if (username) {
-      fetch(`/api/subscription/status?user_id=${encodeURIComponent(username)}`)
+      fetch(getApiUrl(`subscription/status?user_id=${encodeURIComponent(username)}`))
         .then(res => res.json())
         .then(data => setSubscriptionStatus(data))
         .catch(err => console.error('Error fetching subscription:', err));

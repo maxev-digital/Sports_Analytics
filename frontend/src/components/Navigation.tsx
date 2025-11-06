@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { uiEmojis } from '../utils/sportDetection';
 import { useSoundEffect } from '../hooks/useSoundEffect';
 import { isElectron } from '../utils/isElectron';
+import { getApiUrl } from '../config';
 
 export function Navigation() {
   const location = useLocation();
@@ -33,7 +34,7 @@ export function Navigation() {
     const loadUnreadCount = async () => {
       if (!token) return;
       try {
-        const response = await fetch(`${window.location.origin}/api/feedback/my-feedback`, {
+        const response = await fetch(getApiUrl('feedback/my-feedback'), {
           headers: {
             'Authorization': `Bearer ${token}`,
           },
