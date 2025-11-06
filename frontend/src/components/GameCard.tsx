@@ -387,7 +387,7 @@ export function GameCard({ game }: GameCardProps) {
         <div>
           <div className="flex justify-between items-center mb-1">
             <div className="flex items-center gap-2">
-              <span className={`font-medium ${textPrimary}`}>{formatTeamName(state.away_team.name, state.sport_key)}</span>
+              <span className={`text-lg font-bold ${textPrimary}`}>{formatTeamName(state.away_team.name, state.sport_key)}</span>
             </div>
             {state.away_team.score !== null && (
               <span className={`text-3xl font-bold ${textPrimary}`}>{state.away_team.score}</span>
@@ -414,7 +414,7 @@ export function GameCard({ game }: GameCardProps) {
         <div>
           <div className="flex justify-between items-center mb-1">
             <div className="flex items-center gap-2">
-              <span className={`font-medium ${textPrimary}`}>{formatTeamName(state.home_team.name, state.sport_key)}</span>
+              <span className={`text-lg font-bold ${textPrimary}`}>{formatTeamName(state.home_team.name, state.sport_key)}</span>
             </div>
             {state.home_team.score !== null && (
               <span className={`text-3xl font-bold ${textPrimary}`}>{state.home_team.score}</span>
