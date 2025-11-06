@@ -5,6 +5,8 @@
  * Supports NBA, NHL, NFL, NCAAF, NCAAB
  */
 
+import { NCAAB_TEAMS, NCAAF_TEAMS } from './ncaaTeamMappings';
+
 // NBA Team Name Mappings
 const NBA_TEAMS: Record<string, string> = {
   // Common variations to handle
@@ -414,11 +416,9 @@ export function formatTeamName(teamName: string, sportKey: string): string {
   } else if (sportKey.includes('americanfootball_nfl')) {
     teamMap = NFL_TEAMS;
   } else if (sportKey.includes('americanfootball_ncaaf')) {
-    // NCAAF - return as is (college names are usually full already)
-    return teamName;
+    teamMap = NCAAF_TEAMS;
   } else if (sportKey.includes('basketball_ncaab')) {
-    // NCAAB - return as is (college names are usually full already)
-    return teamName;
+    teamMap = NCAAB_TEAMS;
   }
 
   // Try exact match first

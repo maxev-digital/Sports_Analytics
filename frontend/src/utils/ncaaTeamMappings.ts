@@ -1,0 +1,133 @@
+/**
+ * NCAA Team Name Mappings for Sports Data IO Abbreviations
+ *
+ * These mappings convert Sports Data IO's abbreviated team codes
+ * to full university/college names for both basketball (NCAAB) and football (NCAAF)
+ */
+
+// NCAA Basketball Team Name Mappings
+export const NCAAB_TEAMS: Record<string, string> = {
+  'ABCHR': 'Abilene Christian',
+  'ALCST': 'Alcorn State',
+  'APPLST': 'Appalachian State',
+  'ARPB': 'Arkansas-Pine Bluff',
+  'AUBRN': 'Auburn',
+  'BCOOK': 'Bethune-Cookman',
+  'BOSCOL': 'Boston College',
+  'CAH': 'Charleston',
+  'CAMP': 'Campbell',
+  'CENCON': 'Central Connecticut',
+  'CHIST': 'Charleston Southern',
+  'CITA': 'The Citadel',
+  'CSUNR': 'Cal State Northridge',
+  'DEN': 'Denver',
+  'DRAKE': 'Drake',
+  'FL': 'Florida',
+  'GAS': 'Georgia Southern',
+  'GRMBST': 'Grambling State',
+  'ILLST': 'Illinois State',
+  'IOWAST': 'Iowa State',
+  'IUPUI': 'IUPUI',
+  'JACKST': 'Jackson State',
+  'LEMYN': 'Le Moyne',
+  'LIUB': 'Long Island University',
+  'LOU': 'Louisville',
+  'LOYCH': 'Loyola Chicago',
+  'MERRI': 'Merrimack',
+  'MIA': 'Miami',
+  'MRCY': 'Mercy',
+  'NDAK': 'North Dakota',
+  'NEOM': 'New Mexico',
+  'NFL': 'Niagara Falls',
+  'NIOWA': 'Northern Iowa',
+  'NTX': 'North Texas',
+  'NWST': 'Northwestern State',
+  'OHIO': 'Ohio',
+  'PORT': 'Portland',
+  'QUIN': 'Quincy',
+  'ROBMS': 'Robert Morris',
+  'SALA': 'Salisbury',
+  'SFL': 'South Florida',
+  'SMU': 'SMU',
+  'STFPA': 'St. Francis (PA)',
+  'STLOU': 'Saint Louis',
+  'TAMU': 'Texas A&M',
+  'TCU': 'TCU',
+  'TXAM': 'Texas A&M',
+  'TXS': 'Texas Southern',
+  'UCRVS': 'UC Riverside',
+  'UTSA': 'UT San Antonio',
+  'WASH': 'Washington',
+  'WRGHT': 'Wright State',
+  'WVIR': 'West Virginia',
+  'XAV': 'Xavier',
+};
+
+// NCAA Football Team Name Mappings
+export const NCAAF_TEAMS: Record<string, string> = {
+  'ABCHR': 'Abilene Christian',
+  'ALCST': 'Alcorn State',
+  'APPLST': 'Appalachian State',
+  'ARPB': 'Arkansas-Pine Bluff',
+  'AUBRN': 'Auburn',
+  'BCOOK': 'Bethune-Cookman',
+  'BOSCOL': 'Boston College',
+  'CAH': 'Charleston',
+  'CAMP': 'Campbell',
+  'CENCON': 'Central Connecticut',
+  'CHIST': 'Charleston Southern',
+  'CITA': 'The Citadel',
+  'CSUNR': 'Cal State Northridge',
+  'DEN': 'Denver',
+  'DRAKE': 'Drake',
+  'FL': 'Florida',
+  'GAS': 'Georgia Southern',
+  'GRMBST': 'Grambling State',
+  'ILLST': 'Illinois State',
+  'IOWAST': 'Iowa State',
+  'IUPUI': 'IUPUI',
+  'JACKST': 'Jackson State',
+  'LEMYN': 'Le Moyne',
+  'LIUB': 'Long Island University',
+  'LOU': 'Louisville',
+  'LOYCH': 'Loyola Chicago',
+  'MERRI': 'Merrimack',
+  'MIA': 'Miami',
+  'MRCY': 'Mercy',
+  'NDAK': 'North Dakota',
+  'NEOM': 'New Mexico',
+  'NFL': 'Niagara Falls',
+  'NIOWA': 'Northern Iowa',
+  'NTX': 'North Texas',
+  'NWST': 'Northwestern State',
+  'OHIO': 'Ohio',
+  'PORT': 'Portland',
+  'QUIN': 'Quincy',
+  'ROBMS': 'Robert Morris',
+  'SALA': 'Salisbury',
+  'SFL': 'South Florida',
+  'SMU': 'SMU',
+  'STFPA': 'St. Francis (PA)',
+  'STLOU': 'Saint Louis',
+  'TAMU': 'Texas A&M',
+  'TCU': 'TCU',
+  'TXAM': 'Texas A&M',
+  'TXS': 'Texas Southern',
+  'UCRVS': 'UC Riverside',
+  'UTSA': 'UT San Antonio',
+  'WASH': 'Washington',
+  'WRGHT': 'Wright State',
+  'WVIR': 'West Virginia',
+  'XAV': 'Xavier',
+};
+
+/**
+ * Get NCAA team full name from abbreviation
+ * @param abbreviation - Sports Data IO team abbreviation
+ * @param sport - 'basketball' or 'football'
+ * @returns Full team name or original abbreviation if not found
+ */
+export function getNCAATeamName(abbreviation: string, sport: 'basketball' | 'football' = 'basketball'): string {
+  const teamMap = sport === 'basketball' ? NCAAB_TEAMS : NCAAF_TEAMS;
+  return teamMap[abbreviation] || abbreviation;
+}
