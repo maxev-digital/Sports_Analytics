@@ -33,6 +33,10 @@ export interface GameOdds {
   away_spread_price?: number | null;
   home_ml?: number | null;
   away_ml?: number | null;
+  opening_total?: number | null;
+  total_movement?: number | null;
+  opening_spread?: number | null;
+  spread_movement?: number | null;
 }
 
 export interface GameProjection {
@@ -288,7 +292,21 @@ export interface LiveGame {
   home_nfl_momentum: NFLMomentumStats | null;
   away_nfl_momentum: NFLMomentumStats | null;
   home_ncaaf_momentum: NFLMomentumStats | null;
+  alternate_lines?: AlternateMarketLine[] | null;
   away_ncaaf_momentum: NFLMomentumStats | null;
   home_mlb_stats: MLBTeamStats | null;
   away_mlb_stats: MLBTeamStats | null;
+  player_props_count?: number | null;
+}
+
+export interface AlternateMarketLine {
+  market_type: string; // '1H', '2H', 'Q1', 'Q2', 'Q3', 'Q4'
+  bookmaker: string;
+  total?: number | null;
+  over_price?: number | null;
+  under_price?: number | null;
+  home_spread?: number | null;
+  away_spread?: number | null;
+  home_spread_price?: number | null;
+  away_spread_price?: number | null;
 }

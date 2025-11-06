@@ -20,10 +20,10 @@ export function Navigation() {
   const toolsRef = useRef<HTMLDivElement>(null);
   const learnRef = useRef<HTMLDivElement>(null);
   const userRef = useRef<HTMLDivElement>(null);
-  // Sound effects
-  const playTabSwitch = useSoundEffect('tab-switch.mp3', 0.3);
-  const playDropdown = useSoundEffect('dropdown.mp3', 0.3);
-  const playLogout = useSoundEffect('logout.mp3', 0.4);
+  // Sound effects - DISABLED for menu buttons
+  // const playTabSwitch = useSoundEffect('tab-switch.mp3', 0.3);
+  // const playDropdown = useSoundEffect('dropdown.mp3', 0.3);
+  // const playLogout = useSoundEffect('logout.mp3', 0.4);
 
   // Check if running in desktop (Electron) mode
   const isDesktop = isElectron();
@@ -56,9 +56,9 @@ export function Navigation() {
     return () => clearInterval(interval);
   }, [token]);
 
-  const handleNavClick = () => { playTabSwitch(); };
-  const handleDropdownToggle = (dropdownSetter: (val: boolean) => void, currentState: boolean) => { playDropdown(); dropdownSetter(!currentState); };
-  const handleLogout = () => { playLogout(); setTimeout(() => { logout(); navigate('/login'); }, 200); };
+  const handleNavClick = () => { /* Sound disabled */ };
+  const handleDropdownToggle = (dropdownSetter: (val: boolean) => void, currentState: boolean) => { /* Sound disabled */ dropdownSetter(!currentState); };
+  const handleLogout = () => { /* Sound disabled */ logout(); navigate('/login'); };
 
   // Main nav items (always visible)
   const mainNavItems = [
@@ -197,7 +197,7 @@ export function Navigation() {
                     <Link
                       key={item.path}
                       to={item.path}
-                      onClick={() => { playTabSwitch(); setStrategyResultsDropdownOpen(false); }}
+                      onClick={() => { /* Sound disabled */ setStrategyResultsDropdownOpen(false); }}
                       className={`px-4 py-2.5 flex items-center gap-3 transition-all ${
                         isActive(item.path)
                           ? 'bg-blue-600 text-white'
@@ -258,7 +258,7 @@ export function Navigation() {
                     <Link
                       key={item.path}
                       to={item.path}
-                      onClick={() => { playTabSwitch(); setStrategyDropdownOpen(false); }}
+                      onClick={() => { /* Sound disabled */ setStrategyDropdownOpen(false); }}
                       className={`px-4 py-2.5 flex items-center gap-3 transition-all ${
                         isActive(item.path)
                           ? 'bg-blue-600 text-white'
@@ -302,7 +302,7 @@ export function Navigation() {
                     <Link
                       key={item.path}
                       to={item.path}
-                      onClick={() => { playTabSwitch(); setToolsDropdownOpen(false); }}
+                      onClick={() => { /* Sound disabled */ setToolsDropdownOpen(false); }}
                       className={`px-4 py-2.5 flex items-center gap-3 transition-all ${
                         isActive(item.path)
                           ? 'bg-blue-600 text-white'
@@ -346,7 +346,7 @@ export function Navigation() {
                       <Link
                         key={item.path}
                         to={item.path}
-                        onClick={() => { playTabSwitch(); setLearnDropdownOpen(false); }}
+                        onClick={() => { /* Sound disabled */ setLearnDropdownOpen(false); }}
                         className={`px-4 py-2.5 flex items-center gap-3 transition-all ${
                           isActive(item.path)
                             ? 'bg-blue-600 text-white'
@@ -389,7 +389,7 @@ export function Navigation() {
                   {!isDesktop && (
                     <Link
                       to="/pricing"
-                      onClick={() => { playTabSwitch(); setUserDropdownOpen(false); }}
+                      onClick={() => { /* Sound disabled */ setUserDropdownOpen(false); }}
                       className={`px-4 py-2.5 flex items-center gap-3 transition-all ${
                         isActive('/pricing')
                           ? 'bg-blue-600 text-white'
@@ -402,7 +402,7 @@ export function Navigation() {
                   )}
                   <button
                     onClick={() => {
-                      playLogout();
+                      /* Sound disabled */
                       setUserDropdownOpen(false);
                       setTimeout(() => {
                         logout();

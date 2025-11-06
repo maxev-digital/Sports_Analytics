@@ -70,7 +70,7 @@ export function SignUp() {
         // Trigger fire ring animation
         setShowFireRing(true);
 
-        // Play flame sound
+        // Play bull snort sound (same as login)
         if (audioRef.current) {
           audioRef.current.play().catch(err => console.log('Audio play failed:', err));
         }
@@ -92,10 +92,10 @@ export function SignUp() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-black px-4 relative overflow-hidden py-12">
-      {/* Hidden audio element for flame sound */}
-      <audio 
+      {/* Hidden audio element for bull snort sound */}
+      <audio
         ref={audioRef}
-        src="/flame.mp3"
+        src="/bull.mp3"
         preload="auto"
       />
       

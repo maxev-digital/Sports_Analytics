@@ -134,7 +134,7 @@ export function GameCard({ game }: GameCardProps) {
   const [statsView, setStatsView] = useState<'stats' | 'rankings' | 'combined'>('stats');
 
   // Market type toggle: 'spread', 'moneyline', 'totals'
-  const [selectedMarket, setSelectedMarket] = useState<'spread' | 'moneyline' | 'totals'>('totals');
+  const [selectedMarket, setSelectedMarket] = useState<'spread' | 'moneyline' | 'totals' | 'halves'>('totals');
 
   // Handle bet tracking when bookmaker is clicked
   const handleBookmakerClick = async (bookmakerName: string, odd: any, bookmakerUrl: string) => {
@@ -2036,6 +2036,16 @@ export function GameCard({ game }: GameCardProps) {
             >
               Totals
             </button>
+            <button
+              onClick={() => setSelectedMarket('halves')}
+              className={`flex-1 px-3 py-2 rounded-lg text-lg font-semibold transition-all ${
+                selectedMarket === 'halves'
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
+                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+              }`}
+            >
+              1H/2H
+            </button>
           </div>
 
           {/* Section Header */}
@@ -2130,12 +2140,21 @@ export function GameCard({ game }: GameCardProps) {
                         )}
                       </button>
                       <span className={`${textSecondary} text-base`}>{odd.bookmaker}</span>
+                      {odd.latency_ms !== null && odd.latency_ms !== undefined && (
+                        <span className={`text-xs ml-1 ${
+                          odd.latency_ms < 1000 ? 'text-red-400' :
+                          odd.latency_ms < 3000 ? 'text-yellow-400' :
+                          'text-green-400'
+                        }`}>
+                          ({(odd.latency_ms / 1000).toFixed(1)}s)
+                        </span>
+                      )}
                       {shouldHighlight && <span className="text-blue-300">⭐</span>}
                     </div>
                     {/* Display based on selected market */}
                     {selectedMarket === 'totals' && (
                       <span className={`${shouldHighlight ? 'text-blue-200 font-bold text-base' : `${textSecondary} font-bold`}`}>
-                        O/U <span className="font-extrabold text-lg">{odd.total}</span> (<span className="font-bold">{odd.over_price > 0 ? '+' : ''}{odd.over_price}/{odd.under_price > 0 ? '+' : ''}{odd.under_price}</span>)
+                        O/U <span className="font-extrabold text-lg">{odd.total}{odd.total_movement !== null && odd.total_movement !== undefined && Math.abs(odd.total_movement) >= 0.5 && (<span className={`ml-2 text-xs font-semibold ${odd.total_movement > 0 ? 'text-green-400' : 'text-red-400'}`}>{odd.total_movement > 0 ? '↑' : '↓'} {Math.abs(odd.total_movement).toFixed(1)}</span>)}</span> (<span className="font-bold">{odd.over_price > 0 ? '+' : ''}{odd.over_price}/{odd.under_price > 0 ? '+' : ''}{odd.under_price}</span>)
                       </span>
                     )}
                     {selectedMarket === 'spread' && (
@@ -2164,6 +2183,42 @@ export function GameCard({ game }: GameCardProps) {
             })()}
           </div>
         </div>
+
+            {selectedMarket === 'halves' && game.alternate_lines && game.alternate_lines.length > 0 && (
+              <>
+                <div className={`text-base ${textLabel} mb-2`}>First Half (1H) & Second Half (2H) Lines</div>
+
+                {/* Group by market type */}
+                {['1H', '2H'].map(marketType => {
+                  const linesForMarket = game.alternate_lines.filter(line => line.market_type === marketType);
+                  if (linesForMarket.length === 0) return null;
+
+                  return (
+                    <div key={marketType} className="mb-3">
+                      <div className={`text-sm ${textLabel} font-semibold mb-1`}>
+                        {marketType === '1H' ? 'First Half' : 'Second Half'}
+                      </div>
+                      <div className="space-y-1">
+                        {linesForMarket.map((line, idx) => (
+                          <div
+                            key={idx}
+                            className="flex justify-between items-center text-base p-1 rounded"
+                          >
+                            <span className={`${textSecondary}`}>{line.bookmaker}</span>
+                            <span className={`${textSecondary} font-bold`}>
+                              O/U <span className="font-extrabold text-lg">{line.total}</span>
+                              {line.over_price && line.under_price && (
+                                <span className="text-sm"> ({line.over_price > 0 ? '+' : ''}{line.over_price}/{line.under_price > 0 ? '+' : ''}{line.under_price})</span>
+                              )}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </>
+            )}
       )}
 
       {/* Best Spreads and ML Section */}
@@ -2259,6 +2314,41 @@ export function GameCard({ game }: GameCardProps) {
               );
             })()}
           </div>
+        </div>
+      )}
+
+      {/* Player Props Badge */}
+      {(sportBadge === 'NBA' || sportBadge === 'NHL' || sportBadge === 'NFL') && game.player_props_count && game.player_props_count > 0 && (
+        <div className={`${dividerClass} mt-3 pt-3`}>
+          <a
+            href="/props"
+            className="block bg-gradient-to-r from-purple-900 via-purple-800 to-purple-900 border-2 border-purple-500 rounded-lg p-3 hover:border-purple-400 transition-all group"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="bg-purple-500 rounded-full p-2">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <div>
+                  <div className="text-lg font-bold text-purple-200">
+                    {game.player_props_count} Player Props Available
+                  </div>
+                  <div className="text-sm text-purple-400">
+                    {sportBadge === 'NBA' && 'Points, Rebounds, Assists, and more'}
+                    {sportBadge === 'NHL' && 'Goals, Assists, Shots, and more'}
+                    {sportBadge === 'NFL' && 'Passing, Rushing, Receiving, and more'}
+                  </div>
+                </div>
+              </div>
+              <div className="text-purple-300 group-hover:text-purple-200 transition-colors">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </div>
+          </a>
         </div>
       )}
 

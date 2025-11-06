@@ -22,7 +22,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
     setError(null);
 
     try {
-      const response = await fetch(getApiUrl('/api/feedback'), {
+      const response = await fetch(getApiUrl('feedback'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <img src="logo.png" alt="Max EV Sports" style="height: 80px; width: auto;">
+        <h1 style="font-size: 18px;">Max EV Sports ARB Auto Bettor</h1>
+      </div>
+      <div class="status" id="status">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText">Connecting...</span>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat" id="statArbitrage">
+        <div class="stat-value" id="opportunityCount">0</div>
+        <div class="stat-label">Arbitrage</div>
+      </div>
+      <div class="stat" id="statSteam">
+        <div class="stat-value" id="steamCount">0</div>
+        <div class="stat-label">Steam Moves</div>
+      </div>
+      <div class="stat" id="statMiddles">
+        <div class="stat-value" id="middlesCount">0</div>
+        <div class="stat-label">Middles</div>
+      </div>
+      <div class="stat" id="statGoalie">
+        <div class="stat-value" id="goalieCount">0</div>
+        <div class="stat-label">Goalie Pull</div>
+      </div>
+      <div class="stat" id="statQuarterReversal">
+        <div class="stat-value" id="quarterReversalCount">0</div>
+        <div class="stat-label">Q Reversal</div>
+      </div>
+      <div class="stat" id="statInjuryProps" style="background: linear-gradient(135deg, #dc2626, #991b1b); animation: pulse 2s ease-in-out infinite;">
+        <div class="stat-value" id="injuryPropsCount">0</div>
+        <div class="stat-label">⚡ Injury Props</div>
+      </div>
+    </div>
+
+    <!-- Filter removed - showing all alerts by default -->
+
+    <!-- Unified Alert Feed (all strategies) -->
+    <div class="alert-feed" id="alertFeed">
+      <!-- All alerts from all strategies will be inserted here, sorted by urgency -->
+    </div>
+
+    <div class="controls">
+      <button id="refreshBtn" class="btn btn-primary">🔄 Refresh</button>
+      <button id="settingsBtn" class="btn btn-secondary">⚙️ Settings</button>
+    </div>
+
+    <div class="sound-controls">
+      <button id="soundToggleBtn" class="btn btn-secondary">🔊 Sound ON</button>
+      <button id="testSoundBtn" class="btn btn-secondary">🔔 Test</button>
+    </div>
+
+    <div class="sound-controls">
+      <button id="voiceToggleBtn" class="btn btn-secondary">🗣️ Voice ON</button>
+      <button id="testVoiceBtn" class="btn btn-secondary">💬 Test Voice</button>
+    </div>
+
+    <div class="footer">
+      <a href="https://max-ev-sports.com/alerts" target="_blank">View All Alerts →</a>
+    </div>
+  </div>
+
+  <script src="url_builder.js"></script>
+  <script src="popup-desktop.js"></script>
+</body>
+</html>

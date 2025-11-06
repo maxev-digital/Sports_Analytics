@@ -52,6 +52,28 @@ const SubscriptionSuccess: React.FC = () => {
         if (currentTier && currentTier !== 'free' && currentTier !== 'trial') {
           subscriptionUpdated = true;
           console.log('✅ Subscription successfully updated to:', currentTier);
+
+          // Track successful purchase for X Ads conversion
+          if (typeof (window as any).twq !== 'undefined') {
+            // Determine purchase value based on tier
+            const tierPrices: Record<string, number> = {
+              'beta': 9.99,
+              'starter': 29,
+              'semipro': 49,
+              'professional': 75,
+              'elite': 129,
+              'elitepro': 229
+            };
+            const purchaseValue = tierPrices[currentTier] || 0;
+
+            (window as any).twq('event', 'tw-p3o73-oebxl', {
+              value: purchaseValue.toString(),
+              currency: 'USD',
+              num_items: '1',
+              content_name: currentTier
+            });
+            console.log('✅ X Ads Purchase event tracked:', purchaseValue, currentTier);
+          }
         } else {
           retries--;
           console.log(`⏳ Waiting for subscription update... ${retries} retries left`);

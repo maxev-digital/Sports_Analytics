@@ -135,6 +135,26 @@ export const BOOKMAKERS: Record<string, Bookmaker> = {
     popular: true,
   },
 
+  // ========== UNITED STATES - DFS (DAILY FANTASY SPORTS) ==========
+  prizepicks: {
+    key: 'prizepicks',
+    name: 'PrizePicks',
+    url: 'https://app.prizepicks.com/',
+    region: ['US'],
+    logo: getLogoUrl('prizepicks', false),
+    logoFallback: getLogoUrl('prizepicks', false),
+    popular: true,
+  },
+  underdog: {
+    key: 'underdog',
+    name: 'Underdog',
+    url: 'https://underdogfantasy.com/',
+    region: ['US'],
+    logo: getLogoUrl('underdog', false),
+    logoFallback: getLogoUrl('underdog', false),
+    popular: true,
+  },
+
   // ========== UNITED STATES - REGIONAL ==========
   ballybet: {
     key: 'ballybet',

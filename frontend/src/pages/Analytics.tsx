@@ -4,6 +4,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { getUserBets, getUserBettingStats, getPendingBets, addStakeToBet, deleteBet } from '../utils/betTracking';
 import { PersonalBetAnalytics } from '../components/PersonalBetAnalytics';
 import { BetHistory } from '../components/BetHistory';
+import { BankrollManager } from '../components/BankrollManager';
+import { WelcomeModal } from '../components/WelcomeModal';
 import { getApiUrl } from '../config';
 
 interface StrategyData {
@@ -45,8 +47,8 @@ interface LiveArbitrage {
 export function Analytics() {
   const { username } = useAuth();
 
-  // Tab state: 'system', 'personal', or 'history'
-  const [activeTab, setActiveTab] = useState<'system' | 'personal' | 'history'>('system');
+  // Tab state: 'system', 'personal', 'history', or 'bankroll'
+  const [activeTab, setActiveTab] = useState<'system' | 'personal' | 'history' | 'bankroll'>('system');
 
   // System Analytics State
   const [performanceData, setPerformanceData] = useState<PerformanceData | null>(null);
@@ -317,6 +319,7 @@ export function Analytics() {
 
   return (
     <div className="min-h-screen bg-black py-12 px-4">
+      {username && <WelcomeModal username={username} />}
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -360,6 +363,17 @@ export function Analytics() {
           >
             <img src={uiEmojis.book} alt="" className="w-6 h-6" style={{ imageRendering: 'crisp-edges' }} />
             Bet History
+          </button>
+          <button
+            onClick={() => setActiveTab('bankroll')}
+            className={`flex items-center gap-2 px-6 py-3 font-semibold text-lg transition-all border-2 ${
+              activeTab === 'bankroll'
+                ? 'bg-blue-600 text-white border-blue-400'
+                : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-slate-100 border-slate-600'
+            }`}
+          >
+            <span className="text-2xl">💰</span>
+            My Bankroll
           </button>
         </div>
 
@@ -614,9 +628,12 @@ export function Analytics() {
               }
             }}
           />
-        ) : (
+        ) : activeTab === 'history' ? (
           /* BET HISTORY VIEW */
           <BetHistory />
+        ) : (
+          /* BANKROLL MANAGER VIEW */
+          <BankrollManager />
         )}
       </div>
     </div>

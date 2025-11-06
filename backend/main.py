@@ -22,10 +22,15 @@ import stripe
 import logging
 import time
 import json
+import sqlite3
 from datetime import datetime
 from dotenv import load_dotenv
 import auth  # Authentication module
 from brevo_crm import sync_signup_to_brevo, send_welcome_email, send_admin_signup_notification, send_admin_payment_notification  # Brevo CRM integration
+
+# Twitter injury monitoring
+from twitter_injury_monitor import TwitterInjuryMonitor
+from injury_props_analyzer import InjuryPropsAnalyzer
 
 # Betting ensemble temporarily disabled to avoid import conflicts
 # from backend.models.ensemble.betting_ensemble import BettingEnsemble, GameData, EnsemblePrediction
@@ -86,8 +91,27 @@ from routes.strategies import router as strategies_router
 app.include_router(strategies_router)
 print(f"DEBUG: Strategies router registered with prefix: {strategies_router.prefix}")
 
+# Import and register bankroll router
+from routes.bankroll import router as bankroll_router
+app.include_router(bankroll_router)
+print(f"DEBUG: Bankroll router registered with prefix: {bankroll_router.prefix}")
+
 # Game tracker instance
 tracker = GameTracker()
+
+# Initialize Twitter injury monitoring if token available
+twitter_injury_monitor = None
+injury_props_analyzer = None
+if os.getenv("TWITTER_BEARER_TOKEN"):
+    logger.info("Twitter API token found - initializing injury monitoring...")
+    twitter_injury_monitor = TwitterInjuryMonitor(
+        bearer_token=os.getenv("TWITTER_BEARER_TOKEN")
+    )
+    injury_props_analyzer = InjuryPropsAnalyzer(tracker.odds_client)
+    twitter_injury_monitor.set_props_analyzer(injury_props_analyzer)
+    logger.info("Twitter injury monitor initialized (Tier 1 reporters only)")
+else:
+    logger.warning("No TWITTER_BEARER_TOKEN found - Twitter injury monitoring disabled")
 
 # Alert monitor instance
 alert_monitor = AlertMonitor(odds_api_key=os.getenv('ODDS_API_KEY', ''))
@@ -247,6 +271,16 @@ async def startup():
     # Start WebSocket broadcaster for real-time updates
     asyncio.create_task(broadcast_game_updates())
     logger.info("WebSocket broadcaster started (3s intervals - real-time odds pushes)")
+
+    # Start Twitter injury monitoring if enabled
+    if twitter_injury_monitor:
+        asyncio.create_task(
+            twitter_injury_monitor.start_monitoring(
+                interval_seconds=60,  # Check every 60 seconds
+                sport=None  # Monitor all in-season sports (NBA, NFL, NHL)
+            )
+        )
+        logger.info("Twitter injury monitoring started (60s intervals - tracking Woj, Shams, Schefter, etc.)")
 
     # Start automatic bet grading task
     asyncio.create_task(auto_grade_bets())
@@ -682,16 +716,19 @@ async def login(request: LoginRequest):
         # Create session
         token = auth.create_session(request.username)
         
-        # Get user email
+        # Get user email and role
         users = auth.load_users()
-        user_email = users.get(request.username, {}).get('email', f"{request.username}@max-ev-sports.com")
+        user_data = users.get(request.username, {})
+        user_email = user_data.get('email', f"{request.username}@max-ev-sports.com")
+        user_role = user_data.get('role', 'user')  # Default to 'user' if not specified
 
         return {
             "success": True,
             "message": "Login successful",
             "token": token,
             "username": request.username,
-            "email": user_email
+            "email": user_email,
+            "role": user_role
         }
 
     except HTTPException:
@@ -1125,6 +1162,114 @@ async def check_feature_access(user_id: str, feature: str):
         raise HTTPException(status_code=500, detail=f"Failed to check feature access: {str(e)}")
 
 
+@app.get("/api/subscription/beta-count")
+async def get_beta_subscriber_count():
+    """
+    Get the count of beta subscribers (real-time counter for pricing page)
+    Beta price ID: price_1SQEZcR1TzxiBDhGeZgpoWVN
+    """
+    try:
+        # Query subscription database for active beta subscriptions
+        conn = sqlite3.connect("subscriptions.db")
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT COUNT(*) FROM subscriptions
+            WHERE tier = 'beta'
+            AND status = 'active'
+        """)
+
+        count = cursor.fetchone()[0]
+        conn.close()
+
+        return {
+            "success": True,
+            "count": count
+        }
+
+    except Exception as e:
+        logger.error(f"Error fetching beta count: {str(e)}")
+        return {
+            "success": False,
+            "count": 0
+        }
+
+
+@app.post("/api/waitlist/add")
+async def add_to_waitlist(request: dict):
+    """
+    Add email to waitlist for full launch notification
+    Syncs to both database and Brevo CRM
+    """
+    try:
+        email = request.get('email')
+        tier = request.get('tier', 'full_launch')
+        price = request.get('price', 29.99)
+
+        if not email:
+            raise HTTPException(status_code=400, detail="Email is required")
+
+        # Store in database
+        conn = sqlite3.connect("subscriptions.db")
+        cursor = conn.cursor()
+
+        # Create waitlist table if it doesn't exist
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS waitlist (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                email TEXT UNIQUE NOT NULL,
+                tier TEXT,
+                price REAL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        # Insert email
+        cursor.execute("""
+            INSERT OR IGNORE INTO waitlist (email, tier, price)
+            VALUES (?, ?, ?)
+        """, (email, tier, price))
+
+        conn.commit()
+        conn.close()
+
+        logger.info(f"Added {email} to waitlist for {tier} at ${price}")
+
+        # Sync to Brevo CRM
+        try:
+            from brevo_crm import brevo_client
+
+            # Add contact to Brevo with waitlist attributes
+            waitlist_list_id = os.getenv("BREVO_WAITLIST_LIST_ID")  # Optional: Create a waitlist in Brevo
+            list_ids = [int(waitlist_list_id)] if waitlist_list_id else []
+
+            attributes = {
+                "WAITLIST_TIER": tier,
+                "WAITLIST_PRICE": price,
+                "WAITLIST_DATE": datetime.now().isoformat(),
+                "LEAD_SOURCE": "pricing_page_waitlist"
+            }
+
+            brevo_client.create_or_update_contact(
+                email=email,
+                attributes=attributes,
+                list_ids=list_ids
+            )
+
+            logger.info(f"Synced {email} to Brevo waitlist")
+        except Exception as brevo_error:
+            logger.warning(f"Failed to sync to Brevo (continuing anyway): {brevo_error}")
+
+        return {
+            "success": True,
+            "message": "Successfully added to waitlist"
+        }
+
+    except Exception as e:
+        logger.error(f"Error adding to waitlist: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to add to waitlist: {str(e)}")
+
+
 # ========== ADMIN ENDPOINTS (User Activity Tracking) ==========
 
 @app.get("/api/admin/users")
@@ -1291,6 +1436,59 @@ async def get_momentum_opportunities():
     return {
         "count": len(opportunities),
         "opportunities": opportunities
+    }
+
+@app.get("/api/quarter-reversal-opportunities")
+async def get_quarter_reversal_opportunities():
+    """Get all current NBA quarter reversal betting opportunities"""
+    opportunities = tracker.get_quarter_reversal_opportunities()
+    return {
+        "count": len(opportunities),
+        "opportunities": opportunities
+    }
+
+@app.get("/api/injuries/props")
+async def get_injury_props_opportunities():
+    """Get all current injury props betting opportunities (60-second window)"""
+    # Get opportunities from Twitter injury monitor if available
+    if twitter_injury_monitor and hasattr(twitter_injury_monitor, 'prop_opportunities'):
+        opportunities = twitter_injury_monitor.prop_opportunities
+        # Filter to only show opportunities within 60-second window
+        opportunities = [
+            opp for opp in opportunities
+            if hasattr(opp, 'time_since_tweet') and opp.time_since_tweet < 60
+        ]
+    else:
+        # Fallback to tracker opportunities
+        opportunities = tracker.get_injury_props_opportunities()
+
+    # Convert to dict format for JSON serialization
+    serialized_opportunities = []
+    for opp in opportunities:
+        if hasattr(opp, '__dict__'):
+            opp_dict = {
+                'player_name': opp.player_name,
+                'team': opp.team,
+                'sport': opp.sport,
+                'injury_status': opp.injury_status,
+                'prop_type': opp.prop_type,
+                'prop_line': opp.prop_line,
+                'prop_side': opp.prop_side,
+                'best_odds': opp.best_odds,
+                'best_book': opp.best_book,
+                'expected_value': opp.expected_value,
+                'confidence': opp.confidence,
+                'reasoning': opp.reasoning,
+                'timestamp': opp.timestamp.isoformat() if hasattr(opp.timestamp, 'isoformat') else str(opp.timestamp),
+                'time_since_tweet': opp.time_since_tweet
+            }
+            serialized_opportunities.append(opp_dict)
+        else:
+            serialized_opportunities.append(opp)
+
+    return {
+        "count": len(serialized_opportunities),
+        "opportunities": serialized_opportunities
     }
 
 # ========== ALERT ENDPOINTS ==========
@@ -1699,7 +1897,7 @@ async def fetch_props_for_sport(sport: str, odds_api_sport: str) -> dict:
         }
 
         prop_markets = markets_by_sport.get(odds_api_sport, 'player_points,player_rebounds,player_assists')
-        major_books = ['DraftKings', 'FanDuel', 'BetMGM', 'Caesars', 'PointsBet']
+        major_books = ['DraftKings', 'FanDuel', 'BetMGM', 'Caesars', 'PointsBet', 'PrizePicks', 'Underdog', 'DraftKings (Pick6)']
 
         # Fetch props for all available games (production: fetch all, not just 1)
         for event in events[:5]:  # Limit to 5 games for API quota management
@@ -1708,7 +1906,7 @@ async def fetch_props_for_sport(sport: str, odds_api_sport: str) -> dict:
 
             props_response = requests.get(props_url, params={
                 'apiKey': api_key,
-                'regions': 'us',
+                'regions': 'us,us2,us_dfs',
                 'markets': prop_markets,
                 'oddsFormat': 'american',
                 'dateFormat': 'iso'
@@ -3745,6 +3943,279 @@ async def manual_grade_bets():
         raise
     except Exception as e:
         logger.error(f"Error manually grading bets: {str(e)}")
+
+@app.get("/api/bets/user-statistics")
+async def get_user_bet_statistics(request: Request):
+    """
+    Get betting statistics for the current user
+    Returns win rate, ROI, total bets, and total profit from settled bets
+    """
+    try:
+        # Get username from auth token
+        auth_header = request.headers.get('authorization')
+        if not auth_header or not auth_header.startswith('Bearer '):
+            raise HTTPException(status_code=401, detail="Authentication required")
+
+        token = auth_header.split(' ')[1]
+        username = auth.verify_session(token)
+
+        if not username:
+            raise HTTPException(status_code=401, detail="Invalid or expired session")
+
+        # Get all settled bets for user (win, loss, push)
+        from storage.bet_storage import bet_storage
+        all_bets = bet_storage.get_user_bets(username)
+
+        # Filter to only settled bets with results
+        settled_bets = [b for b in all_bets if b.status in ['win', 'loss', 'push'] and b.result and b.stake]
+
+        if not settled_bets:
+            return {
+                "total_bets": 0,
+                "wins": 0,
+                "losses": 0,
+                "pushes": 0,
+                "win_rate": 0.0,
+                "roi": 0.0,
+                "total_profit": 0.0,
+                "total_wagered": 0.0
+            }
+
+        # Calculate statistics
+        wins = len([b for b in settled_bets if b.result == 'win'])
+        losses = len([b for b in settled_bets if b.result == 'loss'])
+        pushes = len([b for b in settled_bets if b.result == 'push'])
+
+        total_profit = sum(b.profit_loss for b in settled_bets if b.profit_loss is not None)
+        total_wagered = sum(b.stake for b in settled_bets if b.stake is not None)
+
+        # Win rate (excluding pushes)
+        decisive_bets = wins + losses
+        win_rate = (wins / decisive_bets * 100) if decisive_bets > 0 else 0.0
+
+        # ROI
+        roi = (total_profit / total_wagered * 100) if total_wagered > 0 else 0.0
+
+        return {
+            "total_bets": len(settled_bets),
+            "wins": wins,
+            "losses": losses,
+            "pushes": pushes,
+            "win_rate": round(win_rate, 1),
+            "roi": round(roi, 1),
+            "total_profit": round(total_profit, 2),
+            "total_wagered": round(total_wagered, 2)
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error calculating user bet statistics: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to calculate statistics: {str(e)}")
+
+# ========== FEEDBACK ENDPOINTS ==========
+
+from storage.feedback_storage import feedback_storage
+
+class FeedbackRequest(BaseModel):
+    """Request model for user feedback"""
+    type: str  # bug, feature, general
+    comment: str
+    page: str
+    timestamp: str
+
+@app.post("/api/feedback")
+async def submit_feedback(feedback: FeedbackRequest, request: Request):
+    """Submit user feedback (bugs, features, general comments)"""
+    try:
+        # Get username from auth token if available, otherwise use 'anonymous'
+        username = 'anonymous'
+        auth_header = request.headers.get('authorization')
+        logger.info(f"DEBUG: Authorization header present: {auth_header is not None}")
+        if auth_header:
+            logger.info(f"DEBUG: Authorization header value: {auth_header[:20]}...")
+
+        if auth_header and auth_header.startswith('Bearer '):
+            token = auth_header.split(' ')[1]
+            logger.info(f"DEBUG: Token extracted: {token[:20]}...")
+            # Verify token and get username
+            verified_username = auth.verify_session(token)
+            logger.info(f"DEBUG: Verified username: {verified_username}")
+            if verified_username:
+                username = verified_username
+
+        # Store feedback
+        feedback_entry = feedback_storage.add_feedback(
+            username=username,
+            feedback_type=feedback.type,
+            comment=feedback.comment,
+            page=feedback.page,
+            timestamp=feedback.timestamp
+        )
+
+        logger.info(f"Feedback received from {username}: {feedback.type} on {feedback.page}")
+
+        return {
+            "status": "success",
+            "message": "Thank you for your feedback!",
+            "feedback_id": feedback_entry['id']
+        }
+
+    except Exception as e:
+        logger.error(f"Error submitting feedback: {e}")
+        raise HTTPException(status_code=500, detail="Failed to submit feedback")
+
+@app.get("/api/feedback/all")
+async def get_all_feedback(status: Optional[str] = None):
+    """Get all feedback (admin only)"""
+    try:
+        feedback_list = feedback_storage.get_all_feedback(status=status)
+        stats = feedback_storage.get_stats()
+
+        return {
+            "feedback": feedback_list,
+            "stats": stats
+        }
+    except Exception as e:
+        logger.error(f"Error retrieving feedback: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve feedback")
+
+@app.post("/api/feedback/{feedback_id}/respond")
+async def respond_to_feedback(feedback_id: str, request: Request):
+    """Send admin response to user feedback"""
+    try:
+        data = await request.json()
+        admin_response = data.get('response', '')
+
+        if not admin_response:
+            raise HTTPException(status_code=400, detail="Response cannot be empty")
+
+        # Get feedback to find user email
+        feedback_list = feedback_storage.get_all_feedback()
+        feedback_item = next((f for f in feedback_list if f['id'] == feedback_id), None)
+
+        if not feedback_item:
+            raise HTTPException(status_code=404, detail="Feedback not found")
+
+        # Load users to get email
+        users = auth.load_users()
+        username = feedback_item.get('username', 'anonymous')
+        user_email = None
+
+        if username != 'anonymous' and username in users:
+            user_email = users[username].get('email')
+
+        # Update feedback with admin response
+        feedback_item['admin_response'] = admin_response
+        feedback_item['admin_response_date'] = datetime.now().isoformat()
+        feedback_item['status'] = 'responded'
+
+        # Save updated feedback
+        feedback_storage._save_feedback(feedback_list)
+
+        # Send email notification if user has email
+        if user_email:
+            try:
+                from brevo_service import send_feedback_response_email
+                send_feedback_response_email(
+                    to_email=user_email,
+                    username=username,
+                    original_feedback=feedback_item['comment'],
+                    admin_response=admin_response,
+                    feedback_type=feedback_item['type']
+                )
+                logger.info(f"Sent feedback response email to {user_email}")
+            except Exception as email_error:
+                logger.error(f"Failed to send email (non-critical): {email_error}")
+
+        return {
+            "status": "success",
+            "message": "Response sent successfully",
+            "email_sent": user_email is not None
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error responding to feedback: {e}")
+        raise HTTPException(status_code=500, detail="Failed to send response")
+
+@app.get("/api/feedback/my-feedback")
+async def get_my_feedback(request: Request):
+    """Get feedback submitted by the current user"""
+    try:
+        # Get username from auth token
+        auth_header = request.headers.get('authorization')
+        if not auth_header or not auth_header.startswith('Bearer '):
+            raise HTTPException(status_code=401, detail="Not authenticated")
+
+        token = auth_header.split(' ')[1]
+        username = auth.verify_session(token)
+
+        if not username:
+            raise HTTPException(status_code=401, detail="Invalid session")
+
+        # Get all feedback for this user
+        all_feedback = feedback_storage.get_all_feedback()
+        user_feedback = [f for f in all_feedback if f.get('username') == username]
+
+        # Sort by timestamp (newest first)
+        user_feedback.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
+
+        return {
+            "feedback": user_feedback
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving user feedback: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve feedback")
+
+@app.post("/api/feedback/{feedback_id}/mark-viewed")
+async def mark_feedback_viewed(feedback_id: str, request: Request):
+    """Mark an admin response as viewed by the user"""
+    try:
+        # Get username from auth token
+        auth_header = request.headers.get('authorization')
+        if not auth_header or not auth_header.startswith('Bearer '):
+            raise HTTPException(status_code=401, detail="Not authenticated")
+
+        token = auth_header.split(' ')[1]
+        username = auth.verify_session(token)
+
+        if not username:
+            raise HTTPException(status_code=401, detail="Invalid session")
+
+        # Get feedback
+        all_feedback = feedback_storage.get_all_feedback()
+        feedback_item = next((f for f in all_feedback if f['id'] == feedback_id), None)
+
+        if not feedback_item:
+            raise HTTPException(status_code=404, detail="Feedback not found")
+
+        # Verify this feedback belongs to the user
+        if feedback_item.get('username') != username:
+            raise HTTPException(status_code=403, detail="Not authorized")
+
+        # Mark as viewed
+        feedback_item['response_viewed'] = True
+        feedback_item['response_viewed_date'] = datetime.now().isoformat()
+
+        # Save
+        feedback_storage._save_feedback(all_feedback)
+
+        return {
+            "status": "success",
+            "message": "Marked as viewed"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error marking feedback as viewed: {e}")
+        raise HTTPException(status_code=500, detail="Failed to mark as viewed")
+
         raise HTTPException(status_code=500, detail=f"Failed to grade bets: {str(e)}")
 
 
@@ -3756,3 +4227,70 @@ if os.path.exists(frontend_dist_path):
     app.mount("/", StaticFiles(directory=frontend_dist_path, html=True), name="static")
  
 
+
+# ========== FEEDBACK ENDPOINTS ==========
+
+from storage.feedback_storage import feedback_storage
+
+class FeedbackRequest(BaseModel):
+    """Request model for user feedback"""
+    type: str  # bug, feature, general
+    comment: str
+    page: str
+    timestamp: str
+
+@app.post("/api/feedback")
+async def submit_feedback(feedback: FeedbackRequest, request: Request):
+    """Submit user feedback (bugs, features, general comments)"""
+    try:
+        # Get username from auth token if available, otherwise use 'anonymous'
+        username = 'anonymous'
+        auth_header = request.headers.get('authorization')
+        logger.info(f"DEBUG: Authorization header present: {auth_header is not None}")
+        if auth_header:
+            logger.info(f"DEBUG: Authorization header value: {auth_header[:20]}...")
+
+        if auth_header and auth_header.startswith('Bearer '):
+            token = auth_header.split(' ')[1]
+            logger.info(f"DEBUG: Token extracted: {token[:20]}...")
+            # Verify token and get username
+            verified_username = auth.verify_session(token)
+            logger.info(f"DEBUG: Verified username: {verified_username}")
+            if verified_username:
+                username = verified_username
+
+        # Store feedback
+        feedback_entry = feedback_storage.add_feedback(
+            username=username,
+            feedback_type=feedback.type,
+            comment=feedback.comment,
+            page=feedback.page,
+            timestamp=feedback.timestamp
+        )
+
+        logger.info(f"Feedback received from {username}: {feedback.type} on {feedback.page}")
+
+        return {
+            "status": "success",
+            "message": "Thank you for your feedback!",
+            "feedback_id": feedback_entry['id']
+        }
+
+    except Exception as e:
+        logger.error(f"Error submitting feedback: {e}")
+        raise HTTPException(status_code=500, detail="Failed to submit feedback")
+
+@app.get("/api/feedback/all")
+async def get_all_feedback(status: Optional[str] = None):
+    """Get all feedback (admin only)"""
+    try:
+        feedback_list = feedback_storage.get_all_feedback(status=status)
+        stats = feedback_storage.get_stats()
+
+        return {
+            "feedback": feedback_list,
+            "stats": stats
+        }
+    except Exception as e:
+        logger.error(f"Error retrieving feedback: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve feedback")

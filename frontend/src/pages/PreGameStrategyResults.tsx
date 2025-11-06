@@ -572,6 +572,21 @@ export function PreGameStrategyResults() {
           </p>
         </div>
 
+        {/* Beta Disclaimer Banner */}
+        <div className="mb-4 bg-gradient-to-r from-green-900/40 via-green-800/30 to-green-900/40 border-2 border-green-600/50 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <div className="text-2xl">🧪</div>
+            <div className="flex-1">
+              <h3 className="text-green-400 font-bold text-lg mb-2">Beta Mode - Data Optimization in Progress</h3>
+              <p className="text-green-200 text-sm leading-relaxed">
+                Results in Beta Mode are based on our historical game and odds data with backtesting ongoing.
+                Live games are being logged and stored for our Machine Learning Models every day.
+                By the time we launch the official site after beta, data will be refined and optimized for more accurate results.
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Sport Tabs & Content */}
         <div className="flex gap-4 mb-2">
           {/* Sport Tabs - Vertical */}

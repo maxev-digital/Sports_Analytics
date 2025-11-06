@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { addStakeToBet, deleteBet, addManualBet, updateBet, settleBet } from '../utils/betTracking';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from './Toast';
 
 interface PersonalBetAnalyticsProps {
   stats: any;
@@ -33,6 +34,7 @@ export function PersonalBetAnalytics({
   onRefresh
 }: PersonalBetAnalyticsProps) {
   const { username } = useAuth();
+  const { showToast } = useToast();
   const [stakes, setStakes] = useState<Record<string, string>>({});
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [editingBetId, setEditingBetId] = useState<string | null>(null);
@@ -98,7 +100,7 @@ export function PersonalBetAnalytics({
     // Validate required fields
     if (!manualBetForm.homeTeam || !manualBetForm.awayTeam || !manualBetForm.betSide ||
         !manualBetForm.odds || !manualBetForm.stake || !manualBetForm.bookmaker) {
-      alert('Please fill in all required fields');
+      showToast('Please fill in all required fields', 'warning');
       return;
     }
 
@@ -136,9 +138,9 @@ export function PersonalBetAnalytics({
       });
       setShowManualEntry(false);
       onRefresh();
-      alert('Bet added successfully!');
+      showToast('Bet added successfully!', 'success');
     } else {
-      alert('Failed to add bet. Please try again.');
+      showToast('Failed to add bet. Please try again.', 'error');
     }
   };
 
@@ -252,10 +254,11 @@ export function PersonalBetAnalytics({
     const settled = await settleBet(betId, result);
 
     if (settled) {
+      showToast(`Bet settled as ${result.toUpperCase()}!`, 'success');
       setSettleConfirmation(null);
       onRefresh();
     } else {
-      alert('Failed to settle bet. Please try again.');
+      showToast('Failed to settle bet. Please try again.', 'error');
     }
   };
 

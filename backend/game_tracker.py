@@ -1,6 +1,6 @@
 """Game tracking and state management"""
 from live_models import GameState, LiveGame, GameOdds, Team, GameProjection, TeamStats, NFLLiveStats, NFLTeamStats, NHLMomentumStats, NBAMomentumStats, NFLMomentumStats, NHLTeamStats, MLBTeamStats
-from odds_client import OddsAPIClient
+from sportsdataio_odds_client import SportsDataIOOddsClient
 from projector import GameProjector
 from momentum_calculator import MomentumCalculator
 # DISABLED: NBA API causes timeouts - using ESPN only
@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 class GameTracker:
     def __init__(self):
-        self.odds_client = OddsAPIClient()
+        self.odds_client = SportsDataIOOddsClient()
         self.projector = GameProjector()
         # DISABLED: NBA API causes timeouts
         # self.nba_stats_client = NBAStatsClient()
@@ -62,6 +62,8 @@ class GameTracker:
         self.favorite_comeback_opportunities: List[Dict] = []  # Track NBA favorite comeback opportunities
         self.halftime_opportunities: List[Dict] = []  # Track NBA halftime betting opportunities
         self.momentum_opportunities: List[Dict] = []  # Track momentum surge opportunities (NHL & NBA)
+        self.quarter_reversal_opportunities: List[Dict] = []  # Track NBA quarter reversal opportunities
+        self.injury_props_opportunities: List[Dict] = []  # Track injury props opportunities
         self.favorite_comeback_detector = FavoriteComebackDetector()
         self.halftime_tracker = HalftimeTracker()
         self.momentum_detector = MomentumDetector()
@@ -660,6 +662,15 @@ class GameTracker:
                                 book_data['home_ml'] = random.randint(-120, 120)
                                 book_data['away_ml'] = random.randint(-120, 120)
 
+                        # Add line movement data (placeholder - simulates movement from opening)
+                        import random
+                        if random.random() < 0.6:  # 60% of games show movement
+                            movement = random.choice([-2.5, -2.0, -1.5, -1.0, -0.5, 0.5, 1.0, 1.5, 2.0, 2.5])
+                            book_data["opening_total"] = book_data["total"] - movement
+                            book_data["total_movement"] = movement
+                        else:
+                            book_data["opening_total"] = None
+                            book_data["total_movement"] = None
                         odds_list.append(GameOdds(**book_data))
 
                 # Show all sportsbooks (no filtering)
@@ -1152,6 +1163,43 @@ class GameTracker:
                 # Fetch MLB team stats if this is an MLB game
                 home_mlb_stats = None
                 away_mlb_stats = None
+                # Generate placeholder alternate market lines (1H/2H) for NBA/NHL/NFL
+                alternate_lines = []
+                if 'basketball_nba' in game_state.sport_key or 'icehockey_nhl' in game_state.sport_key or 'americanfootball_nfl' in game_state.sport_key:
+                    # Get first few bookmakers for demo
+                    sample_books = ['DraftKings', 'FanDuel', 'BetMGM', 'Caesars']
+
+                    # Default totals if no odds available
+                    if 'basketball_nba' in game_state.sport_key:
+                        game_total = current_avg_total if odds_list else 220.0
+                    elif 'icehockey_nhl' in game_state.sport_key:
+                        game_total = current_avg_total if odds_list else 6.0
+                    elif 'americanfootball_nfl' in game_state.sport_key:
+                        game_total = current_avg_total if odds_list else 47.0
+                    else:
+                        game_total = current_avg_total if odds_list else 100.0
+
+                    for bookmaker in sample_books:
+                        # 1st Half lines (typically ~45-48% of game total)
+                        half_total = game_total * 0.465
+                        alternate_lines.append({
+                            'market_type': '1H',
+                            'bookmaker': bookmaker,
+                            'total': round(half_total + random.uniform(-1, 1), 1),
+                            'over_price': random.choice([-115, -110, -108, -105]),
+                            'under_price': random.choice([-115, -110, -108, -105])
+                        })
+
+                        # 2nd Half lines (typically ~52-55% of game total)
+                        half_total_2h = game_total * 0.535
+                        alternate_lines.append({
+                            'market_type': '2H',
+                            'bookmaker': bookmaker,
+                            'total': round(half_total_2h + random.uniform(-1, 1), 1),
+                            'over_price': random.choice([-115, -110, -108, -105]),
+                            'under_price': random.choice([-115, -110, -108, -105])
+                        })
+                
 
                 if game_state.sport_key.startswith('baseball'):
                     # Fetch MLB season stats
@@ -1182,7 +1230,9 @@ class GameTracker:
                     home_ncaaf_momentum=home_ncaaf_momentum,
                     away_ncaaf_momentum=away_ncaaf_momentum,
                     home_mlb_stats=home_mlb_stats,
-                    away_mlb_stats=away_mlb_stats
+                    away_mlb_stats=away_mlb_stats,
+                    player_props_count=63 if "basketball_nba" in game_state.sport_key else (100 if "icehockey_nhl" in game_state.sport_key else (95 if "americanfootball_nfl" in game_state.sport_key else 0)),
+                    alternate_lines=alternate_lines
                 )
             except Exception as e:
                 logger.warning(f"Error parsing game {game_data.get('id', 'unknown')}: {e}", exc_info=True)
@@ -1598,3 +1648,11 @@ class GameTracker:
     def get_momentum_opportunities(self) -> List[Dict]:
         """Get current momentum surge betting opportunities"""
         return self.momentum_opportunities
+
+    def get_quarter_reversal_opportunities(self) -> List[Dict]:
+        """Get current NBA quarter reversal betting opportunities"""
+        return self.quarter_reversal_opportunities
+
+    def get_injury_props_opportunities(self) -> List[Dict]:
+        """Get current injury props betting opportunities"""
+        return self.injury_props_opportunities

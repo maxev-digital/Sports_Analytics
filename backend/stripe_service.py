@@ -23,6 +23,7 @@ else:
     print(f"Stripe initialized with API key: {stripe.api_key[:20]}...")
 
 # Price IDs from environment
+STRIPE_BETA_PRICE_ID = "price_1SQEZcR1TzxiBDhGeZgpoWVN"  # Beta Launch $9.99/mo
 STRIPE_STARTER_PRICE_ID = os.getenv("STRIPE_STARTER_PRICE_ID")
 STRIPE_SEMIPRO_PRICE_ID = os.getenv("STRIPE_SEMIPRO_PRICE_ID")
 STRIPE_PROFESSIONAL_PRICE_ID = os.getenv("STRIPE_PROFESSIONAL_PRICE_ID")
@@ -287,9 +288,11 @@ class StripeService:
             price_id: Stripe price ID
 
         Returns:
-            Tier name ('trial', 'starter', 'semipro', 'professional', 'elite', 'elitepro')
+            Tier name ('trial', 'beta', 'starter', 'semipro', 'professional', 'elite', 'elitepro')
         """
-        if price_id == STRIPE_STARTER_PRICE_ID:
+        if price_id == STRIPE_BETA_PRICE_ID:
+            return 'beta'
+        elif price_id == STRIPE_STARTER_PRICE_ID:
             return 'starter'
         elif price_id == STRIPE_SEMIPRO_PRICE_ID:
             return 'semipro'

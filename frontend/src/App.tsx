@@ -4,6 +4,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { Navigation } from './components/Navigation';
 import { Footer } from './components/Footer';
 import { ElectronWindowControls } from './components/ElectronWindowControls';
+import { ToastProvider } from './components/Toast';
 import { Login } from './pages/Login';
 import { SignUp } from './pages/SignUp';
 import { LiveGames } from './pages/LiveGames';
@@ -30,7 +31,6 @@ import { Terms } from './pages/Terms';
 import { Privacy } from './pages/Privacy';
 import { Disclaimer } from './pages/Disclaimer';
 import { FloatingFeedbackButton } from './components/FloatingFeedbackButton';
-import { LiveChatWidget } from './components/LiveChatWidget';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { MyFeedback } from './pages/MyFeedback';
 import { isElectron } from './utils/isElectron';
@@ -42,6 +42,7 @@ function App() {
   return (
     <Router>
       <AuthProvider>
+        <ToastProvider>
         <Routes>
           {/* Public routes - Login and SignUp pages */}
           <Route path="/login" element={
@@ -84,7 +85,6 @@ function App() {
                 {!isDesktop && (
                   <>
                     <FloatingFeedbackButton />
-                    <LiveChatWidget />
                   </>
                 )}
               </div>
@@ -103,7 +103,6 @@ function App() {
                 {!isDesktop && (
                   <>
                     <FloatingFeedbackButton />
-                    <LiveChatWidget />
                   </>
                 )}
               </div>
@@ -176,7 +175,6 @@ function App() {
                   {!isDesktop && (
                     <>
                       <FloatingFeedbackButton />
-                      <LiveChatWidget />
                     </>
                   )}
                 </div>
@@ -184,6 +182,7 @@ function App() {
             }
           />
         </Routes>
+        </ToastProvider>
       </AuthProvider>
     </Router>
   );

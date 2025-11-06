@@ -7,23 +7,17 @@ const isDevelopment =
   window.location.hostname === 'localhost' ||
   window.location.hostname === '127.0.0.1';
 
+// ALWAYS use production backend to avoid doubling API calls
 // API base URL
-export const API_BASE_URL = isDevelopment
-  ? '/api'  // Proxied by Vite dev server in development
-  : 'https://max-ev-sports.com/api';  // Direct to VPS in production
+export const API_BASE_URL = 'https://max-ev-sports.com/api';
 
 // Helper function to build API URLs
 export function getApiUrl(endpoint: string): string {
   // Remove leading slash if present
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
 
-  if (isDevelopment) {
-    // In development, use the proxy
-    return `/api/${cleanEndpoint}`;
-  } else {
-    // In production, use full URL
-    return `https://max-ev-sports.com/api/${cleanEndpoint}`;
-  }
+  // Always use production server (saves API quota)
+  return `https://max-ev-sports.com/api/${cleanEndpoint}`;
 }
 
 // Debug logging

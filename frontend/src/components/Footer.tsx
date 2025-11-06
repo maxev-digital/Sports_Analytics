@@ -60,6 +60,13 @@ export const Footer = () => {
         © 2025 <strong>Max EV Holdings, LLC</strong>. All rights reserved.
         Wyoming Limited Liability Company • Filing ID: <span className="text-yellow-500">2025-001800389</span>
       </p>
+
+      {/* Bookmaker Logo Disclaimer */}
+      <p className="max-w-4xl mx-auto text-xs text-slate-500 px-4 mb-4 italic">
+        Max EV Sports is an independent odds comparison platform. Bookmaker logos are used for identification purposes only
+        and do not imply endorsement or affiliation. All trademarks are property of their respective owners.
+      </p>
+
       <p className="max-w-4xl mx-auto leading-relaxed px-4">
         <strong>NOT FINANCIAL ADVICE.</strong> Max EV provides data, analytics, and alerts for informational and entertainment purposes only.
         Nothing on this site constitutes investment, financial, legal, or gambling advice.

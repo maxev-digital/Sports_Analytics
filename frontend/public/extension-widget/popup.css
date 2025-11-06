@@ -1,0 +1,983 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  width: 400px;
+  min-height: 500px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+  background: linear-gradient(135deg, #1a1a1a 0%, #2a0000 100%);
+  color: #f1f5f9;
+}
+
+.container {
+  padding: 16px;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #991b1b;
+}
+
+.header h1 {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #ffffff;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #6b7280;
+}
+
+.status-dot.connected {
+  background: #ef4444;
+  box-shadow: 0 0 8px #ef4444;
+}
+
+.status-dot.error {
+  background: #ef4444;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.stat {
+  background: linear-gradient(135deg, #991b1b 0%, #1a0000 100%);
+  border: 2px solid #dc2626;
+  border-radius: 6px;
+  padding: 6px 4px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.stat:hover {
+  border-color: #ef4444;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.3);
+}
+
+.stat-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 2px;
+}
+
+.stat-label {
+  font-size: 9px;
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  font-weight: 600;
+}
+
+/* Filter Bar */
+.filter-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #991b1b;
+}
+
+.search-input {
+  flex: 1;
+  padding: 8px 12px;
+  background: rgba(30, 30, 30, 0.8);
+  border: 1px solid #991b1b;
+  border-radius: 6px;
+  color: #ffffff;
+  font-size: 12px;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.search-input:focus {
+  border-color: #dc2626;
+  background: rgba(40, 40, 40, 0.9);
+}
+
+.search-input::placeholder {
+  color: #94a3b8;
+}
+
+.category-dropdown {
+  padding: 8px 12px;
+  background: rgba(30, 30, 30, 0.8);
+  border: 1px solid #991b1b;
+  border-radius: 6px;
+  color: #ffffff;
+  font-size: 12px;
+  cursor: pointer;
+  outline: none;
+  min-width: 140px;
+  transition: all 0.2s;
+}
+
+.category-dropdown:hover {
+  border-color: #dc2626;
+  background: rgba(40, 40, 40, 0.9);
+}
+
+/* Alert Feed (unified) */
+.alert-feed {
+  max-height: 350px;
+  overflow-y: auto;
+  margin-bottom: 16px;
+}
+
+.alert-feed::-webkit-scrollbar {
+  width: 8px;
+}
+
+.alert-feed::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+}
+
+.alert-feed::-webkit-scrollbar-thumb {
+  background: #991b1b;
+  border-radius: 4px;
+}
+
+.alert-feed::-webkit-scrollbar-thumb:hover {
+  background: #dc2626;
+}
+
+/* Strategy Badge (shows which strategy each alert is from) */
+.strategy-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.strategy-badge.live {
+  background: linear-gradient(135deg, #dc2626, #991b1b);
+  color: #ffffff;
+}
+
+.strategy-badge.arbitrage {
+  background: linear-gradient(135deg, #2563eb, #1e40af);
+  color: #ffffff;
+}
+
+.strategy-badge.props {
+  background: linear-gradient(135deg, #16a34a, #15803d);
+  color: #ffffff;
+}
+
+.strategy-badge.movement {
+  background: linear-gradient(135deg, #ea580c, #c2410c);
+  color: #ffffff;
+}
+
+.opportunity-card {
+  background: linear-gradient(135deg, #1a0000 0%, #2d0000 100%);
+  border: 2px solid #991b1b;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Sport-specific card colors - Realistic playing surfaces */
+
+/* NBA - Red gradient (matching web dashboard) */
+.opportunity-card[data-sport="NBA"] {
+  background: linear-gradient(135deg, #991b1b 0%, #1a0000 100%);
+  border: 2px solid #dc2626;
+  color: #ffffff;
+}
+
+.opportunity-card[data-sport="NBA"] .opportunity-title,
+.opportunity-card[data-sport="NBA"] .opportunity-profit,
+.opportunity-card[data-sport="NBA"] .opportunity-details {
+  color: #ffffff;
+}
+
+/* NFL - Green field with yard lines */
+.opportunity-card[data-sport="NFL"] {
+  background: linear-gradient(135deg, #2d5016 0%, #1a3d0a 100%);
+  border: 2px solid #4a7c2a;
+  color: #ffffff;
+}
+
+.opportunity-card[data-sport="NFL"] .opportunity-title,
+.opportunity-card[data-sport="NFL"] .opportunity-profit,
+.opportunity-card[data-sport="NFL"] .opportunity-details {
+  color: #ffffff;
+}
+
+/* NHL - Blue and black gradient with white text */
+.opportunity-card[data-sport="NHL"] {
+  background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
+  border: 2px solid #3b82f6;
+  color: #ffffff;
+}
+
+.opportunity-card[data-sport="NHL"] .opportunity-title,
+.opportunity-card[data-sport="NHL"] .opportunity-profit,
+.opportunity-card[data-sport="NHL"] .opportunity-details {
+  color: #ffffff;
+}
+
+.opportunity-card[data-sport="NHL"] .book-badge.book-left {
+  background: #16a34a;
+  border: 1px solid #15803d;
+}
+
+.opportunity-card[data-sport="NHL"] .book-badge.book-right {
+  background: #15803d;
+  border: 1px solid #166534;
+}
+
+/* MLB - Dirt infield (brown/tan) */
+.opportunity-card[data-sport="MLB"] {
+  background: linear-gradient(135deg, #8b6f47 0%, #6b5434 100%);
+  border: 2px solid #a0826d;
+  color: #ffffff;
+}
+
+.opportunity-card[data-sport="MLB"] .opportunity-title,
+.opportunity-card[data-sport="MLB"] .opportunity-profit,
+.opportunity-card[data-sport="MLB"] .opportunity-details {
+  color: #ffffff;
+}
+
+/* NCAAF - Green field like NFL */
+.opportunity-card[data-sport="NCAAF"] {
+  background: linear-gradient(135deg, #2d5016 0%, #1a3d0a 100%);
+  border: 2px solid #4a7c2a;
+  color: #ffffff;
+}
+
+.opportunity-card[data-sport="NCAAF"] .opportunity-title,
+.opportunity-card[data-sport="NCAAF"] .opportunity-profit,
+.opportunity-card[data-sport="NCAAF"] .opportunity-details {
+  color: #ffffff;
+}
+
+/* SOCCER - Green pitch */
+.opportunity-card[data-sport="SOCCER"] {
+  background: linear-gradient(135deg, #2d5016 0%, #1a3d0a 100%);
+  border: 2px solid #4a7c2a;
+  color: #ffffff;
+}
+
+.opportunity-card[data-sport="SOCCER"] .opportunity-title,
+.opportunity-card[data-sport="SOCCER"] .opportunity-profit,
+.opportunity-card[data-sport="SOCCER"] .opportunity-details {
+  color: #ffffff;
+}
+
+/* Override ALL cards in middles tab to be blue with green book badges */
+#middles-tab .opportunity-card {
+  background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%) !important;
+  border: 2px solid #3b82f6 !important;
+  color: #ffffff !important;
+}
+
+#middles-tab .opportunity-card .opportunity-title,
+#middles-tab .opportunity-card .opportunity-profit,
+#middles-tab .opportunity-card .opportunity-details {
+  color: #ffffff !important;
+}
+
+#middles-tab .opportunity-card .book-badge.book-left {
+  background: #16a34a !important;
+  border: 1px solid #15803d !important;
+}
+
+#middles-tab .opportunity-card .book-badge.book-right {
+  background: #15803d !important;
+  border: 1px solid #166534 !important;
+}
+
+.opportunity-card:hover {
+  border-color: #ef4444;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.3);
+}
+
+.opportunity-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.opportunity-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.opportunity-profit {
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.opportunity-details {
+  font-size: 12px;
+  color: #ffffff;
+  line-height: 1.5;
+  font-weight: 500;
+}
+
+.opportunity-books {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.book-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #ffffff;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.book-badge.book-left {
+  background: #dc2626;
+  border: 1px solid #dc2626;
+}
+
+.book-badge.book-right {
+  background: #991b1b;
+  border: 1px solid #991b1b;
+}
+
+.book-logo {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  border-radius: 3px;
+}
+
+.book-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.book-name {
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.bet-details {
+  font-size: 9px;
+  color: #fecaca;
+  font-weight: 500;
+}
+
+/* Alert Timestamps */
+.alert-timestamps {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 10px;
+  color: #94a3b8;
+}
+
+.timestamp-alert,
+.timestamp-game {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.timestamp-alert {
+  color: #fca5a5;
+  font-weight: 600;
+}
+
+.timestamp-game {
+  color: #86efac;
+  font-weight: 600;
+}
+
+/* Steam Move Cards */
+.steam-card {
+  background: linear-gradient(135deg, #7f1d1d 0%, #1e293b 100%);
+  border: 2px solid #ef4444;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), 0 0 12px rgba(239, 68, 68, 0.2);
+}
+
+.steam-card:hover {
+  border-color: #f87171;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
+}
+
+.steam-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.steam-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.steam-direction {
+  font-size: 14px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.steam-direction.up {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.steam-direction.down {
+  background: #16a34a;
+  color: #ffffff;
+}
+
+.steam-details {
+  font-size: 11px;
+  color: #cbd5e1;
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.steam-stale {
+  background: rgba(34, 197, 94, 0.2);
+  border: 1px solid #16a34a;
+  border-radius: 4px;
+  padding: 8px;
+  margin-top: 8px;
+}
+
+.steam-stale-title {
+  font-size: 10px;
+  color: #22c55e;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.steam-stale-info {
+  font-size: 13px;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.steam-books-moved {
+  font-size: 10px;
+  color: #94a3b8;
+  margin-top: 4px;
+}
+
+/* Goalie Pull Cards */
+.goalie-card {
+  background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
+  border: 3px solid #ef4444;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), 0 0 16px rgba(239, 68, 68, 0.3);
+  animation: goalie-pulse 2s infinite;
+}
+
+@keyframes goalie-pulse {
+  0%, 100% {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), 0 0 16px rgba(239, 68, 68, 0.3);
+  }
+  50% {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), 0 0 24px rgba(239, 68, 68, 0.6);
+  }
+}
+
+.goalie-card:hover {
+  border-color: #f87171;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+}
+
+.goalie-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.goalie-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.goalie-alert-badge {
+  background: #dc2626;
+  color: #ffffff;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  animation: badge-flash 1.5s infinite;
+}
+
+@keyframes badge-flash {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.goalie-details {
+  font-size: 13px;
+  color: #ffffff;
+  margin-bottom: 12px;
+  line-height: 1.6;
+}
+
+.goalie-details strong {
+  color: #fca5a5;
+}
+
+.goalie-action {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.goalie-bet-btn {
+  flex: 1;
+  background: #16a34a;
+  color: #ffffff;
+  border: 2px solid #15803d;
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+  text-decoration: none;
+  display: block;
+}
+
+.goalie-bet-btn:hover {
+  background: #15803d;
+  border-color: #166534;
+  box-shadow: 0 0 12px rgba(22, 163, 74, 0.4);
+}
+
+.controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.sound-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.btn {
+  padding: 10px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background: #dc2626;
+  color: white;
+  border: 2px solid #991b1b;
+}
+
+.btn-primary:hover {
+  background: #b91c1c;
+  border-color: #7f1d1d;
+}
+
+.btn-secondary {
+  background: #1a0000;
+  color: #cbd5e1;
+  border: 2px solid #991b1b;
+}
+
+.btn-secondary:hover {
+  background: #2d0000;
+  border-color: #dc2626;
+}
+
+.footer {
+  text-align: center;
+  padding-top: 12px;
+  border-top: 2px solid #991b1b;
+}
+
+.footer a {
+  color: #ef4444;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.footer a:hover {
+  text-decoration: underline;
+  color: #fca5a5;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #ffffff;
+}
+
+.empty-state-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+}
+
+/* Better emoji rendering */
+img[alt*="emoji" i],
+img[src*="emoji" i],
+img[src*="em-content" i] {
+  display: inline-block;
+  image-rendering: crisp-edges;
+  image-rendering: -webkit-optimize-contrast;
+}
+
+/* Quarter Reversal Card Styles */
+.qr-card-critical {
+  background: linear-gradient(135deg, #991b1b 0%, #854d0e 50%, #991b1b 100%);
+  border: 3px solid #fbbf24;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+  color: #ffffff;
+  transition: all 0.3s ease;
+  animation: pulse-critical 2s infinite;
+}
+
+.qr-card-high {
+  background: linear-gradient(135deg, #14532d 0%, #166534 100%);
+  border: 3px solid #22c55e;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+  color: #ffffff;
+  transition: all 0.3s ease;
+}
+
+.qr-card-medium {
+  background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+  border: 3px solid #60a5fa;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+  color: #ffffff;
+  transition: all 0.3s ease;
+}
+
+@keyframes pulse-critical {
+  0%, 100% { box-shadow: 0 0 10px rgba(251, 191, 36, 0.5); }
+  50% { box-shadow: 0 0 20px rgba(251, 191, 36, 0.8); }
+}
+
+.qr-card-critical:hover {
+  border-color: #fde047;
+  box-shadow: 0 0 25px rgba(251, 191, 36, 0.6);
+}
+
+.qr-card-high:hover {
+  border-color: #4ade80;
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.5);
+}
+
+.qr-card-medium:hover {
+  border-color: #93c5fd;
+  box-shadow: 0 0 20px rgba(96, 165, 250, 0.5);
+}
+
+.qr-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.qr-title {
+  font-size: 14px;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+.qr-alert-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.critical-badge {
+  background: #fbbf24;
+  color: #000000;
+  animation: pulse-badge 1.5s infinite;
+}
+
+.high-badge {
+  background: #22c55e;
+  color: #000000;
+}
+
+.medium-badge {
+  background: #60a5fa;
+  color: #000000;
+}
+
+@keyframes pulse-badge {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.qr-trigger {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 6px;
+  padding: 8px;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+
+.qr-details {
+  margin-bottom: 8px;
+}
+
+.qr-detail-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.qr-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.qr-stat {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 6px;
+  padding: 8px;
+  text-align: center;
+}
+
+.qr-stat-label {
+  font-size: 10px;
+  color: #cbd5e1;
+  margin-bottom: 4px;
+}
+
+.qr-stat-value {
+  font-size: 16px;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+.critical-text {
+  color: #fbbf24;
+}
+
+.high-text {
+  color: #22c55e;
+}
+
+.qr-recommendation {
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  padding: 10px;
+  margin-bottom: 8px;
+}
+
+.qr-rec-header {
+  font-size: 12px;
+  font-weight: bold;
+  margin-bottom: 6px;
+  color: #fbbf24;
+}
+
+.qr-rec-bet {
+  font-size: 13px;
+  font-weight: bold;
+  margin-bottom: 6px;
+  color: #ffffff;
+}
+
+.qr-rec-details {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #cbd5e1;
+}
+
+.qr-reasoning {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 6px;
+  padding: 8px;
+  font-size: 11px;
+  line-height: 1.4;
+  margin-bottom: 8px;
+  color: #e5e7eb;
+}
+
+/* Quarter Reversal Bookmaker Styles */
+.qr-bookmakers {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.qr-book-label {
+  font-size: 11px;
+  font-weight: bold;
+  color: #fbbf24;
+  margin-bottom: 6px;
+}
+
+.qr-primary-book {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  padding: 8px;
+  margin-bottom: 8px;
+}
+
+.book-logo {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  background: #ffffff;
+  padding: 2px;
+}
+
+.book-name {
+  flex: 1;
+  font-size: 12px;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+.book-odds {
+  font-size: 13px;
+  font-weight: bold;
+  color: #22c55e;
+  padding: 2px 8px;
+  background: rgba(34, 197, 94, 0.2);
+  border-radius: 4px;
+}
+
+.qr-place-bet-btn {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.qr-place-bet-btn:hover {
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+  transform: scale(1.05);
+}
+
+.qr-alt-books {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  padding: 8px;
+}
+
+.qr-alt-label {
+  font-size: 10px;
+  color: #cbd5e1;
+  margin-bottom: 6px;
+}
+
+.qr-alt-book {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  font-size: 11px;
+}
+
+.book-logo-sm {
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
+  background: #ffffff;
+  padding: 1px;
+}
+
+.alt-book-name {
+  flex: 1;
+  color: #e5e7eb;
+}
+
+.alt-book-odds {
+  color: #86efac;
+  font-weight: bold;
+}

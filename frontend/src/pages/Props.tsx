@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { OddsMetricsDashboard } from '../components/OddsMetricsDashboard';
+import { BetTypePerformance } from '../components/BetTypePerformance';
 
 interface PlayerProp {
   event_id: string;
@@ -364,6 +365,11 @@ export function Props() {
           {/* Metrics Dashboard & Main Content */}
           <div className="flex-1">
             <OddsMetricsDashboard />
+
+            {/* User Bet Type Performance Section */}
+            <div className="mb-6">
+              <BetTypePerformance sport={selectedSport.toUpperCase()} />
+            </div>
 
         {/* Search Filter - Compact */}
         <div className="bg-slate-800/50 border border-slate-700 p-2 mb-2">

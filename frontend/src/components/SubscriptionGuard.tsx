@@ -7,7 +7,7 @@ interface SubscriptionGuardProps {
 }
 
 export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
-  const { subscriptionTier, username, refreshSubscription } = useAuth();
+  const { subscriptionTier, username, role, refreshSubscription } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -21,13 +21,20 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
       return;
     }
 
+    // Admins bypass subscription checks
+    if (role === 'admin') {
+      console.log(`User ${username} is admin - bypassing subscription check`);
+      return;
+    }
+
     if (subscriptionTier === 'free' || subscriptionTier === 'trial') {
       console.log(`User ${username} has tier ${subscriptionTier} - redirecting to pricing`);
       navigate('/pricing', { replace: true });
     }
-  }, [subscriptionTier, navigate, username, location.pathname]);
+  }, [subscriptionTier, navigate, username, role, location.pathname]);
 
-  if (subscriptionTier !== 'free' && subscriptionTier !== 'trial') {
+  // Allow access for admins OR paid users
+  if (role === 'admin' || (subscriptionTier !== 'free' && subscriptionTier !== 'trial')) {
     return <>{children}</>;
   }
 

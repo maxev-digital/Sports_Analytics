@@ -27,6 +27,13 @@ export function BetHistory() {
   const [loading, setLoading] = useState(true);
   const [sortField, setSortField] = useState<'settled_at' | 'profit_loss' | 'stake'>('settled_at');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [editingBet, setEditingBet] = useState<Bet | null>(null);
+  const [editForm, setEditForm] = useState({
+    odds: 0,
+    stake: 0,
+    bookmaker: '',
+    bet_side: ''
+  });
 
   useEffect(() => {
     fetchBetHistory();
@@ -55,6 +62,51 @@ export function BetHistory() {
       console.error('Error fetching bet history:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const openEditModal = (bet: Bet) => {
+    setEditingBet(bet);
+    setEditForm({
+      odds: bet.odds,
+      stake: bet.stake,
+      bookmaker: bet.bookmaker,
+      bet_side: bet.bet_side
+    });
+  };
+
+  const closeEditModal = () => {
+    setEditingBet(null);
+  };
+
+  const handleEditSubmit = async () => {
+    if (!editingBet) return;
+
+    try {
+      const response = await fetch(getApiUrl(`bets/${editingBet.id}/update`), {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          odds: editForm.odds,
+          stake: editForm.stake,
+          bookmaker: editForm.bookmaker,
+          bet_side: editForm.bet_side
+        })
+      });
+
+      if (response.ok) {
+        // Refresh bet history after successful update
+        await fetchBetHistory();
+        closeEditModal();
+      } else {
+        console.error('Failed to update bet:', response.status);
+        alert('Failed to update bet. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error updating bet:', error);
+      alert('Error updating bet. Please try again.');
     }
   };
 
@@ -166,6 +218,9 @@ export function BetHistory() {
                 <th className="text-center py-3 px-4 text-slate-300 font-bold text-xs uppercase tracking-wider">
                   Book
                 </th>
+                <th className="text-center py-3 px-4 text-slate-300 font-bold text-xs uppercase tracking-wider">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -228,6 +283,15 @@ export function BetHistory() {
                   <td className="py-3 px-4 text-center text-xs text-slate-400">
                     {bet.bookmaker}
                   </td>
+                  <td className="py-3 px-4 text-center">
+                    <button
+                      onClick={() => openEditModal(bet)}
+                      className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded transition-colors"
+                      title="Edit bet details"
+                    >
+                      Edit
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -264,6 +328,122 @@ export function BetHistory() {
           </div>
         </div>
       </div>
+
+      {/* Edit Bet Modal */}
+      {editingBet && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 border-2 border-slate-700 rounded-lg max-w-md w-full p-6">
+            <h3 className="text-2xl font-bold text-white mb-4">Edit Bet</h3>
+
+            <div className="space-y-4">
+              {/* Game Info (read-only) */}
+              <div className="bg-slate-800 p-3 rounded border border-slate-700">
+                <div className="text-xs text-slate-400 mb-1">Game</div>
+                <div className="text-sm text-white font-semibold">
+                  {editingBet.away_team} @ {editingBet.home_team}
+                </div>
+                <div className="text-xs text-slate-400 mt-1">
+                  {editingBet.sport} • {new Date(editingBet.settled_at).toLocaleDateString()}
+                </div>
+              </div>
+
+              {/* Bet Side */}
+              <div>
+                <label className="text-xs text-slate-400 mb-1 block">Bet Side</label>
+                <input
+                  type="text"
+                  value={editForm.bet_side}
+                  onChange={(e) => setEditForm({ ...editForm, bet_side: e.target.value })}
+                  className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm"
+                />
+              </div>
+
+              {/* Odds */}
+              <div>
+                <label className="text-xs text-slate-400 mb-1 block">Odds (American)</label>
+                <input
+                  type="number"
+                  value={editForm.odds}
+                  onChange={(e) => setEditForm({ ...editForm, odds: parseFloat(e.target.value) })}
+                  className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm"
+                />
+              </div>
+
+              {/* Stake */}
+              <div>
+                <label className="text-xs text-slate-400 mb-1 block">Stake ($)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={editForm.stake}
+                  onChange={(e) => setEditForm({ ...editForm, stake: parseFloat(e.target.value) })}
+                  className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm"
+                />
+              </div>
+
+              {/* Bookmaker */}
+              <div>
+                <label className="text-xs text-slate-400 mb-1 block">Bookmaker</label>
+                <input
+                  type="text"
+                  value={editForm.bookmaker}
+                  onChange={(e) => setEditForm({ ...editForm, bookmaker: e.target.value })}
+                  className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm"
+                />
+              </div>
+
+              {/* Result Info (read-only) */}
+              <div className="bg-slate-800 p-3 rounded border border-slate-700">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <div className="text-xs text-slate-400">Result</div>
+                    <div className={`text-sm font-bold ${
+                      editingBet.status === 'win' ? 'text-green-400' :
+                      editingBet.status === 'loss' ? 'text-red-400' :
+                      'text-slate-400'
+                    }`}>
+                      {editingBet.status.toUpperCase()}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-xs text-slate-400">P/L</div>
+                    <div className={`text-sm font-bold ${
+                      editingBet.profit_loss > 0 ? 'text-green-400' :
+                      editingBet.profit_loss < 0 ? 'text-red-400' :
+                      'text-slate-400'
+                    }`}>
+                      {editingBet.profit_loss > 0 ? '+' : ''}${editingBet.profit_loss.toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Warning */}
+              <div className="bg-yellow-900/30 border border-yellow-700 rounded p-3">
+                <p className="text-xs text-yellow-300">
+                  Note: The bet will be automatically re-graded with the updated odds and stake. The result ({editingBet.status}) will remain the same.
+                </p>
+              </div>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={closeEditModal}
+                className="flex-1 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleEditSubmit}
+                className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded transition-colors"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
