@@ -539,7 +539,7 @@ export function Odds() {
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="hover:bg-slate-800 transition-colors cursor-pointer px-0.5 py-0.5 block"
-                                    title={`Bet ${game.away_team} ${formatOdds(bookOdds.away_ml)} on ${getBookmaker(bookmaker)?.name}`}
+                                    title={`Bet ${formatTeamName(game.away_team, game.sport_key)} ${formatOdds(bookOdds.away_ml)} on ${getBookmaker(bookmaker)?.name}`}
                                   >
                                     <div className="text-sm font-bold text-blue-300 leading-tight">
                                       {formatOdds(bookOdds.away_ml)}
@@ -550,7 +550,7 @@ export function Odds() {
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="hover:bg-slate-800 transition-colors cursor-pointer px-0.5 py-0.5 block"
-                                    title={`Bet ${game.home_team} ${formatOdds(bookOdds.home_ml)} on ${getBookmaker(bookmaker)?.name}`}
+                                    title={`Bet ${formatTeamName(game.home_team, game.sport_key)} ${formatOdds(bookOdds.home_ml)} on ${getBookmaker(bookmaker)?.name}`}
                                   >
                                     <div className="text-sm font-bold text-green-300 leading-tight">
                                       {formatOdds(bookOdds.home_ml)}
@@ -567,7 +567,7 @@ export function Odds() {
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="hover:bg-slate-800 transition-colors cursor-pointer px-0.5 py-0.5 block"
-                                    title={`Bet ${game.away_team} ${bookOdds.away_spread > 0 ? '+' : ''}${bookOdds.away_spread} on ${getBookmaker(bookmaker)?.name}`}
+                                    title={`Bet ${formatTeamName(game.away_team, game.sport_key)} ${bookOdds.away_spread > 0 ? '+' : ''}${bookOdds.away_spread} on ${getBookmaker(bookmaker)?.name}`}
                                   >
                                     <div className="text-sm font-bold text-slate-100 leading-tight">
                                       {bookOdds.away_spread > 0 ? '+' : ''}{bookOdds.away_spread}
@@ -581,7 +581,7 @@ export function Odds() {
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="hover:bg-slate-800 transition-colors cursor-pointer px-0.5 py-0.5 block"
-                                    title={`Bet ${game.home_team} ${bookOdds.home_spread > 0 ? '+' : ''}${bookOdds.home_spread} on ${getBookmaker(bookmaker)?.name}`}
+                                    title={`Bet ${formatTeamName(game.home_team, game.sport_key)} ${bookOdds.home_spread > 0 ? '+' : ''}${bookOdds.home_spread} on ${getBookmaker(bookmaker)?.name}`}
                                   >
                                     <div className="text-sm font-bold text-slate-100 leading-tight">
                                       {bookOdds.home_spread > 0 ? '+' : ''}{bookOdds.home_spread}
