@@ -104,6 +104,7 @@ const NBA_TEAMS: Record<string, string> = {
   'Phoenix Suns': 'Phoenix Suns',
   'Suns': 'Phoenix Suns',
   'PHX': 'Phoenix Suns',
+  'PHO': 'Phoenix Suns', // Sports Data IO abbreviation
 
   'Portland Trail Blazers': 'Portland Trail Blazers',
   'Trail Blazers': 'Portland Trail Blazers',
@@ -191,14 +192,17 @@ const NHL_TEAMS: Record<string, string> = {
   'Montreal Canadiens': 'Montreal Canadiens',
   'Canadiens': 'Montreal Canadiens',
   'MTL': 'Montreal Canadiens',
+  'MON': 'Montreal Canadiens', // Sports Data IO abbreviation
 
   'Nashville Predators': 'Nashville Predators',
   'Predators': 'Nashville Predators',
   'NSH': 'Nashville Predators',
+  'NAS': 'Nashville Predators', // Sports Data IO abbreviation
 
   'New Jersey Devils': 'New Jersey Devils',
   'Devils': 'New Jersey Devils',
   'NJD': 'New Jersey Devils',
+  'NJ': 'New Jersey Devils', // Sports Data IO abbreviation
 
   'New York Islanders': 'New York Islanders',
   'Islanders': 'New York Islanders',
@@ -252,6 +256,7 @@ const NHL_TEAMS: Record<string, string> = {
   'Washington Capitals': 'Washington Capitals',
   'Capitals': 'Washington Capitals',
   'WSH': 'Washington Capitals',
+  'WAS': 'Washington Capitals', // Sports Data IO abbreviation
 
   'Winnipeg Jets': 'Winnipeg Jets',
   'Jets': 'Winnipeg Jets',
