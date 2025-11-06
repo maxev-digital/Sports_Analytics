@@ -2182,43 +2182,44 @@ export function GameCard({ game }: GameCardProps) {
               });
             })()}
           </div>
-        </div>
 
-            {selectedMarket === 'halves' && game.alternate_lines && game.alternate_lines.length > 0 && (
-              <>
-                <div className={`text-base ${textLabel} mb-2`}>First Half (1H) & Second Half (2H) Lines</div>
+          {/* Alternate Lines (1H/2H) Section */}
+          {selectedMarket === 'halves' && game.alternate_lines && game.alternate_lines.length > 0 && (
+            <>
+              <div className={`text-base ${textLabel} mb-2`}>First Half (1H) & Second Half (2H) Lines</div>
 
-                {/* Group by market type */}
-                {['1H', '2H'].map(marketType => {
-                  const linesForMarket = game.alternate_lines.filter(line => line.market_type === marketType);
-                  if (linesForMarket.length === 0) return null;
+              {/* Group by market type */}
+              {['1H', '2H'].map(marketType => {
+                const linesForMarket = game.alternate_lines.filter(line => line.market_type === marketType);
+                if (linesForMarket.length === 0) return null;
 
-                  return (
-                    <div key={marketType} className="mb-3">
-                      <div className={`text-sm ${textLabel} font-semibold mb-1`}>
-                        {marketType === '1H' ? 'First Half' : 'Second Half'}
-                      </div>
-                      <div className="space-y-1">
-                        {linesForMarket.map((line, idx) => (
-                          <div
-                            key={idx}
-                            className="flex justify-between items-center text-base p-1 rounded"
-                          >
-                            <span className={`${textSecondary}`}>{line.bookmaker}</span>
-                            <span className={`${textSecondary} font-bold`}>
-                              O/U <span className="font-extrabold text-lg">{line.total}</span>
-                              {line.over_price && line.under_price && (
-                                <span className="text-sm"> ({line.over_price > 0 ? '+' : ''}{line.over_price}/{line.under_price > 0 ? '+' : ''}{line.under_price})</span>
-                              )}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
+                return (
+                  <div key={marketType} className="mb-3">
+                    <div className={`text-sm ${textLabel} font-semibold mb-1`}>
+                      {marketType === '1H' ? 'First Half' : 'Second Half'}
                     </div>
-                  );
-                })}
-              </>
-            )}
+                    <div className="space-y-1">
+                      {linesForMarket.map((line, idx) => (
+                        <div
+                          key={idx}
+                          className="flex justify-between items-center text-base p-1 rounded"
+                        >
+                          <span className={`${textSecondary}`}>{line.bookmaker}</span>
+                          <span className={`${textSecondary} font-bold`}>
+                            O/U <span className="font-extrabold text-lg">{line.total}</span>
+                            {line.over_price && line.under_price && (
+                              <span className="text-sm"> ({line.over_price > 0 ? '+' : ''}{line.over_price}/{line.under_price > 0 ? '+' : ''}{line.under_price})</span>
+                            )}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </>
+          )}
+        </div>
       )}
 
       {/* Best Spreads and ML Section */}
