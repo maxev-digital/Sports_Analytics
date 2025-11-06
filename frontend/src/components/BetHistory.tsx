@@ -1,6 +1,25 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { getApiUrl } from '../config';
+import { formatTeamName } from '../utils/teamNames';
+
+
+// Helper function to convert sport names to sport keys
+const sportKeyMapper = (sport: string): string => {
+  const sportMap: Record<string, string> = {
+    'NBA': 'basketball_nba',
+    'NCAAB': 'basketball_ncaab',
+    'NFL': 'americanfootball_nfl',
+    'NCAAF': 'americanfootball_ncaaf',
+    'NHL': 'icehockey_nhl',
+    'MLB': 'baseball_mlb',
+    'Basketball': 'basketball_nba',
+    'Football': 'americanfootball_nfl',
+    'Hockey': 'icehockey_nhl',
+    'Baseball': 'baseball_mlb',
+  };
+  return sportMap[sport] || sport.toLowerCase();
+};
 
 interface Bet {
   id: string;
@@ -244,7 +263,7 @@ export function BetHistory() {
                     </span>
                   </td>
                   <td className="py-3 px-4 text-sm text-white">
-                    {bet.away_team} @ {bet.home_team}
+                    {formatTeamName(bet.away_team, sportKeyMapper(bet.sport))} @ {formatTeamName(bet.home_team, sportKeyMapper(bet.sport))}
                   </td>
                   <td className="py-3 px-4 text-sm text-slate-300">
                     <div className="font-semibold">{bet.bet_side}</div>
@@ -340,7 +359,7 @@ export function BetHistory() {
               <div className="bg-slate-800 p-3 rounded border border-slate-700">
                 <div className="text-xs text-slate-400 mb-1">Game</div>
                 <div className="text-sm text-white font-semibold">
-                  {editingBet.away_team} @ {editingBet.home_team}
+                  {formatTeamName(editingBet.away_team, sportKeyMapper(editingBet.sport))} @ {formatTeamName(editingBet.home_team, sportKeyMapper(editingBet.sport))}
                 </div>
                 <div className="text-xs text-slate-400 mt-1">
                   {editingBet.sport} • {new Date(editingBet.settled_at).toLocaleDateString()}

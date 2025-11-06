@@ -120,7 +120,7 @@ export function GameCard({ game }: GameCardProps) {
   const { state, odds, projection, home_team_stats, away_team_stats, home_nfl_live_stats, away_nfl_live_stats, home_nfl_stats, away_nfl_stats, home_nhl_momentum, away_nhl_momentum, home_nhl_stats, away_nhl_stats, home_nba_momentum, away_nba_momentum, home_nfl_momentum, away_nfl_momentum, home_ncaaf_momentum, away_ncaaf_momentum } = game;
 
   // DEBUG: Log stats data
-  console.log(`🏀 ${state.away_team.name} @ ${state.home_team.name}:`, {
+  console.log(`🏀 ${formatTeamName(state.away_team.name, state.sport_key)} @ ${formatTeamName(state.home_team.name, state.sport_key)}:`, {
     sport: state.sport_key,
     nba_stats: { home: !!home_team_stats, away: !!away_team_stats },
     nhl_stats: { home: !!home_nhl_stats, away: !!away_nhl_stats },
@@ -166,12 +166,12 @@ export function GameCard({ game }: GameCardProps) {
     } else if (selectedMarket === 'spread') {
       betType = 'spread';
       // Default to home team spread, but use projection if available
-      betSide = `${state.home_team.name} ${odd.home_spread > 0 ? '+' : ''}${odd.home_spread}`;
+      betSide = `${formatTeamName(home_team.name, state.sport_key)} ${odd.home_spread > 0 ? '+' : ''}${odd.home_spread}`;
       betOdds = odd.home_spread_price;
     } else if (selectedMarket === 'moneyline') {
       betType = 'moneyline';
       // Default to home team ML
-      betSide = state.home_team.name;
+      betSide = formatTeamName(home_team.name, state.sport_key);
       betOdds = odd.home_ml;
     }
 
@@ -181,8 +181,8 @@ export function GameCard({ game }: GameCardProps) {
         userId: username,
         gameId: state.id,
         sport: state.sport_key,
-        homeTeam: state.home_team.name,
-        awayTeam: state.away_team.name,
+        homeTeam: formatTeamName(home_team.name, state.sport_key),
+        awayTeam: formatTeamName(away_team.name, state.sport_key),
         commenceTime: state.commence_time,
         betType,
         betSide,
@@ -257,8 +257,8 @@ export function GameCard({ game }: GameCardProps) {
     return nflColors[cleanName] || { primary: '#3B82F6', secondary: '#EF4444' }; // Default blue/red
   };
 
-  const awayTeamColors = getTeamColors(state.away_team.name);
-  const homeTeamColors = getTeamColors(state.home_team.name);
+  const awayTeamColors = getTeamColors(formatTeamName(away_team.name, state.sport_key));
+  const homeTeamColors = getTeamColors(formatTeamName(home_team.name, state.sport_key));
 
   // Format time
   const gameTime = new Date(state.commence_time).toLocaleTimeString('en-US', {
@@ -386,7 +386,7 @@ export function GameCard({ game }: GameCardProps) {
         <div>
           <div className="flex justify-between items-center mb-1">
             <div className="flex items-center gap-2">
-              <span className={`font-medium ${textPrimary}`}>{state.away_team.name}</span>
+              <span className={`font-medium ${textPrimary}`}>{formatTeamName(away_team.name, state.sport_key)}</span>
             </div>
             {state.away_team.score !== null && (
               <span className={`text-3xl font-bold ${textPrimary}`}>{state.away_team.score}</span>
@@ -413,7 +413,7 @@ export function GameCard({ game }: GameCardProps) {
         <div>
           <div className="flex justify-between items-center mb-1">
             <div className="flex items-center gap-2">
-              <span className={`font-medium ${textPrimary}`}>{state.home_team.name}</span>
+              <span className={`font-medium ${textPrimary}`}>{formatTeamName(home_team.name, state.sport_key)}</span>
             </div>
             {state.home_team.score !== null && (
               <span className={`text-3xl font-bold ${textPrimary}`}>{state.home_team.score}</span>
@@ -481,7 +481,7 @@ export function GameCard({ game }: GameCardProps) {
         <div className="mb-3">
           <div className={`text-base ${textLabel} mb-1`}>Game Momentum</div>
           <div className="flex items-center gap-2">
-            <span className={`text-base ${textLabel} w-12`}>{state.away_team.name.split(' ').pop()}</span>
+            <span className={`text-base ${textLabel} w-12`}>{formatTeamName(state.away_team.name, state.sport_key).split(' ').pop()}</span>
             <div className="flex-1 h-3 bg-slate-700 rounded-full overflow-hidden relative">
               {/* Calculate momentum percentage (-100 to 100 scale) */}
               {(() => {
@@ -507,7 +507,7 @@ export function GameCard({ game }: GameCardProps) {
                 );
               })()}
             </div>
-            <span className={`text-base ${textLabel} w-12 text-right`}>{state.home_team.name.split(' ').pop()}</span>
+            <span className={`text-base ${textLabel} w-12 text-right`}>{formatTeamName(state.home_team.name, state.sport_key).split(' ').pop()}</span>
           </div>
         </div>
       )}
@@ -519,7 +519,7 @@ export function GameCard({ game }: GameCardProps) {
           <div className="grid grid-cols-2 gap-3 text-base">
             {/* Away Team Momentum */}
             <div>
-              <div className={`${textLabel} font-semibold mb-1`}>{state.away_team.name.split(' ').pop()}</div>
+              <div className={`${textLabel} font-semibold mb-1`}>{formatTeamName(state.away_team.name, state.sport_key).split(' ').pop()}</div>
               {away_nba_momentum && (
                 <>
                   <div className="flex justify-between mb-0.5">
@@ -594,7 +594,7 @@ export function GameCard({ game }: GameCardProps) {
 
             {/* Home Team Momentum */}
             <div>
-              <div className={`${textLabel} font-semibold mb-1`}>{state.home_team.name.split(' ').pop()}</div>
+              <div className={`${textLabel} font-semibold mb-1`}>{formatTeamName(state.home_team.name, state.sport_key).split(' ').pop()}</div>
               {home_nba_momentum && (
                 <>
                   <div className="flex justify-between mb-0.5">
@@ -684,7 +684,7 @@ export function GameCard({ game }: GameCardProps) {
             <div className="mb-3">
               <div className={`text-base ${textLabel} mb-1`}>Game Momentum</div>
               <div className="flex items-center gap-2">
-                <span className={`text-base ${textLabel} w-12`}>{state.away_team.name.split(' ').pop()}</span>
+                <span className={`text-base ${textLabel} w-12`}>{formatTeamName(state.away_team.name, state.sport_key).split(' ').pop()}</span>
                 <div className="flex-1 h-3 bg-slate-700 rounded-full overflow-hidden relative">
                   {(() => {
                     const awayMomentum = footballMomentum.away?.momentum_score || 50;
@@ -707,7 +707,7 @@ export function GameCard({ game }: GameCardProps) {
                     );
                   })()}
                 </div>
-                <span className={`text-base ${textLabel} w-12 text-right`}>{state.home_team.name.split(' ').pop()}</span>
+                <span className={`text-base ${textLabel} w-12 text-right`}>{formatTeamName(state.home_team.name, state.sport_key).split(' ').pop()}</span>
               </div>
             </div>
 
@@ -717,7 +717,7 @@ export function GameCard({ game }: GameCardProps) {
               <div className="grid grid-cols-2 gap-3 text-base">
                 {/* Away Team Momentum */}
                 <div>
-                  <div className={`${textLabel} font-semibold mb-1`}>{state.away_team.name.split(' ').pop()}</div>
+                  <div className={`${textLabel} font-semibold mb-1`}>{formatTeamName(state.away_team.name, state.sport_key).split(' ').pop()}</div>
                   {footballMomentum.away && (
                     <>
                       <div className="flex justify-between mb-0.5">
@@ -792,7 +792,7 @@ export function GameCard({ game }: GameCardProps) {
 
                 {/* Home Team Momentum */}
                 <div>
-                  <div className={`${textLabel} font-semibold mb-1`}>{state.home_team.name.split(' ').pop()}</div>
+                  <div className={`${textLabel} font-semibold mb-1`}>{formatTeamName(state.home_team.name, state.sport_key).split(' ').pop()}</div>
                   {footballMomentum.home && (
                     <>
                       <div className="flex justify-between mb-0.5">
@@ -881,14 +881,14 @@ export function GameCard({ game }: GameCardProps) {
               <div className={`text-base ${textLabel} mb-1`}>Spreads</div>
               <div className="flex justify-between text-base">
                 <div className={textSecondary}>
-                  <span className={textTertiary}>{state.away_team.name.split(' ').pop()}: </span>
+                  <span className={textTertiary}>{formatTeamName(state.away_team.name, state.sport_key).split(' ').pop()}: </span>
                   <span className={`font-bold ${isNHL ? 'text-green-600' : 'text-green-400'}`}>
                     {state.away_team.spread !== null ? `${state.away_team.spread > 0 ? '+' : ''}${state.away_team.spread}` : 'N/A'}
                     {state.away_team.spread_price && <span className="text-sm"> ({state.away_team.spread_price > 0 ? '+' : ''}{state.away_team.spread_price})</span>}
                   </span>
                 </div>
                 <div className={textSecondary}>
-                  <span className={textTertiary}>{state.home_team.name.split(' ').pop()}: </span>
+                  <span className={textTertiary}>{formatTeamName(state.home_team.name, state.sport_key).split(' ').pop()}: </span>
                   <span className={`font-bold ${isNHL ? 'text-green-600' : 'text-green-400'}`}>
                     {state.home_team.spread !== null ? `${state.home_team.spread > 0 ? '+' : ''}${state.home_team.spread}` : 'N/A'}
                     {state.home_team.spread_price && <span className="text-sm"> ({state.home_team.spread_price > 0 ? '+' : ''}{state.home_team.spread_price})</span>}
@@ -904,13 +904,13 @@ export function GameCard({ game }: GameCardProps) {
               <div className={`text-base ${textLabel} mb-1`}>Money Lines</div>
               <div className="flex justify-between text-base">
                 <div className={textSecondary}>
-                  <span className={textTertiary}>{state.away_team.name.split(' ').pop()}: </span>
+                  <span className={textTertiary}>{formatTeamName(state.away_team.name, state.sport_key).split(' ').pop()}: </span>
                   <span className={`font-bold ${(state.away_team.money_line || 0) > 0 ? (isNHL ? 'text-blue-600' : 'text-blue-400') : textPrimary}`}>
                     {state.away_team.money_line !== null ? `${state.away_team.money_line > 0 ? '+' : ''}${state.away_team.money_line}` : 'N/A'}
                   </span>
                 </div>
                 <div className={textSecondary}>
-                  <span className={textTertiary}>{state.home_team.name.split(' ').pop()}: </span>
+                  <span className={textTertiary}>{formatTeamName(state.home_team.name, state.sport_key).split(' ').pop()}: </span>
                   <span className={`font-bold ${(state.home_team.money_line || 0) > 0 ? (isNHL ? 'text-blue-600' : 'text-blue-400') : textPrimary}`}>
                     {state.home_team.money_line !== null ? `${state.home_team.money_line > 0 ? '+' : ''}${state.home_team.money_line}` : 'N/A'}
                   </span>
@@ -949,14 +949,14 @@ export function GameCard({ game }: GameCardProps) {
               <div className={`text-base ${textLabel} font-semibold mb-1`}>Spreads</div>
               <div className="flex justify-between text-base">
                 <div className={`${textSecondary}`}>
-                  <span className={`${textLabel}`}>{state.away_team.name.split(' ').pop()}: </span>
+                  <span className={`${textLabel}`}>{formatTeamName(state.away_team.name, state.sport_key).split(' ').pop()}: </span>
                   <span className="font-bold text-green-400">
                     {state.away_team.spread !== null ? `${state.away_team.spread > 0 ? '+' : ''}${(state.away_team.spread / 2).toFixed(1)}` : 'N/A'}
                     {state.away_team.spread_price && <span className="text-sm"> ({state.away_team.spread_price > 0 ? '+' : ''}{state.away_team.spread_price})</span>}
                   </span>
                 </div>
                 <div className={`${textSecondary}`}>
-                  <span className={`${textLabel}`}>{state.home_team.name.split(' ').pop()}: </span>
+                  <span className={`${textLabel}`}>{formatTeamName(state.home_team.name, state.sport_key).split(' ').pop()}: </span>
                   <span className="font-bold text-green-400">
                     {state.home_team.spread !== null ? `${state.home_team.spread > 0 ? '+' : ''}${(state.home_team.spread / 2).toFixed(1)}` : 'N/A'}
                     {state.home_team.spread_price && <span className="text-sm"> ({state.home_team.spread_price > 0 ? '+' : ''}{state.home_team.spread_price})</span>}
@@ -972,13 +972,13 @@ export function GameCard({ game }: GameCardProps) {
               <div className={`text-base ${textLabel} font-semibold mb-1`}>Money Lines</div>
               <div className="flex justify-between text-base">
                 <div className={`${textSecondary}`}>
-                  <span className={`${textLabel}`}>{state.away_team.name.split(' ').pop()}: </span>
+                  <span className={`${textLabel}`}>{formatTeamName(state.away_team.name, state.sport_key).split(' ').pop()}: </span>
                   <span className={`font-bold ${(state.away_team.money_line || 0) > 0 ? 'text-blue-400' : textValue}`}>
                     {state.away_team.money_line !== null ? `${state.away_team.money_line > 0 ? '+' : ''}${state.away_team.money_line}` : 'N/A'}
                   </span>
                 </div>
                 <div className={`${textSecondary}`}>
-                  <span className={`${textLabel}`}>{state.home_team.name.split(' ').pop()}: </span>
+                  <span className={`${textLabel}`}>{formatTeamName(state.home_team.name, state.sport_key).split(' ').pop()}: </span>
                   <span className={`font-bold ${(state.home_team.money_line || 0) > 0 ? 'text-blue-400' : textValue}`}>
                     {state.home_team.money_line !== null ? `${state.home_team.money_line > 0 ? '+' : ''}${state.home_team.money_line}` : 'N/A'}
                   </span>
@@ -994,7 +994,7 @@ export function GameCard({ game }: GameCardProps) {
         <div className="mb-3">
           <div className={`text-base ${textLabel} mb-1`}>Game Momentum</div>
           <div className="flex items-center gap-2">
-            <span className={`text-base ${textLabel} w-12`}>{state.away_team.name.split(' ').pop()}</span>
+            <span className={`text-base ${textLabel} w-12`}>{formatTeamName(state.away_team.name, state.sport_key).split(' ').pop()}</span>
             <div className="flex-1 h-3 bg-slate-700 rounded-full overflow-hidden relative">
               {/* Calculate momentum percentage (0-100 scale for each team) */}
               {(() => {
@@ -1020,7 +1020,7 @@ export function GameCard({ game }: GameCardProps) {
                 );
               })()}
             </div>
-            <span className={`text-base ${textLabel} w-12 text-right`}>{state.home_team.name.split(' ').pop()}</span>
+            <span className={`text-base ${textLabel} w-12 text-right`}>{formatTeamName(state.home_team.name, state.sport_key).split(' ').pop()}</span>
           </div>
         </div>
       )}
@@ -1032,7 +1032,7 @@ export function GameCard({ game }: GameCardProps) {
           <div className="grid grid-cols-2 gap-3 text-base">
             {/* Away Team Momentum */}
             <div>
-              <div className={`${textLabel} font-semibold mb-1`}>{state.away_team.name.split(' ').pop()}</div>
+              <div className={`${textLabel} font-semibold mb-1`}>{formatTeamName(state.away_team.name, state.sport_key).split(' ').pop()}</div>
               {away_nhl_momentum && (
                 <>
                   <div className="flex justify-between mb-0.5">
@@ -1103,7 +1103,7 @@ export function GameCard({ game }: GameCardProps) {
 
             {/* Home Team Momentum */}
             <div>
-              <div className={`${textLabel} font-semibold mb-1`}>{state.home_team.name.split(' ').pop()}</div>
+              <div className={`${textLabel} font-semibold mb-1`}>{formatTeamName(state.home_team.name, state.sport_key).split(' ').pop()}</div>
               {home_nhl_momentum && (
                 <>
                   <div className="flex justify-between mb-0.5">
@@ -1216,7 +1216,7 @@ export function GameCard({ game }: GameCardProps) {
           <div className="grid grid-cols-2 gap-4 text-base">
             {/* Away Team Stats */}
             <div className="space-y-1">
-              <div className={`${textHeader} font-bold mb-2 text-center text-base`}>{state.away_team.name}</div>
+              <div className={`${textHeader} font-bold mb-2 text-center text-base`}>{formatTeamName(away_team.name, state.sport_key)}</div>
               {away_nhl_stats && (
                 <>
                   {(statsView === 'stats' || statsView === 'combined') && (
@@ -1339,7 +1339,7 @@ export function GameCard({ game }: GameCardProps) {
 
             {/* Home Team Stats */}
             <div className="space-y-1">
-              <div className={`${textHeader} font-bold mb-2 text-center text-base`}>{state.home_team.name}</div>
+              <div className={`${textHeader} font-bold mb-2 text-center text-base`}>{formatTeamName(home_team.name, state.sport_key)}</div>
               {home_nhl_stats && (
                 <>
                   {(statsView === 'stats' || statsView === 'combined') && (
@@ -1505,7 +1505,7 @@ export function GameCard({ game }: GameCardProps) {
           <div className="grid grid-cols-2 gap-4 text-base">
             {/* Away Team Stats */}
             <div className="space-y-1">
-              <div className={`${textHeader} font-bold mb-2 text-center text-base`}>{state.away_team.name}</div>
+              <div className={`${textHeader} font-bold mb-2 text-center text-base`}>{formatTeamName(away_team.name, state.sport_key)}</div>
               {away_nfl_stats && (
                 <>
                   {/* RANKINGS VIEW - Show only rankings */}
@@ -1706,7 +1706,7 @@ export function GameCard({ game }: GameCardProps) {
 
             {/* Home Team Stats */}
             <div className="space-y-1">
-              <div className={`${textHeader} font-bold mb-2 text-center text-base`}>{state.home_team.name}</div>
+              <div className={`${textHeader} font-bold mb-2 text-center text-base`}>{formatTeamName(home_team.name, state.sport_key)}</div>
               {home_nfl_stats && (
                 <>
                   {/* RANKINGS VIEW - Show only rankings */}
@@ -2093,8 +2093,8 @@ export function GameCard({ game }: GameCardProps) {
                 // Try to get game-specific URL first, fallback to generic sport URL
                 const gameSpecificUrl = getGameSpecificUrl(
                   normalizedKey,
-                  state.home_team.name,
-                  state.away_team.name,
+                  formatTeamName(home_team.name, state.sport_key),
+                  formatTeamName(away_team.name, state.sport_key),
                   state.sport_key,
                   state.commence_time
                 );
@@ -2160,20 +2160,20 @@ export function GameCard({ game }: GameCardProps) {
                     {selectedMarket === 'spread' && (
                       <div className={`${shouldHighlight ? 'text-blue-200' : textSecondary} text-base font-bold flex gap-3`}>
                         <span>
-                          {state.home_team.name.split(' ').pop()}: <span className="font-extrabold text-base">{odd.home_spread > 0 ? '+' : ''}{odd.home_spread}</span> <span className="text-sm">({odd.home_spread_price > 0 ? '+' : ''}{odd.home_spread_price})</span>
+                          {formatTeamName(state.home_team.name, state.sport_key).split(' ').pop()}: <span className="font-extrabold text-base">{odd.home_spread > 0 ? '+' : ''}{odd.home_spread}</span> <span className="text-sm">({odd.home_spread_price > 0 ? '+' : ''}{odd.home_spread_price})</span>
                         </span>
                         <span>
-                          {state.away_team.name.split(' ').pop()}: <span className="font-extrabold text-base">{odd.away_spread > 0 ? '+' : ''}{odd.away_spread}</span> <span className="text-sm">({odd.away_spread_price > 0 ? '+' : ''}{odd.away_spread_price})</span>
+                          {formatTeamName(state.away_team.name, state.sport_key).split(' ').pop()}: <span className="font-extrabold text-base">{odd.away_spread > 0 ? '+' : ''}{odd.away_spread}</span> <span className="text-sm">({odd.away_spread_price > 0 ? '+' : ''}{odd.away_spread_price})</span>
                         </span>
                       </div>
                     )}
                     {selectedMarket === 'moneyline' && (
                       <div className={`${shouldHighlight ? 'text-blue-200' : textSecondary} text-base font-bold flex gap-3`}>
                         <span>
-                          {state.home_team.name.split(' ').pop()}: <span className="font-extrabold text-base">{odd.home_ml > 0 ? '+' : ''}{odd.home_ml}</span>
+                          {formatTeamName(state.home_team.name, state.sport_key).split(' ').pop()}: <span className="font-extrabold text-base">{odd.home_ml > 0 ? '+' : ''}{odd.home_ml}</span>
                         </span>
                         <span>
-                          {state.away_team.name.split(' ').pop()}: <span className="font-extrabold text-base">{odd.away_ml > 0 ? '+' : ''}{odd.away_ml}</span>
+                          {formatTeamName(state.away_team.name, state.sport_key).split(' ').pop()}: <span className="font-extrabold text-base">{odd.away_ml > 0 ? '+' : ''}{odd.away_ml}</span>
                         </span>
                       </div>
                     )}
@@ -2254,7 +2254,7 @@ export function GameCard({ game }: GameCardProps) {
                   <div className={`text-base ${textLabel} mb-1 font-semibold`}>Spreads</div>
                   <div className="flex justify-between items-center">
                     <div>
-                      <span className={`${textSecondary} font-semibold`}>{state.away_team.name.split(' ').slice(-1)[0]}: </span>
+                      <span className={`${textSecondary} font-semibold`}>{formatTeamName(state.away_team.name, state.sport_key).split(' ').slice(-1)[0]}: </span>
                       <span className="text-green-400 font-bold">
                         {bestAwaySpread.away_spread! > 0 ? '+' : ''}{bestAwaySpread.away_spread}
                         ({bestAwaySpread.away_spread_price! > 0 ? '+' : ''}{bestAwaySpread.away_spread_price})
@@ -2262,7 +2262,7 @@ export function GameCard({ game }: GameCardProps) {
                       <span className={`${textMuted} text-base ml-1`}>@{bestAwaySpread.bookmaker}</span>
                     </div>
                     <div>
-                      <span className={`${textSecondary} font-semibold`}>{state.home_team.name.split(' ').slice(-1)[0]}: </span>
+                      <span className={`${textSecondary} font-semibold`}>{formatTeamName(state.home_team.name, state.sport_key).split(' ').slice(-1)[0]}: </span>
                       <span className="text-green-400 font-bold">
                         {bestHomeSpread.home_spread! > 0 ? '+' : ''}{bestHomeSpread.home_spread}
                         ({bestHomeSpread.home_spread_price! > 0 ? '+' : ''}{bestHomeSpread.home_spread_price})
@@ -2297,14 +2297,14 @@ export function GameCard({ game }: GameCardProps) {
                   <div className={`text-base ${textLabel} mb-1 font-semibold`}>Money Lines</div>
                   <div className="flex justify-between items-center">
                     <div>
-                      <span className={`${textSecondary} font-semibold`}>{state.away_team.name.split(' ').slice(-1)[0]}: </span>
+                      <span className={`${textSecondary} font-semibold`}>{formatTeamName(state.away_team.name, state.sport_key).split(' ').slice(-1)[0]}: </span>
                       <span className="text-blue-400 font-bold">
                         {bestAwayML.away_ml! > 0 ? '+' : ''}{bestAwayML.away_ml}
                       </span>
                       <span className={`${textMuted} text-base ml-1`}>@{bestAwayML.bookmaker}</span>
                     </div>
                     <div>
-                      <span className={`${textSecondary} font-semibold`}>{state.home_team.name.split(' ').slice(-1)[0]}: </span>
+                      <span className={`${textSecondary} font-semibold`}>{formatTeamName(state.home_team.name, state.sport_key).split(' ').slice(-1)[0]}: </span>
                       <span className="text-blue-400 font-bold">
                         {bestHomeML.home_ml! > 0 ? '+' : ''}{bestHomeML.home_ml}
                       </span>
@@ -2394,7 +2394,7 @@ export function GameCard({ game }: GameCardProps) {
           <div className="grid grid-cols-2 gap-4 text-base">
             {/* Away Team Stats */}
             <div className="space-y-1">
-              <div className={`${textHeader} font-bold mb-2 text-center text-base`}>{state.away_team.name}</div>
+              <div className={`${textHeader} font-bold mb-2 text-center text-base`}>{formatTeamName(away_team.name, state.sport_key)}</div>
               {away_team_stats && (
                 <>
                   {/* RANKINGS VIEW */}
@@ -2596,7 +2596,7 @@ export function GameCard({ game }: GameCardProps) {
 
             {/* Home Team Stats */}
             <div className="space-y-1">
-              <div className={`${textHeader} font-bold mb-2 text-center text-base`}>{state.home_team.name}</div>
+              <div className={`${textHeader} font-bold mb-2 text-center text-base`}>{formatTeamName(home_team.name, state.sport_key)}</div>
               {home_team_stats && (
                 <>
                   {/* RANKINGS VIEW */}
@@ -2831,7 +2831,7 @@ export function GameCard({ game }: GameCardProps) {
           <div className="grid grid-cols-3 gap-2 text-base">
             {/* Stat Label Column */}
             <div className="space-y-1 text-center">
-              <div className={`${textMuted} font-semibold`}>{state.away_team.name.split(' ').pop()}</div>
+              <div className={`${textMuted} font-semibold`}>{formatTeamName(state.away_team.name, state.sport_key).split(' ').pop()}</div>
               {away_nfl_live_stats?.first_downs && <div className={`font-semibold ${
                 home_nfl_live_stats?.first_downs && parseStatValue(away_nfl_live_stats.first_downs)! > parseStatValue(home_nfl_live_stats.first_downs)! ? 'text-green-400' : `${textSecondary}`
               }`}>{away_nfl_live_stats.first_downs}</div>}
@@ -2923,7 +2923,7 @@ export function GameCard({ game }: GameCardProps) {
 
             {/* Home Team Column */}
             <div className="space-y-1 text-center">
-              <div className={`${textMuted} font-semibold`}>{state.home_team.name.split(' ').pop()}</div>
+              <div className={`${textMuted} font-semibold`}>{formatTeamName(state.home_team.name, state.sport_key).split(' ').pop()}</div>
               {home_nfl_live_stats?.first_downs && <div className={`font-semibold ${
                 away_nfl_live_stats?.first_downs && parseStatValue(home_nfl_live_stats.first_downs)! > parseStatValue(away_nfl_live_stats.first_downs)! ? 'text-green-400' : `${textSecondary}`
               }`}>{home_nfl_live_stats.first_downs}</div>}
@@ -2997,8 +2997,8 @@ export function GameCard({ game }: GameCardProps) {
       ) && (
         <div className="px-4 pb-4 pt-2">
           <MomentumBar
-            homeTeam={state.home_team.name}
-            awayTeam={state.away_team.name}
+            homeTeam={formatTeamName(home_team.name, state.sport_key)}
+            awayTeam={formatTeamName(away_team.name, state.sport_key)}
             homeMomentum={
               state.sport_key === 'icehockey_nhl'
                 ? (game.home_nhl_momentum?.momentum_score || 50)

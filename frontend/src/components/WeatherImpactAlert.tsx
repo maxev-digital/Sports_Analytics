@@ -1,5 +1,24 @@
 import { useState, useEffect } from 'react';
 import { getApiUrl } from '../config';
+import { formatTeamName } from '../utils/teamNames';
+
+
+// Helper function to convert sport names to sport keys
+const sportKeyMapper = (sport: string): string => {
+  const sportMap: Record<string, string> = {
+    'NBA': 'basketball_nba',
+    'NCAAB': 'basketball_ncaab',
+    'NFL': 'americanfootball_nfl',
+    'NCAAF': 'americanfootball_ncaaf',
+    'NHL': 'icehockey_nhl',
+    'MLB': 'baseball_mlb',
+    'Basketball': 'basketball_nba',
+    'Football': 'americanfootball_nfl',
+    'Hockey': 'icehockey_nhl',
+    'Baseball': 'baseball_mlb',
+  };
+  return sportMap[sport] || sport.toLowerCase();
+};
 
 interface WeatherData {
   temperature: number;
@@ -125,7 +144,7 @@ export function WeatherImpactAlerts() {
                 📊 PRE-GAME
               </span>
               <span className="text-xl font-bold text-white">
-                {opp.away_team} @ {opp.home_team}
+                {formatTeamName(opp.away_team, sportKeyMapper(opp.sport))} @ {formatTeamName(opp.home_team, sportKeyMapper(opp.sport))}
               </span>
             </div>
             <div className="text-right">

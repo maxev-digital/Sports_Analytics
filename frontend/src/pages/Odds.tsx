@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { BookmakerLogo } from '../components/BookmakerLogo';
 import { getBookmaker } from '../data/bookmakers';
 import { OddsMetricsDashboard } from '../components/OddsMetricsDashboard';
+import { formatTeamName } from '../utils/teamNames';
 
 interface GameOdds {
   id: string;
@@ -334,7 +335,7 @@ export function Odds() {
                         <div className="space-y-1">
                           <div className="flex items-center justify-between">
                             <span className="text-xl font-normal text-slate-50 tracking-wide leading-tight">
-                              {game.away_team}
+                              {formatTeamName(game.away_team, game.sport_key)}
                             </span>
                             {game.away_score !== undefined && (
                               <span className="text-xl font-medium text-blue-400 ml-2 tabular-nums leading-tight">
@@ -344,7 +345,7 @@ export function Odds() {
                           </div>
                           <div className="flex items-center justify-between">
                             <span className="text-xl font-normal text-slate-50 tracking-wide leading-tight">
-                              {game.home_team}
+                              {formatTeamName(game.home_team, game.sport_key)}
                             </span>
                             {game.home_score !== undefined && (
                               <span className="text-xl font-medium text-blue-400 ml-2 tabular-nums leading-tight">

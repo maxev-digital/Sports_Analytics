@@ -2,6 +2,25 @@ import { useState } from 'react';
 import { addStakeToBet, deleteBet, addManualBet, updateBet, settleBet } from '../utils/betTracking';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from './Toast';
+import { formatTeamName } from '../utils/teamNames';
+
+
+// Helper function to convert sport names to sport keys
+const sportKeyMapper = (sport: string): string => {
+  const sportMap: Record<string, string> = {
+    'NBA': 'basketball_nba',
+    'NCAAB': 'basketball_ncaab',
+    'NFL': 'americanfootball_nfl',
+    'NCAAF': 'americanfootball_ncaaf',
+    'NHL': 'icehockey_nhl',
+    'MLB': 'baseball_mlb',
+    'Basketball': 'basketball_nba',
+    'Football': 'americanfootball_nfl',
+    'Hockey': 'icehockey_nhl',
+    'Baseball': 'baseball_mlb',
+  };
+  return sportMap[sport] || sport.toLowerCase();
+};
 
 interface PersonalBetAnalyticsProps {
   stats: any;
@@ -555,7 +574,7 @@ export function PersonalBetAnalytics({
                   // Edit Mode
                   <div>
                     <div className="text-lg font-bold text-white mb-3">
-                      {bet.away_team} @ {bet.home_team}
+                      {formatTeamName(bet.away_team, sportKeyMapper(bet.sport))} @ {formatTeamName(bet.home_team, sportKeyMapper(bet.sport))}
                     </div>
                     <div className="space-y-3">
                       <div>
@@ -672,7 +691,7 @@ export function PersonalBetAnalytics({
                     <div className="flex justify-between items-start mb-3">
                       <div className="flex-1">
                         <div className="text-lg font-bold text-white mb-1">
-                          {bet.away_team} @ {bet.home_team}
+                          {formatTeamName(bet.away_team, sportKeyMapper(bet.sport))} @ {formatTeamName(bet.home_team, sportKeyMapper(bet.sport))}
                         </div>
                         <div className="text-sm text-slate-400 mb-2">
                           {bet.sport} • {new Date(bet.clicked_at).toLocaleDateString()}
@@ -747,7 +766,7 @@ export function PersonalBetAnalytics({
                   // Edit Mode
                   <div>
                     <div className="text-lg font-bold text-white mb-3">
-                      {bet.away_team} @ {bet.home_team}
+                      {formatTeamName(bet.away_team, sportKeyMapper(bet.sport))} @ {formatTeamName(bet.home_team, sportKeyMapper(bet.sport))}
                     </div>
                     <div className="space-y-3">
                       <div>
@@ -864,7 +883,7 @@ export function PersonalBetAnalytics({
                     <div className="flex justify-between items-start mb-3">
                       <div>
                         <div className="text-lg font-bold text-white mb-1">
-                          {bet.away_team} @ {bet.home_team}
+                          {formatTeamName(bet.away_team, sportKeyMapper(bet.sport))} @ {formatTeamName(bet.home_team, sportKeyMapper(bet.sport))}
                         </div>
                         <div className="text-sm text-slate-400 mb-1">
                           {bet.sport} • {new Date(bet.commence_time).toLocaleDateString()}
@@ -948,7 +967,7 @@ export function PersonalBetAnalytics({
                       {new Date(bet.settled_at).toLocaleDateString()}
                     </td>
                     <td className="py-3 px-4 text-sm text-white">
-                      {bet.away_team} @ {bet.home_team}
+                      {formatTeamName(bet.away_team, sportKeyMapper(bet.sport))} @ {formatTeamName(bet.home_team, sportKeyMapper(bet.sport))}
                     </td>
                     <td className="py-3 px-4 text-sm text-slate-300">
                       {bet.bet_side}

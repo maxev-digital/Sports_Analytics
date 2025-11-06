@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getApiUrl } from '../../config';
+import { formatTeamName } from '../../utils/teamNames';
 
 interface BookOdds {
   id: number;
@@ -296,7 +297,7 @@ export function ArbitrageFinder() {
                           {getMarketLabel(opp.market_type)}
                         </span>
                         <span className="text-white font-semibold">
-                          {opp.away_team} @ {opp.home_team}
+                          {formatTeamName(opp.away_team, opp.sport)} @ {formatTeamName(opp.home_team, opp.sport)}
                         </span>
                       </div>
                       <div className="text-right">

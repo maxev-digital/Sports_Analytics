@@ -1,5 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { getApiUrl } from '../config';
+import { formatTeamName } from '../utils/teamNames';
+
+
+// Helper function to convert sport names to sport keys
+const sportKeyMapper = (sport: string): string => {
+  const sportMap: Record<string, string> = {
+    'NBA': 'basketball_nba',
+    'NCAAB': 'basketball_ncaab',
+    'NFL': 'americanfootball_nfl',
+    'NCAAF': 'americanfootball_ncaaf',
+    'NHL': 'icehockey_nhl',
+    'MLB': 'baseball_mlb',
+    'Basketball': 'basketball_nba',
+    'Football': 'americanfootball_nfl',
+    'Hockey': 'icehockey_nhl',
+    'Baseball': 'baseball_mlb',
+  };
+  return sportMap[sport] || sport.toLowerCase();
+};
 
 interface RegressionFactor {
   name: string;
@@ -161,7 +180,7 @@ export const HalftimeTrackerAlerts: React.FC = () => {
             {/* Game Info */}
             <div className="bg-black/40 border-4 border-slate-700 rounded-lg p-4 mb-4">
               <h4 className="font-bold text-white text-2xl mb-2">
-                {opp.home_team} vs {opp.away_team}
+                {formatTeamName(opp.home_team, sportKeyMapper(opp.sport))} vs {formatTeamName(opp.away_team, sportKeyMapper(opp.sport))}
               </h4>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>

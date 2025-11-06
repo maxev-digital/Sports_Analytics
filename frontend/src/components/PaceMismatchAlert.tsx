@@ -1,5 +1,24 @@
 import { useState, useEffect } from 'react';
 import { getApiUrl } from '../config';
+import { formatTeamName } from '../utils/teamNames';
+
+
+// Helper function to convert sport names to sport keys
+const sportKeyMapper = (sport: string): string => {
+  const sportMap: Record<string, string> = {
+    'NBA': 'basketball_nba',
+    'NCAAB': 'basketball_ncaab',
+    'NFL': 'americanfootball_nfl',
+    'NCAAF': 'americanfootball_ncaaf',
+    'NHL': 'icehockey_nhl',
+    'MLB': 'baseball_mlb',
+    'Basketball': 'basketball_nba',
+    'Football': 'americanfootball_nfl',
+    'Hockey': 'icehockey_nhl',
+    'Baseball': 'baseball_mlb',
+  };
+  return sportMap[sport] || sport.toLowerCase();
+};
 
 interface PaceMismatchOpportunity {
   game_id: string;
@@ -110,7 +129,7 @@ export function PaceMismatchAlerts() {
                 📊 PRE-GAME
               </span>
               <span className="text-xl font-bold text-white">
-                {opp.away_team} @ {opp.home_team}
+                {formatTeamName(opp.away_team, sportKeyMapper(opp.sport))} @ {formatTeamName(opp.home_team, sportKeyMapper(opp.sport))}
               </span>
               {opp.status === 'live' && (
                 <span className="px-2 py-1 text-xs font-bold bg-red-600 text-white animate-pulse">
@@ -167,13 +186,13 @@ export function PaceMismatchAlerts() {
           {/* Pace Analysis */}
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div className="bg-slate-800/50 border border-slate-700 p-4">
-              <div className="text-sm text-slate-400 mb-2">🏠 {opp.home_team} Pace</div>
+              <div className="text-sm text-slate-400 mb-2">🏠 {formatTeamName(opp.home_team, sportKeyMapper(opp.sport))} Pace</div>
               <div className="text-2xl font-bold text-white">{opp.home_pace}</div>
               <div className="text-xs text-slate-500">possessions per 48 min</div>
             </div>
 
             <div className="bg-slate-800/50 border border-slate-700 p-4">
-              <div className="text-sm text-slate-400 mb-2">✈️ {opp.away_team} Pace</div>
+              <div className="text-sm text-slate-400 mb-2">✈️ {formatTeamName(opp.away_team, sportKeyMapper(opp.sport))} Pace</div>
               <div className="text-2xl font-bold text-white">{opp.away_pace}</div>
               <div className="text-xs text-slate-500">possessions per 48 min</div>
             </div>

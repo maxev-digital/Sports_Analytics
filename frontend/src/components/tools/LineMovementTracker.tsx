@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getApiUrl } from '../../config';
+import { formatTeamName } from '../../utils/teamNames';
 
 interface LineEntry {
   id: number;
@@ -202,7 +203,7 @@ export function LineMovementTracker() {
                     <div className="flex items-center gap-2 mb-1">
                       {getSportBadge(movement.sport)}
                       <span className="text-white font-semibold">
-                        {movement.away_team} @ {movement.home_team}
+                        {formatTeamName(movement.away_team, movement.sport)} @ {formatTeamName(movement.home_team, movement.sport)}
                       </span>
                     </div>
                     <div className="text-sm text-slate-300">

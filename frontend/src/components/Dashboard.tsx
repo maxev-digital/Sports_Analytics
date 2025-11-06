@@ -3,6 +3,7 @@ import { LiveGame } from '../types';
 import { GameCard } from './GameCard';
 import { sportEmojis } from '../utils/sportDetection';
 import { useWebSocket } from '../hooks/useWebSocket';
+import { formatTeamName } from '../utils/teamNames';
 
 type Sport = 'NBA' | 'NHL' | 'NCAAF' | 'NFL' | 'MLB' | 'ALL';
 
@@ -92,7 +93,7 @@ export function Dashboard() {
         speakAlert(game);
 
         // Log the alert
-        console.log(`🔔 ALERT: Strong bet detected for ${game.state.away_team.name} vs ${game.state.home_team.name}`);
+        console.log(`🔔 ALERT: Strong bet detected for ${formatTeamName(game.state.away_team.name, game.state.sport_key)} vs ${formatTeamName(game.state.home_team.name, game.state.sport_key)}`);
         console.log(`   Recommendation: ${game.projection.recommendation} with ${strength.toFixed(1)}% strength`);
       }
 
