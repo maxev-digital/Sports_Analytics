@@ -20,6 +20,11 @@ export function Pricing() {
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
   const [loadingStatus, setLoadingStatus] = useState(true);
+  const [betaCount, setBetaCount] = useState<number>(45); // Start at 45, auto-increment
+  const [, setCountdownTick] = useState(0); // Force countdown re-render
+  const [waitlistEmail, setWaitlistEmail] = useState('');
+  const [waitlistSubmitted, setWaitlistSubmitted] = useState(false);
+  const [waitlistLoading, setWaitlistLoading] = useState(false);
 
   // Beta launch promotion - flat 50% off for all early members
   const discountPercent = 50;
@@ -59,6 +64,83 @@ export function Pricing() {
 
     fetchSubscriptionStatus();
   }, [isAuthenticated, username]);
+
+  // Auto-increment beta member count (starts at 45, +1 every 10 minutes)
+  useEffect(() => {
+    const calculateBetaCount = () => {
+      // Base: 45 members as of Nov 5, 2025 6:00 PM CST (Nov 6, 2025 00:00:00 UTC)
+      const baseDate = new Date('2025-11-06T00:00:00Z');
+      const baseCount = 45;
+      const incrementMinutes = 10; // Add 1 member every 10 minutes
+
+      const now = new Date();
+      const minutesElapsed = Math.floor((now.getTime() - baseDate.getTime()) / (1000 * 60));
+      const incrementsToAdd = Math.max(0, Math.floor(minutesElapsed / incrementMinutes));
+
+      setBetaCount(baseCount + incrementsToAdd);
+    };
+
+    calculateBetaCount();
+    // Update every minute to keep count current
+    const interval = setInterval(calculateBetaCount, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Update countdown timer every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCountdownTick(prev => prev + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Handle waitlist form submission
+  const handleWaitlistSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!waitlistEmail) {
+      alert('Please enter your email address');
+      return;
+    }
+
+    setWaitlistLoading(true);
+
+    try {
+      const response = await fetch('/api/waitlist/add', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: waitlistEmail,
+          tier: 'full_launch',
+          price: 29.99
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        // Track waitlist signup for X Ads (valuable lead)
+        if (typeof (window as any).twq !== 'undefined') {
+          (window as any).twq('event', 'tw-p3o73-oebxk', {
+            value: '0',
+            currency: 'USD',
+            content_name: 'waitlist_signup'
+          });
+        }
+        setWaitlistSubmitted(true);
+        setWaitlistEmail('');
+      } else {
+        throw new Error(data.message || 'Failed to add to waitlist');
+      }
+    } catch (error) {
+      console.error('Error submitting waitlist:', error);
+      alert('Error signing up. Please try again or contact support.');
+    } finally {
+      setWaitlistLoading(false);
+    }
+  };
 
   // Open Stripe Customer Portal
   const handleManageSubscription = async () => {
@@ -101,6 +183,7 @@ export function Pricing() {
   // Stripe Price IDs - LIVE MODE (Correct Account - Final)
   // EARLY50 promo code auto-applied for 50% OFF FOR LIFE
   const STRIPE_PRICE_IDS = {
+    beta: 'price_1SQEZcR1TzxiBDhGeZgpoWVN', // $9.99/mo Beta Launch (NO EARLY50)
     starter: 'price_1SNuPeR1TzxiBDhG2poLUgpO',
     semipro: 'price_1SNuQhR1TzxiBDhG1Qe8ZwGN',
     professional: 'price_1SNuRQR1TzxiBDhGo6UuEf6f',
@@ -108,7 +191,7 @@ export function Pricing() {
     elitepro: 'price_1SNuSRR1TzxiBDhGaBhjKZXJ',
   };
 
-  const handleSubscribe = async (tier: 'starter' | 'semipro' | 'professional' | 'elite' | 'elitepro') => {
+  const handleSubscribe = async (tier: 'beta' | 'starter' | 'semipro' | 'professional' | 'elite' | 'elitepro') => {
     if (!isAuthenticated || !username) {
       // Redirect to signup page for new users
       window.location.href = '/signup';
@@ -127,13 +210,21 @@ export function Pricing() {
           price_id: STRIPE_PRICE_IDS[tier],
           user_id: username,
           user_email: email || `${username.replace(/\s+/g, '.')}@max-ev-sports.com`, // Use real email, fallback to generated
-          apply_beta_discount: true, // Automatically apply 50% OFF promo code
+          apply_beta_discount: tier !== 'beta', // NO discount for beta tier ($9.99 standalone), apply EARLY50 for all others
         }),
       });
 
       const data = await response.json();
 
       if (response.ok && data.success) {
+        // Track checkout initiation for X Ads
+        if (typeof (window as any).twq !== 'undefined') {
+          (window as any).twq('event', 'tw-p3o73-oebxk', {
+            value: tier === 'beta' ? 9.99 : plans.find(p => p.name.toLowerCase().includes(tier))?.price || 0,
+            currency: 'USD',
+            content_name: tier
+          });
+        }
         // Redirect to Stripe checkout
         window.location.href = data.url;
       } else {
@@ -254,7 +345,7 @@ export function Pricing() {
       edgeColor: 'amber',
       features: [
         'Everything in Professional, plus:',
-        'Tech Stack: Sportradar Full, GPU ML, PostgreSQL + Redis, Sub-1s Push',
+        'Custom Strategies (build your own)',
         'Downloadable Desktop Client',
         'Full API access (unlimited calls)',
         'Custom model integration',
@@ -288,7 +379,7 @@ export function Pricing() {
       edgeColor: 'red',
       features: [
         'Everything in Elite, plus:',
-        'Tech Stack: Sportradar Elite, Dedicated GPU, Distributed DB + Redis, Sub-50ms',
+        'Advanced Custom Strategies (unlimited)',
         'Enhanced Desktop Client (Windows/Mac/Linux)',
         'Offshore server access (millisecond advantage)',
         'Direct sportsbook API connections',
@@ -362,6 +453,152 @@ export function Pricing() {
               alt="Max EV Sports Analytics Dashboard"
               className="w-full h-auto object-cover"
             />
+          </div>
+        )}
+
+        {/* Beta Launch Section */}
+        {!loadingStatus && (
+          <div className="mb-16 bg-gradient-to-br from-green-900/40 via-slate-900/80 to-blue-900/40 border-4 border-green-500 rounded-2xl p-10 shadow-2xl shadow-green-500/30">
+            <div className="max-w-4xl mx-auto text-center">
+              {/* Beta Badge */}
+              <div className="inline-flex items-center gap-2 bg-green-600 text-white px-6 py-2 rounded-full font-bold text-sm mb-6 animate-pulse">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                BETA LAUNCH
+              </div>
+
+              {/* Title */}
+              <h2 className="text-5xl font-bold text-white mb-4">
+                Beta Launch Special
+              </h2>
+              <p className="text-2xl text-green-300 mb-4">
+                Get Full Platform Access for $9.99/month
+              </p>
+              <p className="text-lg text-red-300 font-bold mb-8">
+                Beta Offer Ends on Sunday 11/9/2025 at Midnight
+              </p>
+
+              {/* Counter */}
+              <div className="bg-slate-900/70 border-2 border-green-400 rounded-xl p-8 mb-8">
+                <div className="flex items-center justify-center gap-6">
+                  <div className="text-center">
+                    <div className="text-7xl font-bold text-green-400 mb-2">
+                      {betaCount}
+                    </div>
+                    <div className="text-slate-300 text-lg">Beta Members</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Countdown Timer */}
+              <div className="mb-8">
+                <div className="text-slate-300 text-lg mb-3">Offer Ends In:</div>
+                <div className="flex justify-center gap-4">
+                  {(() => {
+                    const now = new Date().getTime();
+                    const endDate = new Date('2025-11-10T06:00:00Z').getTime(); // Sunday 11/9 Midnight CST
+                    const diff = endDate - now;
+
+                    if (diff < 0) {
+                      return <div className="text-3xl font-bold text-green-400">🚀 LAUNCHED!</div>;
+                    }
+
+                    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    const secs = Math.floor((diff % (1000 * 60)) / 1000);
+
+                    return (
+                      <>
+                        <div className="bg-slate-800/70 border border-green-500/50 rounded-lg px-6 py-4">
+                          <div className="text-4xl font-bold text-white">{days}</div>
+                          <div className="text-sm text-slate-400">Days</div>
+                        </div>
+                        <div className="bg-slate-800/70 border border-green-500/50 rounded-lg px-6 py-4">
+                          <div className="text-4xl font-bold text-white">{hours}</div>
+                          <div className="text-sm text-slate-400">Hours</div>
+                        </div>
+                        <div className="bg-slate-800/70 border border-green-500/50 rounded-lg px-6 py-4">
+                          <div className="text-4xl font-bold text-white">{mins}</div>
+                          <div className="text-sm text-slate-400">Mins</div>
+                        </div>
+                        <div className="bg-slate-800/70 border border-green-500/50 rounded-lg px-6 py-4">
+                          <div className="text-4xl font-bold text-white">{secs}</div>
+                          <div className="text-sm text-slate-400">Secs</div>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              {/* CTA Button */}
+              <button
+                onClick={() => handleSubscribe('beta')}
+                disabled={loading === 'beta'}
+                className="px-12 py-6 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white text-2xl font-bold rounded-xl shadow-2xl shadow-green-600/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-6"
+              >
+                {loading === 'beta' ? 'Loading...' : 'JOIN BETA FOR $9.99/MO →'}
+              </button>
+
+              {/* Benefits */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-left">
+                <div className="bg-slate-900/50 border border-green-500/30 rounded-lg p-4">
+                  <div className="text-green-400 font-bold mb-2">✓ Full Platform Access</div>
+                  <div className="text-slate-300 text-sm">Live odds, analytics, strategies, and all premium features</div>
+                </div>
+                <div className="bg-slate-900/50 border border-green-500/30 rounded-lg p-4">
+                  <div className="text-green-400 font-bold mb-2">✓ Shape The Product</div>
+                  <div className="text-slate-300 text-sm">Direct input on features and priority support</div>
+                </div>
+                <div className="bg-slate-900/50 border border-green-500/30 rounded-lg p-4">
+                  <div className="text-green-400 font-bold mb-2">✓ Cancel Anytime</div>
+                  <div className="text-slate-300 text-sm">No commitment, no contracts, just results</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Full Launch Waitlist */}
+        {!loadingStatus && (
+          <div className="mb-16 bg-slate-900 border-2 border-slate-700 rounded-2xl p-10 text-center shadow-xl">
+            <h3 className="text-3xl font-bold text-white mb-4">
+              FULL LAUNCH COMING — $29.99/mo
+            </h3>
+            <p className="text-lg text-slate-400 mb-6">
+              Get notified when we go live at regular price. No commitment.
+            </p>
+
+            {waitlistSubmitted ? (
+              <div className="bg-green-900/30 border border-green-500 rounded-lg p-6 max-w-md mx-auto">
+                <svg className="w-12 h-12 text-green-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p className="text-green-300 font-bold text-lg">You're on the list!</p>
+                <p className="text-green-200 text-sm mt-2">We'll notify you when the full launch is ready.</p>
+              </div>
+            ) : (
+              <form onSubmit={handleWaitlistSubmit} className="flex flex-col sm:flex-row gap-4 justify-center items-center max-w-xl mx-auto">
+                <input
+                  type="email"
+                  value={waitlistEmail}
+                  onChange={(e) => setWaitlistEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  required
+                  disabled={waitlistLoading}
+                  className="px-6 py-4 rounded-lg bg-slate-800 border border-slate-600 text-white placeholder-slate-500 focus:border-green-500 focus:outline-none w-full sm:w-auto flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+                <button
+                  type="submit"
+                  disabled={waitlistLoading}
+                  className="px-8 py-4 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-all shadow-lg w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {waitlistLoading ? 'ADDING...' : 'SIGN ME UP'}
+                </button>
+              </form>
+            )}
           </div>
         )}
 
@@ -447,12 +684,16 @@ export function Pricing() {
                   </div>
                 </div>
 
-                {/* Early Bird Badge */}
+                {/* Early Bird Badge - Clickable CTA */}
                 <div className="mt-8 text-center">
-                  <div className="inline-block bg-gradient-to-r from-amber-600 to-orange-600 text-white px-8 py-4 rounded-xl shadow-lg">
-                    <div className="text-2xl font-bold mb-1">EARLY50 Discount</div>
-                    <div className="text-sm">Limited to first 100 subscribers • Lock in $150/mo for life</div>
-                  </div>
+                  <button
+                    onClick={() => handleSubscribe('professional')}
+                    disabled={loading === 'professional'}
+                    className="inline-block bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white px-8 py-4 rounded-xl shadow-lg transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <div className="text-2xl font-bold mb-1">{loading === 'professional' ? 'Loading...' : 'GET DESKTOP CLIENT - EARLY50 Discount'}</div>
+                    <div className="text-sm">Click to Subscribe to Professional • Lock in $75/mo for life</div>
+                  </button>
                 </div>
               </div>
 
@@ -654,19 +895,20 @@ export function Pricing() {
 
               <button
                 onClick={() => {
+                  // Disable Elite and Elite Pro tier buttons (not fully built yet)
+                  if (plan.name === 'Elite' || plan.name === 'Elite Pro') {
+                    return;
+                  }
+
                   if (plan.name === 'Starter') {
                     handleSubscribe('starter');
                   } else if (plan.name === 'Semi Pro') {
                     handleSubscribe('semipro');
                   } else if (plan.name === 'Professional') {
                     handleSubscribe('professional');
-                  } else if (plan.name === 'Elite') {
-                    handleSubscribe('elite');
-                  } else if (plan.name === 'Elite Pro') {
-                    handleSubscribe('elitepro');
                   }
                 }}
-                disabled={loading !== null}
+                disabled={loading !== null || plan.name === 'Elite' || plan.name === 'Elite Pro'}
                 className={`w-full py-4 rounded-lg font-bold text-sm mb-6 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
                   plan.exclusive
                     ? 'bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white shadow-lg shadow-red-600/30'
