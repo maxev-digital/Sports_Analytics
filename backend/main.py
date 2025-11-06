@@ -495,10 +495,15 @@ def filter_games_by_bookmakers(games: List[LiveGame], enabled_bookmakers: List[s
 
     for game in games:
         # Filter odds to only enabled bookmakers (with normalization)
-        filtered_odds = [odd for odd in game.odds if normalize_bookmaker_name(odd.bookmaker) in enabled_set]
+        # ALWAYS include "consensus" bookmaker (from Sports Data IO)
+        filtered_odds = [
+            odd for odd in game.odds
+            if normalize_bookmaker_name(odd.bookmaker) in enabled_set
+            or normalize_bookmaker_name(odd.bookmaker) == 'consensus'
+        ]
 
         # ALWAYS show all games (upcoming and live)
-        # The odds list will only contain the user's enabled bookmakers
+        # The odds list will only contain the user's enabled bookmakers + consensus
         # Games without matching bookmakers will simply have an empty odds array
         filtered_game = game.model_copy()  # Use model_copy() instead of deep copy for better performance
         filtered_game.odds = filtered_odds
@@ -1257,6 +1262,15 @@ async def add_to_waitlist(request: dict):
             )
 
             logger.info(f"Synced {email} to Brevo waitlist")
+
+            # Send admin notification
+            try:
+                from brevo_crm import send_admin_waitlist_notification
+                send_admin_waitlist_notification(email, tier, price)
+                logger.info(f"Sent admin notification for waitlist signup: {email}")
+            except Exception as notification_error:
+                logger.warning(f"Failed to send admin notification (continuing anyway): {notification_error}")
+
         except Exception as brevo_error:
             logger.warning(f"Failed to sync to Brevo (continuing anyway): {brevo_error}")
 

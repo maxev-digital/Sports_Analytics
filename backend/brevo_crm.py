@@ -500,6 +500,39 @@ class BrevoClient:
                     <a href="https://dashboard.stripe.com/payments" style="display: inline-block; background-color: #6772e5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px;">View in Stripe</a>
                 </p>
                 """
+
+            elif notification_type == "waitlist":
+                html_content = f"""
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <img src="{logo_url}" alt="Max EV Sports" style="width: 150px; height: auto; max-width: 100%;" />
+                </div>
+
+                <h2>📋 New Waitlist Signup</h2>
+                <p>Someone just joined the pricing page waitlist!</p>
+
+                <table style="border-collapse: collapse; width: 100%; max-width: 500px;">
+                    <tr style="background-color: #f8f9fa;">
+                        <td style="padding: 10px; border: 1px solid #dee2e6; font-weight: bold;">Email</td>
+                        <td style="padding: 10px; border: 1px solid #dee2e6;">{details.get('email', 'N/A')}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid #dee2e6; font-weight: bold;">Tier</td>
+                        <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>{details.get('tier', 'N/A')}</strong></td>
+                    </tr>
+                    <tr style="background-color: #f8f9fa;">
+                        <td style="padding: 10px; border: 1px solid #dee2e6; font-weight: bold;">Price</td>
+                        <td style="padding: 10px; border: 1px solid #dee2e6;"><strong style="color: #2196F3; font-size: 18px;">{details.get('price', 'N/A')}</strong></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid #dee2e6; font-weight: bold;">Timestamp</td>
+                        <td style="padding: 10px; border: 1px solid #dee2e6;">{details.get('timestamp', 'N/A')}</td>
+                    </tr>
+                </table>
+
+                <p style="margin-top: 20px;">
+                    <a href="https://app.brevo.com/contact/list-listing/11" style="display: inline-block; background-color: #0B996E; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px;">View in Brevo</a>
+                </p>
+                """
             else:
                 html_content = f"<p>{details}</p>"
 
@@ -583,6 +616,20 @@ def send_admin_payment_notification(email: str, full_name: str, tier: str, amoun
             "full_name": full_name,
             "tier": tier,
             "amount": f"${amount:.2f}",
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
+    )
+
+
+def send_admin_waitlist_notification(email: str, tier: str, price: float):
+    """Send admin notification for pricing page waitlist signup"""
+    return brevo_client.send_admin_notification(
+        notification_type="waitlist",
+        subject="📋 New Waitlist Signup - MAX-EV Sports",
+        details={
+            "email": email,
+            "tier": tier,
+            "price": f"${price:.2f}",
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
     )
