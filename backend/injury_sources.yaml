@@ -1,0 +1,109 @@
+# Injury Monitor Sources Configuration
+# Top sports reporters and team feeds for real-time injury alerts
+
+insiders:
+  # NBA - Tier 1 (fastest breakers)
+  - handle: wojespn
+    name: Adrian Wojnarowski
+    sport: NBA
+    tier: 1
+  - handle: ShamsCharania
+    name: Shams Charania
+    sport: NBA
+    tier: 1
+
+  # NFL - Tier 1
+  - handle: AdamSchefter
+    name: Adam Schefter
+    sport: NFL
+    tier: 1
+  - handle: RapSheet
+    name: Ian Rapoport
+    sport: NFL
+    tier: 1
+
+  # NHL - Tier 1
+  - handle: frank_seravalli
+    name: Frank Seravalli
+    sport: NHL
+    tier: 1
+  - handle: PierreVLeBrun
+    name: Pierre LeBrun
+    sport: NHL
+    tier: 1
+
+  # MLB - Tier 1 (only monitor during season Apr-Oct)
+  - handle: JeffPassan
+    name: Jeff Passan
+    sport: MLB
+    tier: 1
+  - handle: Ken_Rosenthal
+    name: Ken Rosenthal
+    sport: MLB
+    tier: 1
+
+# Official team RSS feeds (backup/confirmation source)
+teams:
+  nba:
+    - name: Boston Celtics
+      rss: https://www.nba.com/celtics/rss.xml
+      abbrev: BOS
+    - name: Los Angeles Lakers
+      rss: https://www.nba.com/lakers/rss.xml
+      abbrev: LAL
+    - name: Golden State Warriors
+      rss: https://www.nba.com/warriors/rss.xml
+      abbrev: GSW
+    # Add more NBA teams as needed
+
+  nfl:
+    - name: Kansas City Chiefs
+      rss: https://www.chiefs.com/rss/news.xml
+      abbrev: KC
+    - name: Philadelphia Eagles
+      rss: https://www.philadelphiaeagles.com/rss.xml
+      abbrev: PHI
+    # Add more NFL teams as needed
+
+  nhl:
+    - name: Toronto Maple Leafs
+      abbrev: TOR
+    - name: Edmonton Oilers
+      abbrev: EDM
+    # NHL teams often don't have good RSS - rely on insiders
+
+# High-impact injury keywords for filtering
+keywords:
+  high_impact:
+    - "inactive"
+    - "out"
+    - "ruled out"
+    - "doubtful"
+    - "questionable"
+    - "probable"
+    - "game-time decision"
+    - "lineup"
+    - "starting"
+    - "scratch"
+    - "will miss"
+    - "expected to miss"
+    - "sidelined"
+    - "placed on IL"
+    - "placed on IR"
+    - "injury report"
+    - "DNP"
+    - "GTD"
+    - "day-to-day"
+    - "week-to-week"
+
+# Polling intervals (seconds)
+polling:
+  insiders: 20  # Check insiders every 20 seconds (fast breaking news)
+  teams: 60     # Check team feeds every 60 seconds (slower updates)
+  sleep: 3      # Sleep between poll cycles
+
+# Alert confidence thresholds
+confidence:
+  high: 0.90   # Tier 1 reporter + "ruled out"/"out"
+  medium: 0.75 # Tier 1 reporter + "doubtful"
+  low: 0.60    # Tier 1 reporter + "questionable"

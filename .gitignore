@@ -127,3 +127,55 @@ frontend/public/whistle-nfl.mp3
 frontend/public/whistle.mp3
 frontend/public/whoosh.mp3
 frontend/public/win.mp3
+
+# Backup files - OLD VERSIONS (cleanup in progress)
+*.backup
+*.bak
+*_temp.py
+*_prod.py
+*_updated.py
+*_old.py
+frontend/src/**/*.backup
+backend/**/*.backup
+
+# Data directories with user/tracking data
+backend/data/bets/
+backend/data/alerts/
+backend/data/bankroll_tracking/
+backend/data/feedback/
+backend/data/reversal_backtesting/
+
+# Old project artifacts
+sporttrader-frontend/
+Max_EV_Sports/
+
+# Nested repository artifacts
+backend/scrapers/ncaab/nba/
+
+# IDE specific
+.cursor/
+.windsurf/
+.claude/
+.codeium/
+
+# SSH keys and credentials
+.ssh/
+backend/github_pat_*.txt
+
+# Documentation overload (keep only essentials)
+*_COMPLETE.md
+*_SUMMARY.md
+*_STATUS.md
+*_ROADMAP.md
+*_GUIDE.md
+*_REPORT.md
+!README.md
+!CLAUDE.md
+
+# User account lists
+user_accounts_list.txt
+backend/USER_ACCOUNTS_*.txt
+
+# Large build artifacts
+frontend/dist-electron/
+backend/database/*.db.old_local

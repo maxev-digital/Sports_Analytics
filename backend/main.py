@@ -107,6 +107,18 @@ from routes.alert_preferences import router as alert_preferences_router
 app.include_router(alert_preferences_router)
 print(f"DEBUG: Alert Preferences router registered with prefix: {alert_preferences_router.prefix}")
 
+# Import and register Goalie Pull router
+try:
+    print("DEBUG: About to import goalie_pull router...")
+    from routes.goalie_pull import router as goalie_pull_router
+    print("DEBUG: Goalie Pull router imported successfully")
+    app.include_router(goalie_pull_router)
+    print(f"DEBUG: Goalie Pull router registered with prefix: {goalie_pull_router.prefix}")
+except Exception as e:
+    print(f"ERROR importing/registering goalie_pull router: {type(e).__name__}: {e}")
+    import traceback
+    traceback.print_exc()
+
 # Import and register Simulation router
 # TEMPORARILY DISABLED due to missing monte_carlo_totals dependency
 # from routes.simulation import router as simulation_router

@@ -33,8 +33,9 @@ class LinearRegressionTotalsModel:
             'mae': stats['mae'],
             'rmse': stats['rmse'],
             'r2': stats['r2'],
-            'within_5_pts': stats['within_5_pts'],
-            'within_10_pts': stats['within_10_pts'],
+            'within_5_pts': stats['within_5_points'],
+            'within_10_pts': stats['within_10_points'],
+            'accuracy': stats['within_5_points'],  # Use within_5_points as accuracy metric
             'games_trained': stats['n_samples']
         }
 
@@ -147,13 +148,7 @@ class LinearRegressionTotalsModel:
         return probability_over
 
 
-# Singleton instance
-_model_instance = None
-
-
 def get_nba_linear_regression_totals_model():
-    """Get or create singleton Linear Regression model instance"""
-    global _model_instance
-    if _model_instance is None:
-        _model_instance = LinearRegressionTotalsModel()
-    return _model_instance
+    """Get Linear Regression model instance"""
+    # Create new instance each time (no singleton caching)
+    return LinearRegressionTotalsModel()

@@ -63,38 +63,38 @@ export function Navigation() {
 
   // Main nav items (always visible)
   const mainNavItems = [
-    { path: '/live-games', label: 'Game Cards', emoji: uiEmojis.fire },
-    { path: '/odds', label: 'Odds', emoji: uiEmojis.chart },
-    { path: '/analytics', label: 'My Analytics', emoji: uiEmojis.search },
-    { path: '/alerts', label: 'Alerts', emoji: uiEmojis.lightning },
-    { path: '/props', label: 'Player Props', emoji: uiEmojis.book },
-    { path: '/handicapper-picks', label: 'Cappers Picks', emoji: uiEmojis.star },
+    { path: '/live-games', label: 'GAME CARDS', emoji: uiEmojis.fire },
+    { path: '/odds', label: 'ODDS', emoji: uiEmojis.chart },
+    { path: '/analytics', label: 'PERFORMANCE', emoji: uiEmojis.search },
+    { path: '/alerts', label: 'ALERTS', emoji: uiEmojis.lightning },
+    { path: '/props', label: 'PLAYER PROPS', emoji: uiEmojis.book },
+    { path: '/max-ev-edges', label: 'MAX EV EDGES', emoji: uiEmojis.star },
   ];
 
   // Strategy Results dropdown items (Live vs Pre-Game)
   const strategyResultsItems = [
-    { path: '/strategy-results', label: 'Live Strategies', emoji: uiEmojis.fire },
-    { path: '/pre-game-strategy-results', label: 'Pre-Game Strategies', emoji: uiEmojis.trophy },
+    { path: '/strategy-results', label: 'LIVE STRATEGIES', emoji: uiEmojis.fire },
+    { path: '/pre-game-strategy-results', label: 'PRE-GAME STRATEGIES', emoji: uiEmojis.trophy },
   ];
 
   // Strategy Settings dropdown items
   const strategyItems = [
-    { path: '/strategy-settings', label: 'Strategy Settings', emoji: uiEmojis.trophy },
+    { path: '/strategy-settings', label: 'STRATEGY SETTINGS', emoji: uiEmojis.trophy },
   ];
 
   // Tools dropdown items (includes Bookmaker Settings)
   const toolsItems = [
-    { path: '/tools', label: 'Betting Tools', emoji: uiEmojis.wrench },
-    { path: '/settings', label: 'Bookmaker Settings', emoji: uiEmojis.gear },
-    { path: '/my-feedback', label: 'My Feedback', emoji: uiEmojis.book, badge: unreadFeedbackCount },
-    ...(role === 'admin' ? [{ path: '/admin-dashboard', label: 'Admin Dashboard', emoji: uiEmojis.star }] : []),
+    { path: '/tools', label: 'BETTING TOOLS', emoji: uiEmojis.wrench },
+    { path: '/settings', label: 'BOOKMAKER SETTINGS', emoji: uiEmojis.gear },
+    { path: '/my-feedback', label: 'MY FEEDBACK', emoji: uiEmojis.book, badge: unreadFeedbackCount },
+    ...(role === 'admin' ? [{ path: '/admin-dashboard', label: 'ADMIN DASHBOARD', emoji: uiEmojis.star }] : []),
   ];
 
   // Learn dropdown items
   const learnItems = [
-    { path: '/learn', label: 'Learn Articles', emoji: uiEmojis.graduation },
-    { path: '/getting-started', label: 'Getting Started', emoji: uiEmojis.rocket },
-    { path: '/odds-explained', label: 'Odds Explained', emoji: uiEmojis.chart },
+    { path: '/learn', label: 'LEARN ARTICLES', emoji: uiEmojis.graduation },
+    { path: '/getting-started', label: 'GETTING STARTED', emoji: uiEmojis.rocket },
+    { path: '/odds-explained', label: 'ODDS EXPLAINED', emoji: uiEmojis.chart },
   ];
 
   const isActive = (path: string) => {
@@ -141,7 +141,7 @@ export function Navigation() {
           {/* Logo */}
           <Link to="/live-games" onClick={handleNavClick} className="hover:opacity-80 transition-opacity flex-shrink-0">
             <img
-              src="/logo.png"
+              src="./logo.png"
               alt="Max EV Sports"
               className="h-24 w-auto object-contain"
               style={{ minWidth: '120px', maxWidth: '200px' }}
@@ -155,7 +155,7 @@ export function Navigation() {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`px-5 py-2.5 rounded-lg font-semibold transition-all text-base flex items-center gap-2 ${
+                className={`px-5 py-2.5 rounded-lg font-bold transition-all text-base flex items-center gap-2 italic ${
                   isActive(item.path)
                     ? item.path === '/live-games'
                       ? 'bg-black text-white border-2 border-yellow-500 shadow-lg shadow-yellow-500/30'
@@ -163,14 +163,14 @@ export function Navigation() {
                     : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
                 }`}
               >
-                {item.emoji && (
+                {/* item.emoji && (
                   <img
                     src={item.emoji}
                     alt={item.label || 'Home'}
                     className={item.label ? "w-5 h-5" : "w-8 h-8"}
                     style={{ imageRendering: 'crisp-edges' }}
                   />
-                )}
+                ) */}
                 {item.label}
               </Link>
             ))}
@@ -179,14 +179,14 @@ export function Navigation() {
             <div className="relative" ref={strategyResultsRef}>
               <button
                 onClick={() => handleDropdownToggle(setStrategyResultsDropdownOpen, strategyResultsDropdownOpen)}
-                className={`px-5 py-2.5 rounded-lg font-semibold transition-all text-base flex items-center gap-2 ${
+                className={`px-5 py-2.5 rounded-lg font-bold transition-all text-base flex items-center gap-2 italic ${
                   isDropdownActive(strategyResultsItems)
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
                     : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
                 }`}
               >
-                <img src={uiEmojis.trophy} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} />
-                Strategy Results
+                {/* <img src={uiEmojis.trophy} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} /> */}
+                STRATEGY RESULTS
                 <svg className={`w-5 h-5 transition-transform ${strategyResultsDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
@@ -205,33 +205,33 @@ export function Navigation() {
                           : 'text-slate-300 hover:bg-slate-700 hover:text-slate-100'
                       }`}
                     >
-                      <img src={item.emoji} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} />
-                      <span className="font-semibold text-base">{item.label}</span>
+                      {/* <img src={item.emoji} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} /> */}
+                      <span className="font-semibold text-base italic">{item.label}</span>
                     </Link>
                   ))}
                 </div>
               )}
             </div>
 
-            {/* Main Nav Items - Remaining items (Cappers Picks) */}
+            {/* Main Nav Items - Remaining items (MAX EV Picks) */}
             {mainNavItems.slice(5).map((item) => (
               <Link
                 key={item.path}
                 to={item.path}
-                className={`px-5 py-2.5 rounded-lg font-semibold transition-all text-base flex items-center gap-2 ${
+                className={`px-5 py-2.5 rounded-lg font-bold transition-all text-base flex items-center gap-2 italic whitespace-nowrap ${
                   isActive(item.path)
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
                     : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
                 }`}
               >
-                {item.emoji && (
+                {/* item.emoji && (
                   <img
                     src={item.emoji}
                     alt={item.label || 'Home'}
                     className={item.label ? "w-5 h-5" : "w-8 h-8"}
                     style={{ imageRendering: 'crisp-edges' }}
                   />
-                )}
+                ) */}
                 {item.label}
               </Link>
             ))}
@@ -240,14 +240,14 @@ export function Navigation() {
             <div className="relative" ref={strategyRef}>
               <button
                 onClick={() => handleDropdownToggle(setStrategyDropdownOpen, strategyDropdownOpen)}
-                className={`px-5 py-2.5 rounded-lg font-semibold transition-all text-base flex items-center gap-2 ${
+                className={`px-5 py-2.5 rounded-lg font-semibold transition-all text-base flex items-center gap-2 italic ${
                   isDropdownActive(strategyItems)
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
                     : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
                 }`}
               >
-                <img src={uiEmojis.trophy} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} />
-                Strategies
+                {/* <img src={uiEmojis.trophy} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} /> */}
+                STRATEGIES
                 <svg className={`w-5 h-5 transition-transform ${strategyDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
@@ -266,8 +266,8 @@ export function Navigation() {
                           : 'text-slate-300 hover:bg-slate-700 hover:text-slate-100'
                       }`}
                     >
-                      <img src={item.emoji} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} />
-                      <span className="font-semibold text-base">{item.label}</span>
+                      {/* <img src={item.emoji} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} /> */}
+                      <span className="font-semibold text-base italic">{item.label}</span>
                     </Link>
                   ))}
                 </div>
@@ -278,14 +278,14 @@ export function Navigation() {
             <div className="relative" ref={toolsRef}>
               <button
                 onClick={() => handleDropdownToggle(setToolsDropdownOpen, toolsDropdownOpen)}
-                className={`px-5 py-2.5 rounded-lg font-semibold transition-all text-base flex items-center gap-2 relative ${
+                className={`px-5 py-2.5 rounded-lg font-semibold transition-all text-base flex items-center gap-2 relative italic ${
                   isDropdownActive(toolsItems)
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
                     : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
                 }`}
               >
-                <img src={uiEmojis.wrench} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} />
-                Tools
+                {/* <img src={uiEmojis.wrench} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} /> */}
+                TOOLS
                 <svg className={`w-5 h-5 transition-transform ${toolsDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
@@ -310,8 +310,8 @@ export function Navigation() {
                           : 'text-slate-300 hover:bg-slate-700 hover:text-slate-100'
                       }`}
                     >
-                      <img src={item.emoji} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} />
-                      <span className="font-semibold text-base flex-1">{item.label}</span>
+                      {/* <img src={item.emoji} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} /> */}
+                      <span className="font-semibold text-base flex-1 italic">{item.label}</span>
                       {item.badge && item.badge > 0 && (
                         <span className="bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full">
                           {item.badge}
@@ -328,14 +328,14 @@ export function Navigation() {
               <div className="relative" ref={learnRef}>
                 <button
                   onClick={() => handleDropdownToggle(setLearnDropdownOpen, learnDropdownOpen)}
-                  className={`px-5 py-2.5 rounded-lg font-semibold transition-all text-base flex items-center gap-2 ${
+                  className={`px-5 py-2.5 rounded-lg font-semibold transition-all text-base flex items-center gap-2 italic ${
                     isDropdownActive(learnItems)
                       ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
                       : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
                   }`}
                 >
-                  <img src={uiEmojis.graduation} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} />
-                  Learn
+                  {/* <img src={uiEmojis.graduation} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} /> */}
+                  LEARN
                   <svg className={`w-5 h-5 transition-transform ${learnDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>

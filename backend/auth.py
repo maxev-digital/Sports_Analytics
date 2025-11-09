@@ -6,10 +6,11 @@ import hashlib
 import json
 from pathlib import Path
 
-# In-memory session storage (will persist to file)
+# Session storage (persisted to file)
 sessions: Dict[str, dict] = {}
 users_file = Path("users.json")
 activity_log_file = Path("user_activity_log.json")
+sessions_file = Path("sessions.json")
 
 # Default users - 4 accounts + admin
 DEFAULT_USERS = {
@@ -60,6 +61,44 @@ def save_users(users: dict):
     with open(users_file, 'w') as f:
         json.dump(users, f, indent=2)
 
+def load_sessions():
+    """Load sessions from file"""
+    global sessions
+    if sessions_file.exists():
+        try:
+            with open(sessions_file, 'r') as f:
+                data = json.load(f)
+                # Convert ISO strings back to datetime objects
+                for token, session in data.items():
+                    session['created_at'] = datetime.fromisoformat(session['created_at'])
+                    session['expires_at'] = datetime.fromisoformat(session['expires_at'])
+                    session['last_activity'] = datetime.fromisoformat(session['last_activity'])
+                sessions = data
+                print(f"[AUTH] Loaded {len(sessions)} sessions from file")
+        except Exception as e:
+            print(f"[AUTH] Error loading sessions: {e}")
+            sessions = {}
+    else:
+        sessions = {}
+
+def save_sessions():
+    """Save sessions to file"""
+    try:
+        # Convert datetime objects to ISO strings for JSON serialization
+        serializable_sessions = {}
+        for token, session in sessions.items():
+            serializable_sessions[token] = {
+                'username': session['username'],
+                'created_at': session['created_at'].isoformat(),
+                'expires_at': session['expires_at'].isoformat(),
+                'last_activity': session['last_activity'].isoformat(),
+                'activity_count': session.get('activity_count', 0)
+            }
+        with open(sessions_file, 'w') as f:
+            json.dump(serializable_sessions, f, indent=2)
+    except Exception as e:
+        print(f"[AUTH] Error saving sessions: {e}")
+
 def hash_password(password: str) -> str:
     """Hash a password using SHA256"""
     return hashlib.sha256(password.encode()).hexdigest()
@@ -88,6 +127,9 @@ def create_session(username: str) -> str:
     # Log the login event
     log_user_activity(username, "login", {"token": token[:8] + "..."})
 
+    # Persist sessions to file
+    save_sessions()
+
     return token
 
 def verify_session(token: str) -> Optional[str]:
@@ -105,11 +147,16 @@ def verify_session(token: str) -> Optional[str]:
             "activity_count": session.get("activity_count", 0)
         })
         del sessions[token]
+        save_sessions()  # Persist deletion
         return None
 
     # Update last activity time
     session["last_activity"] = datetime.now()
     session["activity_count"] = session.get("activity_count", 0) + 1
+
+    # Persist activity update (only save occasionally to reduce I/O)
+    if session["activity_count"] % 10 == 0:  # Save every 10 activities
+        save_sessions()
 
     return session["username"]
 
@@ -128,6 +175,9 @@ def delete_session(token: str):
         })
 
         del sessions[token]
+
+        # Persist session deletion
+        save_sessions()
 
 def add_user(username: str, password: str) -> bool:
     """Add a new user"""
@@ -269,3 +319,6 @@ def get_all_users_list() -> List[dict]:
         }
         for username, user_data in users.items()
     ]
+
+# Load sessions on module import
+load_sessions()

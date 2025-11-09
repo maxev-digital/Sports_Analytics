@@ -1,0 +1,9 @@
+NCAAB REGRESSION-TO-MEAN STRATEGY BACKTEST SUMMARY
+======================================================================
+
+Backtest Date: 20251108_074745
+Total Games: 675
+Total Alerts: 30
+Win Rate: 60.0%
+Total P&L: $+480
+ROI: +14.5%

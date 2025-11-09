@@ -1,0 +1,160 @@
+TO: kovacspe@gmail.com
+SUBJECT: You're In! MAX EV SPORTS Desktop - Beta Access + Login Credentials
+
+═══════════════════════════════════════════════════════════════
+           MAX EV SPORTS - DESKTOP CLIENT BETA ACCESS
+═══════════════════════════════════════════════════════════════
+
+Hi there,
+
+You've been selected for exclusive beta testing! I've created an Elite
+test account for you with full access to the new MAX EV SPORTS Desktop Client.
+
+
+🔑 YOUR LOGIN CREDENTIALS
+─────────────────────────────────────────────────────────────────
+
+Username: kovacspe
+Password: TestPassword123!
+
+IMPORTANT: Keep these credentials safe! Your account has Elite access
+valid until October 28, 2026.
+
+
+📥 DOWNLOAD (Choose Your Platform)
+─────────────────────────────────────────────────────────────────
+
+WINDOWS:
+https://max-ev-sports.com/downloads/MAX-EV-SPORTS-Desktop-v1.0.0.zip
+Size: ~135 MB | Windows 10 or later
+
+MAC:
+https://max-ev-sports.com/downloads/MAX-EV-SPORTS-1.0.0.dmg
+Size: ~250 MB | macOS 10.13 or later
+
+
+🚀 WHAT'S NEW IN DESKTOP
+─────────────────────────────────────────────────────────────────
+
+✓ Multi-window support for pro workflows
+✓ System tray for quick access
+✓ Native desktop performance
+✓ Multi-monitor optimization
+✓ Always-on alert monitoring
+
+
+📋 WINDOWS INSTALLATION (4 Easy Steps)
+─────────────────────────────────────────────────────────────────
+
+1. Download the ZIP file from the Windows link above
+
+2. Extract the ZIP
+   Right-click the ZIP file → "Extract All"
+   Choose a location (Desktop or Documents recommended)
+
+3. Open the "win-unpacked" folder
+
+4. Double-click "MAX EV SPORTS.exe"
+   Login with credentials above
+
+
+⚠️ WINDOWS SECURITY WARNING (Expected)
+─────────────────────────────────────────────────────────────────
+
+You may see: "Windows protected your PC"
+
+This is normal! The app isn't code-signed yet.
+
+TO PROCEED:
+• Click "More info"
+• Then click "Run anyway"
+
+
+📋 MAC INSTALLATION (3 Easy Steps)
+─────────────────────────────────────────────────────────────────
+
+1. Download the DMG file from the Mac link above
+
+2. Double-click the DMG file
+   Drag "MAX EV SPORTS" to Applications folder
+
+3. Launch from Applications
+   Login with credentials above
+
+
+⚠️ MAC SECURITY WARNING (Expected)
+─────────────────────────────────────────────────────────────────
+
+You may see: "Cannot be opened because it is from an unidentified developer"
+
+TO PROCEED:
+• Right-click the app → "Open"
+• Click "Open" in the dialog
+• Works normally from then on
+
+
+🧪 WHAT WE NEED YOU TO TEST
+─────────────────────────────────────────────────────────────────
+
+• Login and authentication process
+• Live games data loading and updates
+• Alert notifications and accuracy
+• Multi-window features (open multiple views)
+• System tray functionality
+• Performance and responsiveness
+• Any bugs, errors, or weird behavior
+
+
+💬 SEND US YOUR FEEDBACK
+─────────────────────────────────────────────────────────────────
+
+Your feedback is crucial! Please share:
+• What works well
+• What doesn't work
+• Feature suggestions
+• Comparison to web version
+
+Email: support@max-ev-sports.com
+
+
+🛠️ TROUBLESHOOTING
+─────────────────────────────────────────────────────────────────
+
+App Won't Launch?
+   • Check your security settings
+   • Try running as Administrator (Windows) or use Open menu (Mac)
+   • Restart your computer and try again
+
+Blank Screen After Login?
+   • Check your internet connection
+   • Try logging out and back in
+
+Still Having Issues?
+   Reply to this email with:
+   • Screenshot of the issue
+   • What you were trying to do
+   • Your OS and version
+
+
+💻 SYSTEM REQUIREMENTS
+─────────────────────────────────────────────────────────────────
+
+Windows: Windows 10 or later
+Mac: macOS 10.13 (High Sierra) or later
+RAM: 4GB minimum (8GB recommended)
+Disk Space: 500MB available
+Internet: Required for real-time data
+
+
+═══════════════════════════════════════════════════════════════
+
+Thank you for being part of our beta testing community!
+
+🎯 Casino Tears - MAX EV SPORTS™
+
+Website: https://max-ev-sports.com
+Documentation: https://max-ev-sports.com/learn
+
+© 2025 Casino Tears. All rights reserved.
+
+═══════════════════════════════════════════════════════════════

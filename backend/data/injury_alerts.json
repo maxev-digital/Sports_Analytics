@@ -1,0 +1,954 @@
+[
+  {
+    "source": "nitter:RapSheet",
+    "title": "Jalen Hurts doubtful tonight vs Baltimore Ravens with hamstring strain",
+    "link": "http://127.0.0.1:8080/RapSheet/status/1762462852",
+    "published": "2025-11-06T21:00:52.575614Z",
+    "entities_guess": [
+      "Jalen Hurts",
+      "Philadelphia Eagles",
+      "Baltimore Ravens"
+    ],
+    "text": "Jalen Hurts doubtful tonight vs Baltimore Ravens with hamstring strain",
+    "confidence": 0.85,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:wojespn",
+    "title": "Luka Doncic ruled out tonight vs Golden State Warriors with ankle sprain",
+    "link": "http://127.0.0.1:8080/wojespn/status/1762462822",
+    "published": "2025-11-06T21:00:22.570161Z",
+    "entities_guess": [
+      "Luka Doncic",
+      "Dallas Mavericks",
+      "Golden State Warriors"
+    ],
+    "text": "Luka Doncic ruled out tonight vs Golden State Warriors with ankle sprain",
+    "confidence": 0.95,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:RapSheet",
+    "title": "Lamar Jackson out tonight vs Buffalo Bills with shoulder injury",
+    "link": "http://127.0.0.1:8080/RapSheet/status/1762462792",
+    "published": "2025-11-06T20:59:52.565009Z",
+    "entities_guess": [
+      "Lamar Jackson",
+      "Baltimore Ravens",
+      "Buffalo Bills"
+    ],
+    "text": "Lamar Jackson out tonight vs Buffalo Bills with shoulder injury",
+    "confidence": 0.95,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:ShamsCharania",
+    "title": "Luka Doncic questionable tonight vs Golden State Warriors with knee soreness",
+    "link": "http://127.0.0.1:8080/ShamsCharania/status/1762462762",
+    "published": "2025-11-06T20:59:22.559672Z",
+    "entities_guess": [
+      "Luka Doncic",
+      "Dallas Mavericks",
+      "Golden State Warriors"
+    ],
+    "text": "Luka Doncic questionable tonight vs Golden State Warriors with knee soreness",
+    "confidence": 0.75,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:wojespn",
+    "title": "Kevin Durant questionable tonight vs Los Angeles Lakers with knee soreness",
+    "link": "http://127.0.0.1:8080/wojespn/status/1762462732",
+    "published": "2025-11-06T20:58:52.554401Z",
+    "entities_guess": [
+      "Kevin Durant",
+      "Phoenix Suns",
+      "Los Angeles Lakers"
+    ],
+    "text": "Kevin Durant questionable tonight vs Los Angeles Lakers with knee soreness",
+    "confidence": 0.75,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:RapSheet",
+    "title": "Josh Allen game-time decision tonight vs Philadelphia Eagles with back tightness",
+    "link": "http://127.0.0.1:8080/RapSheet/status/1762462702",
+    "published": "2025-11-06T20:58:22.549436Z",
+    "entities_guess": [
+      "Josh Allen",
+      "Buffalo Bills",
+      "Philadelphia Eagles"
+    ],
+    "text": "Josh Allen game-time decision tonight vs Philadelphia Eagles with back tightness",
+    "confidence": 0.7,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:wojespn",
+    "title": "Kevin Durant out tonight vs Milwaukee Bucks with shoulder injury",
+    "link": "http://127.0.0.1:8080/wojespn/status/1762462672",
+    "published": "2025-11-06T20:57:52.545053Z",
+    "entities_guess": [
+      "Kevin Durant",
+      "Phoenix Suns",
+      "Milwaukee Bucks"
+    ],
+    "text": "Kevin Durant out tonight vs Milwaukee Bucks with shoulder injury",
+    "confidence": 0.95,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:AdamSchefter",
+    "title": "Jalen Hurts game-time decision tonight vs Kansas City Chiefs with back tightness",
+    "link": "http://127.0.0.1:8080/AdamSchefter/status/1762462642",
+    "published": "2025-11-06T20:57:22.540026Z",
+    "entities_guess": [
+      "Jalen Hurts",
+      "Philadelphia Eagles",
+      "Kansas City Chiefs"
+    ],
+    "text": "Jalen Hurts game-time decision tonight vs Kansas City Chiefs with back tightness",
+    "confidence": 0.7,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:AdamSchefter",
+    "title": "Patrick Mahomes questionable tonight vs Cincinnati Bengals with knee soreness",
+    "link": "http://127.0.0.1:8080/AdamSchefter/status/1762462612",
+    "published": "2025-11-06T20:56:52.534892Z",
+    "entities_guess": [
+      "Patrick Mahomes",
+      "Kansas City Chiefs",
+      "Cincinnati Bengals"
+    ],
+    "text": "Patrick Mahomes questionable tonight vs Cincinnati Bengals with knee soreness",
+    "confidence": 0.75,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:AdamSchefter",
+    "title": "Joe Burrow doubtful tonight vs Baltimore Ravens with hamstring strain",
+    "link": "http://127.0.0.1:8080/AdamSchefter/status/1762462582",
+    "published": "2025-11-06T20:56:22.529665Z",
+    "entities_guess": [
+      "Joe Burrow",
+      "Cincinnati Bengals",
+      "Baltimore Ravens"
+    ],
+    "text": "Joe Burrow doubtful tonight vs Baltimore Ravens with hamstring strain",
+    "confidence": 0.85,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:RapSheet",
+    "title": "Lamar Jackson ruled out tonight vs Philadelphia Eagles with ankle sprain",
+    "link": "http://127.0.0.1:8080/RapSheet/status/1762462552",
+    "published": "2025-11-06T20:55:52.523959Z",
+    "entities_guess": [
+      "Lamar Jackson",
+      "Baltimore Ravens",
+      "Philadelphia Eagles"
+    ],
+    "text": "Lamar Jackson ruled out tonight vs Philadelphia Eagles with ankle sprain",
+    "confidence": 0.95,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:wojespn",
+    "title": "Giannis Antetokounmpo out tonight vs Los Angeles Lakers with shoulder injury",
+    "link": "http://127.0.0.1:8080/wojespn/status/1762462522",
+    "published": "2025-11-06T20:55:22.516493Z",
+    "entities_guess": [
+      "Giannis Antetokounmpo",
+      "Milwaukee Bucks",
+      "Los Angeles Lakers"
+    ],
+    "text": "Giannis Antetokounmpo out tonight vs Los Angeles Lakers with shoulder injury",
+    "confidence": 0.95,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:AdamSchefter",
+    "title": "Patrick Mahomes doubtful tonight vs Cincinnati Bengals with hamstring strain",
+    "link": "http://127.0.0.1:8080/AdamSchefter/status/1762462492",
+    "published": "2025-11-06T20:54:52.511443Z",
+    "entities_guess": [
+      "Patrick Mahomes",
+      "Kansas City Chiefs",
+      "Cincinnati Bengals"
+    ],
+    "text": "Patrick Mahomes doubtful tonight vs Cincinnati Bengals with hamstring strain",
+    "confidence": 0.85,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:ShamsCharania",
+    "title": "Giannis Antetokounmpo ruled out tonight vs Phoenix Suns with ankle sprain",
+    "link": "http://127.0.0.1:8080/ShamsCharania/status/1762462462",
+    "published": "2025-11-06T20:54:22.507304Z",
+    "entities_guess": [
+      "Giannis Antetokounmpo",
+      "Milwaukee Bucks",
+      "Phoenix Suns"
+    ],
+    "text": "Giannis Antetokounmpo ruled out tonight vs Phoenix Suns with ankle sprain",
+    "confidence": 0.95,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:RapSheet",
+    "title": "Patrick Mahomes ruled out tonight vs Baltimore Ravens with ankle sprain",
+    "link": "http://127.0.0.1:8080/RapSheet/status/1762462432",
+    "published": "2025-11-06T20:53:52.503306Z",
+    "entities_guess": [
+      "Patrick Mahomes",
+      "Kansas City Chiefs",
+      "Baltimore Ravens"
+    ],
+    "text": "Patrick Mahomes ruled out tonight vs Baltimore Ravens with ankle sprain",
+    "confidence": 0.95,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:ShamsCharania",
+    "title": "Luka Doncic ruled out tonight vs Milwaukee Bucks with ankle sprain",
+    "link": "http://127.0.0.1:8080/ShamsCharania/status/1762462402",
+    "published": "2025-11-06T20:53:22.498607Z",
+    "entities_guess": [
+      "Luka Doncic",
+      "Dallas Mavericks",
+      "Milwaukee Bucks"
+    ],
+    "text": "Luka Doncic ruled out tonight vs Milwaukee Bucks with ankle sprain",
+    "confidence": 0.95,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:RapSheet",
+    "title": "Lamar Jackson doubtful tonight vs Cincinnati Bengals with hamstring strain",
+    "link": "http://127.0.0.1:8080/RapSheet/status/1762462372",
+    "published": "2025-11-06T20:52:52.494366Z",
+    "entities_guess": [
+      "Lamar Jackson",
+      "Baltimore Ravens",
+      "Cincinnati Bengals"
+    ],
+    "text": "Lamar Jackson doubtful tonight vs Cincinnati Bengals with hamstring strain",
+    "confidence": 0.85,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:RapSheet",
+    "title": "Josh Allen questionable tonight vs Kansas City Chiefs with knee soreness",
+    "link": "http://127.0.0.1:8080/RapSheet/status/1762462342",
+    "published": "2025-11-06T20:52:22.490028Z",
+    "entities_guess": [
+      "Josh Allen",
+      "Buffalo Bills",
+      "Kansas City Chiefs"
+    ],
+    "text": "Josh Allen questionable tonight vs Kansas City Chiefs with knee soreness",
+    "confidence": 0.75,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:AdamSchefter",
+    "title": "Josh Allen questionable tonight vs Baltimore Ravens with knee soreness",
+    "link": "http://127.0.0.1:8080/AdamSchefter/status/1762462312",
+    "published": "2025-11-06T20:51:52.485351Z",
+    "entities_guess": [
+      "Josh Allen",
+      "Buffalo Bills",
+      "Baltimore Ravens"
+    ],
+    "text": "Josh Allen questionable tonight vs Baltimore Ravens with knee soreness",
+    "confidence": 0.75,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:AdamSchefter",
+    "title": "Lamar Jackson questionable tonight vs Buffalo Bills with knee soreness",
+    "link": "http://127.0.0.1:8080/AdamSchefter/status/1762462282",
+    "published": "2025-11-06T20:51:22.481265Z",
+    "entities_guess": [
+      "Lamar Jackson",
+      "Baltimore Ravens",
+      "Buffalo Bills"
+    ],
+    "text": "Lamar Jackson questionable tonight vs Buffalo Bills with knee soreness",
+    "confidence": 0.75,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:RapSheet",
+    "title": "Jalen Hurts questionable tonight vs Kansas City Chiefs with knee soreness",
+    "link": "http://127.0.0.1:8080/RapSheet/status/1762462252",
+    "published": "2025-11-06T20:50:52.477095Z",
+    "entities_guess": [
+      "Jalen Hurts",
+      "Philadelphia Eagles",
+      "Kansas City Chiefs"
+    ],
+    "text": "Jalen Hurts questionable tonight vs Kansas City Chiefs with knee soreness",
+    "confidence": 0.75,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:RapSheet",
+    "title": "Patrick Mahomes questionable tonight vs Buffalo Bills with knee soreness",
+    "link": "http://127.0.0.1:8080/RapSheet/status/1762462222",
+    "published": "2025-11-06T20:50:22.472553Z",
+    "entities_guess": [
+      "Patrick Mahomes",
+      "Kansas City Chiefs",
+      "Buffalo Bills"
+    ],
+    "text": "Patrick Mahomes questionable tonight vs Buffalo Bills with knee soreness",
+    "confidence": 0.75,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:wojespn",
+    "title": "Stephen Curry doubtful tonight vs Phoenix Suns with hamstring strain",
+    "link": "http://127.0.0.1:8080/wojespn/status/1762462192",
+    "published": "2025-11-06T20:49:52.468107Z",
+    "entities_guess": [
+      "Stephen Curry",
+      "Golden State Warriors",
+      "Phoenix Suns"
+    ],
+    "text": "Stephen Curry doubtful tonight vs Phoenix Suns with hamstring strain",
+    "confidence": 0.85,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:RapSheet",
+    "title": "Lamar Jackson questionable tonight vs Buffalo Bills with knee soreness",
+    "link": "http://127.0.0.1:8080/RapSheet/status/1762462162",
+    "published": "2025-11-06T20:49:22.463828Z",
+    "entities_guess": [
+      "Lamar Jackson",
+      "Baltimore Ravens",
+      "Buffalo Bills"
+    ],
+    "text": "Lamar Jackson questionable tonight vs Buffalo Bills with knee soreness",
+    "confidence": 0.75,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:RapSheet",
+    "title": "Joe Burrow doubtful tonight vs Kansas City Chiefs with hamstring strain",
+    "link": "http://127.0.0.1:8080/RapSheet/status/1762462132",
+    "published": "2025-11-06T20:48:52.459815Z",
+    "entities_guess": [
+      "Joe Burrow",
+      "Cincinnati Bengals",
+      "Kansas City Chiefs"
+    ],
+    "text": "Joe Burrow doubtful tonight vs Kansas City Chiefs with hamstring strain",
+    "confidence": 0.85,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:wojespn",
+    "title": "Kevin Durant out tonight vs Milwaukee Bucks with shoulder injury",
+    "link": "http://127.0.0.1:8080/wojespn/status/1762462102",
+    "published": "2025-11-06T20:48:22.455075Z",
+    "entities_guess": [
+      "Kevin Durant",
+      "Phoenix Suns",
+      "Milwaukee Bucks"
+    ],
+    "text": "Kevin Durant out tonight vs Milwaukee Bucks with shoulder injury",
+    "confidence": 0.95,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:wojespn",
+    "title": "LeBron James ruled out tonight vs Dallas Mavericks with ankle sprain",
+    "link": "http://127.0.0.1:8080/wojespn/status/1762462072",
+    "published": "2025-11-06T20:47:52.451050Z",
+    "entities_guess": [
+      "LeBron James",
+      "Los Angeles Lakers",
+      "Dallas Mavericks"
+    ],
+    "text": "LeBron James ruled out tonight vs Dallas Mavericks with ankle sprain",
+    "confidence": 0.95,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:RapSheet",
+    "title": "Joe Burrow out tonight vs Buffalo Bills with shoulder injury",
+    "link": "http://127.0.0.1:8080/RapSheet/status/1762462042",
+    "published": "2025-11-06T20:47:22.447474Z",
+    "entities_guess": [
+      "Joe Burrow",
+      "Cincinnati Bengals",
+      "Buffalo Bills"
+    ],
+    "text": "Joe Burrow out tonight vs Buffalo Bills with shoulder injury",
+    "confidence": 0.95,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:RapSheet",
+    "title": "Lamar Jackson ruled out tonight vs Philadelphia Eagles with ankle sprain",
+    "link": "http://127.0.0.1:8080/RapSheet/status/1762462012",
+    "published": "2025-11-06T20:46:52.443683Z",
+    "entities_guess": [
+      "Lamar Jackson",
+      "Baltimore Ravens",
+      "Philadelphia Eagles"
+    ],
+    "text": "Lamar Jackson ruled out tonight vs Philadelphia Eagles with ankle sprain",
+    "confidence": 0.95,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:ShamsCharania",
+    "title": "Stephen Curry game-time decision tonight vs Phoenix Suns with back tightness",
+    "link": "http://127.0.0.1:8080/ShamsCharania/status/1762461982",
+    "published": "2025-11-06T20:46:22.439389Z",
+    "entities_guess": [
+      "Stephen Curry",
+      "Golden State Warriors",
+      "Phoenix Suns"
+    ],
+    "text": "Stephen Curry game-time decision tonight vs Phoenix Suns with back tightness",
+    "confidence": 0.7,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:wojespn",
+    "title": "Luka Doncic game-time decision tonight vs Golden State Warriors with back tightness",
+    "link": "http://127.0.0.1:8080/wojespn/status/1762461952",
+    "published": "2025-11-06T20:45:52.435448Z",
+    "entities_guess": [
+      "Luka Doncic",
+      "Dallas Mavericks",
+      "Golden State Warriors"
+    ],
+    "text": "Luka Doncic game-time decision tonight vs Golden State Warriors with back tightness",
+    "confidence": 0.7,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:AdamSchefter",
+    "title": "Lamar Jackson out tonight vs Buffalo Bills with shoulder injury",
+    "link": "http://127.0.0.1:8080/AdamSchefter/status/1762461922",
+    "published": "2025-11-06T20:45:22.432116Z",
+    "entities_guess": [
+      "Lamar Jackson",
+      "Baltimore Ravens",
+      "Buffalo Bills"
+    ],
+    "text": "Lamar Jackson out tonight vs Buffalo Bills with shoulder injury",
+    "confidence": 0.95,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:AdamSchefter",
+    "title": "Josh Allen game-time decision tonight vs Cincinnati Bengals with back tightness",
+    "link": "http://127.0.0.1:8080/AdamSchefter/status/1762461892",
+    "published": "2025-11-06T20:44:52.428837Z",
+    "entities_guess": [
+      "Josh Allen",
+      "Buffalo Bills",
+      "Cincinnati Bengals"
+    ],
+    "text": "Josh Allen game-time decision tonight vs Cincinnati Bengals with back tightness",
+    "confidence": 0.7,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:wojespn",
+    "title": "Kevin Durant questionable tonight vs Golden State Warriors with knee soreness",
+    "link": "http://127.0.0.1:8080/wojespn/status/1762461862",
+    "published": "2025-11-06T20:44:22.425811Z",
+    "entities_guess": [
+      "Kevin Durant",
+      "Phoenix Suns",
+      "Golden State Warriors"
+    ],
+    "text": "Kevin Durant questionable tonight vs Golden State Warriors with knee soreness",
+    "confidence": 0.75,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:RapSheet",
+    "title": "Patrick Mahomes questionable tonight vs Philadelphia Eagles with knee soreness",
+    "link": "http://127.0.0.1:8080/RapSheet/status/1762461832",
+    "published": "2025-11-06T20:43:52.422040Z",
+    "entities_guess": [
+      "Patrick Mahomes",
+      "Kansas City Chiefs",
+      "Philadelphia Eagles"
+    ],
+    "text": "Patrick Mahomes questionable tonight vs Philadelphia Eagles with knee soreness",
+    "confidence": 0.75,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:ShamsCharania",
+    "title": "Stephen Curry questionable tonight vs Milwaukee Bucks with knee soreness",
+    "link": "http://127.0.0.1:8080/ShamsCharania/status/1762461802",
+    "published": "2025-11-06T20:43:22.418608Z",
+    "entities_guess": [
+      "Stephen Curry",
+      "Golden State Warriors",
+      "Milwaukee Bucks"
+    ],
+    "text": "Stephen Curry questionable tonight vs Milwaukee Bucks with knee soreness",
+    "confidence": 0.75,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:ShamsCharania",
+    "title": "Kevin Durant ruled out tonight vs Golden State Warriors with ankle sprain",
+    "link": "http://127.0.0.1:8080/ShamsCharania/status/1762461772",
+    "published": "2025-11-06T20:42:52.415320Z",
+    "entities_guess": [
+      "Kevin Durant",
+      "Phoenix Suns",
+      "Golden State Warriors"
+    ],
+    "text": "Kevin Durant ruled out tonight vs Golden State Warriors with ankle sprain",
+    "confidence": 0.95,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:AdamSchefter",
+    "title": "Patrick Mahomes out tonight vs Buffalo Bills with shoulder injury",
+    "link": "http://127.0.0.1:8080/AdamSchefter/status/1762461742",
+    "published": "2025-11-06T20:42:22.412381Z",
+    "entities_guess": [
+      "Patrick Mahomes",
+      "Kansas City Chiefs",
+      "Buffalo Bills"
+    ],
+    "text": "Patrick Mahomes out tonight vs Buffalo Bills with shoulder injury",
+    "confidence": 0.95,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:AdamSchefter",
+    "title": "Patrick Mahomes doubtful tonight vs Buffalo Bills with hamstring strain",
+    "link": "http://127.0.0.1:8080/AdamSchefter/status/1762461712",
+    "published": "2025-11-06T20:41:52.407943Z",
+    "entities_guess": [
+      "Patrick Mahomes",
+      "Kansas City Chiefs",
+      "Buffalo Bills"
+    ],
+    "text": "Patrick Mahomes doubtful tonight vs Buffalo Bills with hamstring strain",
+    "confidence": 0.85,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:RapSheet",
+    "title": "Lamar Jackson ruled out tonight vs Cincinnati Bengals with ankle sprain",
+    "link": "http://127.0.0.1:8080/RapSheet/status/1762461682",
+    "published": "2025-11-06T20:41:22.404737Z",
+    "entities_guess": [
+      "Lamar Jackson",
+      "Baltimore Ravens",
+      "Cincinnati Bengals"
+    ],
+    "text": "Lamar Jackson ruled out tonight vs Cincinnati Bengals with ankle sprain",
+    "confidence": 0.95,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:AdamSchefter",
+    "title": "Josh Allen doubtful tonight vs Philadelphia Eagles with hamstring strain",
+    "link": "http://127.0.0.1:8080/AdamSchefter/status/1762461652",
+    "published": "2025-11-06T20:40:52.401900Z",
+    "entities_guess": [
+      "Josh Allen",
+      "Buffalo Bills",
+      "Philadelphia Eagles"
+    ],
+    "text": "Josh Allen doubtful tonight vs Philadelphia Eagles with hamstring strain",
+    "confidence": 0.85,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:RapSheet",
+    "title": "Patrick Mahomes out tonight vs Cincinnati Bengals with shoulder injury",
+    "link": "http://127.0.0.1:8080/RapSheet/status/1762461622",
+    "published": "2025-11-06T20:40:22.398178Z",
+    "entities_guess": [
+      "Patrick Mahomes",
+      "Kansas City Chiefs",
+      "Cincinnati Bengals"
+    ],
+    "text": "Patrick Mahomes out tonight vs Cincinnati Bengals with shoulder injury",
+    "confidence": 0.95,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:wojespn",
+    "title": "Luka Doncic game-time decision tonight vs Milwaukee Bucks with back tightness",
+    "link": "http://127.0.0.1:8080/wojespn/status/1762461592",
+    "published": "2025-11-06T20:39:52.395092Z",
+    "entities_guess": [
+      "Luka Doncic",
+      "Dallas Mavericks",
+      "Milwaukee Bucks"
+    ],
+    "text": "Luka Doncic game-time decision tonight vs Milwaukee Bucks with back tightness",
+    "confidence": 0.7,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:RapSheet",
+    "title": "Patrick Mahomes questionable tonight vs Baltimore Ravens with knee soreness",
+    "link": "http://127.0.0.1:8080/RapSheet/status/1762461562",
+    "published": "2025-11-06T20:39:22.391640Z",
+    "entities_guess": [
+      "Patrick Mahomes",
+      "Kansas City Chiefs",
+      "Baltimore Ravens"
+    ],
+    "text": "Patrick Mahomes questionable tonight vs Baltimore Ravens with knee soreness",
+    "confidence": 0.75,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:wojespn",
+    "title": "Luka Doncic game-time decision tonight vs Los Angeles Lakers with back tightness",
+    "link": "http://127.0.0.1:8080/wojespn/status/1762461532",
+    "published": "2025-11-06T20:38:52.387469Z",
+    "entities_guess": [
+      "Luka Doncic",
+      "Dallas Mavericks",
+      "Los Angeles Lakers"
+    ],
+    "text": "Luka Doncic game-time decision tonight vs Los Angeles Lakers with back tightness",
+    "confidence": 0.7,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:wojespn",
+    "title": "Kevin Durant doubtful tonight vs Golden State Warriors with hamstring strain",
+    "link": "http://127.0.0.1:8080/wojespn/status/1762461502",
+    "published": "2025-11-06T20:38:22.384356Z",
+    "entities_guess": [
+      "Kevin Durant",
+      "Phoenix Suns",
+      "Golden State Warriors"
+    ],
+    "text": "Kevin Durant doubtful tonight vs Golden State Warriors with hamstring strain",
+    "confidence": 0.85,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:AdamSchefter",
+    "title": "Jalen Hurts ruled out tonight vs Baltimore Ravens with ankle sprain",
+    "link": "http://127.0.0.1:8080/AdamSchefter/status/1762461472",
+    "published": "2025-11-06T20:37:52.381193Z",
+    "entities_guess": [
+      "Jalen Hurts",
+      "Philadelphia Eagles",
+      "Baltimore Ravens"
+    ],
+    "text": "Jalen Hurts ruled out tonight vs Baltimore Ravens with ankle sprain",
+    "confidence": 0.95,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:RapSheet",
+    "title": "Patrick Mahomes ruled out tonight vs Baltimore Ravens with ankle sprain",
+    "link": "http://127.0.0.1:8080/RapSheet/status/1762461442",
+    "published": "2025-11-06T20:37:22.378810Z",
+    "entities_guess": [
+      "Patrick Mahomes",
+      "Kansas City Chiefs",
+      "Baltimore Ravens"
+    ],
+    "text": "Patrick Mahomes ruled out tonight vs Baltimore Ravens with ankle sprain",
+    "confidence": 0.95,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:ShamsCharania",
+    "title": "Kevin Durant ruled out tonight vs Milwaukee Bucks with ankle sprain",
+    "link": "http://127.0.0.1:8080/ShamsCharania/status/1762461412",
+    "published": "2025-11-06T20:36:52.376519Z",
+    "entities_guess": [
+      "Kevin Durant",
+      "Phoenix Suns",
+      "Milwaukee Bucks"
+    ],
+    "text": "Kevin Durant ruled out tonight vs Milwaukee Bucks with ankle sprain",
+    "confidence": 0.95,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:AdamSchefter",
+    "title": "Lamar Jackson out tonight vs Philadelphia Eagles with shoulder injury",
+    "link": "http://127.0.0.1:8080/AdamSchefter/status/1762461382",
+    "published": "2025-11-06T20:36:22.373777Z",
+    "entities_guess": [
+      "Lamar Jackson",
+      "Baltimore Ravens",
+      "Philadelphia Eagles"
+    ],
+    "text": "Lamar Jackson out tonight vs Philadelphia Eagles with shoulder injury",
+    "confidence": 0.95,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:AdamSchefter",
+    "title": "Josh Allen out tonight vs Kansas City Chiefs with shoulder injury",
+    "link": "http://127.0.0.1:8080/AdamSchefter/status/1762461352",
+    "published": "2025-11-06T20:35:52.370934Z",
+    "entities_guess": [
+      "Josh Allen",
+      "Buffalo Bills",
+      "Kansas City Chiefs"
+    ],
+    "text": "Josh Allen out tonight vs Kansas City Chiefs with shoulder injury",
+    "confidence": 0.95,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:ShamsCharania",
+    "title": "Luka Doncic out tonight vs Phoenix Suns with shoulder injury",
+    "link": "http://127.0.0.1:8080/ShamsCharania/status/1762461322",
+    "published": "2025-11-06T20:35:22.368798Z",
+    "entities_guess": [
+      "Luka Doncic",
+      "Dallas Mavericks",
+      "Phoenix Suns"
+    ],
+    "text": "Luka Doncic out tonight vs Phoenix Suns with shoulder injury",
+    "confidence": 0.95,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:AdamSchefter",
+    "title": "Patrick Mahomes out tonight vs Baltimore Ravens with shoulder injury",
+    "link": "http://127.0.0.1:8080/AdamSchefter/status/1762461292",
+    "published": "2025-11-06T20:34:52.365951Z",
+    "entities_guess": [
+      "Patrick Mahomes",
+      "Kansas City Chiefs",
+      "Baltimore Ravens"
+    ],
+    "text": "Patrick Mahomes out tonight vs Baltimore Ravens with shoulder injury",
+    "confidence": 0.95,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:wojespn",
+    "title": "Luka Doncic ruled out tonight vs Phoenix Suns with ankle sprain",
+    "link": "http://127.0.0.1:8080/wojespn/status/1762461262",
+    "published": "2025-11-06T20:34:22.363823Z",
+    "entities_guess": [
+      "Luka Doncic",
+      "Dallas Mavericks",
+      "Phoenix Suns"
+    ],
+    "text": "Luka Doncic ruled out tonight vs Phoenix Suns with ankle sprain",
+    "confidence": 0.95,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:ShamsCharania",
+    "title": "LeBron James doubtful tonight vs Milwaukee Bucks with hamstring strain",
+    "link": "http://127.0.0.1:8080/ShamsCharania/status/1762461232",
+    "published": "2025-11-06T20:33:52.361277Z",
+    "entities_guess": [
+      "LeBron James",
+      "Los Angeles Lakers",
+      "Milwaukee Bucks"
+    ],
+    "text": "LeBron James doubtful tonight vs Milwaukee Bucks with hamstring strain",
+    "confidence": 0.85,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:RapSheet",
+    "title": "Patrick Mahomes questionable tonight vs Baltimore Ravens with knee soreness",
+    "link": "http://127.0.0.1:8080/RapSheet/status/1762461202",
+    "published": "2025-11-06T20:33:22.358919Z",
+    "entities_guess": [
+      "Patrick Mahomes",
+      "Kansas City Chiefs",
+      "Baltimore Ravens"
+    ],
+    "text": "Patrick Mahomes questionable tonight vs Baltimore Ravens with knee soreness",
+    "confidence": 0.75,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:wojespn",
+    "title": "Stephen Curry ruled out tonight vs Milwaukee Bucks with ankle sprain",
+    "link": "http://127.0.0.1:8080/wojespn/status/1762461172",
+    "published": "2025-11-06T20:32:52.356780Z",
+    "entities_guess": [
+      "Stephen Curry",
+      "Golden State Warriors",
+      "Milwaukee Bucks"
+    ],
+    "text": "Stephen Curry ruled out tonight vs Milwaukee Bucks with ankle sprain",
+    "confidence": 0.95,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:AdamSchefter",
+    "title": "Lamar Jackson game-time decision tonight vs Buffalo Bills with back tightness",
+    "link": "http://127.0.0.1:8080/AdamSchefter/status/1762461142",
+    "published": "2025-11-06T20:32:22.354478Z",
+    "entities_guess": [
+      "Lamar Jackson",
+      "Baltimore Ravens",
+      "Buffalo Bills"
+    ],
+    "text": "Lamar Jackson game-time decision tonight vs Buffalo Bills with back tightness",
+    "confidence": 0.7,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:ShamsCharania",
+    "title": "Kevin Durant out tonight vs Golden State Warriors with shoulder injury",
+    "link": "http://127.0.0.1:8080/ShamsCharania/status/1762461112",
+    "published": "2025-11-06T20:31:52.352083Z",
+    "entities_guess": [
+      "Kevin Durant",
+      "Phoenix Suns",
+      "Golden State Warriors"
+    ],
+    "text": "Kevin Durant out tonight vs Golden State Warriors with shoulder injury",
+    "confidence": 0.95,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:RapSheet",
+    "title": "Patrick Mahomes doubtful tonight vs Philadelphia Eagles with hamstring strain",
+    "link": "http://127.0.0.1:8080/RapSheet/status/1762461082",
+    "published": "2025-11-06T20:31:22.350082Z",
+    "entities_guess": [
+      "Patrick Mahomes",
+      "Kansas City Chiefs",
+      "Philadelphia Eagles"
+    ],
+    "text": "Patrick Mahomes doubtful tonight vs Philadelphia Eagles with hamstring strain",
+    "confidence": 0.85,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:RapSheet",
+    "title": "Patrick Mahomes game-time decision tonight vs Cincinnati Bengals with back tightness",
+    "link": "http://127.0.0.1:8080/RapSheet/status/1762461052",
+    "published": "2025-11-06T20:30:52.347643Z",
+    "entities_guess": [
+      "Patrick Mahomes",
+      "Kansas City Chiefs",
+      "Cincinnati Bengals"
+    ],
+    "text": "Patrick Mahomes game-time decision tonight vs Cincinnati Bengals with back tightness",
+    "confidence": 0.7,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:AdamSchefter",
+    "title": "Joe Burrow questionable tonight vs Baltimore Ravens with knee soreness",
+    "link": "http://127.0.0.1:8080/AdamSchefter/status/1762461022",
+    "published": "2025-11-06T20:30:22.345543Z",
+    "entities_guess": [
+      "Joe Burrow",
+      "Cincinnati Bengals",
+      "Baltimore Ravens"
+    ],
+    "text": "Joe Burrow questionable tonight vs Baltimore Ravens with knee soreness",
+    "confidence": 0.75,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:RapSheet",
+    "title": "Jalen Hurts ruled out tonight vs Baltimore Ravens with ankle sprain",
+    "link": "http://127.0.0.1:8080/RapSheet/status/1762460992",
+    "published": "2025-11-06T20:29:52.343709Z",
+    "entities_guess": [
+      "Jalen Hurts",
+      "Philadelphia Eagles",
+      "Baltimore Ravens"
+    ],
+    "text": "Jalen Hurts ruled out tonight vs Baltimore Ravens with ankle sprain",
+    "confidence": 0.95,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:AdamSchefter",
+    "title": "Jalen Hurts questionable tonight vs Buffalo Bills with knee soreness",
+    "link": "http://127.0.0.1:8080/AdamSchefter/status/1762460962",
+    "published": "2025-11-06T20:29:22.340715Z",
+    "entities_guess": [
+      "Jalen Hurts",
+      "Philadelphia Eagles",
+      "Buffalo Bills"
+    ],
+    "text": "Jalen Hurts questionable tonight vs Buffalo Bills with knee soreness",
+    "confidence": 0.75,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:ShamsCharania",
+    "title": "Luka Doncic doubtful tonight vs Milwaukee Bucks with hamstring strain",
+    "link": "http://127.0.0.1:8080/ShamsCharania/status/1762460962",
+    "published": "2025-11-06T20:29:22.340715Z",
+    "entities_guess": [
+      "Luka Doncic",
+      "Dallas Mavericks",
+      "Milwaukee Bucks"
+    ],
+    "text": "Luka Doncic doubtful tonight vs Milwaukee Bucks with hamstring strain",
+    "confidence": 0.85,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:AdamSchefter",
+    "title": "Patrick Mahomes questionable tonight vs Baltimore Ravens with knee soreness",
+    "link": "http://127.0.0.1:8080/AdamSchefter/status/1762460962",
+    "published": "2025-11-06T20:29:22.340715Z",
+    "entities_guess": [
+      "Patrick Mahomes",
+      "Kansas City Chiefs",
+      "Baltimore Ravens"
+    ],
+    "text": "Patrick Mahomes questionable tonight vs Baltimore Ravens with knee soreness",
+    "confidence": 0.75,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:ShamsCharania",
+    "title": "Stephen Curry out tonight vs Dallas Mavericks with shoulder injury",
+    "link": "http://127.0.0.1:8080/ShamsCharania/status/1762460962",
+    "published": "2025-11-06T20:29:22.340715Z",
+    "entities_guess": [
+      "Stephen Curry",
+      "Golden State Warriors",
+      "Dallas Mavericks"
+    ],
+    "text": "Stephen Curry out tonight vs Dallas Mavericks with shoulder injury",
+    "confidence": 0.95,
+    "test_mode": true
+  },
+  {
+    "source": "nitter:RapSheet",
+    "title": "Patrick Mahomes doubtful tonight vs Baltimore Ravens with hamstring strain",
+    "link": "http://127.0.0.1:8080/RapSheet/status/1762460962",
+    "published": "2025-11-06T20:29:22.340715Z",
+    "entities_guess": [
+      "Patrick Mahomes",
+      "Kansas City Chiefs",
+      "Baltimore Ravens"
+    ],
+    "text": "Patrick Mahomes doubtful tonight vs Baltimore Ravens with hamstring strain",
+    "confidence": 0.85,
+    "test_mode": true
+  }
+]

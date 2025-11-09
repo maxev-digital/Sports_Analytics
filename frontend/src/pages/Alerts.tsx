@@ -9,6 +9,7 @@ import { QuarterReversalAlerts } from '../components/QuarterReversalAlert';
 import { InjuryPropsAlerts } from '../components/InjuryPropsAlert';
 import { GenericStrategyAlert } from '../components/GenericStrategyAlert';
 import { BetTypePerformance } from '../components/BetTypePerformance';
+import { BetAlertTestPanel } from '../components/BetAlertTestPanel';
 import { getApiUrl } from '../config';
 import { useSoundEffect } from '../hooks/useSoundEffect';
 
@@ -302,6 +303,9 @@ export function Alerts() {
               </button>
             </div>
           </div>
+
+          {/* Test Panel for Bet Alert Notifications */}
+          <BetAlertTestPanel />
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">

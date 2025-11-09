@@ -1,14 +1,15 @@
 """Game tracking and state management"""
-from live_models import GameState, LiveGame, GameOdds, Team, GameProjection, TeamStats, NFLLiveStats, NFLTeamStats, NHLMomentumStats, NBAMomentumStats, NFLMomentumStats, NHLTeamStats, MLBTeamStats
-from sportsdataio_odds_client import SportsDataIOOddsClient
+from live_models import GameState, LiveGame, GameOdds, Team, GameProjection, TeamStats, NFLLiveStats, NFLTeamStats, NHLMomentumStats, NBAMomentumStats, NFLMomentumStats, NHLTeamStats, MLBTeamStats, WeatherInfo
+from odds_client import OddsAPIClient
 from projector import GameProjector
 from momentum_calculator import MomentumCalculator
 # DISABLED: NBA API causes timeouts - using ESPN only
 # from nba_stats_client import NBAStatsClient
 from nba_live_client import NBALiveClient
 # from nba_momentum_client import NBAMomentumClient
-from espn_nba_client import ESPNnbaClient  # ESPN NBA stats client
-from config import POLL_INTERVAL, ENABLE_ESPN_STATS
+from espn_nba_client import ESPNnbaClient  # ESPN NBA stats client (fallback only)
+from scrapers.teamrankings_nba_scraper import TeamRankingsNBAScraper  # Primary NBA stats source
+from config import POLL_INTERVAL, ENABLE_ESPN_STATS, QUIET_HOURS_ENABLED, QUIET_HOURS_START, QUIET_HOURS_END
 # Conditionally import ESPN clients based on feature flag
 if ENABLE_ESPN_STATS:
     from espn_nfl_client import ESPNNFLClient
@@ -16,10 +17,14 @@ if ENABLE_ESPN_STATS:
     from nfl_momentum_client import NFLMomentumClient
     from nhl_stats_client import NHLStatsClient
     from mlb_stats_client import MLBStatsClient
+    from espn_ncaab_client import ESPNNCAABClient
 from nhl_goalie_pull_predictor import GoaliePullPredictor
 from strategies.favorite_comeback_detector import FavoriteComebackDetector
 from strategies.halftime_tracker import HalftimeTracker
 from strategies.momentum_detector import MomentumDetector
+from strategies.nba_quarter_reversal import QuarterReversalDetector
+from ml.nba_regression_analyzer import NBARegressionAnalyzer
+from ml.ncaab_regression_analyzer import NCAABRegressionAnalyzer
 from typing import Dict, List, Optional
 import asyncio
 import logging
@@ -29,25 +34,28 @@ logger = logging.getLogger(__name__)
 
 class GameTracker:
     def __init__(self):
-        self.odds_client = SportsDataIOOddsClient()
+        self.odds_client = OddsAPIClient()  # The Odds API (works perfectly for NCAAB)
         self.projector = GameProjector()
         # DISABLED: NBA API causes timeouts
         # self.nba_stats_client = NBAStatsClient()
         self.nba_live_client = NBALiveClient()
         # self.nba_momentum_client = NBAMomentumClient()
-        self.espn_nba_client = ESPNnbaClient()  # ESPN NBA stats client (always enabled)
+        self.teamrankings_scraper = TeamRankingsNBAScraper()  # Primary NBA stats source (free, reliable)
+        self.espn_nba_client = ESPNnbaClient()  # ESPN NBA stats client (fallback only)
         # Conditionally initialize ESPN clients based on feature flag
         if ENABLE_ESPN_STATS:
             self.espn_nfl_client = ESPNNFLClient()
             self.nfl_stats_client = NFLStatsClient()
             self.nfl_momentum_client = NFLMomentumClient()
             self.nhl_stats_client = NHLStatsClient()
+            self.espn_ncaab_client = ESPNNCAABClient()
             self.mlb_stats_client = MLBStatsClient()
         else:
             self.espn_nfl_client = None
             self.nfl_stats_client = None
             self.nfl_momentum_client = None
             self.nhl_stats_client = None
+            self.espn_ncaab_client = None
             self.mlb_stats_client = None
         self.games: Dict[str, LiveGame] = {}
         self.running = False
@@ -67,12 +75,160 @@ class GameTracker:
         self.favorite_comeback_detector = FavoriteComebackDetector()
         self.halftime_tracker = HalftimeTracker()
         self.momentum_detector = MomentumDetector()
-        
+        self.quarter_reversal_detector = QuarterReversalDetector()
+        # Max EV Boost ML analyzers (lazy-loaded on first use)
+        self.nba_regression_analyzer = None
+        self.ncaab_regression_analyzer = None
+        self.max_ev_boost_alerts: List[Dict] = []  # Track Max EV Boost regression alerts
+
+    def _is_quiet_hours(self) -> bool:
+        """Check if we're currently in quiet hours (no API calls)"""
+        if not QUIET_HOURS_ENABLED:
+            return False
+
+        from datetime import datetime
+        current_hour = datetime.now().hour
+
+        # Handle overnight quiet hours (e.g., 11 PM - 9 AM)
+        if QUIET_HOURS_START > QUIET_HOURS_END:
+            return current_hour >= QUIET_HOURS_START or current_hour < QUIET_HOURS_END
+        # Handle same-day quiet hours (e.g., 2 AM - 6 AM)
+        else:
+            return QUIET_HOURS_START <= current_hour < QUIET_HOURS_END
+
+    def _get_nba_regression_analyzer(self):
+        """Lazy-load NBA regression analyzer"""
+        if self.nba_regression_analyzer is None:
+            logger.info("Loading NBA Max EV Boost analyzer...")
+            self.nba_regression_analyzer = NBARegressionAnalyzer()
+        return self.nba_regression_analyzer
+
+    def _get_ncaab_regression_analyzer(self):
+        """Lazy-load NCAAB regression analyzer"""
+        if self.ncaab_regression_analyzer is None:
+            logger.info("Loading NCAAB Max EV Boost analyzer...")
+            self.ncaab_regression_analyzer = NCAABRegressionAnalyzer()
+        return self.ncaab_regression_analyzer
+
+    def _analyze_max_ev_boost_opportunities(self):
+        """Analyze games for Max EV Boost regression opportunities"""
+        self.max_ev_boost_alerts.clear()
+
+        for game_id, game in self.games.items():
+            try:
+                sport_key = game.state.sport_key
+
+                # Only analyze NBA and NCAAB games
+                if sport_key not in ['basketball_nba', 'basketball_ncaab']:
+                    continue
+
+                # Skip if no team stats available
+                if not game.home_team_stats or not game.away_team_stats:
+                    continue
+
+                # Get current live total (average across books)
+                if not game.odds or len(game.odds) == 0:
+                    continue
+
+                live_total = sum(book.total for book in game.odds) / len(game.odds)
+
+                # Prepare game data for analyzer
+                if sport_key == 'basketball_nba':
+                    analyzer = self._get_nba_regression_analyzer()
+
+                    # Convert team stats to analyzer format
+                    game_data = {
+                        'game_id': game_id,
+                        'home_team': game.state.home_team.name,
+                        'away_team': game.state.away_team.name,
+                        'home_stats': {
+                            'games_played': game.home_team_stats.games_played,
+                            'wins': game.home_team_stats.wins,
+                            'win_pct': game.home_team_stats.win_pct,
+                            'ppg': game.home_team_stats.pts_per_game,
+                            'opp_ppg': game.home_team_stats.pts_allowed,
+                            'point_diff': game.home_team_stats.net_rating,
+                            'fg_pct': game.home_team_stats.fg_pct,
+                            'fg3_pct': game.home_team_stats.fg3_pct,
+                            'ft_pct': game.home_team_stats.ft_pct,
+                            'rebounds': 44.0,  # Default value
+                            'assists': 25.0,  # Default value
+                            'turnovers': 13.5,  # Default value
+                            'steals': 7.5,  # Default value
+                            'blocks': 5.0,  # Default value
+                            'plus_minus': game.home_team_stats.net_rating,
+                            'last_5_ppg': game.home_team_stats.last_5_avg_pts or game.home_team_stats.pts_per_game,
+                            'last_10_ppg': game.home_team_stats.pts_per_game,
+                            'last_5_wins': 3,  # Default value
+                            'last_10_wins': 6,  # Default value
+                            'momentum': 0.0  # Default value
+                        },
+                        'away_stats': {
+                            'games_played': game.away_team_stats.games_played,
+                            'wins': game.away_team_stats.wins,
+                            'win_pct': game.away_team_stats.win_pct,
+                            'ppg': game.away_team_stats.pts_per_game,
+                            'opp_ppg': game.away_team_stats.pts_allowed,
+                            'point_diff': game.away_team_stats.net_rating,
+                            'fg_pct': game.away_team_stats.fg_pct,
+                            'fg3_pct': game.away_team_stats.fg3_pct,
+                            'ft_pct': game.away_team_stats.ft_pct,
+                            'rebounds': 44.0,  # Default value
+                            'assists': 25.0,  # Default value
+                            'turnovers': 13.5,  # Default value
+                            'steals': 7.5,  # Default value
+                            'blocks': 5.0,  # Default value
+                            'plus_minus': game.away_team_stats.net_rating,
+                            'last_5_ppg': game.away_team_stats.last_5_avg_pts or game.away_team_stats.pts_per_game,
+                            'last_10_ppg': game.away_team_stats.pts_per_game,
+                            'last_5_wins': 3,  # Default value
+                            'last_10_wins': 6,  # Default value
+                            'momentum': 0.0  # Default value
+                        },
+                        'live_total': live_total
+                    }
+
+                elif sport_key == 'basketball_ncaab':
+                    # NCAAB uses KenPom data - skip if not available
+                    # This would need KenPom integration which isn't in TeamStats
+                    continue
+
+                # Run analysis
+                result = analyzer.analyze_game(game_data)
+
+                # Only create alert if it's a betting opportunity (2.0+ SD)
+                if result.get('is_alert', False):
+                    alert = {
+                        'game_id': game_id,
+                        'strategy': 'Max EV Boost',
+                        'sport': 'NBA' if sport_key == 'basketball_nba' else 'NCAAB',
+                        'matchup': f"{game_data['away_team']} @ {game_data['home_team']}",
+                        'recommendation': result['recommended_bet'],
+                        'confidence': result['confidence'],
+                        'kelly_pct': result['kelly_pct'],
+                        'z_score': result['z_score'],
+                        'predicted_total': result['predicted_mean'],
+                        'live_total': result['live_total'],
+                        'edge_description': f"{result['confidence']} alert: Live total {result['live_total']} is {abs(result['z_score']):.1f} SD from predicted {result['predicted_mean']}"
+                    }
+                    self.max_ev_boost_alerts.append(alert)
+                    logger.info(f"[MAX EV BOOST] {alert['matchup']}: {alert['recommendation']} @ {live_total} (Z={result['z_score']:.2f}, Confidence={result['confidence']})")
+
+            except Exception as e:
+                logger.error(f"Error analyzing Max EV Boost for game {game_id}: {e}")
+                continue
+
     async def start(self):
         """Start tracking games"""
         self.running = True
         while self.running:
             try:
+                # Skip API calls during quiet hours to save credits
+                if self._is_quiet_hours():
+                    logger.info(f"Quiet hours active ({QUIET_HOURS_START}:00 - {QUIET_HOURS_END}:00). Skipping API calls.")
+                    await asyncio.sleep(60)  # Check every minute during quiet hours
+                    continue
+
                 await self.update_games()
                 await asyncio.sleep(POLL_INTERVAL)  # Poll based on config
             except Exception as e:
@@ -116,7 +272,15 @@ class GameTracker:
             'Vegas Golden Knights': 'vgk',
             'Washington Capitals': 'wsh',
             'Winnipeg Jets': 'wpg',
-            'Utah Hockey Club': 'uta'
+            'Utah Hockey Club': 'uta',
+            # Sports Data IO abbreviations (uppercase) -> API abbreviations (lowercase)
+            'ANA': 'ana', 'ARI': 'ari', 'BOS': 'bos', 'BUF': 'buf', 'CGY': 'cgy',
+            'CAR': 'car', 'CHI': 'chi', 'COL': 'col', 'CBJ': 'cbj', 'DAL': 'dal',
+            'DET': 'det', 'EDM': 'edm', 'FLA': 'fla', 'LA': 'lak', 'MIN': 'min',
+            'MON': 'mtl', 'NAS': 'nsh', 'NJ': 'njd', 'NYI': 'nyi', 'NYR': 'nyr',
+            'OTT': 'ott', 'PHI': 'phi', 'PIT': 'pit', 'SJ': 'sjs', 'SEA': 'sea',
+            'STL': 'stl', 'TB': 'tbl', 'TOR': 'tor', 'VAN': 'van', 'VEG': 'vgk',
+            'WAS': 'wsh', 'WSH': 'wsh', 'WPG': 'wpg', 'UTA': 'uta'
         }
         return team_map.get(team_name)
 
@@ -192,6 +356,14 @@ class GameTracker:
             'Tampa Bay Buccaneers': 'TB',
             'Tennessee Titans': 'TEN',
             'Washington Commanders': 'WSH',
+            # Sports Data IO abbreviations (already uppercase) -> ESPN abbreviations
+            'ARI': 'ARI', 'ATL': 'ATL', 'BAL': 'BAL', 'BUF': 'BUF', 'CAR': 'CAR',
+            'CHI': 'CHI', 'CIN': 'CIN', 'CLE': 'CLE', 'DAL': 'DAL', 'DEN': 'DEN',
+            'DET': 'DET', 'GB': 'GB', 'HOU': 'HOU', 'IND': 'IND', 'JAX': 'JAX',
+            'KC': 'KC', 'LV': 'LV', 'LAC': 'LAC', 'LAR': 'LAR', 'MIA': 'MIA',
+            'MIN': 'MIN', 'NE': 'NE', 'NO': 'NO', 'NYG': 'NYG', 'NYJ': 'NYJ',
+            'PHI': 'PHI', 'PIT': 'PIT', 'SF': 'SF', 'SEA': 'SEA', 'TB': 'TB',
+            'TEN': 'TEN', 'WAS': 'WSH', 'WSH': 'WSH'  # Sports Data IO uses WAS, ESPN uses WSH
         }
         return team_map.get(team_name)
 
@@ -481,7 +653,7 @@ class GameTracker:
         # Normalize team name for matching
         name_lower = team_name.lower()
 
-        # ESPN abbreviation mapping
+        # ESPN abbreviation mapping (full team names)
         team_map = {
             'atlanta hawks': 'ATL', 'boston celtics': 'BOS', 'brooklyn nets': 'BKN',
             'charlotte hornets': 'CHA', 'chicago bulls': 'CHI', 'cleveland cavaliers': 'CLE',
@@ -493,7 +665,15 @@ class GameTracker:
             'new york knicks': 'NYK', 'oklahoma city thunder': 'OKC', 'orlando magic': 'ORL',
             'philadelphia 76ers': 'PHI', 'phoenix suns': 'PHX', 'portland trail blazers': 'POR',
             'sacramento kings': 'SAC', 'san antonio spurs': 'SAS', 'toronto raptors': 'TOR',
-            'utah jazz': 'UTA', 'washington wizards': 'WAS'
+            'utah jazz': 'UTA', 'washington wizards': 'WAS',
+            # Sports Data IO abbreviation mappings (abbr -> ESPN abbr)
+            'pho': 'PHX',  # Phoenix uses PHO in Sports Data IO but PHX in ESPN
+            'uta': 'UTA', 'por': 'POR', 'sac': 'SAC', 'gsw': 'GSW', 'lac': 'LAC',
+            'lal': 'LAL', 'den': 'DEN', 'min': 'MIN', 'okc': 'OKC', 'dal': 'DAL',
+            'hou': 'HOU', 'mem': 'MEM', 'nor': 'NOP', 'nop': 'NOP', 'sa': 'SAS', 'sas': 'SAS',
+            'atl': 'ATL', 'cha': 'CHA', 'mia': 'MIA', 'orl': 'ORL', 'was': 'WAS',
+            'bkn': 'BKN', 'bos': 'BOS', 'ny': 'NYK', 'nyk': 'NYK', 'phi': 'PHI', 'tor': 'TOR',
+            'chi': 'CHI', 'cle': 'CLE', 'det': 'DET', 'ind': 'IND', 'mil': 'MIL'
         }
 
         return team_map.get(name_lower)
@@ -512,8 +692,11 @@ class GameTracker:
             live_scoreboard = self.nba_live_client.fetch_live_scoreboard()
             # Fetch ESPN NFL scoreboard for real-time NFL data
             self.espn_scoreboard_cache = self.espn_nfl_client.fetch_scoreboard()
+            # Fetch ESPN NCAAB scoreboard for real-time NCAAB data
+            ncaab_scoreboard_cache = self.espn_ncaab_client.fetch_scoreboard()
             logger.info(f"Fetched live scoreboard with {len(live_scoreboard)} team entries")
             logger.info(f"Fetched ESPN NFL scoreboard with {len(self.espn_scoreboard_cache.get('events', []))} games")
+            logger.info(f"Fetched ESPN NCAAB scoreboard with {len(ncaab_scoreboard_cache.get('events', []))} games")
         else:
             live_scoreboard = {}
             self.espn_scoreboard_cache = {'events': []}
@@ -581,6 +764,9 @@ class GameTracker:
                     for market in book.get('markets', []):
                         if market['key'] == 'totals':
                             outcomes = market['outcomes']
+                            # DEBUG: Log outcome names to debug NCAAB
+                            if sport_key == 'basketball_ncaab':
+                                logger.info(f"[NCAAB DEBUG] Book {book['title']} totals outcomes: {[o.get('name') for o in outcomes]}")
                             over_outcome = next((o for o in outcomes if o['name'] == 'Over'), None)
                             under_outcome = next((o for o in outcomes if o['name'] == 'Under'), None)
                             if over_outcome:
@@ -775,6 +961,18 @@ class GameTracker:
                             logger.info(f"ESPN NFL data: {game_data['home_team']} vs {game_data['away_team']} - Q{quarter} {time_remaining}")
                         else:
                             logger.warning(f"No ESPN NFL data for {game_data['home_team']} vs {game_data['away_team']}")
+                    elif game_data.get('sport_key', '') == 'basketball_ncaab':
+                        # For NCAAB games, use ESPN NCAAB client
+                        ncaab_live_info = self.espn_ncaab_client.get_live_game_info(game_data['home_team'])
+                        if not ncaab_live_info:
+                            ncaab_live_info = self.espn_ncaab_client.get_live_game_info(game_data['away_team'])
+                        
+                        if ncaab_live_info and ncaab_live_info['is_live']:
+                            quarter = ncaab_live_info['period']
+                            time_remaining = ncaab_live_info['clock']
+                            logger.info(f"ESPN NCAAB data: {game_data['home_team']} vs {game_data['away_team']} - Period {quarter} {time_remaining}")
+                        else:
+                            logger.warning(f"No ESPN NCAAB data for {game_data['home_team']} vs {game_data['away_team']}")
                     else:
                         # For NBA/other sports, use existing NBA client
                         live_info = self.nba_live_client.get_game_info(game_data['home_team'])
@@ -833,9 +1031,12 @@ class GameTracker:
                     self.pregame_totals_cache[game_id] = pregame_total
                     logger.info(f"Cached pregame total for {game_id}: {pregame_total}")
 
-                # Get team stats (fetch early so projector can use them)
-                home_stats = self._get_team_stats(game_state.home_team.name)
-                away_stats = self._get_team_stats(game_state.away_team.name)
+                # Get team stats (fetch early so projector can use them) - basketball only (NBA & NCAAB)
+                home_stats = None
+                away_stats = None
+                if sport_key in ['basketball_nba', 'basketball_ncaab']:
+                    home_stats = self._get_team_stats(game_state.home_team.name)
+                    away_stats = self._get_team_stats(game_state.away_team.name)
 
                 # Calculate projection
                 if game_state.status == 'live' and game_state.quarter and game_state.time_remaining:
@@ -1232,7 +1433,16 @@ class GameTracker:
                     home_mlb_stats=home_mlb_stats,
                     away_mlb_stats=away_mlb_stats,
                     player_props_count=63 if "basketball_nba" in game_state.sport_key else (100 if "icehockey_nhl" in game_state.sport_key else (95 if "americanfootball_nfl" in game_state.sport_key else 0)),
-                    alternate_lines=alternate_lines
+                    alternate_lines=alternate_lines,
+                    # TV and Weather information
+                    channel=game_data.get('channel'),
+                    weather=WeatherInfo(
+                        temp_high=game_data.get('forecast_temp_high'),
+                        temp_low=game_data.get('forecast_temp_low'),
+                        description=game_data.get('forecast_description'),
+                        wind_chill=game_data.get('forecast_wind_chill'),
+                        wind_speed=game_data.get('forecast_wind_speed'),
+                    ) if (game_data.get('forecast_temp_high') or game_data.get('forecast_description')) else None
                 )
             except Exception as e:
                 logger.warning(f"Error parsing game {game_data.get('id', 'unknown')}: {e}", exc_info=True)
@@ -1246,6 +1456,10 @@ class GameTracker:
         await self._check_favorite_comeback_opportunities()
         await self._check_halftime_opportunities()
         await self._check_momentum_opportunities()
+        await self._check_quarter_reversal_opportunities()
+
+        # Run Max EV Boost regression analysis (NBA & NCAAB)
+        self._analyze_max_ev_boost_opportunities()
 
     async def _check_goalie_pull_opportunities(self):
         """Check all live NHL games for goalie pull betting opportunities"""
@@ -1318,8 +1532,42 @@ class GameTracker:
         self.running = False
         await self.odds_client.close()
 
+    def _attach_strategy_alerts_to_games(self):
+        """Attach strategy alerts to their corresponding games"""
+        # Create a mapping of game_id -> alerts
+        alerts_by_game = {}
+
+        # Add Quarter Reversal alerts
+        for alert in self.quarter_reversal_opportunities:
+            game_id = alert.get('game_id')
+            if game_id:
+                if game_id not in alerts_by_game:
+                    alerts_by_game[game_id] = []
+                # Format alert to match frontend interface
+                formatted_alert = self._format_quarter_reversal_alert(alert)
+                alerts_by_game[game_id].append(formatted_alert)
+
+        # Add Max EV Boost alerts
+        for alert in self.max_ev_boost_alerts:
+            game_id = alert.get('game_id')
+            if game_id:
+                if game_id not in alerts_by_game:
+                    alerts_by_game[game_id] = []
+                alerts_by_game[game_id].append(alert)
+
+        # Attach alerts to games
+        for game_id, game in self.games.items():
+            if game_id in alerts_by_game:
+                # Convert LiveGame to dict, add alerts, create new LiveGame
+                game_dict = game.dict()
+                game_dict['strategy_alerts'] = alerts_by_game[game_id]
+                # Update the game with alerts
+                self.games[game_id] = LiveGame(**game_dict)
+
     def get_all_games(self) -> List[LiveGame]:
-        """Get all tracked games"""
+        """Get all tracked games with strategy alerts attached"""
+        # Attach latest strategy alerts to games
+        self._attach_strategy_alerts_to_games()
         return list(self.games.values())
 
     def get_game(self, game_id: str) -> LiveGame:
@@ -1648,6 +1896,173 @@ class GameTracker:
     def get_momentum_opportunities(self) -> List[Dict]:
         """Get current momentum surge betting opportunities"""
         return self.momentum_opportunities
+
+    def _format_quarter_reversal_alert(self, alert: Dict) -> Dict:
+        """
+        Format Quarter Reversal alert to match StrategyAlert TypeScript interface
+
+        Converts from Quarter Reversal detector format to frontend StrategyAlert format
+        """
+        # Map alert_level to confidence
+        confidence_map = {
+            'CRITICAL': 'CRITICAL',
+            'HIGH': 'HIGH',
+            'MEDIUM': 'MEDIUM',
+            'LOW': 'LOW'
+        }
+
+        # Extract best recommendation for summary
+        recommendations = alert.get('recommendations', [])
+        best_bet = recommendations[0] if recommendations else None
+
+        recommendation_text = alert.get('reversal_team', '') + f" {alert.get('quarter', '')} Win"
+        if best_bet:
+            recommendation_text = best_bet.get('label', recommendation_text)
+
+        # Format bet options to match BetOption interface
+        bet_options = []
+        for rec in recommendations:
+            bet_option = {
+                'label': rec.get('label', ''),
+                'market_type': rec.get('bet_type', 'moneyline'),  # 'moneyline', 'spread', 'totals'
+                'bet_side': rec.get('side', 'HOME'),
+                'line': rec.get('line'),
+                'odds': rec.get('odds_american', -110),
+                'bookmaker': rec.get('bookmaker', 'draftkings'),
+                'bookmaker_title': rec.get('bookmaker', 'DraftKings').title(),
+                'probability': rec.get('probability', alert.get('reversal_prob', 0.5)),
+                'expected_value': rec.get('expected_value', 0.0),
+                'kelly_size': rec.get('kelly_size')
+            }
+            bet_options.append(bet_option)
+
+        # Calculate edge percentage from expected ROI
+        edge_pct = alert.get('expected_roi', 0.0) * 100  # Convert 0.121 to 12.1%
+
+        # Determine urgency based on quarter
+        quarter = alert.get('quarter', '')
+        urgency = 'HIGH' if quarter in ['Q3', 'Q4'] else 'CRITICAL' if quarter == 'OT' else 'MEDIUM'
+
+        # Estimate expiration time (quarters last ~12 mins, give 3 mins to place bet)
+        expires_in = 180  # 3 minutes in seconds
+
+        return {
+            'strategy_id': f"quarter_reversal_{alert.get('strategy', '')}",
+            'strategy_name': 'NBA Quarter Reversal',
+            'confidence': confidence_map.get(alert.get('alert_level', 'MEDIUM'), 'MEDIUM'),
+            'trigger': alert.get('trigger', ''),
+            'recommendation': recommendation_text,
+            'edge_percentage': edge_pct,
+            'expected_roi': alert.get('expected_roi', 0.0) * 100,  # Convert to percentage
+            'win_probability': alert.get('reversal_prob', 0.5),
+            'stake_recommendation': best_bet.get('kelly_size', 1.0) if best_bet else 1.0,
+            'bet_options': bet_options,
+            'reasoning': alert.get('reasoning', ''),
+            'urgency': urgency,
+            'expires_in': expires_in,
+            'sound_alert': alert.get('alert_level') in ['HIGH', 'CRITICAL'],
+            'timestamp': alert.get('timestamp', datetime.now().isoformat())
+        }
+
+    async def _check_quarter_reversal_opportunities(self):
+        """Check all live NBA games for quarter reversal opportunities"""
+        opportunities = []
+
+        # Filter for live NBA games only
+        live_nba_games = [
+            (game_id, game) for game_id, game in self.games.items()
+            if game.state.sport_key == 'basketball_nba' and game.state.status == 'live'
+        ]
+
+        for game_id, live_game in live_nba_games:
+            try:
+                # Get ESPN game ID from scoreboard lookup
+                home_team = live_game.state.home_team.name
+                away_team = live_game.state.away_team.name
+
+                # Try to get game info from NBA live client's cache
+                game_info = None
+                if hasattr(self.nba_live_client, 'scoreboard_cache'):
+                    game_info = self.nba_live_client.scoreboard_cache.get(home_team)
+                    if not game_info:
+                        game_info = self.nba_live_client.scoreboard_cache.get(away_team)
+
+                if not game_info or not game_info.get('game_id'):
+                    logger.warning(f"No ESPN game ID found for {away_team} @ {home_team}")
+                    continue
+
+                espn_game_id = game_info['game_id']
+
+                # Fetch quarter scores from ESPN API
+                quarter_scores = self.espn_nba_client.get_quarter_scores(espn_game_id)
+
+                if not quarter_scores:
+                    logger.info(f"No quarter scores available yet for game {game_id}")
+                    continue
+
+                # Prepare game data for quarter reversal detector
+                game_data = {
+                    'id': game_id,
+                    'period': live_game.state.quarter or 1,
+                    'home_team': {'name': home_team},
+                    'away_team': {'name': away_team},
+                    'quarters': quarter_scores,
+                    'bookmakers': [],  # Will be populated from odds data
+                    'home_team_stats': live_game.home_team_stats.dict() if live_game.home_team_stats else None,
+                    'away_team_stats': live_game.away_team_stats.dict() if live_game.away_team_stats else None
+                }
+
+                # Add bookmaker data from odds
+                if live_game.odds:
+                    for odd in live_game.odds:
+                        bookmaker_data = {
+                            'name': odd.bookmaker,
+                            'markets': []
+                        }
+
+                        # Add spreads if available
+                        if odd.home_spread is not None:
+                            bookmaker_data['markets'].append({
+                                'key': 'spreads',
+                                'outcomes': [
+                                    {'name': home_team, 'point': odd.home_spread, 'price': odd.home_spread_price or -110},
+                                    {'name': away_team, 'point': odd.away_spread, 'price': odd.away_spread_price or -110}
+                                ]
+                            })
+
+                        # Add moneylines if available
+                        if odd.home_ml is not None:
+                            bookmaker_data['markets'].append({
+                                'key': 'h2h',
+                                'outcomes': [
+                                    {'name': home_team, 'price': odd.home_ml},
+                                    {'name': away_team, 'price': odd.away_ml}
+                                ]
+                            })
+
+                        game_data['bookmakers'].append(bookmaker_data)
+
+                # Analyze for quarter reversal opportunity
+                alert = self.quarter_reversal_detector.analyze_game(
+                    game_data,
+                    bankroll=None,  # Could be fetched from user settings
+                    risk_profile='balanced'
+                )
+
+                if alert:
+                    opportunities.append(alert)
+                    logger.info(f"🔄 QUARTER REVERSAL: {alert['matchup']} - {alert['trigger']} ({alert['alert_level']})")
+
+            except Exception as e:
+                logger.error(f"Error analyzing quarter reversal for game {game_id}: {e}", exc_info=True)
+
+        # Update stored opportunities
+        self.quarter_reversal_opportunities = opportunities
+
+        # Log any HIGH/CRITICAL alerts
+        for opp in opportunities:
+            if opp.get('alert_level') in ['HIGH', 'CRITICAL']:
+                logger.warning(f"🔥 {opp['alert_level']} QUARTER REVERSAL: {opp['matchup']} - {opp['trigger']}")
 
     def get_quarter_reversal_opportunities(self) -> List[Dict]:
         """Get current NBA quarter reversal betting opportunities"""

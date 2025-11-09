@@ -1,0 +1,23 @@
+#,Feature,Sport,Prediction,Edge
+1,Goalie Pull Prediction,NHL,30–90s before pull,+42% ROI
+2,QB Injury Cascade,NFL,Next play after injury,RB rush over
+3,Momentum Run Predictor,NBA,Next 5 pts after 10–0 run,Over streak
+4,Steam Move Forecast,All,Line move in next 2 min,Ride early
+5,Arbitrage Window Timer,All,Arb closes in 45s,Bet now
+6,Player Prop Surge,NBA/MLB,Next HR after barrel streak,+EV prop
+7,End-Game Unders,NFL/NBA,Under in garbage time,+20% EV
+8,Coach Timeout Strategy,NBA/NFL,Next play after TO,Steal/TD
+9,Pitcher Fatigue Alert,MLB,Next inning over,WHIP spike
+10,Soccer Corner Blitz,Soccer,Corners in next 5 min,Over 1.5
+11,Tennis Break Point Edge,Tennis,Break in next game,+EV ML
+12,Public % Reversal,All,Line moves vs public,RLM signal
+13,Injury Impact Model,All,Player out → team win prob,Live ML shift
+14,Parlay Correlation,All,SGP legs linked,+15% EV
+15,Cash-Out Trap,All,Decline lowball offers,+EV hold
+
+Feature,Sport,ROI (100 bets)
+Goalie Pull,NHL,+42%
+QB Injury,NFL,+38%
+Momentum Run,NBA,+31%
+Steam Forecast,All,+29%
+Arb Timer,All,+25%

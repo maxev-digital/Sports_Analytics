@@ -99,6 +99,13 @@ const articles: Article[] = [
     readTime: '10 min'
   },
   {
+    id: 'nba-regression-to-mean-strategy',
+    title: 'NBA Regression-to-Mean Live Betting Strategy',
+    description: 'Master the Max EV Boost ML System trained on 3,690 NBA games. Learn to identify 2+ standard deviation opportunities for 8-15% ROI using quantile regression and z-score analysis.',
+    category: 'Advanced',
+    readTime: '35 min'
+  },
+  {
     id: 'garbage-time',
     title: 'Garbage Time: Friend or Foe?',
     description: 'Detecting garbage time scenarios, how blowouts affect totals, and late game fouling impact.',

@@ -1,0 +1,43 @@
+🏀 NBA Bet Type Categories for ML Pairing
+1. Game-Level Bets
+Bet Type	Description	Suggested Model Inputs
+Full Game Total (O/U)	Combined total points scored	Pace, offensive rating, shooting efficiency, possessions, tempo matchups
+1H / 2H Total (O/U)	Totals limited to a specific half	Same as above + halftime adjustments
+Quarter Totals (O/U)	Totals at quarter level	Real-time pace + rotation data
+Spread (ATS)	Margin of victory relative to line	Team ratings, rest, injuries, lineup strength
+Moneyline (ML)	Win/Loss prediction straight up	Win probability models using prior & in-game states
+Alt Lines (Totals/Spreads)	Alternate lines at different prices	Same as main line + volatility layer
+Team Totals	Team-specific total points	Off/Defense EPM or RAPM, implied pace
+Live Totals / Live Spreads	In-game lines that update in real time	Live pace, PPP, rotations, score differential
+2. Player Prop Bets
+Bet Type	Description	Suggested Model Inputs
+Player Points	Player total points over/under	Usage rate, defensive assignment, PACE, expected FG/3P attempts
+Player Assists / Rebounds / Steals / Blocks	Stat-specific props	Matchup data, rotation projections, opponent stat profile
+Player Threes Made	3PM over/under	Shot distance frequency, closeout defense, volume projection
+Points+Rebounds+Assists (PRA)	Combined props	Weighted stat aggregation from individual projections
+Double-Double / Triple-Double	Binary props	Combined stat-line simulations (Monte Carlo via XGBoost residuals)
+First Basket Scorer	Opening scoring prop	Tip-off rate, possession %, play selection, matchup data
+Player FanDuel/DraftKings Fantasy Points	DFS scoring system	Historical fantasy conversions, usage, burn rate
+3. Situational or Script-Based Bets
+Bet Type	Description	Suggested Model Inputs
+Winning Margin Bands	Exact spread result (e.g. win by 6-10)	Win probability distribution, volatility modeling
+Race to X Points	1st team to reach X	Pace, opening lineup strengths, early rotation subs
+Wire-to-Wire Winner	Team leads entire game	Score lead probability graphs
+Quarter/Half Result	Team to win a quarter or half	Live momentum, rotation depth, fatigue
+Lead at Half + Win Full Game (Double Result)	Parlay of HT/FT winner combo	Bayesian chaining of win probabilities
+Team Prop Parlay (SGPs)	Same-game parlayable outcomes	Covariance-aware multi-outcome models
+4. Derivative & Advanced Bets
+Bet Type	Description	Suggested Model Inputs
+Live “Next Score Type” (FTA, 2PT, 3PT)	Predicting next play outcome	Live possession data, foul/bonus context
+Live “Next Team to Score”	In-game data at dead balls	Win prob models on micro time windows
+Player Rotation-Based Props	Custom moments like “Points in X minutes”	Sub-pattern models based on rotation/matchups
+Prop Parlays / Correlated Bets	Multi-prop models	Co-variance matrices between player stats
+🧠 How These Fit into Max EV Boost™
+Feature	Ready to Combine?	Use Case
+Pre-game pace prediction	✅	Totals, alt totals, team totals
+Live win probability	✅	Moneyline, live spread, double result
+Rolling player stats	✅	Player props, PRA, 3PM models
+Game State Layer	✅	Live totals, steam moves, regression bets
+Kelly Calculator	✅	Applies to every model-backed outcome
+Line Shopping (book odds)	✅	Books with best/closest fair-value line
+Backtesting pipeline	✅	Validate edge by bet type & conditions

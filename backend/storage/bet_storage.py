@@ -197,6 +197,17 @@ class BetStorage:
                         bet_data['status'] = 'active'
                         bet_data['logged_at'] = datetime.utcnow().isoformat()
 
+                # If odds or stake changed on a settled bet, recalculate profit/loss
+                if bet_data.get('status') in ['win', 'loss', 'push']:
+                    if ('odds' in updates or 'stake' in updates) and bet_data.get('stake') and bet_data.get('result'):
+                        payout, profit_loss = calculate_profit_loss(
+                            bet_data['stake'],
+                            bet_data['odds'],
+                            bet_data['result']
+                        )
+                        bet_data['payout'] = payout
+                        bet_data['profit_loss'] = profit_loss
+
                 # Save changes
                 bets[i] = bet_data
                 self._write_bets(bets)

@@ -32,7 +32,7 @@ class KenPomSeleniumScraper:
     
     def setup_driver(self):
         """Set up Chrome WebDriver with appropriate options"""
-        print("🔧 Setting up Chrome browser...")
+        print("Setting up Chrome browser...")
         
         chrome_options = Options()
         
@@ -53,11 +53,11 @@ class KenPomSeleniumScraper:
         
         try:
             self.driver = webdriver.Chrome(options=chrome_options)
-            print("✅ Chrome browser ready")
+            print("SUCCESS: Chrome browser ready")
             return True
         except Exception as e:
-            print(f"❌ Failed to start Chrome: {str(e)}")
-            print("\n💡 SOLUTION:")
+            print(f"ERROR: Failed to start Chrome: {str(e)}")
+            print("\nSOLUTION:")
             print("   1. Install Chrome browser")
             print("   2. Download ChromeDriver from:")
             print("      https://chromedriver.chromium.org/downloads")
@@ -66,7 +66,7 @@ class KenPomSeleniumScraper:
     
     def login(self):
         """Login to KenPom using Selenium"""
-        print("🔐 Logging into KenPom...")
+        print("Logging into KenPom...")
         
         try:
             # Navigate to KenPom
@@ -105,31 +105,41 @@ class KenPomSeleniumScraper:
                 page_source = self.driver.page_source
                 
                 if 'Log Out' in page_source or 'Logout' in page_source:
-                    print("✅ Successfully logged into KenPom")
+                    print("SUCCESS: Successfully logged into KenPom")
                     return True
                 elif 'Invalid' in page_source or 'invalid' in page_source:
-                    print("❌ Login failed - Invalid credentials")
+                    print("ERROR: Login failed - Invalid credentials")
                     return False
                 else:
-                    print("⚠️ Login status unclear - attempting to proceed...")
+                    print("WARNING: Login status unclear - attempting to proceed...")
                     return True
                     
             except Exception as e:
-                print(f"❌ Could not find login form: {str(e)}")
+                print(f"ERROR: Could not find login form: {str(e)}")
                 print("   KenPom page structure may have changed")
                 return False
-                
+
         except Exception as e:
-            print(f"❌ Login error: {str(e)}")
+            print(f"ERROR: Login error: {str(e)}")
             return False
     
-    def scrape_ratings(self):
-        """Scrape current season ratings from KenPom"""
-        print("📊 Scraping KenPom ratings...")
-        
+    def scrape_ratings(self, year=None):
+        """
+        Scrape KenPom ratings for a specific season
+
+        Args:
+            year: Season year (2023, 2024, 2025, etc.). None = current season
+        """
+        if year:
+            print(f"Scraping KenPom ratings for {year} season...")
+            url = f"{self.base_url}/index.php?y={year}"
+        else:
+            print("Scraping KenPom ratings (current season)...")
+            url = f"{self.base_url}/index.php"
+
         try:
-            # Navigate to main ratings page
-            self.driver.get(f"{self.base_url}/index.php")
+            # Navigate to ratings page
+            self.driver.get(url)
             time.sleep(3)
             
             # Get page source and parse with pandas
@@ -140,7 +150,7 @@ class KenPomSeleniumScraper:
             dfs = pd.read_html(StringIO(page_source))
             
             if not dfs:
-                print("❌ No tables found on page")
+                print("ERROR: No tables found on page")
                 return None
             
             # The main ratings table is usually the first one
@@ -192,7 +202,7 @@ class KenPomSeleniumScraper:
                     continue
                 if 'ortg' in col_str or 'adjo' in col_str:
                     column_mapping[df.columns[i]] = 'AdjOffEff'
-                    print(f"   ✓ Found offensive efficiency at column {i}: {df.columns[i]}")
+                    print(f"   Found offensive efficiency at column {i}: {df.columns[i]}")
                     off_found = True
                     break
             
@@ -200,7 +210,7 @@ class KenPomSeleniumScraper:
                 # Default to position 5 if it doesn't have underscore suffix
                 if '_' not in str(df.columns[5]):
                     column_mapping[df.columns[5]] = 'AdjOffEff'
-                    print(f"   ⚠️  Assumed offensive efficiency at column 5: {df.columns[5]}")
+                    print(f"   WARNING: Assumed offensive efficiency at column 5: {df.columns[5]}")
             
             # Find defensive efficiency (look for first DRtg or AdjD without _1 suffix)
             def_found = False
@@ -211,7 +221,7 @@ class KenPomSeleniumScraper:
                     continue
                 if 'drtg' in col_str or 'adjd' in col_str:
                     column_mapping[df.columns[i]] = 'AdjDefEff'
-                    print(f"   ✓ Found defensive efficiency at column {i}: {df.columns[i]}")
+                    print(f"   Found defensive efficiency at column {i}: {df.columns[i]}")
                     def_found = True
                     break
             
@@ -219,7 +229,7 @@ class KenPomSeleniumScraper:
                 # Default to position 7 if it doesn't have underscore suffix
                 if '_' not in str(df.columns[7]):
                     column_mapping[df.columns[7]] = 'AdjDefEff'
-                    print(f"   ⚠️  Assumed defensive efficiency at column 7: {df.columns[7]}")
+                    print(f"   WARNING: Assumed defensive efficiency at column 7: {df.columns[7]}")
             
             # Find tempo (look for first AdjT or Tempo without _1 suffix)
             tempo_found = False
@@ -230,7 +240,7 @@ class KenPomSeleniumScraper:
                     continue
                 if 'adjt' in col_str or 'tempo' in col_str:
                     column_mapping[df.columns[i]] = 'AdjTempo'
-                    print(f"   ✓ Found tempo at column {i}: {df.columns[i]}")
+                    print(f"   Found tempo at column {i}: {df.columns[i]}")
                     tempo_found = True
                     break
             
@@ -238,16 +248,75 @@ class KenPomSeleniumScraper:
                 # Default to position 9 if it doesn't have underscore suffix
                 if '_' not in str(df.columns[9]):
                     column_mapping[df.columns[9]] = 'AdjTempo'
-                    print(f"   ⚠️  Assumed tempo at column 9: {df.columns[9]}")
+                    print(f"   WARNING: Assumed tempo at column 9: {df.columns[9]}")
             
             # Rename columns
             df = df.rename(columns=column_mapping)
             
-            # Keep only essential columns
-            essential_cols = ['Rank', 'Team', 'Conference', 'Record', 'AdjEM', 'AdjOffEff', 'AdjDefEff', 'AdjTempo']
+            # Extract additional advanced stats for ML
+            # Look for eFG% (Effective Field Goal %)
+            for i, col in enumerate(df.columns):
+                col_str = str(col).lower()
+                if 'efg' in col_str and '_' not in col_str and 'AdjOffEfg' not in column_mapping.values():
+                    column_mapping[col] = 'AdjOffEfg'
+                    print(f"   Found offensive eFG% at column {i}: {col}")
+                    break
+
+            # Look for defensive eFG%
+            for i, col in enumerate(df.columns):
+                col_str = str(col).lower()
+                if 'efg' in col_str and 'd' in col_str and '_' not in col_str and 'AdjDefEfg' not in column_mapping.values():
+                    column_mapping[col] = 'AdjDefEfg'
+                    print(f"   Found defensive eFG% at column {i}: {col}")
+                    break
+
+            # Look for TO% (Turnover %)
+            for i, col in enumerate(df.columns):
+                col_str = str(col).lower()
+                if ('to' in col_str or 'turnover' in col_str) and 'o' in col_str and '_' not in col_str and 'OffTO' not in column_mapping.values():
+                    column_mapping[col] = 'OffTO'
+                    print(f"   Found offensive TO% at column {i}: {col}")
+                    break
+
+            # Look for defensive TO%
+            for i, col in enumerate(df.columns):
+                col_str = str(col).lower()
+                if ('to' in col_str or 'turnover' in col_str) and 'd' in col_str and '_' not in col_str and 'DefTO' not in column_mapping.values():
+                    column_mapping[col] = 'DefTO'
+                    print(f"   Found defensive TO% at column {i}: {col}")
+                    break
+
+            # Look for ORB% (Offensive Rebound %)
+            for i, col in enumerate(df.columns):
+                col_str = str(col).lower()
+                if 'orb' in col_str and '_' not in col_str and 'OffORB' not in column_mapping.values():
+                    column_mapping[col] = 'OffORB'
+                    print(f"   Found offensive rebound% at column {i}: {col}")
+                    break
+
+            # Look for DRB% (Defensive Rebound %)
+            for i, col in enumerate(df.columns):
+                col_str = str(col).lower()
+                if 'drb' in col_str and '_' not in col_str and 'DefDRB' not in column_mapping.values():
+                    column_mapping[col] = 'DefDRB'
+                    print(f"   Found defensive rebound% at column {i}: {col}")
+                    break
+
+            # Apply all column mappings
+            df = df.rename(columns=column_mapping)
+
+            # Keep essential + advanced columns
+            essential_cols = [
+                'Rank', 'Team', 'Conference', 'Record', 'AdjEM',
+                'AdjOffEff', 'AdjDefEff', 'AdjTempo',
+                # Advanced stats for ML
+                'AdjOffEfg', 'AdjDefEfg',
+                'OffTO', 'DefTO',
+                'OffORB', 'DefDRB'
+            ]
             available_cols = [col for col in essential_cols if col in df.columns]
-            
-            print(f"\n   📋 Extracted columns: {available_cols}")
+
+            print(f"\n   Extracted columns: {available_cols}")
             
             # Verify critical stats
             critical_missing = []
@@ -256,16 +325,19 @@ class KenPomSeleniumScraper:
                     critical_missing.append(col)
             
             if critical_missing:
-                print(f"\n   ❌ MISSING CRITICAL COLUMNS: {critical_missing}")
+                print(f"\n   ERROR: MISSING CRITICAL COLUMNS: {critical_missing}")
                 print(f"   Available after rename: {list(df.columns)}")
                 print("\n   This will prevent accurate predictions!")
                 return None
             
             # Select columns
             df = df[available_cols]
-            
-            # Convert numeric columns
-            numeric_cols = ['Rank', 'AdjEM', 'AdjOffEff', 'AdjDefEff', 'AdjTempo']
+
+            # Convert numeric columns (including new advanced stats)
+            numeric_cols = [
+                'Rank', 'AdjEM', 'AdjOffEff', 'AdjDefEff', 'AdjTempo',
+                'AdjOffEfg', 'AdjDefEfg', 'OffTO', 'DefTO', 'OffORB', 'DefDRB'
+            ]
             for col in numeric_cols:
                 if col in df.columns:
                     df[col] = pd.to_numeric(df[col], errors='coerce')
@@ -273,77 +345,152 @@ class KenPomSeleniumScraper:
             # Remove any rows with NaN in critical columns
             df = df.dropna(subset=['Team', 'AdjTempo', 'AdjOffEff', 'AdjDefEff'])
             
-            print(f"\n✅ Successfully scraped {len(df)} teams")
-            
+            print(f"\nSUCCESS: Successfully scraped {len(df)} teams")
+
             # Show ranges for validation
             if len(df) > 0:
-                print(f"📈 Tempo range: {df['AdjTempo'].min():.1f} - {df['AdjTempo'].max():.1f}")
-                print(f"📈 OffEff range: {df['AdjOffEff'].min():.1f} - {df['AdjOffEff'].max():.1f}")
-                print(f"📈 DefEff range: {df['AdjDefEff'].min():.1f} - {df['AdjDefEff'].max():.1f}")
+                print(f"\nCore Stats:")
+                print(f"   Tempo: {df['AdjTempo'].min():.1f} - {df['AdjTempo'].max():.1f}")
+                print(f"   OffEff: {df['AdjOffEff'].min():.1f} - {df['AdjOffEff'].max():.1f}")
+                print(f"   DefEff: {df['AdjDefEff'].min():.1f} - {df['AdjDefEff'].max():.1f}")
+
+                # Show advanced stats if available
+                if 'AdjOffEfg' in df.columns and df['AdjOffEfg'].notna().any():
+                    print(f"\nAdvanced Stats (for ML):")
+                    print(f"   Off eFG%: {df['AdjOffEfg'].min():.1f} - {df['AdjOffEfg'].max():.1f}")
+                if 'AdjDefEfg' in df.columns and df['AdjDefEfg'].notna().any():
+                    print(f"   Def eFG%: {df['AdjDefEfg'].min():.1f} - {df['AdjDefEfg'].max():.1f}")
+                if 'OffTO' in df.columns and df['OffTO'].notna().any():
+                    print(f"   Off TO%: {df['OffTO'].min():.1f} - {df['OffTO'].max():.1f}")
+                if 'DefTO' in df.columns and df['DefTO'].notna().any():
+                    print(f"   Def TO%: {df['DefTO'].min():.1f} - {df['DefTO'].max():.1f}")
+                if 'OffORB' in df.columns and df['OffORB'].notna().any():
+                    print(f"   Off ORB%: {df['OffORB'].min():.1f} - {df['OffORB'].max():.1f}")
+                if 'DefDRB' in df.columns and df['DefDRB'].notna().any():
+                    print(f"   Def DRB%: {df['DefDRB'].min():.1f} - {df['DefDRB'].max():.1f}")
             
             return df
             
         except Exception as e:
-            print(f"❌ Error scraping ratings: {str(e)}")
+            print(f"ERROR: Error scraping ratings: {str(e)}")
             import traceback
             print(f"   Details: {traceback.format_exc()}")
             return None
     
-    def save_to_csv(self, df, output_dir='backend/data/raw/ncaab'):
+    def save_to_csv(self, df, output_dir='backend/data/raw/ncaab', year=None):
         """Save scraped data to CSV"""
         if df is None or df.empty:
-            print("⚠️ No data to save")
+            print("WARNING: No data to save")
             return None
-        
+
         os.makedirs(output_dir, exist_ok=True)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"{output_dir}/kenpom_ratings_{timestamp}.csv"
-        
+
+        if year:
+            filename = f"{output_dir}/kenpom_{year}_{timestamp}.csv"
+        else:
+            filename = f"{output_dir}/kenpom_ratings_{timestamp}.csv"
+
         df.to_csv(filename, index=False)
-        print(f"💾 Saved: {filename}")
-        
+        print(f"Saved: {filename}")
+
         return filename
     
     def close(self):
         """Close the browser"""
         if self.driver:
             self.driver.quit()
-            print("🔒 Browser closed")
+            print("Browser closed")
     
-    def run(self):
-        """Main execution flow"""
+    def run(self, year=None):
+        """Main execution flow for single season"""
         if not self.email or not self.password:
-            print("❌ KenPom credentials not provided")
+            print("ERROR: KenPom credentials not provided")
             return None
-        
+
         # Set up browser
         if not self.setup_driver():
             return None
-        
+
         try:
             # Login
             if not self.login():
                 self.close()
                 return None
-            
+
             # Wait a bit after login
             time.sleep(2)
-            
+
             # Scrape ratings
-            df = self.scrape_ratings()
-            
+            df = self.scrape_ratings(year)
+
             if df is not None and not df.empty:
                 # Save to CSV
-                saved_file = self.save_to_csv(df)
+                saved_file = self.save_to_csv(df, year=year)
                 if saved_file:
-                    print(f"\n✅ CSV FILE CREATED: {saved_file}")
+                    print(f"\nSUCCESS: CSV FILE CREATED: {saved_file}")
                 else:
-                    print("\n⚠️ Warning: CSV save may have failed")
+                    print("\nWARNING: CSV save may have failed")
             else:
-                print("\n❌ No data to save")
-            
+                print("\nERROR: No data to save")
+
             return df
-            
+
+        finally:
+            # Always close browser
+            self.close()
+
+    def run_multiple_seasons(self, years=[2023, 2024, 2025]):
+        """
+        Scrape multiple seasons in one session (efficient)
+
+        Args:
+            years: List of season years to scrape
+
+        Returns:
+            Dict of {year: dataframe}
+        """
+        if not self.email or not self.password:
+            print("ERROR: KenPom credentials not provided")
+            return None
+
+        # Set up browser
+        if not self.setup_driver():
+            return None
+
+        results = {}
+
+        try:
+            # Login once
+            if not self.login():
+                self.close()
+                return None
+
+            print(f"\nScraping {len(years)} seasons: {years}")
+
+            # Scrape each season
+            for year in years:
+                print(f"\n{'='*70}")
+                print(f"SEASON: {year}")
+                print(f"{'='*70}")
+
+                # Wait between requests
+                time.sleep(3)
+
+                # Scrape this season
+                df = self.scrape_ratings(year)
+
+                if df is not None and not df.empty:
+                    # Save to CSV
+                    saved_file = self.save_to_csv(df, year=year)
+                    results[year] = df
+                    print(f"SUCCESS: {year} season: {len(df)} teams scraped")
+                else:
+                    print(f"ERROR: {year} season: No data")
+                    results[year] = None
+
+            return results
+
         finally:
             # Always close browser
             self.close()
@@ -354,7 +501,7 @@ def main():
     print("="*70)
     print("KENPOM SELENIUM SCRAPER - NCAA BASKETBALL")
     print("="*70)
-    print("\n⚠️ This scraper uses a real Chrome browser")
+    print("\nWARNING: This scraper uses a real Chrome browser")
     print("Requirements:")
     print("  1. Chrome browser installed")
     print("  2. ChromeDriver installed")
@@ -366,7 +513,7 @@ def main():
     password = input("Enter KenPom password: ").strip()
     
     if not email or not password:
-        print("❌ Credentials required")
+        print("ERROR: Credentials required")
         return
     
     # Ask about headless mode
@@ -380,9 +527,16 @@ def main():
         print("\n" + "="*70)
         print("TOP 10 TEAMS:")
         print("="*70)
-        display_cols = ['Rank', 'Team', 'Conference', 'AdjTempo', 'AdjOffEff', 'AdjDefEff']
+        display_cols = [
+            'Rank', 'Team', 'Conference',
+            'AdjTempo', 'AdjOffEff', 'AdjDefEff',
+            'AdjOffEfg', 'AdjDefEfg', 'OffTO', 'DefTO'
+        ]
         available_cols = [col for col in display_cols if col in df.columns]
         print(df[available_cols].head(10).to_string(index=False))
+
+        print(f"\nSUCCESS: Total features extracted: {len(df.columns)}")
+        print(f"   Features: {', '.join(df.columns.tolist())}")
 
 
 if __name__ == "__main__":

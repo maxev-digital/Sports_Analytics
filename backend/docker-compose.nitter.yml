@@ -1,0 +1,39 @@
+version: "3.8"
+
+# Self-hosted Nitter for injury monitoring
+# Provides RSS feeds for Twitter/X accounts without API limits
+# Usage: docker-compose -f docker-compose.nitter.yml up -d
+
+services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    container_name: nitter-redis
+    networks:
+      - nitter-net
+    volumes:
+      - redis-data:/data
+
+  nitter:
+    image: zedeus/nitter:latest
+    restart: unless-stopped
+    container_name: nitter
+    ports:
+      - "127.0.0.1:8080:8080"  # Only accessible locally
+    environment:
+      - NITTER_REDIS_HOST=redis
+      - NITTER_ENABLE_RSS=true
+      - NITTER_THEME=Black
+      - NITTER_INFINITE_SCROLL=false
+    networks:
+      - nitter-net
+    depends_on:
+      - redis
+
+networks:
+  nitter-net:
+    driver: bridge
+
+volumes:
+  redis-data:
+    driver: local

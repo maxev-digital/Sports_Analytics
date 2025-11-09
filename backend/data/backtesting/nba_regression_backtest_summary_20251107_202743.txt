@@ -1,0 +1,9 @@
+NBA REGRESSION-TO-MEAN STRATEGY BACKTEST SUMMARY
+======================================================================
+
+Backtest Date: 20251107_202743
+Total Games: 3690
+Total Alerts: 0
+Win Rate: 0.0%
+Total P&L: $+0
+ROI: +0.0%

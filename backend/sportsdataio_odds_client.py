@@ -18,7 +18,7 @@ class SportsDataIOOddsClient:
 
     def __init__(self):
         self.client = SportsDataIOClient()
-        logger.info("Initialized Sports Data IO Odds Client (with NHL/NCAAF/NCAAB fix)")
+        logger.info("Initialized Sports Data IO Odds Client (with NHL/NCAAF/NCAAB fix v2 - expanded period types)")
 
     def _parse_betting_markets(self, markets_data, home_team, away_team) -> List[dict]:
         """
@@ -32,13 +32,16 @@ class SportsDataIOOddsClient:
         Returns:
             List of bookmakers with their odds
         """
+        # DEBUG: Log market count
+        logger.info(f"[PARSE DEBUG] Parsing {len(markets_data)} betting markets for {away_team} @ {home_team}")
+
         # Group outcomes by sportsbook
         sportsbook_data = {}
 
-        # Filter for Game Line markets for Full Game (handle both 'Full-Game' and 'Full Game')
-        game_line_markets = [m for m in markets_data if
-                            m.get('BettingMarketType') == 'Game Line' and
-                            m.get('BettingPeriodType') in ['Full-Game', 'Full Game']]
+        # Filter for Game Line markets
+        # Removed BettingPeriodType filter to accept all periods (Full Game, 1H, 2H, etc.)
+        # This allows maximum sportsbook coverage for all sports
+        game_line_markets = [m for m in markets_data if m.get('BettingMarketType') == 'Game Line']
 
         for market in game_line_markets:
             bet_type = market.get('BettingBetType')
@@ -97,8 +100,13 @@ class SportsDataIOOddsClient:
                     if 'totals' not in sportsbook_data[sportsbook_name]['markets']:
                         sportsbook_data[sportsbook_name]['markets']['totals'] = []
 
+                    outcome_type = outcome.get('BettingOutcomeType', '')
+                    # DEBUG: Log outcome type to debug NCAAB issue
+                    if outcome_type and outcome_type not in ['Over', 'Under']:
+                        logger.info(f"[TOTALS DEBUG] Non-standard BettingOutcomeType: '{outcome_type}' (expected 'Over' or 'Under')")
+
                     sportsbook_data[sportsbook_name]['markets']['totals'].append({
-                        'name': outcome.get('BettingOutcomeType', ''),  # 'Over' or 'Under'
+                        'name': outcome_type,  # 'Over' or 'Under'
                         'price': outcome.get('PayoutAmerican', -110),
                         'point': outcome.get('Value')
                     })
@@ -121,6 +129,9 @@ class SportsDataIOOddsClient:
 
             if bookmaker['markets']:
                 bookmakers.append(bookmaker)
+
+        # DEBUG: Log final bookmaker count
+        logger.info(f"[PARSE DEBUG] Extracted {len(bookmakers)} bookmakers from {len(sportsbook_data)} sportsbook entries")
 
         return bookmakers
 
@@ -168,7 +179,14 @@ class SportsDataIOOddsClient:
                         'commence_time': game.get('DateTime', ''),
                         'home_team': home_team,
                         'away_team': away_team,
-                        'bookmakers': []
+                        'bookmakers': [],
+                        # Additional game information
+                        'channel': game.get('Channel'),
+                        'forecast_temp_high': game.get('ForecastTempHigh'),
+                        'forecast_temp_low': game.get('ForecastTempLow'),
+                        'forecast_description': game.get('ForecastDescription'),
+                        'forecast_wind_chill': game.get('ForecastWindChill'),
+                        'forecast_wind_speed': game.get('ForecastWindSpeed'),
                     }
 
                     # Try to fetch individual sportsbook odds from betting markets

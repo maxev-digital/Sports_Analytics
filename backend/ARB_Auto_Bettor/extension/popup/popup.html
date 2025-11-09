@@ -42,18 +42,22 @@
         <div class="stat-value" id="injuryPropsCount">0</div>
         <div class="stat-label">⚡ Injury Props</div>
       </div>
+      <div class="stat" id="statInjuryAlerts" style="background: linear-gradient(135deg, #ef4444, #dc2626);">
+        <div class="stat-value" id="injuryAlertsCount">0</div>
+        <div class="stat-label">🚨 Injury Alerts</div>
+      </div>
     </div>
 
-    <!-- Filter Bar -->
-    <div class="filter-bar">
-      <input type="text" id="strategy-search" placeholder="🔍 Search strategies..." class="search-input">
-      <select id="category-filter" class="category-dropdown">
-        <option value="all">All Categories</option>
-        <option value="live">⚡ Live Betting</option>
-        <option value="arbitrage">🎯 Arbitrage</option>
-        <option value="props">📊 Props</option>
-        <option value="movement">📈 Line Movement</option>
-      </select>
+    <!-- Tab Buttons -->
+    <div class="tabs" style="display: flex; gap: 6px; overflow-x: auto; padding: 8px 16px; background: #1e293b; border-bottom: 2px solid #334155;">
+      <button class="tab-btn active" data-tab="all" style="padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 6px; font-size: 11px; cursor: pointer; white-space: nowrap;">All</button>
+      <button class="tab-btn" data-tab="arbitrage" style="padding: 8px 16px; background: #334155; color: #94a3b8; border: none; border-radius: 6px; font-size: 11px; cursor: pointer; white-space: nowrap;">Arbitrage</button>
+      <button class="tab-btn" data-tab="steam" style="padding: 8px 16px; background: #334155; color: #94a3b8; border: none; border-radius: 6px; font-size: 11px; cursor: pointer; white-space: nowrap;">Steam</button>
+      <button class="tab-btn" data-tab="middles" style="padding: 8px 16px; background: #334155; color: #94a3b8; border: none; border-radius: 6px; font-size: 11px; cursor: pointer; white-space: nowrap;">Middles</button>
+      <button class="tab-btn" data-tab="goalie" style="padding: 8px 16px; background: #334155; color: #94a3b8; border: none; border-radius: 6px; font-size: 11px; cursor: pointer; white-space: nowrap;">Goalie</button>
+      <button class="tab-btn" data-tab="quarterreversal" style="padding: 8px 16px; background: #334155; color: #94a3b8; border: none; border-radius: 6px; font-size: 11px; cursor: pointer; white-space: nowrap;">Q Reversal</button>
+      <button class="tab-btn" data-tab="injuryprops" style="padding: 8px 16px; background: #334155; color: #94a3b8; border: none; border-radius: 6px; font-size: 11px; cursor: pointer; white-space: nowrap;">Injury Props</button>
+      <button class="tab-btn" data-tab="injuryalerts" style="padding: 8px 16px; background: #334155; color: #94a3b8; border: none; border-radius: 6px; font-size: 11px; cursor: pointer; white-space: nowrap;">Injury Alerts</button>
     </div>
 
     <!-- Unified Alert Feed (all strategies) -->

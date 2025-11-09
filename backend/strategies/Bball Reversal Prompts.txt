@@ -1,0 +1,97 @@
+# 1. Pull all 2023–2024 data
+claude "Fetch and save full quarter-by-quarter + OT scores for:
+- NBA (1,230 games)
+- NCAA Men's (5,437 games)
+- WNBA (170 games)
+- Euroleague (306 games)
+- CBA China + B.League Japan (1,200 games)
+Save as CSVs: nba.csv, ncaa.csv, wnba.csv, euroleague.csv, asia.csv"
+
+# 2. Backtest Q1-Q2 → Q3 + Q3-Q4 → OT Reversal
+claude "Run backtest on all 5 datasets:
+- Trigger 1: Team wins Q1 and Q2 → bet opponent wins Q3 (+4.5 @ -110)
+- Trigger 2: Team wins Q3 and Q4 → bet opponent wins OT (+3.5 @ +150)
+- Output: Win rate, ROI, EV, avg margin, triggers per league
+Save as backtest_results.json"
+
+# 3. Validate with 1/4 Kelly
+claude "Simulate 1,100 bets (100% capture):
+- Start: $20,000
+- Win rate: 55.6% (Q3), 60.7% (OT)
+- Odds: -110 (Q3), +150 (OT)
+- Sizing: 1/4 Kelly
+- Output: Final bankroll, ROI, max drawdown, monthly growth
+Save as kelly_projection.json"
+
+# 4. Build cross-league ML model
+claude "Train XGBoost model on combined dataset:
+- Features: Q1 margin, Q2 margin, Q3 margin, Q4 margin, league, tempo, efficiency diff, ot_flag
+- Target: Q3 reversal OR OT reversal
+- Split: 80/20
+- Save model: reversal_model.pkl
+- Output: AUC, feature importance"
+
+# 5. Build live alert system
+claude "Create FastAPI WebSocket alert engine:
+- Input: Live game state (Q1-Q4 scores, league, OT status)
+- Output: Alert if Q3 or OT trigger met + 1/4 Kelly bet size
+- Leagues: NBA, NCAA, WNBA, Euroleague, Asia
+- Save as alert_engine.py"
+
+# 6. Auto-bet recommender
+claude "Build recommender:
+- Input: Alert + bankroll
+- Output: Top bet (Q3 spread/ML/total OR OT ML/spread), 1/4 Kelly size, EV
+- Save as bet_recommender.py"
+
+# 7. React UI cards
+claude "Create 4 alert cards:
+1. Q3 Reversal
+2. OT Reversal
+3. Q3 + OT Combo (rare)
+4. No-Reversal Hedge
+Include: Bet, odds, size, EV, one-click bet link
+Save as AlertCard.tsx"
+
+# 8. Daily scheduler
+claude "Build scheduler:
+- Run every 5 min
+- Check all live/in-play games
+- Fire Q3 or OT alerts via WebSocket
+- Log: bet, size, outcome
+Save as scheduler.py"
+
+# 9. Bankroll tracker
+claude "Build tracker:
+- Start: $20,000
+- Update per bet
+- Output: Daily P&L, ROI, drawdown, OT vs Q3 split
+Save as tracker.py"
+
+# 10. Deploy
+claude "Deploy to Render/AWS:
+- FastAPI backend
+- React frontend
+- WebSocket live
+- Cron scheduler"
+
+# 11. Launch
+claude "Launch beta:
+- $9.99/month
+- 1,100 alerts/year
+- $20,000 → $200,000+ projection
+- Marketing: '3–5 bets/day → 900%+ ROI'"
+
+File,Purpose
+backtest_results.json,Proof of edge
+kelly_projection.json,$200K+ in 1 year
+reversal_model.pkl,Live Q3 + OT predictions
+alert_engine.py,Real-time alerts
+bet_recommender.py,Auto-sizing
+AlertCard.tsx,User UI
+scheduler.py,24/7 automation
+tracker.py,P&L dashboard
+
+claude "Follow this roadmap exactly. Build the Quarter Reversal + OT Reversal Strategy for MAX EV Sports. 
+Use 1/4 Kelly. $20,000 start. 1,100+ bets. 
+No code in response — just confirm 'BUILDING' when done."

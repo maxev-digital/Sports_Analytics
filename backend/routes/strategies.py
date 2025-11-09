@@ -429,6 +429,7 @@ async def get_performance_summary(sport: Optional[str] = None):
                 "total_losses": 0,
                 "total_pushes": 0,
                 "total_profit": 0.0,
+                "strategies": [],  # Add empty array to prevent frontend errors
                 "message": "No backtest data available yet"
             }
 
@@ -472,6 +473,129 @@ async def get_performance_summary(sport: Optional[str] = None):
                 }
                 for r in all_results
             ]
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/regression-to-mean/analyze")
+async def analyze_regression_opportunities(
+    game_features: Dict[str, Any],
+    live_totals: Dict[str, float],
+    pregame_total: Optional[float] = None
+):
+    """
+    Analyze a game for regression-to-mean betting opportunities
+
+    STRATEGY: Regression to Mean Basketball Totals
+    - Identifies when live totals deviate significantly from model predictions
+    - Bets on statistical regression toward expected value
+    - Kelly sizing based on deviation distance
+
+    Args:
+        game_features: Dict with team stats and features
+        live_totals: Dict of {bookmaker: live_total}
+        pregame_total: Opening total for reference (optional)
+
+    Returns:
+        List of betting alerts with recommendations
+
+    Example Request:
+    {
+        "game_features": {
+            "home_team": "Duke",
+            "away_team": "North Carolina",
+            "home_adj_em": 25.5,
+            "away_adj_em": 22.1,
+            "home_off_eff": 118.2,
+            "away_off_eff": 115.7,
+            "home_def_eff": 92.7,
+            "away_def_eff": 93.6,
+            "home_tempo": 72.5,
+            "away_tempo": 70.2
+        },
+        "live_totals": {
+            "DraftKings": 155.5,
+            "FanDuel": 156.0,
+            "BetMGM": 154.5
+        },
+        "pregame_total": 158.5
+    }
+    """
+    try:
+        import sys
+        from pathlib import Path
+        strategies_path = Path(__file__).parent.parent / "strategies"
+        sys.path.append(str(strategies_path))
+
+        from regression_to_mean_totals import RegressionToMeanStrategy
+
+        # Initialize strategy
+        strategy = RegressionToMeanStrategy(
+            model_path="backend/ml/models/ncaab_quantile_mean_latest.json",
+            z_score_threshold=2.0,
+            min_confidence=0.60,
+            min_edge=3.0
+        )
+
+        # Analyze game
+        alerts = strategy.analyze_game(
+            game_features=game_features,
+            live_totals=live_totals,
+            pregame_total=pregame_total
+        )
+
+        return {
+            "status": "success",
+            "game": f"{game_features.get('home_team', 'Home')} vs {game_features.get('away_team', 'Away')}",
+            "opportunities_found": len(alerts),
+            "alerts": alerts
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/regression-to-mean/live-alerts")
+async def get_live_regression_alerts():
+    """
+    Get current regression-to-mean alerts for all live games
+
+    Returns:
+        Latest alerts from the live monitoring system
+    """
+    try:
+        from pathlib import Path
+        import json
+
+        # Read latest alerts file
+        alerts_path = Path("backend/data/alerts/regression_alerts_latest.json")
+
+        if not alerts_path.exists():
+            return {
+                "status": "success",
+                "alerts": [],
+                "message": "No active alerts"
+            }
+
+        with open(alerts_path, 'r') as f:
+            alerts = json.load(f)
+
+        # Filter alerts from last 10 minutes
+        from datetime import datetime, timedelta
+        cutoff = datetime.now() - timedelta(minutes=10)
+
+        recent_alerts = [
+            a for a in alerts
+            if datetime.fromisoformat(a['timestamp']) > cutoff
+        ]
+
+        return {
+            "status": "success",
+            "alerts": recent_alerts,
+            "total_alerts": len(recent_alerts),
+            "last_updated": datetime.now().isoformat()
         }
 
     except Exception as e:

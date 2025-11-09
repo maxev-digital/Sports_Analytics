@@ -3,6 +3,15 @@ import { BookmakerLogo } from '../components/BookmakerLogo';
 import { getBookmaker } from '../data/bookmakers';
 import { OddsMetricsDashboard } from '../components/OddsMetricsDashboard';
 import { formatTeamName } from '../utils/teamNames';
+import { getApiUrl } from '../config';
+
+interface WeatherInfo {
+  temp_high?: number;
+  temp_low?: number;
+  description?: string;
+  wind_chill?: number;
+  wind_speed?: number;
+}
 
 interface GameOdds {
   id: string;
@@ -13,6 +22,8 @@ interface GameOdds {
   away_score?: number;
   commence_time: string;
   status: string;
+  channel?: string;
+  weather?: WeatherInfo;
   odds: Array<{
     bookmaker: string;
     total: number;
@@ -27,6 +38,8 @@ interface GameOdds {
     is_best_over?: boolean;
     is_best_under?: boolean;
     latency_ms?: number;
+    source?: string;  // 'OddsAPI' or 'SportsDataIO'
+    source_speed?: string;  // 'fast' or 'standard'
   }>;
 }
 
@@ -38,6 +51,7 @@ export function Odds() {
   const [activeBetType, setActiveBetType] = useState<BetType>('moneyline');
   const [games, setGames] = useState<GameOdds[]>([]);
   const [loading, setLoading] = useState(true);
+  const [modalInfo, setModalInfo] = useState<{type: 'tv' | 'weather', game: GameOdds} | null>(null);
 
   useEffect(() => {
     fetchGames();
@@ -48,7 +62,7 @@ export function Odds() {
     console.log('🎮 Loading games for sport:', activeSport);
 
     try {
-      const response = await fetch(`/api/games`);
+      const response = await fetch(getApiUrl('games'));
       if (!response.ok) throw new Error('API not available');
 
       const apiGames = await response.json();
@@ -63,6 +77,8 @@ export function Odds() {
         away_score: game.state.away_team.score,
         commence_time: game.state.commence_time,
         status: game.state.status,
+        channel: game.channel,
+        weather: game.weather,
         odds: game.odds
       }));
 
@@ -120,6 +136,18 @@ export function Odds() {
       hour: 'numeric',
       minute: '2-digit'
     });
+  };
+
+  const formatCompactDateTime = (dateStr: string): string => {
+    const date = new Date(dateStr);
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const time = date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+    return `${month}/${day} - ${time}`;
   };
 
   const formatOdds = (price: number): string => {
@@ -201,7 +229,7 @@ export function Odds() {
   const bookmakers = allBookmakers;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-slate-900 to-black p-4" style={{ fontFamily: 'Rubik, sans-serif' }}>
+    <div className="min-h-screen bg-gradient-to-br from-black via-slate-900 to-black p-4" style={{ fontFamily: 'Open Sans, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif' }}>
       <div className="w-full mx-auto">
         {/* Header with Bet Type Selector */}
         <div className="mb-6 flex items-start justify-between gap-4">
@@ -278,7 +306,13 @@ export function Odds() {
               {/* Header Row with Bookmaker Logos */}
               <thead className="bg-slate-800">
                 <tr>
-                  <th className="text-left py-2 px-3 text-slate-300 font-bold text-xs uppercase tracking-wider sticky left-0 bg-slate-800 z-20 min-w-[280px] border-r border-b-2 border-slate-600">
+                  {/* Info Column - First Column */}
+                  <th className="py-2 px-2 text-center min-w-[100px] border-b-2 border-slate-600 border-r border-slate-600 bg-slate-800 sticky left-0 z-20">
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="text-slate-300 font-bold text-xs uppercase tracking-wider">ℹ️ Info</span>
+                    </div>
+                  </th>
+                  <th className="text-left py-2 px-2 text-slate-300 font-bold text-xs uppercase tracking-wider bg-slate-800 border-r border-b-2 border-slate-600">
                     <div className="flex items-center gap-2">
                       <span className="text-lg">{getSportIcon(activeSport)}</span>
                       {getSportDisplayName(activeSport)} Games
@@ -286,33 +320,32 @@ export function Odds() {
                   </th>
                   <th className="py-2 px-3 text-center min-w-[140px] border-r border-b-2 border-slate-600 bg-slate-800">
                     <div className="flex flex-col items-center gap-1">
-                      <span className="text-slate-300 font-bold text-xs uppercase tracking-wider">📅 Date & Time</span>
+                      <span className="text-slate-300 font-bold text-xs uppercase tracking-wider">📈 Opening Line</span>
                     </div>
                   </th>
-                  <th className="py-2 px-3 text-center min-w-[180px] border-r border-b-2 border-slate-600 bg-slate-800">
+                  <th className="py-2 px-3 text-center min-w-[120px] border-r border-b-2 border-slate-600 bg-slate-800">
                     <div className="flex flex-col items-center gap-1">
                       <span className="text-slate-300 font-bold text-xs uppercase tracking-wider">⭐ Best Line</span>
                     </div>
                   </th>
                   {bookmakers.map((bookmaker, index) => {
                     const bookmakerData = getBookmaker(bookmaker);
+                    const displayName = bookmakerData?.name || bookmaker.toUpperCase();
                     return (
-                      <th key={bookmaker} className={`py-1 px-0.5 text-center min-w-[95px] border-b-2 border-slate-600 ${
-                        index < bookmakers.length - 1 ? 'border-r border-slate-600' : ''
-                      }`}>
+                      <th key={bookmaker} className={`py-0.5 px-0.5 text-center min-w-[55px] border-b-2 border-slate-600 border-r border-slate-600`}>
                         <a
                           href={bookmakerData?.url || '#'}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center justify-center gap-1 hover:opacity-80 transition-opacity cursor-pointer"
-                          title={`Visit ${bookmakerData?.name || bookmaker}`}
+                          className="flex flex-col items-center gap-0 hover:opacity-80 transition-opacity cursor-pointer py-0.5"
+                          title={`Visit ${displayName}`}
                         >
                           <BookmakerLogo
                             bookmakerKey={bookmaker}
                             size="sm"
                             showName={false}
                           />
-                          <span className="text-[10px] font-semibold text-slate-200">{bookmakerData?.name || bookmaker}</span>
+                          <span className="text-sm font-medium text-slate-100 leading-tight">{displayName}</span>
                         </a>
                       </th>
                     );
@@ -328,27 +361,58 @@ export function Odds() {
                       game.status === 'live' ? 'bg-red-900/10' : ''
                     } ${gameIndex < games.length - 1 ? 'border-b border-slate-700' : ''}`}
                   >
+                    {/* Info Column - First Column */}
+                    <td className="py-1 px-1 text-center border-r border-slate-600 sticky left-0 bg-slate-900/95 backdrop-blur-sm z-10">
+                      <div className="flex flex-col items-center gap-1">
+                        {/* Compact Date/Time */}
+                        <div className="text-xs font-medium text-slate-300 bg-slate-800 px-2 py-0.5 rounded">
+                          {formatCompactDateTime(game.commence_time)}
+                        </div>
+                        {/* Info Icons */}
+                        <div className="flex items-center gap-1">
+                          {game.channel && (
+                            <button
+                              onClick={() => setModalInfo({type: 'tv', game})}
+                              className="text-lg hover:scale-110 transition-transform cursor-pointer"
+                              title={`TV: ${game.channel}`}
+                            >
+                              📺
+                            </button>
+                          )}
+                          {game.weather && (
+                            <button
+                              onClick={() => setModalInfo({type: 'weather', game})}
+                              className="text-lg hover:scale-110 transition-transform cursor-pointer"
+                              title="Weather Info"
+                            >
+                              🌤️
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+
                     {/* Game Info Column */}
-                    <td className="py-1 px-3 sticky left-0 bg-slate-900/95 backdrop-blur-sm z-10 border-r border-slate-600">
+                    <td className="py-0.5 px-2 bg-slate-900/95 backdrop-blur-sm border-r border-slate-600">
                       <div className="flex flex-col justify-center h-full">
                         {/* Teams */}
-                        <div className="space-y-1">
+                        <div className="space-y-0.5">
                           <div className="flex items-center justify-between">
-                            <span className="text-xl font-normal text-slate-50 tracking-wide leading-tight">
+                            <span className="text-2xl font-light text-slate-50 tracking-wide leading-tight">
                               {formatTeamName(game.away_team, game.sport_key)}
                             </span>
                             {game.away_score !== undefined && (
-                              <span className="text-xl font-medium text-blue-400 ml-2 tabular-nums leading-tight">
+                              <span className="text-2xl font-normal text-blue-400 ml-2 tabular-nums leading-tight">
                                 {game.away_score}
                               </span>
                             )}
                           </div>
                           <div className="flex items-center justify-between">
-                            <span className="text-xl font-normal text-slate-50 tracking-wide leading-tight">
+                            <span className="text-2xl font-light text-slate-50 tracking-wide leading-tight">
                               {formatTeamName(game.home_team, game.sport_key)}
                             </span>
                             {game.home_score !== undefined && (
-                              <span className="text-xl font-medium text-blue-400 ml-2 tabular-nums leading-tight">
+                              <span className="text-2xl font-normal text-blue-400 ml-2 tabular-nums leading-tight">
                                 {game.home_score}
                               </span>
                             )}
@@ -357,36 +421,17 @@ export function Odds() {
                       </div>
                     </td>
 
-                    {/* Date & Time Column */}
-                    <td className="py-1 px-3 text-center border-r border-slate-600">
+                    {/* Opening Line Column */}
+                    <td className="py-2 px-1 text-center border-r border-slate-600">
                       <div className="flex flex-col items-center gap-1">
-                        {/* Status or Date */}
-                        {game.status === 'live' ? (
-                          <span className="text-xl font-medium px-3 py-1 rounded bg-red-600 text-white animate-pulse">
-                            🔴 LIVE
-                          </span>
-                        ) : (
-                          <>
-                            <span className="text-xl font-normal text-slate-200 tracking-wide leading-tight">
-                              {new Date(game.commence_time).toLocaleDateString('en-US', {
-                                month: 'short',
-                                day: 'numeric'
-                              })}
-                            </span>
-                            <span className="text-xl font-normal text-slate-300 tracking-wide tabular-nums leading-tight">
-                              {new Date(game.commence_time).toLocaleTimeString('en-US', {
-                                hour: 'numeric',
-                                minute: '2-digit',
-                                hour12: true
-                              })}
-                            </span>
-                          </>
-                        )}
+                        <span className="text-xs font-light text-slate-400">
+                          Coming Soon
+                        </span>
                       </div>
                     </td>
 
                     {/* Best Line Column */}
-                    <td className="py-1 px-2 border-r border-slate-600 bg-gradient-to-r from-green-900/20 to-slate-900/50">
+                    <td className="py-2 px-2 border-r border-slate-600 bg-gradient-to-r from-green-900/20 to-slate-900/50">
                       {(() => {
                         const bestOdds = getBestOdds(game);
                         if (!bestOdds) return <div className="text-slate-600 text-xs">—</div>;
@@ -533,15 +578,15 @@ export function Odds() {
                             <div>
                               {/* Moneyline */}
                               {activeBetType === 'moneyline' && (
-                                <div className="grid grid-cols-2 divide-x divide-slate-700">
+                                <div className="space-y-0 divide-y divide-slate-700">
                                   <a
                                     href={getBookmaker(bookmaker)?.url || '#'}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="hover:bg-slate-800 transition-colors cursor-pointer px-0.5 py-0.5 block"
+                                    className="hover:bg-slate-800 transition-colors cursor-pointer px-0.5 py-2 block"
                                     title={`Bet ${formatTeamName(game.away_team, game.sport_key)} ${formatOdds(bookOdds.away_ml)} on ${getBookmaker(bookmaker)?.name}`}
                                   >
-                                    <div className="text-sm font-bold text-blue-300 leading-tight">
+                                    <div className="text-xl font-medium text-blue-300 leading-tight">
                                       {formatOdds(bookOdds.away_ml)}
                                     </div>
                                   </a>
@@ -549,10 +594,10 @@ export function Odds() {
                                     href={getBookmaker(bookmaker)?.url || '#'}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="hover:bg-slate-800 transition-colors cursor-pointer px-0.5 py-0.5 block"
+                                    className="hover:bg-slate-800 transition-colors cursor-pointer px-0.5 py-2 block"
                                     title={`Bet ${formatTeamName(game.home_team, game.sport_key)} ${formatOdds(bookOdds.home_ml)} on ${getBookmaker(bookmaker)?.name}`}
                                   >
-                                    <div className="text-sm font-bold text-green-300 leading-tight">
+                                    <div className="text-xl font-medium text-green-300 leading-tight">
                                       {formatOdds(bookOdds.home_ml)}
                                     </div>
                                   </a>
@@ -561,18 +606,18 @@ export function Odds() {
 
                               {/* Spread */}
                               {activeBetType === 'spread' && (
-                                <div className="grid grid-cols-2 divide-x divide-slate-700">
+                                <div className="space-y-0 divide-y divide-slate-700">
                                   <a
                                     href={getBookmaker(bookmaker)?.url || '#'}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="hover:bg-slate-800 transition-colors cursor-pointer px-0.5 py-0.5 block"
+                                    className="hover:bg-slate-800 transition-colors cursor-pointer px-0.5 py-2 block"
                                     title={`Bet ${formatTeamName(game.away_team, game.sport_key)} ${bookOdds.away_spread > 0 ? '+' : ''}${bookOdds.away_spread} on ${getBookmaker(bookmaker)?.name}`}
                                   >
-                                    <div className="text-sm font-bold text-slate-100 leading-tight">
+                                    <div className="text-lg font-medium text-slate-100 leading-tight">
                                       {bookOdds.away_spread > 0 ? '+' : ''}{bookOdds.away_spread}
                                     </div>
-                                    <div className="text-xs text-slate-400 mt-0.5 leading-tight">
+                                    <div className="text-base text-slate-400 mt-0 leading-tight">
                                       {formatOdds(bookOdds.away_spread_price)}
                                     </div>
                                   </a>
@@ -580,13 +625,13 @@ export function Odds() {
                                     href={getBookmaker(bookmaker)?.url || '#'}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="hover:bg-slate-800 transition-colors cursor-pointer px-0.5 py-0.5 block"
+                                    className="hover:bg-slate-800 transition-colors cursor-pointer px-0.5 py-2 block"
                                     title={`Bet ${formatTeamName(game.home_team, game.sport_key)} ${bookOdds.home_spread > 0 ? '+' : ''}${bookOdds.home_spread} on ${getBookmaker(bookmaker)?.name}`}
                                   >
-                                    <div className="text-sm font-bold text-slate-100 leading-tight">
+                                    <div className="text-lg font-medium text-slate-100 leading-tight">
                                       {bookOdds.home_spread > 0 ? '+' : ''}{bookOdds.home_spread}
                                     </div>
-                                    <div className="text-xs text-slate-400 mt-0.5 leading-tight">
+                                    <div className="text-base text-slate-400 mt-0 leading-tight">
                                       {formatOdds(bookOdds.home_spread_price)}
                                     </div>
                                   </a>
@@ -595,24 +640,24 @@ export function Odds() {
 
                               {/* Total */}
                               {activeBetType === 'total' && (
-                                <div className="space-y-0.5">
+                                <div className="space-y-0">
                                   <a
                                     href={getBookmaker(bookmaker)?.url || '#'}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className={`hover:bg-slate-800 transition-colors cursor-pointer px-0.5 py-0.5 block ${
+                                    className={`hover:bg-slate-800 transition-colors cursor-pointer px-0.5 py-2 block ${
                                       bookOdds.is_best_over ? 'bg-green-900/30' : ''
                                     }`}
                                     title={`Bet Over ${bookOdds.total} ${formatOdds(bookOdds.over_price)} on ${getBookmaker(bookmaker)?.name}`}
                                   >
                                     <div className="flex items-center gap-1">
-                                      <span className={`text-xs font-bold ${bookOdds.is_best_over ? 'text-green-300' : 'text-slate-400'} leading-tight w-3`}>
+                                      <span className={`text-base font-medium ${bookOdds.is_best_over ? 'text-green-300' : 'text-slate-400'} leading-tight w-4`}>
                                         O
                                       </span>
-                                      <span className={`text-xs font-medium ${bookOdds.is_best_over ? 'text-green-200' : 'text-slate-200'} leading-tight flex-1`}>
+                                      <span className={`text-base font-normal ${bookOdds.is_best_over ? 'text-green-200' : 'text-slate-200'} leading-tight flex-1`}>
                                         {bookOdds.total}
                                       </span>
-                                      <span className={`text-xs font-medium ${bookOdds.is_best_over ? 'text-green-100' : 'text-slate-100'} leading-tight`}>
+                                      <span className={`text-base font-normal ${bookOdds.is_best_over ? 'text-green-100' : 'text-slate-100'} leading-tight`}>
                                         {formatOdds(bookOdds.over_price)}
                                       </span>
                                     </div>
@@ -621,19 +666,19 @@ export function Odds() {
                                     href={getBookmaker(bookmaker)?.url || '#'}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className={`hover:bg-slate-800 transition-colors cursor-pointer px-0.5 py-0.5 block ${
+                                    className={`hover:bg-slate-800 transition-colors cursor-pointer px-0.5 py-2 block ${
                                       bookOdds.is_best_under ? 'bg-red-900/30' : ''
                                     }`}
                                     title={`Bet Under ${bookOdds.total} ${formatOdds(bookOdds.under_price)} on ${getBookmaker(bookmaker)?.name}`}
                                   >
                                     <div className="flex items-center gap-1">
-                                      <span className={`text-xs font-bold ${bookOdds.is_best_under ? 'text-red-300' : 'text-slate-400'} leading-tight w-3`}>
+                                      <span className={`text-base font-medium ${bookOdds.is_best_under ? 'text-red-300' : 'text-slate-400'} leading-tight w-4`}>
                                         U
                                       </span>
-                                      <span className={`text-xs font-medium ${bookOdds.is_best_under ? 'text-red-200' : 'text-slate-200'} leading-tight flex-1`}>
+                                      <span className={`text-base font-normal ${bookOdds.is_best_under ? 'text-red-200' : 'text-slate-200'} leading-tight flex-1`}>
                                         {bookOdds.total}
                                       </span>
-                                      <span className={`text-xs font-medium ${bookOdds.is_best_under ? 'text-red-100' : 'text-slate-100'} leading-tight`}>
+                                      <span className={`text-base font-normal ${bookOdds.is_best_under ? 'text-red-100' : 'text-slate-100'} leading-tight`}>
                                         {formatOdds(bookOdds.under_price)}
                                       </span>
                                     </div>
@@ -692,6 +737,80 @@ export function Odds() {
           </div>
         )}
       </div>
+
+      {/* Info Modal */}
+      {modalInfo && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+          onClick={() => setModalInfo(null)}
+        >
+          <div
+            className="bg-slate-800 rounded-lg p-6 max-w-md w-full mx-4 border-2 border-slate-600"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                {modalInfo.type === 'tv' ? '📺 TV Info' : '🌤️ Weather Info'}
+              </h3>
+              <button
+                onClick={() => setModalInfo(null)}
+                className="text-slate-400 hover:text-white text-2xl"
+              >
+                ×
+              </button>
+            </div>
+
+            {modalInfo.type === 'tv' && modalInfo.game.channel && (
+              <div className="space-y-3">
+                <div className="bg-slate-900 rounded p-4">
+                  <div className="text-sm text-slate-400 mb-1">Channel</div>
+                  <div className="text-2xl font-bold text-white">{modalInfo.game.channel}</div>
+                </div>
+                <div className="text-sm text-slate-400">
+                  {formatTeamName(modalInfo.game.away_team, modalInfo.game.sport_key)} @ {formatTeamName(modalInfo.game.home_team, modalInfo.game.sport_key)}
+                </div>
+              </div>
+            )}
+
+            {modalInfo.type === 'weather' && modalInfo.game.weather && (
+              <div className="space-y-3">
+                {modalInfo.game.weather.description && (
+                  <div className="bg-slate-900 rounded p-4">
+                    <div className="text-sm text-slate-400 mb-1">Conditions</div>
+                    <div className="text-lg font-medium text-white">{modalInfo.game.weather.description}</div>
+                  </div>
+                )}
+                <div className="grid grid-cols-2 gap-3">
+                  {modalInfo.game.weather.temp_high !== undefined && (
+                    <div className="bg-slate-900 rounded p-3">
+                      <div className="text-xs text-slate-400 mb-1">High</div>
+                      <div className="text-xl font-bold text-orange-400">{modalInfo.game.weather.temp_high}°F</div>
+                    </div>
+                  )}
+                  {modalInfo.game.weather.temp_low !== undefined && (
+                    <div className="bg-slate-900 rounded p-3">
+                      <div className="text-xs text-slate-400 mb-1">Low</div>
+                      <div className="text-xl font-bold text-blue-400">{modalInfo.game.weather.temp_low}°F</div>
+                    </div>
+                  )}
+                  {modalInfo.game.weather.wind_speed !== undefined && (
+                    <div className="bg-slate-900 rounded p-3">
+                      <div className="text-xs text-slate-400 mb-1">Wind Speed</div>
+                      <div className="text-xl font-bold text-slate-200">{modalInfo.game.weather.wind_speed} mph</div>
+                    </div>
+                  )}
+                  {modalInfo.game.weather.wind_chill !== undefined && (
+                    <div className="bg-slate-900 rounded p-3">
+                      <div className="text-xs text-slate-400 mb-1">Wind Chill</div>
+                      <div className="text-xl font-bold text-cyan-400">{modalInfo.game.weather.wind_chill}°F</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

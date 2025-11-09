@@ -1,0 +1,54 @@
+STRATEGY STACK FEATURE - Code additions needed:
+
+1. ADD TO STATE (line 178, after selectedStrategy):
+  const [selectedStrategies, setSelectedStrategies] = useState<Set<number>>(new Set());
+
+2. ADD TOGGLE FUNCTION (after sports array):
+  const toggleStrategySelection = (strategyId: number) => {
+    const newSelected = new Set(selectedStrategies);
+    if (newSelected.has(strategyId)) {
+      newSelected.delete(strategyId);
+    } else {
+      newSelected.add(strategyId);
+    }
+    setSelectedStrategies(newSelected);
+  };
+
+3. ADD STACK METRICS CALCULATION (before return statement):
+  // Calculate Strategy Stack metrics
+  const selectedStratData = Array.from(selectedStrategies).map(id => {
+    const strategy = strategies.find(s => s.id === id);
+    const result = backtestResults[id];
+    return { strategy, result };
+  }).filter(item => item.strategy && item.result);
+
+  const stackExpected = selectedStratData.reduce((acc, { result, strategy }) => {
+    if (result) {
+      const freqMap: Record<string, number> = { 'Daily': 7, '4x/week': 4, '2x/week': 2, '': 0 };
+      const betsPerDay = freqMap[strategy?.frequency || ''] / 7;
+      return {
+        totalBets: acc.totalBets + (result.bets_placed || 0),
+        totalWins: acc.totalWins + result.wins,
+        totalLosses: acc.totalLosses + result.losses,
+        totalProfit: acc.totalProfit + (result.profit_loss || 0),
+        betsPerDay: acc.betsPerDay + betsPerDay,
+      };
+    }
+    return acc;
+  }, { totalBets: 0, totalWins: 0, totalLosses: 0, totalProfit: 0, betsPerDay: 0 });
+
+  const stackWinRate = stackExpected.totalBets > 0 
+    ? (stackExpected.totalWins / (stackExpected.totalWins + stackExpected.totalLosses)) * 100 
+    : 0;
+  const stackROI = stackExpected.totalBets > 0 
+    ? (stackExpected.totalProfit / stackExpected.totalBets) * 100 
+    : 0;
+  const stackProfitPerUnit = stackExpected.totalBets > 0 
+    ? stackExpected.totalProfit / stackExpected.totalBets 
+    : 0;
+
+4. ADD STRATEGY STACK SECTION (after Performance Metrics, before Search and Filters)
+
+5. ADD CHECKBOX COLUMN TO TABLE HEADER (before Strategy column)
+
+6. ADD CHECKBOX TO TABLE ROWS (before first td)

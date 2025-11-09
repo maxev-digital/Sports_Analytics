@@ -91,6 +91,8 @@ interface GroupedProp {
   prop_type: string;
   line: number;
   game: string;
+  home_team: string;
+  away_team: string;
   commence_time: string;
   bookmakers: {
     [bookmaker: string]: {
@@ -186,6 +188,8 @@ export function Props() {
           prop_type: prop.prop_type,
           line: prop.line,
           game: `${prop.away_team} @ ${prop.home_team}`,
+          home_team: prop.home_team,
+          away_team: prop.away_team,
           commence_time: prop.commence_time,
           bookmakers: {}
         };
@@ -260,6 +264,96 @@ export function Props() {
   // Format odds display
   const formatOdds = (odds: number) => {
     return odds > 0 ? `+${odds}` : `${odds}`;
+  };
+
+  // Extract team abbreviation from full team name
+  const getTeamAbbrev = (teamName: string): string => {
+    // Common team name mappings for abbreviations
+    const abbrevMap: { [key: string]: string } = {
+      // NBA
+      'Los Angeles Lakers': 'LAL',
+      'Los Angeles Clippers': 'LAC',
+      'Golden State Warriors': 'GSW',
+      'Phoenix Suns': 'PHX',
+      'Sacramento Kings': 'SAC',
+      'Dallas Mavericks': 'DAL',
+      'Houston Rockets': 'HOU',
+      'Memphis Grizzlies': 'MEM',
+      'New Orleans Pelicans': 'NOP',
+      'San Antonio Spurs': 'SAS',
+      'Denver Nuggets': 'DEN',
+      'Minnesota Timberwolves': 'MIN',
+      'Oklahoma City Thunder': 'OKC',
+      'Portland Trail Blazers': 'POR',
+      'Utah Jazz': 'UTA',
+      'Boston Celtics': 'BOS',
+      'Brooklyn Nets': 'BKN',
+      'New York Knicks': 'NYK',
+      'Philadelphia 76ers': 'PHI',
+      'Toronto Raptors': 'TOR',
+      'Chicago Bulls': 'CHI',
+      'Cleveland Cavaliers': 'CLE',
+      'Detroit Pistons': 'DET',
+      'Indiana Pacers': 'IND',
+      'Milwaukee Bucks': 'MIL',
+      'Atlanta Hawks': 'ATL',
+      'Charlotte Hornets': 'CHA',
+      'Miami Heat': 'MIA',
+      'Orlando Magic': 'ORL',
+      'Washington Wizards': 'WAS',
+      // NFL
+      'Arizona Cardinals': 'ARI',
+      'Atlanta Falcons': 'ATL',
+      'Baltimore Ravens': 'BAL',
+      'Buffalo Bills': 'BUF',
+      'Carolina Panthers': 'CAR',
+      'Chicago Bears': 'CHI',
+      'Cincinnati Bengals': 'CIN',
+      'Cleveland Browns': 'CLE',
+      'Dallas Cowboys': 'DAL',
+      'Denver Broncos': 'DEN',
+      'Detroit Lions': 'DET',
+      'Green Bay Packers': 'GB',
+      'Houston Texans': 'HOU',
+      'Indianapolis Colts': 'IND',
+      'Jacksonville Jaguars': 'JAX',
+      'Kansas City Chiefs': 'KC',
+      'Las Vegas Raiders': 'LV',
+      'Los Angeles Chargers': 'LAC',
+      'Los Angeles Rams': 'LAR',
+      'Miami Dolphins': 'MIA',
+      'Minnesota Vikings': 'MIN',
+      'New England Patriots': 'NE',
+      'New Orleans Saints': 'NO',
+      'New York Giants': 'NYG',
+      'New York Jets': 'NYJ',
+      'Philadelphia Eagles': 'PHI',
+      'Pittsburgh Steelers': 'PIT',
+      'San Francisco 49ers': 'SF',
+      'Seattle Seahawks': 'SEA',
+      'Tampa Bay Buccaneers': 'TB',
+      'Tennessee Titans': 'TEN',
+      'Washington Commanders': 'WAS',
+    };
+
+    // Check if we have a direct mapping
+    if (abbrevMap[teamName]) {
+      return abbrevMap[teamName];
+    }
+
+    // Fallback: create abbreviation from first letters of each word
+    const words = teamName.split(' ').filter(word =>
+      !['the', 'of', 'and'].includes(word.toLowerCase())
+    );
+    if (words.length >= 2) {
+      // Take first letter of last word and first letter(s) of first word
+      const lastWord = words[words.length - 1];
+      const firstWord = words[0];
+      return (firstWord.substring(0, 2) + lastWord[0]).toUpperCase();
+    }
+
+    // Ultimate fallback: first 3 letters
+    return teamName.substring(0, 3).toUpperCase();
   };
 
 
@@ -639,7 +733,12 @@ export function Props() {
                       }`}
                     >
                       <td className="py-0.5 px-1 border-r border-slate-600 w-[100px]">
-                        <span className="text-white font-semibold text-xs truncate block">{prop.player_name}</span>
+                        <div className="flex flex-col">
+                          <span className="text-white font-semibold text-xs truncate block">{prop.player_name}</span>
+                          <span className="text-slate-500 text-[9px] truncate">
+                            {getTeamAbbrev(prop.away_team)} @ {getTeamAbbrev(prop.home_team)}
+                          </span>
+                        </div>
                       </td>
                       <td className="py-0.5 px-1 border-r border-slate-600 w-[90px]">
                         <span className="text-slate-300 text-xs truncate block">{formatPropType(prop.prop_type)}</span>

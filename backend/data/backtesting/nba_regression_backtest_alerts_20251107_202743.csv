@@ -1,0 +1,1 @@
+game_id,season,game_date,home_team,away_team,actual_total,home_score,away_score,pred_lower,pred_mean,pred_upper,pred_std,pred_error,abs_pred_error,simulated_line_drift,simulated_live_line,z_score,abs_z_score,is_alert,confidence,bet_direction,theoretical_win_prob,random_outcome,bet_wins,pnl

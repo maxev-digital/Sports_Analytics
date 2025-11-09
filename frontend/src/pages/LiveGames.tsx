@@ -1,13 +1,24 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { LiveGame } from '../types';
 import { GameCard } from '../components/GameCard';
+import { LiveGamesTicker } from '../components/LiveGamesTicker';
 import { sportEmojis } from '../utils/sportDetection';
 import { getApiUrl } from '../config';
+import { useAlertMonitoring } from '../hooks/useAlertMonitoring';
 
 export function LiveGames() {
   const [games, setGames] = useState<LiveGame[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSport, setSelectedSport] = useState<string>('live');
+
+  // Real-time alert monitoring
+  const alertMonitoring = useAlertMonitoring(games);
+  const [pinnedGames, setPinnedGames] = useState<Set<string>>(() => {
+    // Load pinned games from localStorage on mount
+    const saved = localStorage.getItem('pinnedGames');
+    return saved ? new Set(JSON.parse(saved)) : new Set();
+  });
+  const gameRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
   useEffect(() => {
     fetchGames();
@@ -15,17 +26,47 @@ export function LiveGames() {
     return () => clearInterval(interval);
   }, []);
 
+  // Save pinned games to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('pinnedGames', JSON.stringify(Array.from(pinnedGames)));
+  }, [pinnedGames]);
+
+  const togglePin = (gameId: string) => {
+    setPinnedGames(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(gameId)) {
+        newSet.delete(gameId);
+      } else {
+        newSet.add(gameId);
+      }
+      return newSet;
+    });
+  };
+
   const fetchGames = async () => {
     try {
-      const response = await fetch(getApiUrl('games?user_id=default'));
+      const url = getApiUrl('games?user_id=default');
+      console.log('🔄 Fetching games from:', url);
+      const response = await fetch(url);
+      console.log('✅ Response received:', response.status, response.statusText);
+
+      if (!response.ok) {
+        console.error('❌ Response not OK:', response.status);
+        setLoading(false);
+        return;
+      }
+
       const data = await response.json();
       console.log('📊 Fetched games:', data);
       console.log('📊 Number of games:', data.length);
-      console.log('📊 First game structure:', data[0]);
+      if (data.length > 0) {
+        console.log('📊 First game structure:', data[0]);
+      }
       setGames(data);
       setLoading(false);
     } catch (error) {
-      console.error('Error fetching games:', error);
+      console.error('❌ Error fetching games:', error);
+      console.error('❌ Error details:', error instanceof Error ? error.message : String(error));
       setLoading(false);
     }
   };
@@ -80,18 +121,41 @@ export function LiveGames() {
     return grouped;
   };
 
-  const liveGames = filteredGames.filter(g => g.state.status === 'live');
-  const upcomingGames = filteredGames.filter(g => g.state.status === 'upcoming');
-  
+  // Sort helper: pinned games first, then by status
+  const sortByPinned = (games: LiveGame[]) => {
+    return [...games].sort((a, b) => {
+      const aPinned = pinnedGames.has(a.state.id);
+      const bPinned = pinnedGames.has(b.state.id);
+      if (aPinned && !bPinned) return -1;
+      if (!aPinned && bPinned) return 1;
+      return 0; // Keep original order if both pinned or both unpinned
+    });
+  };
+
+  const liveGames = sortByPinned(filteredGames.filter(g => g.state.status === 'live'));
+  const upcomingGames = sortByPinned(filteredGames.filter(g => g.state.status === 'upcoming'));
+
   console.log('🎮 Selected sport:', selectedSport);
   console.log('🎮 Total games:', games.length);
   console.log('🎮 Filtered games:', filteredGames.length);
   console.log('🎮 Live games:', liveGames.length);
   console.log('🎮 Upcoming games:', upcomingGames.length);
 
-  // For tennis, group by tournament
+  // Scroll to game when ticker item is clicked
+  const handleGameClick = (gameId: string) => {
+    const element = gameRefs.current[gameId];
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+
+  // For tennis, group by tournament and sort each tournament's games
   const tennisGames = filteredGames.filter(g => g.state.sport_key.includes('tennis'));
   const tennisByTournament = groupTennisByTournament(tennisGames);
+  // Sort games within each tournament by pinned status
+  Object.keys(tennisByTournament).forEach(tournament => {
+    tennisByTournament[tournament] = sortByPinned(tennisByTournament[tournament]);
+  });
   const isShowingOnlyTennis = (selectedSport === 'atp' || selectedSport === 'wta') && tennisGames.length > 0;
 
   if (loading) {
@@ -134,6 +198,9 @@ export function LiveGames() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-6">
+        {/* Live Games Ticker */}
+        <LiveGamesTicker games={filteredGames} onGameClick={handleGameClick} />
+
         {/* Tennis Tournament View */}
         {isShowingOnlyTennis && Object.keys(tennisByTournament).length > 0 ? (
           <div>
@@ -160,7 +227,12 @@ export function LiveGames() {
                 {/* Tournament Matches */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {tournamentGames.map((game) => (
-                    <GameCard key={game.state.id} game={game} />
+                    <GameCard
+                      key={game.state.id}
+                      game={game}
+                      isPinned={pinnedGames.has(game.state.id)}
+                      onTogglePin={togglePin}
+                    />
                   ))}
                 </div>
               </div>
@@ -180,7 +252,13 @@ export function LiveGames() {
                 </div>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {liveGames.map((game) => (
-                    <GameCard key={game.state.id} game={game} />
+                    <div key={game.state.id} ref={(el) => {gameRefs.current[game.state.id] = el}}>
+                      <GameCard
+                        game={game}
+                        isPinned={pinnedGames.has(game.state.id)}
+                        onTogglePin={togglePin}
+                      />
+                    </div>
                   ))}
                 </div>
               </div>
@@ -195,7 +273,12 @@ export function LiveGames() {
                 </div>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {upcomingGames.map((game) => (
-                    <GameCard key={game.state.id} game={game} />
+                    <GameCard
+                      key={game.state.id}
+                      game={game}
+                      isPinned={pinnedGames.has(game.state.id)}
+                      onTogglePin={togglePin}
+                    />
                   ))}
                 </div>
               </div>

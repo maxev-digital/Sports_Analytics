@@ -36,6 +36,11 @@ class GameOdds(BaseModel):
     away_spread_price: Optional[int] = None
     home_ml: Optional[int] = None
     away_ml: Optional[int] = None
+    # Line movement tracking
+    opening_total: Optional[float] = None  # Opening total line
+    total_movement: Optional[float] = None  # Change from opening (positive = moved up)
+    opening_spread: Optional[float] = None  # Opening spread
+    spread_movement: Optional[float] = None  # Change in spread from opening
     
 class GameProjection(BaseModel):
     current_total: int
@@ -270,6 +275,35 @@ class MLBTeamStats(BaseModel):
     strikeouts_per_9_rank: Optional[int] = None
     saves_rank: Optional[int] = None
 
+class AlternateMarketLine(BaseModel):
+    """Alternate market lines (halves, quarters, periods)"""
+    market_type: str  # '1H', '2H', 'Q1', 'Q2', 'Q3', 'Q4'
+    bookmaker: str
+    total: Optional[float] = None
+    over_price: Optional[int] = None
+    under_price: Optional[int] = None
+    home_spread: Optional[float] = None
+    away_spread: Optional[float] = None
+    home_spread_price: Optional[int] = None
+    away_spread_price: Optional[int] = None
+
+class WeatherInfo(BaseModel):
+    """Weather information for outdoor games (NFL primarily)"""
+    temp_high: Optional[int] = None
+    temp_low: Optional[int] = None
+    description: Optional[str] = None
+    wind_chill: Optional[int] = None
+    wind_speed: Optional[int] = None
+
+class InjuryInfo(BaseModel):
+    """Player injury information"""
+    player_name: str
+    team: str
+    position: str
+    status: str  # 'Out', 'Questionable', 'Doubtful', 'Probable'
+    body_part: Optional[str] = None
+    notes: Optional[str] = None
+
 class LiveGame(BaseModel):
     state: GameState
     odds: list[GameOdds]
@@ -289,10 +323,17 @@ class LiveGame(BaseModel):
     home_nfl_momentum: Optional[NFLMomentumStats] = None  # NFL-specific momentum
     away_nfl_momentum: Optional[NFLMomentumStats] = None  # NFL-specific momentum
     home_ncaaf_momentum: Optional[NFLMomentumStats] = None  # NCAAF-specific momentum (uses same model as NFL)
+    alternate_lines: Optional[list[AlternateMarketLine]] = None  # Half/quarter lines (NBA/NHL only)
     away_ncaaf_momentum: Optional[NFLMomentumStats] = None  # NCAAF-specific momentum (uses same model as NFL)
     home_mlb_stats: Optional[MLBTeamStats] = None  # MLB-specific season stats
     away_mlb_stats: Optional[MLBTeamStats] = None  # MLB-specific season stats
     quarters: Optional[dict] = None  # NBA quarter-by-quarter scores: {'Q1': {'home': 25, 'away': 22}, ...}
+    player_props_count: Optional[int] = None  # Number of player props available for this game (NBA/NHL only)
+    # Game information fields
+    channel: Optional[str] = None  # TV broadcast channel
+    weather: Optional[WeatherInfo] = None  # Weather data (NFL primarily)
+    injuries: Optional[list[InjuryInfo]] = None  # Key injuries for both teams
+    strategy_alerts: Optional[list[dict]] = None  # Strategy alerts for this game (Quarter Reversal, Halftime Tracker, etc.)
 
 
 # ============================================================================
@@ -368,4 +409,5 @@ class PlayerPropsResponse(BaseModel):
     total_strong_bets: int  # Number of strong bet recommendations
     total_moderate_bets: int  # Number of moderate bet recommendations
     last_updated: datetime  # When props were last fetched/updated
+
 

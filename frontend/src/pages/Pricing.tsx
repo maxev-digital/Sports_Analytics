@@ -20,13 +20,11 @@ export function Pricing() {
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
   const [loadingStatus, setLoadingStatus] = useState(true);
-  const [betaCount, setBetaCount] = useState<number>(45); // Start at 45, auto-increment
-  const [, setCountdownTick] = useState(0); // Force countdown re-render
-  const [waitlistEmail, setWaitlistEmail] = useState('');
-  const [waitlistSubmitted, setWaitlistSubmitted] = useState(false);
-  const [waitlistLoading, setWaitlistLoading] = useState(false);
+  const [signupEmail, setSignupEmail] = useState('');
+  const [signupSubmitted, setSignupSubmitted] = useState(false);
+  const [signupLoading, setSignupLoading] = useState(false);
 
-  // Beta launch promotion - flat 50% off for all early members
+  // Early adopter promotion - flat 50% off for all early members
   const discountPercent = 50;
 
   const toggleCardExpansion = (planName: string) => {
@@ -65,80 +63,45 @@ export function Pricing() {
     fetchSubscriptionStatus();
   }, [isAuthenticated, username]);
 
-  // Auto-increment beta member count (starts at 45, +1 every 10 minutes)
-  useEffect(() => {
-    const calculateBetaCount = () => {
-      // Base: 45 members as of Nov 5, 2025 6:00 PM CST (Nov 6, 2025 00:00:00 UTC)
-      const baseDate = new Date('2025-11-06T00:00:00Z');
-      const baseCount = 45;
-      const incrementMinutes = 10; // Add 1 member every 10 minutes
-
-      const now = new Date();
-      const minutesElapsed = Math.floor((now.getTime() - baseDate.getTime()) / (1000 * 60));
-      const incrementsToAdd = Math.max(0, Math.floor(minutesElapsed / incrementMinutes));
-
-      setBetaCount(baseCount + incrementsToAdd);
-    };
-
-    calculateBetaCount();
-    // Update every minute to keep count current
-    const interval = setInterval(calculateBetaCount, 60000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Update countdown timer every second
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCountdownTick(prev => prev + 1);
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  // Handle waitlist form submission
-  const handleWaitlistSubmit = async (e: React.FormEvent) => {
+  // Handle signup form submission
+  const handleSignupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!waitlistEmail) {
+    if (!signupEmail) {
       alert('Please enter your email address');
       return;
     }
 
-    setWaitlistLoading(true);
+    setSignupLoading(true);
 
     try {
-      const response = await fetch(getApiUrl('waitlist/add'), {
+      const response = await fetch(getApiUrl('auth/signup'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: waitlistEmail,
-          tier: 'full_launch',
-          price: 29.99
+          email: signupEmail,
+          username: signupEmail.split('@')[0],
         }),
       });
 
       const data = await response.json();
 
-      if (response.ok && data.success) {
-        // Track waitlist signup for X Ads (valuable lead)
-        if (typeof (window as any).twq !== 'undefined') {
-          (window as any).twq('event', 'tw-p3o73-oebxk', {
-            value: '0',
-            currency: 'USD',
-            content_name: 'waitlist_signup'
-          });
-        }
-        setWaitlistSubmitted(true);
-        setWaitlistEmail('');
+      if (response.ok) {
+        setSignupSubmitted(true);
+        setSignupEmail('');
+        // Redirect to signup page with email pre-filled
+        window.location.href = `/signup?email=${encodeURIComponent(signupEmail)}`;
       } else {
-        throw new Error(data.message || 'Failed to add to waitlist');
+        throw new Error(data.message || 'Failed to sign up');
       }
     } catch (error) {
-      console.error('Error submitting waitlist:', error);
-      alert('Error signing up. Please try again or contact support.');
+      console.error('Error submitting signup:', error);
+      alert('Error signing up. Please try the signup page directly.');
+      window.location.href = '/signup';
     } finally {
-      setWaitlistLoading(false);
+      setSignupLoading(false);
     }
   };
 
@@ -456,149 +419,47 @@ export function Pricing() {
           </div>
         )}
 
-        {/* Beta Launch Section */}
-        {!loadingStatus && (
-          <div className="mb-16 bg-gradient-to-br from-green-900/40 via-slate-900/80 to-blue-900/40 border-4 border-green-500 rounded-2xl p-10 shadow-2xl shadow-green-500/30">
-            <div className="max-w-4xl mx-auto text-center">
-              {/* Beta Badge */}
-              <div className="inline-flex items-center gap-2 bg-green-600 text-white px-6 py-2 rounded-full font-bold text-sm mb-6 animate-pulse">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                BETA LAUNCH
-              </div>
-
-              {/* Title */}
-              <h2 className="text-5xl font-bold text-white mb-4">
-                Beta Launch Special
-              </h2>
-              <p className="text-2xl text-green-300 mb-4">
-                Get Full Platform Access for $9.99/month
-              </p>
-              <p className="text-lg text-red-300 font-bold mb-8">
-                Beta Offer Ends on Sunday 11/9/2025 at Midnight
-              </p>
-
-              {/* Counter */}
-              <div className="bg-slate-900/70 border-2 border-green-400 rounded-xl p-8 mb-8">
-                <div className="flex items-center justify-center gap-6">
-                  <div className="text-center">
-                    <div className="text-7xl font-bold text-green-400 mb-2">
-                      {betaCount}
-                    </div>
-                    <div className="text-slate-300 text-lg">Beta Members</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Countdown Timer */}
-              <div className="mb-8">
-                <div className="text-slate-300 text-lg mb-3">Offer Ends In:</div>
-                <div className="flex justify-center gap-4">
-                  {(() => {
-                    const now = new Date().getTime();
-                    const endDate = new Date('2025-11-10T06:00:00Z').getTime(); // Sunday 11/9 Midnight CST
-                    const diff = endDate - now;
-
-                    if (diff < 0) {
-                      return <div className="text-3xl font-bold text-green-400">🚀 LAUNCHED!</div>;
-                    }
-
-                    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-                    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                    const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                    const secs = Math.floor((diff % (1000 * 60)) / 1000);
-
-                    return (
-                      <>
-                        <div className="bg-slate-800/70 border border-green-500/50 rounded-lg px-6 py-4">
-                          <div className="text-4xl font-bold text-white">{days}</div>
-                          <div className="text-sm text-slate-400">Days</div>
-                        </div>
-                        <div className="bg-slate-800/70 border border-green-500/50 rounded-lg px-6 py-4">
-                          <div className="text-4xl font-bold text-white">{hours}</div>
-                          <div className="text-sm text-slate-400">Hours</div>
-                        </div>
-                        <div className="bg-slate-800/70 border border-green-500/50 rounded-lg px-6 py-4">
-                          <div className="text-4xl font-bold text-white">{mins}</div>
-                          <div className="text-sm text-slate-400">Mins</div>
-                        </div>
-                        <div className="bg-slate-800/70 border border-green-500/50 rounded-lg px-6 py-4">
-                          <div className="text-4xl font-bold text-white">{secs}</div>
-                          <div className="text-sm text-slate-400">Secs</div>
-                        </div>
-                      </>
-                    );
-                  })()}
-                </div>
-              </div>
-
-              {/* CTA Button */}
-              <button
-                onClick={() => handleSubscribe('beta')}
-                disabled={loading === 'beta'}
-                className="px-12 py-6 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white text-2xl font-bold rounded-xl shadow-2xl shadow-green-600/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-6"
-              >
-                {loading === 'beta' ? 'Loading...' : 'JOIN BETA FOR $9.99/MO →'}
-              </button>
-
-              {/* Benefits */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-left">
-                <div className="bg-slate-900/50 border border-green-500/30 rounded-lg p-4">
-                  <div className="text-green-400 font-bold mb-2">✓ Full Platform Access</div>
-                  <div className="text-slate-300 text-sm">Live odds, analytics, strategies, and all premium features</div>
-                </div>
-                <div className="bg-slate-900/50 border border-green-500/30 rounded-lg p-4">
-                  <div className="text-green-400 font-bold mb-2">✓ Shape The Product</div>
-                  <div className="text-slate-300 text-sm">Direct input on features and priority support</div>
-                </div>
-                <div className="bg-slate-900/50 border border-green-500/30 rounded-lg p-4">
-                  <div className="text-green-400 font-bold mb-2">✓ Cancel Anytime</div>
-                  <div className="text-slate-300 text-sm">No commitment, no contracts, just results</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Full Launch Waitlist */}
-        {!loadingStatus && (
-          <div className="mb-16 bg-slate-900 border-2 border-slate-700 rounded-2xl p-10 text-center shadow-xl">
-            <h3 className="text-3xl font-bold text-white mb-4">
-              FULL LAUNCH COMING — $29.99/mo
+        {/* Early Access Sign Up CTA */}
+        {!loadingStatus && !isAuthenticated && (
+          <div className="mb-16 bg-gradient-to-br from-blue-900/30 via-slate-800/50 to-purple-900/30 border-2 border-blue-500/50 rounded-2xl p-10 text-center shadow-2xl shadow-blue-500/20">
+            <h3 className="text-3xl font-bold text-white mb-3">
+              Start Winning Today
             </h3>
-            <p className="text-lg text-slate-400 mb-6">
-              Get notified when we go live at regular price. No commitment.
+            <p className="text-lg text-slate-300 mb-6 max-w-2xl mx-auto">
+              Join thousands of smart bettors using data-driven insights to gain an edge. Sign up now and lock in 50% off for life.
             </p>
 
-            {waitlistSubmitted ? (
-              <div className="bg-green-900/30 border border-green-500 rounded-lg p-6 max-w-md mx-auto">
+            {signupSubmitted ? (
+              <div className="bg-green-900/30 border-2 border-green-500 rounded-lg p-6 max-w-md mx-auto">
                 <svg className="w-12 h-12 text-green-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <p className="text-green-300 font-bold text-lg">You're on the list!</p>
-                <p className="text-green-200 text-sm mt-2">We'll notify you when the full launch is ready.</p>
+                <p className="text-green-300 font-bold text-lg">Redirecting to signup...</p>
               </div>
             ) : (
-              <form onSubmit={handleWaitlistSubmit} className="flex flex-col sm:flex-row gap-4 justify-center items-center max-w-xl mx-auto">
+              <form onSubmit={handleSignupSubmit} className="flex flex-col sm:flex-row gap-4 justify-center items-center max-w-xl mx-auto">
                 <input
                   type="email"
-                  value={waitlistEmail}
-                  onChange={(e) => setWaitlistEmail(e.target.value)}
-                  placeholder="your@email.com"
+                  value={signupEmail}
+                  onChange={(e) => setSignupEmail(e.target.value)}
+                  placeholder="Enter your email"
                   required
-                  disabled={waitlistLoading}
-                  className="px-6 py-4 rounded-lg bg-slate-800 border border-slate-600 text-white placeholder-slate-500 focus:border-green-500 focus:outline-none w-full sm:w-auto flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={signupLoading}
+                  className="px-6 py-4 rounded-lg bg-slate-800 border-2 border-slate-600 text-white placeholder-slate-400 focus:border-blue-500 focus:outline-none w-full sm:w-auto flex-1 disabled:opacity-50 disabled:cursor-not-allowed text-base"
                 />
                 <button
                   type="submit"
-                  disabled={waitlistLoading}
-                  className="px-8 py-4 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-all shadow-lg w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={signupLoading}
+                  className="px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-bold rounded-lg transition-all shadow-lg shadow-blue-600/30 w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {waitlistLoading ? 'ADDING...' : 'SIGN ME UP'}
+                  {signupLoading ? 'PROCESSING...' : 'GET STARTED FREE'}
                 </button>
               </form>
             )}
+
+            <p className="text-sm text-slate-400 mt-4">
+              No credit card required • 7-day money-back guarantee • Cancel anytime
+            </p>
           </div>
         )}
 
@@ -760,18 +621,6 @@ export function Pricing() {
             </div>
           </div>
 
-          {/* Beta Launch Promotion Banner */}
-          <div className="inline-flex items-center gap-3 bg-gradient-to-r from-green-900/40 to-blue-900/40 border border-green-500 rounded-lg px-6 py-4 shadow-lg shadow-green-500/20">
-            <svg className="w-7 h-7 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
-            </svg>
-            <div>
-              <span className="text-green-300 font-bold text-xl">
-                🎉 Beta Launch Special: 50% OFF FOR LIFE 🎉
-              </span>
-              <p className="text-green-400 text-sm mt-1">Lock in this price forever! Join our early members and help us build the future of sports betting analytics!</p>
-            </div>
-          </div>
         </div>
         )}
 

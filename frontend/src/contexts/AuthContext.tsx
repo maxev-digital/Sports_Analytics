@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { getApiUrl } from '../config';
+import { isElectron } from '../utils/isElectron';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -56,35 +57,76 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     console.log('🔍 Current hostname:', window.location.hostname);
     console.log('🔍 Current protocol:', window.location.protocol);
 
-    // DEV MODE: Auto-login ONLY for localhost development (not production Electron build)
+    // DEV MODE OR ELECTRON: Auto-login for localhost development and Electron desktop app
     const isDev =
       window.location.hostname === 'localhost' ||
       window.location.hostname === '127.0.0.1';
 
-    console.log('🔍 isDev?', isDev);
+    const isDesktop = isElectron();
 
-    if (isDev) {
-      // Check if we need to set up dev credentials
+    console.log('🔍 isDev?', isDev);
+    console.log('🔍 isElectron?', isDesktop);
+
+    if (isDev || isDesktop) {
+      // Check if we already have valid credentials
       const storedToken = localStorage.getItem('auth_token');
-      if (!storedToken) {
-        console.log('🔧 DEV MODE: Setting up auto-login...');
-        localStorage.setItem('auth_token', 'dev_token_12345');
-        localStorage.setItem('auth_username', 'admin');
-        localStorage.setItem('subscription_tier', 'elite');
+      const storedUsername = localStorage.getItem('auth_username');
+
+      if (storedToken && storedUsername) {
+        // Use existing credentials
+        setIsAuthenticated(true);
+        setUsername(storedUsername);
+        setToken(storedToken);
+        setEmail(localStorage.getItem('auth_email'));
+        setRole(localStorage.getItem('auth_role'));
+        setSubscriptionTier(localStorage.getItem('subscription_tier') || 'elite');
+        setLoading(false);
+        console.log('✅ Using stored credentials:', { username: storedUsername });
+        return;
       }
 
-      // Set auth state immediately in dev mode
-      setIsAuthenticated(true);
-      setUsername(localStorage.getItem('auth_username') || 'admin');
-      setToken(localStorage.getItem('auth_token') || 'dev_token_12345');
-      setSubscriptionTier(localStorage.getItem('subscription_tier') || 'elite');
-      setLoading(false);
-      console.log('✅ DEV MODE: Auto-logged in as admin with elite tier');
-      console.log('✅ Auth state:', { isAuthenticated: true, username: 'admin', tier: 'elite' });
+      // No stored credentials - create local session
+      const mode = isDesktop ? 'ELECTRON' : 'DEV MODE';
+
+      if (isDesktop) {
+        // Electron: Skip API call, set local authentication immediately
+        console.log(`🔧 ${mode}: Creating local session...`);
+        setIsAuthenticated(true);
+        setUsername('admin');
+        setEmail('admin@maxevsports.com');
+        setToken('electron-local-token');
+        setRole('admin');
+        setSubscriptionTier('elite');
+        localStorage.setItem('auth_username', 'admin');
+        localStorage.setItem('auth_email', 'admin@maxevsports.com');
+        localStorage.setItem('auth_token', 'electron-local-token');
+        localStorage.setItem('auth_role', 'admin');
+        localStorage.setItem('subscription_tier', 'elite');
+        setLoading(false);
+        console.log(`✅ ${mode}: Local session created`);
+        return;
+      }
+
+      // Dev mode: Try API login
+      console.log(`🔧 ${mode}: Auto-logging in with admin credentials...`);
+      (async () => {
+        try {
+          const loginSuccess = await login('admin', 'admin123');
+          if (loginSuccess) {
+            console.log(`✅ ${mode}: Auto-login successful`);
+          } else {
+            console.error(`❌ ${mode}: Auto-login failed`);
+            setLoading(false);
+          }
+        } catch (err) {
+          console.error(`❌ ${mode}: Auto-login error:`, err);
+          setLoading(false);
+        }
+      })();
       return;
     }
 
-    // PRODUCTION: Normal auth flow
+    // PRODUCTION: Normal auth flow (web app only)
     console.log('🔒 PRODUCTION MODE: Using normal auth flow');
     const storedToken = localStorage.getItem('auth_token');
     const storedUsername = localStorage.getItem('auth_username');

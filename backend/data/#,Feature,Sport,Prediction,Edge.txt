@@ -1,0 +1,74 @@
+#,Feature,Sport,Prediction,Edge
+1,Goalie Pull Prediction,NHL,30–90s before pull,+42% ROI
+2,QB Injury Cascade,NFL,Next play after injury,RB rush over
+3,Momentum Run Predictor,NBA,Next 5 pts after 10–0 run,Over streak
+4,Steam Move Forecast,All,Line move in next 2 min,Ride early
+5,Arbitrage Window Timer,All,Arb closes in 45s,Bet now
+6,Player Prop Surge,NBA/MLB,Next HR after barrel streak,+EV prop
+7,End-Game Unders,NFL/NBA,Under in garbage time,+20% EV
+8,Coach Timeout Strategy,NBA/NFL,Next play after TO,Steal/TD
+9,Pitcher Fatigue Alert,MLB,Next inning over,WHIP spike
+10,Soccer Corner Blitz,Soccer,Corners in next 5 min,Over 1.5
+11,Tennis Break Point Edge,Tennis,Break in next game,+EV ML
+12,Public % Reversal,All,Line moves vs public,RLM signal
+13,Injury Impact Model,All,Player out → team win prob,Live ML shift
+14,Parlay Correlation,All,SGP legs linked,+15% EV
+15,Cash-Out Trap,All,Decline lowball offers,+EV hold
+
+Feature,Sport,ROI (100 bets)
+Goalie Pull,NHL,+42%
+QB Injury,NFL,+38%
+Momentum Run,NBA,+31%
+Steam Forecast,All,+29%
+Arb Timer,All,+25%
+
+| Strategy Name                                          | Source / Description                                                                                                         | Key Trigger                                                                                               |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| **Favorite Trailing Early**                            | “Live Bet Favorites Trailing Early” — bookmakers set favorite, falls behind badly, live odds value emerges. ([PlayPicks][1]) | Pre-game favorite is down by an unusual margin early (e.g., 1Q/1H) but superior roster suggests comeback. |
+| **High-Scoring Game Fast → Live Under**                | From PlayPicks: if game opens hot and total runs up, look live for under later as defense kicks in. ([PlayPicks][1])         | First half high scoring, total pushes up; second half odds favorable for under.                           |
+| **Weak Live Line / Momentum Shift**                    | From BookmakersReview: focus one game, track momentum & weak lines mid-game. ([Bookmakers Review][2])                        | Game shows momentum shift (injury, fatigue, substitution) and live line lags reaction.                    |
+| **Live Middling & Hedging**                            | From Pinnacle guide: using live market movement to hedge or middle bets. ([Pinnacle][3])                                     | Pre-game bet placed; live line shifts enough to allow a hedge or middle for profit.                       |
+| **Shooting Percentage Regression (NBA)**               | VSiN article: in-game shooting % deviate, look live for regression. ([VSiN][4])                                              | Monitor team shooting % from line/3-pt; large deviation + still possessions left.                         |
+| **Next-Goal / Player Prop Shift in Football / Soccer** | Source: Sky247 live strategy list: focusing on next goal, corners when tempo shifts. ([Sky247 Nigeria][5])                   | Tempo change mid-match (red card, substitution) that boosts specific prop market value.                   |
+
+[1]: https://www.playpicks.com/betting-resources/live-betting/?utm_source=chatgpt.com "Live Betting Explained | 10 In-Game Betting Tips To Remember"
+[2]: https://www.bookmakersreview.com/betting/live/?utm_source=chatgpt.com "The Best Live Betting Strategies in 2025 - Bookmakers Review"
+[3]: https://www.pinnacle.com/betting-resources/en/educational/mastering-live-betting-the-art-of-middling?utm_source=chatgpt.com "Mastering Live Betting: The Art of Middling - Pinnacle"
+[4]: https://vsin.com/nba/nba-how-to-attack-live-betting/?utm_source=chatgpt.com "NBA: How to attack live betting - VSiN"
+[5]: https://ng.sky247.net/betting-tips/live-betting-strategies-how-to-profit-from-in-play-action-7595295?utm_source=chatgpt.com "Live Betting Strategies: How to Profit from In-Play Action"
+
+🔍 Prioritisation: What to Add First
+
+Given your base platform is still building, here’s how I’d prioritise:
+
+Favorite Trailing Early – High ROI potential, relatively straightforward.
+
+Weak Live Line / Momentum Shift – Works across sports; uses your ML live state feed.
+
+Live Middling & Hedging – Adds complexity (tracking pre-game + live), but differentiator.
+
+High-Scoring Game Fast → Live Under – Good for totals markets; less book focus.
+
+Shooting Percentage Regression – More data intensive (need live % stats) but unique.
+
+Next-Goal / Player Prop Shift – Great for props coverage, but need deeper data/resolution.
+
+✅ Key Things to Add/Validate for Each Strategy
+
+When you bring these into your platform, make sure you include:
+
+Sample Size — historical number of bets tested = credibility.
+
+Trigger Rules — specific conditions: e.g., “Favorite down by ≥8 after 1Q and implied win-prob ≥60% pre-game.”
+
+Min Odds — tie into your “Minimum Odds” filter.
+
+Frequency — how often this trigger occurs (2-4x/week etc).
+
+Expected EV / ROI — based on back-testing.
+
+Edge Decay Risk — if this becomes common knowledge, the edge may shrink.
+
+Sport Scope — NBA, NFL, NHL, soccer, etc.
+
+Integration Needs — What live data do you require (possession, shooting %, red card, etc).

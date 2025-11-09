@@ -4,21 +4,24 @@
  * Manages notifications and coordinates with content scripts
  */
 
-// Backend URLs - TEMPORARILY USING LOCALHOST ONLY FOR TESTING
-let BACKEND_URL = 'http://localhost:8000';  // Changed to localhost for testing
-let WS_URL = 'ws://localhost:8000/ws';
-const BACKEND_FALLBACK = 'https://max-ev-sports.com';  // Swapped for testing
-const WS_FALLBACK = 'wss://max-ev-sports.com/ws';
+// Backend URLs - Using production server
+let BACKEND_URL = 'https://max-ev-sports.com';
+let WS_URL = 'wss://max-ev-sports.com/ws';
+const BACKEND_FALLBACK = 'http://localhost:8001';
+const WS_FALLBACK = 'ws://localhost:8001/ws';
 const USE_WEBSOCKET = false; // Temporarily disabled - using REST polling instead
 const POLL_INTERVAL = 5000; // Poll every 5 seconds
 
 // Test backend connectivity and set appropriate URL
 async function detectBackendURL() {
+  // Try production first
   try {
-    const response = await fetch(`${BACKEND_URL}/api/games`, { method: 'HEAD', signal: AbortSignal.timeout(3000) });
+    const response = await fetch(`${BACKEND_URL}/`, { method: 'HEAD', signal: AbortSignal.timeout(3000) });
     if (response.ok) {
       console.log('✅ Connected to production backend:', BACKEND_URL);
       return;
+    } else {
+      console.log(`⚠️ Production returned HTTP ${response.status}, trying localhost...`);
     }
   } catch (error) {
     console.log('⚠️ Production backend unreachable, trying localhost...');
@@ -26,14 +29,16 @@ async function detectBackendURL() {
 
   // Try localhost fallback
   try {
-    const response = await fetch(`${BACKEND_FALLBACK}/api/games`, { method: 'HEAD', signal: AbortSignal.timeout(3000) });
+    const response = await fetch(`${BACKEND_FALLBACK}/`, { method: 'HEAD', signal: AbortSignal.timeout(3000) });
     if (response.ok) {
       BACKEND_URL = BACKEND_FALLBACK;
       WS_URL = WS_FALLBACK;
       console.log('✅ Connected to localhost backend:', BACKEND_URL);
+    } else {
+      console.error(`❌ Localhost returned HTTP ${response.status}`);
     }
   } catch (error) {
-    console.error('❌ No backend available');
+    console.error('❌ No backend available:', error.message);
   }
 }
 
@@ -158,6 +163,10 @@ let seenQuarterReversalIds = new Set();
 let currentInjuryProps = [];
 let seenInjuryPropIds = new Set();
 
+// Real-time injury alerts from standalone monitor service
+let currentInjuryAlerts = [];
+let seenInjuryAlertIds = new Set();
+
 let settings = {
   autoOpen: true,  // Auto-open sportsbook tabs
   autoFill: true,  // Auto-fill bet slips
@@ -171,6 +180,7 @@ let settings = {
   // Alert type toggles
   enableArbitrageAlerts: true,
   enableSteamAlerts: true,
+  enableMiddleAlerts: true,
   enableLineAlerts: true,
   enableGoalieAlerts: true,
   enableQuarterReversalAlerts: true,
@@ -825,9 +835,75 @@ async function playInjuryPropAlert(injuryProp) {
   });
 }
 
+// Handle injury alerts update from standalone monitor service
+function handleInjuryAlertsUpdate(injuryAlerts) {
+  console.log(`[INJURY] 🚨 Real-time injury alerts: ${injuryAlerts.length} active`);
+
+  currentInjuryAlerts = injuryAlerts;
+
+  // Build set of current alert IDs
+  const currentAlertIds = new Set(
+    injuryAlerts.map(alert => `${alert.source}_${alert.published}`)
+  );
+
+  // Remove old alert IDs
+  for (const alertId of seenInjuryAlertIds) {
+    if (!currentAlertIds.has(alertId)) {
+      seenInjuryAlertIds.delete(alertId);
+    }
+  }
+
+  // Check for NEW high-confidence injury alerts and notify
+  injuryAlerts.forEach(alert => {
+    const alertId = `${alert.source}_${alert.published}`;
+    const isNew = !seenInjuryAlertIds.has(alertId);
+
+    // Only alert for high-confidence injuries (>90%)
+    if (isNew && alert.confidence >= 0.90) {
+      seenInjuryAlertIds.add(alertId);
+      playInjuryAlert(alert);
+      console.log(`[INJURY] 🆕 NEW HIGH-CONFIDENCE ALERT: ${alert.title} (${(alert.confidence * 100).toFixed(0)}% confidence)`);
+    }
+  });
+
+  updateBadge();
+}
+
+// Play injury alert notification
+async function playInjuryAlert(alert) {
+  if (!settings.soundEnabled && !settings.voiceEnabled) return;
+
+  // Play alert sound for high-confidence injuries
+  if (settings.soundEnabled) {
+    await soundAlerts.playSequence([
+      { f: 1400, d: 0.15, t: 'sine' },
+      { f: 1600, d: 0.15, t: 'sine', g: 0.05 },
+      { f: 1400, d: 0.15, t: 'sine', g: 0.05 }
+    ]);
+  }
+
+  // Voice announcement
+  if (settings.voiceEnabled) {
+    const announcement = `Injury alert: ${alert.title}`;
+    await soundAlerts.speak(announcement);
+  }
+
+  // Show notification
+  const reporter = alert.source.replace('nitter:', '@');
+  const players = alert.entities_guess.join(', ');
+
+  chrome.notifications.create({
+    type: 'basic',
+    iconUrl: 'logo.png',
+    title: `🚨 INJURY ALERT (${(alert.confidence * 100).toFixed(0)}%)`,
+    message: `${alert.title}\n\nSource: ${reporter}\nPlayers: ${players}`,
+    priority: 2
+  });
+}
+
 // Update badge with total alert count
 function updateBadge() {
-  const totalAlerts = currentOpportunities.length + currentSteamMoves.length + currentMiddles.length + currentGoaliePulls.length + currentQuarterReversals.length + currentInjuryProps.length;
+  const totalAlerts = currentOpportunities.length + currentSteamMoves.length + currentMiddles.length + currentGoaliePulls.length + currentQuarterReversals.length + currentInjuryProps.length + currentInjuryAlerts.length;
 
   if (totalAlerts > 0) {
     chrome.action.setBadgeText({ text: totalAlerts.toString() });
@@ -1093,7 +1169,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       middles: currentMiddles,
       goaliePulls: currentGoaliePulls,
       quarterReversals: currentQuarterReversals,
-      injuryProps: currentInjuryProps
+      injuryProps: currentInjuryProps,
+      injuryAlerts: currentInjuryAlerts
     });
     return true;
   }
@@ -1316,7 +1393,21 @@ async function fetchOpportunities() {
       console.error('[ARB] Error fetching injury props opportunities:', error);
     }
 
-    console.log(`[ARB] Received: ${opportunities.length} arbitrage, ${steamMoves.length} steam moves, ${middles.length} middles, ${goaliePulls.length} goalie pulls, ${quarterReversals.length} quarter reversals, ${injuryProps.length} injury props`);
+    // Fetch real-time injury alerts from standalone monitor service
+    let injuryAlerts = [];
+    try {
+      const alertsResponse = await fetch(`${BACKEND_URL}/api/injuries/alerts`);
+      if (alertsResponse.ok) {
+        const alertsData = await alertsResponse.json();
+        injuryAlerts = alertsData.alerts || [];
+        console.log(`[INJURY] ✅ Received ${injuryAlerts.length} injury alerts from monitor service`);
+      }
+    } catch (error) {
+      // Silent fail - endpoint might not be available yet (needs backend restart)
+      console.log('[INJURY] ℹ️ Injury alerts endpoint not available (backend needs restart)');
+    }
+
+    console.log(`[ARB] Received: ${opportunities.length} arbitrage, ${steamMoves.length} steam moves, ${middles.length} middles, ${goaliePulls.length} goalie pulls, ${quarterReversals.length} quarter reversals, ${injuryProps.length} injury props, ${injuryAlerts.length} injury alerts`);
 
     // Update opportunities and UI
     handleOpportunitiesUpdate(opportunities);
@@ -1325,6 +1416,7 @@ async function fetchOpportunities() {
     handleGoaliePullsUpdate(goaliePulls);
     handleQuarterReversalsUpdate(quarterReversals);
     handleInjuryPropsUpdate(injuryProps);
+    handleInjuryAlertsUpdate(injuryAlerts);
 
     // Update badge to show connected status
     chrome.action.setBadgeBackgroundColor({ color: '#93c5fd' }); // Blue 300

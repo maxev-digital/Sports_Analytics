@@ -107,7 +107,7 @@ class PlayerPropsClient:
         url = f"{self.base_url}/sports/{sport_key}/events/{event_id}/odds"
         params = {
             "apiKey": ODDS_API_KEY,
-            "regions": "us,us2",  # US books for props
+            "regions": "us,us2,us_dfs",  # US books + DFS sites (PrizePicks, Underdog, DraftKings Pick6)
             "markets": markets_param,
             "oddsFormat": "american"
         }

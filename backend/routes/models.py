@@ -18,6 +18,7 @@ sys.path.append(str(ncaab_models_path))
 
 # NBA models
 from random_forest_totals import get_random_forest_model as get_nba_random_forest
+from nba.xgboost_totals import get_nba_xgboost_totals_model
 from nba.lightgbm_totals import get_nba_lightgbm_totals_model
 from nba.linear_regression_totals import get_nba_linear_regression_totals_model
 from nba.random_forest_spreads import get_nba_random_forest_spreads_model
@@ -31,6 +32,12 @@ from ncaab.random_forest_totals import get_ncaab_random_forest_model
 from ncaab.xgboost_totals import get_ncaab_xgboost_model
 from ncaab.lightgbm_totals import get_ncaab_lightgbm_model
 from ncaab.linear_regression_totals import get_ncaab_linear_regression_model
+
+# NHL models
+from nhl.random_forest_totals import get_nhl_random_forest_totals_model
+from nhl.xgboost_totals import get_nhl_xgboost_totals_model
+from nhl.lightgbm_totals import get_nhl_lightgbm_totals_model
+from nhl.linear_regression_totals import get_nhl_linear_regression_totals_model
 
 router = APIRouter(prefix="/api/models", tags=["models"])
 
@@ -185,6 +192,8 @@ async def predict_random_forest(request: PredictionRequest):
         # Route to correct model based on sport
         if request.sport.lower() == "ncaab":
             model = get_ncaab_random_forest_model()
+        elif request.sport.lower() == "nhl":
+            model = get_nhl_random_forest_totals_model()
         else:
             model = get_nba_random_forest()
 
@@ -227,9 +236,11 @@ async def predict_xgboost(request: PredictionRequest):
         # Route to correct model based on sport
         if request.sport.lower() == "ncaab":
             model = get_ncaab_xgboost_model()
+        elif request.sport.lower() == "nhl":
+            model = get_nhl_xgboost_totals_model()
         else:
-            # Use NBA XGBoost spreads model
-            model = get_nba_xgboost_spreads_model()
+            # Use NBA XGBoost totals model
+            model = get_nba_xgboost_totals_model()
 
         game_data = {
             'home_team': request.home_team,
@@ -272,6 +283,8 @@ async def predict_lightgbm(request: PredictionRequest):
         # Route to correct model based on sport
         if request.sport.lower() == "ncaab":
             model = get_ncaab_lightgbm_model()
+        elif request.sport.lower() == "nhl":
+            model = get_nhl_lightgbm_totals_model()
         else:
             # Use NBA LightGBM totals model
             model = get_nba_lightgbm_totals_model()
@@ -317,6 +330,8 @@ async def predict_linear_regression(request: PredictionRequest):
         # Route to correct model based on sport
         if request.sport.lower() == "ncaab":
             model = get_ncaab_linear_regression_model()
+        elif request.sport.lower() == "nhl":
+            model = get_nhl_linear_regression_totals_model()
         else:
             # Use NBA Linear Regression totals model
             model = get_nba_linear_regression_totals_model()
@@ -463,7 +478,7 @@ async def compare_all_models(request: ComparisonRequest):
 
         return {
             "game_id": request.game_id,
-            "market_line": request.market_total,
+            "market_line": round(request.market_total, 1),
             "models": models_data,
             "ensemble": {
                 "weighted_average": round(weighted_avg, 1) if weighted_avg else None,
@@ -499,3 +514,5 @@ async def health_check():
         ],
         "version": "1.0.0"
     }
+
+# Force reload

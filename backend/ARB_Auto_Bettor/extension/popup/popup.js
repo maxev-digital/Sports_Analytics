@@ -4,6 +4,7 @@ let middles = [];
 let goaliePulls = [];
 let quarterReversals = [];
 let injuryProps = [];
+let injuryAlerts = [];
 
 // Sport emoji helper - using Microsoft Fluent Emoji CDN
 function getSportEmoji(sport) {
@@ -77,28 +78,46 @@ function formatGameTime(commence_time) {
 
 // Bookmaker data helper
 function getBookmaker(key) {
-  const nameMap = {
-    'draftkings': 'DraftKings',
-    'fanduel': 'FanDuel',
-    'betmgm': 'BetMGM',
-    'betrivers': 'BetRivers',
-    'williamhill_us': 'William Hill',
-    'fanatics': 'Fanatics',
-    'espnbet': 'ESPN BET',
-    'caesars': 'Caesars',
-    'pointsbet': 'PointsBet',
-    'ballybet': 'Bally Bet',
-    'betonlineag': 'BetOnline',
-    'bovada': 'Bovada',
-    'mybookieag': 'MyBookie',
-    'lowvig': 'LowVig',
-    'betway': 'Betway',
-    'betus': 'BetUS'
+  const bookmakerMap = {
+    'draftkings': { name: 'DraftKings', domain: 'draftkings.com' },
+    'fanduel': { name: 'FanDuel', domain: 'fanduel.com' },
+    'betmgm': { name: 'BetMGM', domain: 'betmgm.com' },
+    'betrivers': { name: 'BetRivers', domain: 'betrivers.com' },
+    'williamhill_us': { name: 'William Hill', domain: 'williamhill.com' },
+    'fanatics': { name: 'Fanatics', domain: 'fanatics.com' },
+    'espnbet': { name: 'ESPN BET', domain: 'espnbet.com' },
+    'caesars': { name: 'Caesars', domain: 'caesars.com' },
+    'pointsbet': { name: 'PointsBet', domain: 'pointsbet.com' },
+    'ballybet': { name: 'Bally Bet', domain: 'ballybet.com' },
+    'betonlineag': { name: 'BetOnline', domain: 'betonline.ag' },
+    'bovada': { name: 'Bovada', domain: 'bovada.lv' },
+    'mybookieag': { name: 'MyBookie', domain: 'mybookie.ag' },
+    'lowvig': { name: 'LowVig', domain: 'lowvig.ag' },
+    'betway': { name: 'Betway', domain: 'betway.com' },
+    'betus': { name: 'BetUS', domain: 'betus.com.pa' },
+    'superbook': { name: 'SuperBook', domain: 'superbook.com' },
+    'wynnbet': { name: 'WynnBet', domain: 'wynnbet.com' },
+    'unibet_us': { name: 'Unibet', domain: 'unibet.com' },
+    'twinspires': { name: 'TwinSpires', domain: 'twinspires.com' },
+    'sugarhouse': { name: 'SugarHouse', domain: 'sugarhousecasino.com' },
+    'betfred': { name: 'Betfred', domain: 'betfred.com' },
+    'hardrockbet': { name: 'Hard Rock', domain: 'hardrock.com' },
+    'sisportsbook': { name: 'SI Sportsbook', domain: 'sisportsbook.com' },
+    'barstool': { name: 'Barstool', domain: 'barstoolsportsbook.com' }
   };
 
+  const bookmaker = bookmakerMap[key];
+  if (bookmaker) {
+    return {
+      name: bookmaker.name,
+      logo: `https://www.google.com/s2/favicons?domain=${bookmaker.domain}&sz=64`
+    };
+  }
+
+  // Fallback for unknown bookmakers
   return {
-    name: nameMap[key] || key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
-    logo: `https://www.google.com/s2/favicons?domain=${key.replace('_us', '').replace('ag', '.ag').replace('mybookie', 'mybookie.ag')}.com&sz=64`
+    name: key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+    logo: `https://www.google.com/s2/favicons?domain=${key}.com&sz=64`
   };
 }
 
@@ -156,6 +175,7 @@ async function loadOpportunities(forceRefresh = false) {
         goaliePulls = response.goaliePulls || [];
         quarterReversals = response.quarterReversals || [];
         injuryProps = response.injuryProps || [];
+        injuryAlerts = response.injuryAlerts || [];
 
         console.log('[POPUP] Opportunities count:', opportunities.length);
         console.log('[POPUP] Steam moves count:', steamMoves.length);
@@ -163,12 +183,13 @@ async function loadOpportunities(forceRefresh = false) {
         console.log('[POPUP] Goalie pulls count:', goaliePulls.length);
         console.log('[POPUP] Quarter reversals count:', quarterReversals.length);
         console.log('[POPUP] Injury props count:', injuryProps.length);
+        console.log('[POPUP] Injury alerts count:', injuryAlerts.length);
 
         if (opportunities.length > 0) {
           console.log('[POPUP] First opportunity:', opportunities[0]);
         }
 
-        renderAlertFeed();
+        renderAlertFeed(); // Render unified alert feed
         updateStats();
       } else {
         console.warn('[POPUP] No response from background script');
@@ -180,49 +201,42 @@ async function loadOpportunities(forceRefresh = false) {
 }
 
 // UNIFIED ALERT FEED (Priority-Based, Filterable, Scales to 50+ strategies)
-function renderAlertFeed() {
+function renderAlertFeed(filter = 'all') {
+  console.log('[POPUP] renderAlertFeed() called with filter:', filter);
   const container = document.getElementById('alertFeed');
-  const searchInput = document.getElementById('strategy-search');
-  const categoryFilter = document.getElementById('category-filter');
+  console.log('[POPUP] alertFeed container:', container);
 
   // Combine all alerts into unified array with metadata
   const allAlerts = [
-    ...injuryProps.map(alert => ({ type: 'injury-props', data: alert, strategy: 'Injury Props', category: 'live', urgency: 100 - (alert.time_since_tweet || 60) })),
-    ...goaliePulls.map(alert => ({ type: 'goalie-pull', data: alert, strategy: 'Goalie Pull', category: 'live', urgency: alert.urgency || 50 })),
-    ...quarterReversals.map(alert => ({ type: 'quarter-reversal', data: alert, strategy: 'Q Reversal', category: 'live', urgency: alert.alert_level === 'CRITICAL' ? 90 : alert.alert_level === 'HIGH' ? 70 : 50 })),
-    ...opportunities.map(alert => ({ type: 'arbitrage', data: alert, strategy: 'Arbitrage', category: 'arbitrage', urgency: alert.profit_percentage || 0 })),
-    ...steamMoves.map(alert => ({ type: 'steam', data: alert, strategy: 'Steam Move', category: 'movement', urgency: 60 })),
-    ...middles.map(alert => ({ type: 'middle', data: alert, strategy: 'Middle', category: 'arbitrage', urgency: alert.profit_percentage || 0 }))
+    ...injuryAlerts.map(alert => ({ type: 'injury-alert', data: alert, strategy: 'Injury Alert', category: 'live', urgency: (alert.confidence || 0) * 100, tab: 'injuryalerts' })),
+    ...injuryProps.map(alert => ({ type: 'injury-props', data: alert, strategy: 'Injury Props', category: 'live', urgency: 100 - (alert.time_since_tweet || 60), tab: 'injuryprops' })),
+    ...goaliePulls.map(alert => ({ type: 'goalie-pull', data: alert, strategy: 'Goalie Pull', category: 'live', urgency: alert.urgency || 50, tab: 'goalie' })),
+    ...quarterReversals.map(alert => ({ type: 'quarter-reversal', data: alert, strategy: 'Q Reversal', category: 'live', urgency: alert.alert_level === 'CRITICAL' ? 90 : alert.alert_level === 'HIGH' ? 70 : 50, tab: 'quarterreversal' })),
+    ...opportunities.map(alert => ({ type: 'arbitrage', data: alert, strategy: 'Arbitrage', category: 'arbitrage', urgency: alert.profit_percentage || 0, tab: 'arbitrage' })),
+    ...steamMoves.map(alert => ({ type: 'steam', data: alert, strategy: 'Steam Move', category: 'movement', urgency: 60, tab: 'steam' })),
+    ...middles.map(alert => ({ type: 'middle', data: alert, strategy: 'Middle', category: 'arbitrage', urgency: alert.profit_percentage || 0, tab: 'middles' }))
   ];
 
-  // Get filter values
-  const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
-  const selectedCategory = categoryFilter ? categoryFilter.value : 'all';
+  console.log('[POPUP] Total alerts before filter:', allAlerts.length);
 
-  // Apply filters
-  let filteredAlerts = allAlerts.filter(alert => {
-    // Search filter
-    const matchesSearch = !searchTerm || alert.strategy.toLowerCase().includes(searchTerm);
-
-    // Category filter
-    const matchesCategory = selectedCategory === 'all' || alert.category === selectedCategory;
-
-    return matchesSearch && matchesCategory;
-  });
+  // Filter by tab
+  const filteredAlerts = filter === 'all' ? allAlerts : allAlerts.filter(alert => alert.tab === filter);
+  console.log('[POPUP] Filtered alerts:', filteredAlerts.length, 'for filter:', filter);
 
   // Sort by urgency (highest first)
   filteredAlerts.sort((a, b) => b.urgency - a.urgency);
 
   // Empty state
   if (filteredAlerts.length === 0) {
+    const filterName = filter === 'all' ? 'alerts' : filter.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase();
     container.innerHTML = `
       <div class="empty-state">
         <div class="empty-state-icon">
           <img src="https://em-content.zobj.net/source/microsoft-teams/363/magnifying-glass-tilted-left_1f50d.png" alt="Search" style="width: 64px; height: 64px;">
         </div>
-        <div>No alerts found</div>
+        <div>No ${filterName} found</div>
         <div style="font-size: 11px; margin-top: 8px;">
-          ${allAlerts.length > 0 ? 'Try adjusting your filters' : 'Monitoring for new opportunities...'}
+          Monitoring for new opportunities...
         </div>
       </div>
     `;
@@ -237,7 +251,39 @@ function renderAlertFeed() {
     // Render alert card based on type
     let alertCard = '';
 
-    if (alert.type === 'injury-props') {
+    if (alert.type === 'injury-alert') {
+      const ia = alert.data;
+      const alertTime = formatTimeAgo(ia.published);
+      const confidencePercent = Math.round((ia.confidence || 0) * 100);
+      const urgencyClass = confidencePercent >= 95 ? 'qr-card-critical' : confidencePercent >= 85 ? 'qr-card-high' : 'qr-card-medium';
+      const urgencyBadge = confidencePercent >= 95 ? '🚨 HIGH CONFIDENCE' : confidencePercent >= 85 ? '⚠️ CONFIRMED' : '📰 REPORTED';
+      const reporter = (ia.source || '').replace('nitter:', '@');
+      const players = (ia.entities_guess || []).join(', ') || 'N/A';
+      const isTestMode = ia.test_mode === true;
+
+      alertCard = `
+        <div class="${urgencyClass}" style="border: 3px solid ${confidencePercent >= 95 ? '#ef4444' : confidencePercent >= 85 ? '#f97316' : '#3b82f6'};">
+          <div class="qr-header">
+            <div class="qr-title">🚨 ${ia.title}</div>
+            <div class="qr-alert-badge" style="background: ${confidencePercent >= 95 ? '#dc2626' : confidencePercent >= 85 ? '#ea580c' : '#2563eb'};">${urgencyBadge}</div>
+          </div>
+          ${isTestMode ? '<div style="background: rgba(234, 179, 8, 0.2); border: 2px solid #eab308; border-radius: 8px; padding: 8px; margin-bottom: 12px; text-align: center; font-size: 11px; color: #fde047;">🧪 TEST MODE (Mock Alert)</div>' : ''}
+          <div class="qr-details">
+            <div class="qr-detail-row">
+              <span><strong>Reporter:</strong> ${reporter}</span>
+              <span><strong>Confidence:</strong> ${confidencePercent}%</span>
+            </div>
+            <div class="qr-detail-row">
+              <span><strong>Players:</strong> ${players}</span>
+              <span><strong>Time:</strong> ${alertTime}</span>
+            </div>
+          </div>
+          <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 11px; color: rgba(255,255,255,0.6);">
+            <a href="${ia.link}" target="_blank" style="color: #60a5fa; text-decoration: none;">View Source →</a>
+          </div>
+        </div>
+      `;
+    } else if (alert.type === 'injury-props') {
       const ip = alert.data;
       const timeRemaining = Math.max(0, Math.floor(60 - ip.time_since_tweet));
       const alertTime = formatTimeAgo(ip.timestamp);
@@ -275,8 +321,109 @@ function renderAlertFeed() {
           </div>
         </div>
       `;
+    } else if (alert.type === 'arbitrage' || alert.type === 'steam' || alert.type === 'middle') {
+      // Render arbitrage, steam moves, and middles with bookmaker cards
+      const op = alert.data;
+      const game = op.game || `${op.away_team} @ ${op.home_team}` || 'Unknown Game';
+      const profit = op.profit_percentage || op.profitPercentage || 0;
+      const stake = op.total_stake || op.totalStake || 0;
+      const guaranteedProfit = op.guaranteed_profit || op.guaranteedProfit || 0;
+      const market = op.market_type || op.marketType || 'Unknown Market';
+      // Middles use different field names than arbitrage
+      const side1 = op.side1 || op.side_a || op.side_low || op.bet1_side || '';
+      const side2 = op.side2 || op.side_b || op.side_high || op.bet2_side || '';
+      const odds1 = op.odds1 || op.odds_a || op.odds_low || '';
+      const odds2 = op.odds2 || op.odds_b || op.odds_high || '';
+      const point1 = op.point1 || op.point_a || op.low_line || op.bet1_point || '';
+      const point2 = op.point2 || op.point_b || op.high_line || op.bet2_point || '';
+      const bet1Description = point1 ? `${side1} ${point1}` : side1;
+      const bet2Description = point2 ? `${side2} ${point2}` : side2;
+      const alertTime = formatTimeAgo(op.timestamp);
+      const gameTime = formatGameTime(op.commence_time);
+      const sport = detectSport(op);
+      const sportEmoji = getSportEmoji(sport);
+      // Middles use book_low/book_high, arbitrage uses book_a/book_b
+      const book1Key = op.book1 || op.book_a || op.book_low || op.bookmaker1 || '';
+      const book2Key = op.book2 || op.book_b || op.book_high || op.bookmaker2 || '';
+      console.log('[POPUP] Book keys:', { book1Key, book2Key, opportunity: op });
+      const book1Data = getBookmaker(book1Key);
+      const book2Data = getBookmaker(book2Key);
+      console.log('[POPUP] Book data:', { book1Data, book2Data });
+
+      alertCard = `
+        <div class="opportunity-card" data-sport="${sport}">
+          <div class="opportunity-header">
+            <div class="opportunity-title">
+              <img src="${sportEmoji}" alt="${sport}" style="width: 20px; height: 20px; margin-right: 6px; vertical-align: middle;">
+              ${game}
+            </div>
+            <div class="opportunity-profit">+${profit.toFixed(2)}%</div>
+          </div>
+          <div class="opportunity-details">
+            <strong>${market}</strong> | $${stake.toFixed(0)} stake → $${Math.abs(guaranteedProfit).toFixed(0)} profit
+          </div>
+          <div class="opportunity-books">
+            <div class="book-badge book-left">
+              <img src="${book1Data.logo}" alt="${book1Data.name}" class="book-logo">
+              <div class="book-info">
+                <span class="book-name">${book1Data.name}</span>
+                <span class="bet-details">${bet1Description} ${odds1 ? `(${odds1})` : ''}</span>
+              </div>
+            </div>
+            <div class="book-badge book-right">
+              <img src="${book2Data.logo}" alt="${book2Data.name}" class="book-logo">
+              <div class="book-info">
+                <span class="book-name">${book2Data.name}</span>
+                <span class="bet-details">${bet2Description} ${odds2 ? `(${odds2})` : ''}</span>
+              </div>
+            </div>
+          </div>
+          <div class="alert-timestamps">
+            <span class="timestamp-alert">⏰ Alert: ${alertTime}</span>
+            ${gameTime ? `<span class="timestamp-game">🎮 Game: ${gameTime}</span>` : ''}
+          </div>
+        </div>
+      `;
+    } else if (alert.type === 'goalie-pull') {
+      // Render goalie pull alerts
+      const gp = alert.data;
+      alertCard = `
+        <div class="qr-card-high">
+          <div class="qr-header">
+            <div class="qr-title">🏒 ${gp.home_team} vs ${gp.away_team}</div>
+            <div class="qr-alert-badge" style="background: #2563eb;">🥅 GOALIE PULL</div>
+          </div>
+          <div class="qr-trigger"><strong>Situation:</strong> ${gp.situation || 'Live game - goalie pull likely'}</div>
+          <div class="qr-recommendation">Live betting opportunity detected</div>
+        </div>
+      `;
+    } else if (alert.type === 'quarter-reversal') {
+      // Render quarter reversal alerts
+      const qr = alert.data;
+      const urgencyClass = qr.alert_level === 'CRITICAL' ? 'qr-card-critical' : qr.alert_level === 'HIGH' ? 'qr-card-high' : 'qr-card-medium';
+      const urgencyBadge = qr.alert_level === 'CRITICAL' ? '🚨 CRITICAL' : qr.alert_level === 'HIGH' ? '🔥 HIGH' : '⚡ MEDIUM';
+
+      alertCard = `
+        <div class="${urgencyClass}">
+          <div class="qr-header">
+            <div class="qr-title">🏀 ${qr.matchup}</div>
+            <div class="qr-alert-badge" style="background: ${qr.alert_level === 'CRITICAL' ? '#dc2626' : qr.alert_level === 'HIGH' ? '#ea580c' : '#ca8a04'};">${urgencyBadge}</div>
+          </div>
+          <div class="qr-trigger"><strong>Trigger:</strong> ${qr.trigger || 'Quarter reversal pattern detected'}</div>
+          <div class="qr-stats">
+            <div class="qr-stat">
+              <div class="qr-stat-label">Edge</div>
+              <div class="qr-stat-value critical-text">+${qr.edge || 0}%</div>
+            </div>
+            <div class="qr-stat">
+              <div class="qr-stat-label">Confidence</div>
+              <div class="qr-stat-value">${qr.confidence || 0}%</div>
+            </div>
+          </div>
+        </div>
+      `;
     } else {
-      // Placeholder for other strategies - will be fully implemented later
+      // Fallback for any other strategy types
       alertCard = `
         <div class="qr-card-medium">
           <div class="qr-header">
@@ -292,20 +439,6 @@ function renderAlertFeed() {
     return `<div style="margin-bottom: 12px;">${badge}${alertCard}</div>`;
   }).join('');
 }
-
-// Set up filter listeners
-document.addEventListener('DOMContentLoaded', () => {
-  const searchInput = document.getElementById('strategy-search');
-  const categoryFilter = document.getElementById('category-filter');
-
-  if (searchInput) {
-    searchInput.addEventListener('input', () => renderAlertFeed());
-  }
-
-  if (categoryFilter) {
-    categoryFilter.addEventListener('change', () => renderAlertFeed());
-  }
-});
 
 function renderOpportunities() {
   console.log('[POPUP] renderOpportunities() called with', opportunities.length, 'opportunities');
@@ -547,19 +680,30 @@ function updateStats() {
   document.getElementById('goalieCount').textContent = goaliePulls.length;
   document.getElementById('quarterReversalCount').textContent = quarterReversals.length;
   document.getElementById('injuryPropsCount').textContent = injuryProps.length;
+  document.getElementById('injuryAlertsCount').textContent = injuryAlerts.length;
 }
 
+let currentFilter = 'all'; // Global filter state
+
 function switchTab(tabName) {
-  // Update tab buttons
+  console.log('[POPUP] Switching to tab:', tabName);
+  currentFilter = tabName;
+
+  // Update tab buttons styling
   document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.tab === tabName);
+    if (btn.dataset.tab === tabName) {
+      btn.style.background = '#3b82f6';
+      btn.style.color = 'white';
+      btn.classList.add('active');
+    } else {
+      btn.style.background = '#334155';
+      btn.style.color = '#94a3b8';
+      btn.classList.remove('active');
+    }
   });
 
-  // Update tab content
-  document.querySelectorAll('.tab-content').forEach(content => {
-    content.classList.remove('active');
-  });
-  document.getElementById(`${tabName}-tab`).classList.add('active');
+  // Re-render with filter
+  renderAlertFeed(tabName);
 }
 
 function renderSteamMoves() {

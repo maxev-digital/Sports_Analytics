@@ -1,0 +1,22 @@
+AAAAAAAAAAAAAAAAAAAAAAPg1wEAAAAAi6Z60obJKWo6bgcxRcY0KCly6Es%3DNBbSnIrHXjDrWJskX6JHwRTWY0LDec385AtWyEvIeaabhK1moN
+
+Twitter bearer token
+
+MaxEvLaunch
+
+API Key
+xJDysjZKhx6Hz0WYBxZKIkQyq
+
+API Key Secret
+gEg7V95ZiHNNTjHHYfAGPKIgyTL3YeRioFQM8qHxRhT2eoc2Wd
+
+Bearer Token
+AAAAAAAAAAAAAAAAAAAAAHw85QEAAAAA5TycMF0yUL4Q44zyNlC8yPWjKPE%3DpWY9OVfnQ0u6Qs4GsN19OBkyxl0iSOGf0OtNzQOcARQzBFZp86
+
+Client dVlDZ1JUMFV0THRjWUpnYk9IczU6MTpjaQ
+ClientSecret 38KaglxVizBmIQ_muQ5ByXVrsZAki4aQ9X6kIGYDcnXSswB1lA
+
+Access 1853837572327227392-bcnHZP9X4vTvvtaoYjFIraLhgjJ4nO
+Secret IB7cbDy3yuvxRbbA9Clbcuc6CKWW0zGA956ohE4EngE6h
+
+cd backend && python twitter_retweet_bot.py > twitter_bot.log 2>&1 &

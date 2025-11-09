@@ -7,10 +7,14 @@ import { getGameSpecificUrl } from '../utils/gameUrls';
 import { trackBetClick } from '../utils/betTracking';
 import { useAuth } from '../contexts/AuthContext';
 import { MomentumBar } from './MomentumBar';
+import { AdvancedSystemsDropdown } from './AdvancedSystemsDropdown';
+import { EdgeLabDropdown } from './EdgeLabDropdown';
 import { formatTeamName } from '../utils/teamNames';
 
 interface GameCardProps {
   game: LiveGame;
+  isPinned?: boolean;
+  onTogglePin?: (gameId: string) => void;
 }
 
 // Sportsbook logo URLs and fallback badges
@@ -117,8 +121,8 @@ const getBookmakerInfoFallback = (bookmaker: string) => {
   };
 };
 
-export function GameCard({ game }: GameCardProps) {
-  const { state, odds, projection, home_team_stats, away_team_stats, home_nfl_live_stats, away_nfl_live_stats, home_nfl_stats, away_nfl_stats, home_nhl_momentum, away_nhl_momentum, home_nhl_stats, away_nhl_stats, home_nba_momentum, away_nba_momentum, home_nfl_momentum, away_nfl_momentum, home_ncaaf_momentum, away_ncaaf_momentum } = game;
+export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps) {
+  const { state, odds, projection, home_team_stats, away_team_stats, home_nfl_live_stats, away_nfl_live_stats, home_nfl_stats, away_nfl_stats, home_nhl_momentum, away_nhl_momentum, home_nhl_stats, away_nhl_stats, home_nba_momentum, away_nba_momentum, home_nfl_momentum, away_nfl_momentum, home_ncaaf_momentum, away_ncaaf_momentum, alternate_lines, ncaab_analytics, nba_analytics, nfl_analytics, ncaaf_analytics, mlb_analytics, nhl_analytics } = game;
 
   // DEBUG: Log stats data
   console.log(`🏀 ${formatTeamName(state.away_team.name, state.sport_key)} @ ${formatTeamName(state.home_team.name, state.sport_key)}:`, {
@@ -131,11 +135,14 @@ export function GameCard({ game }: GameCardProps) {
   // Get username for bet tracking
   const { username } = useAuth();
 
-  // Stats view toggle: 'stats' (raw stats), 'rankings' (ranks only), 'combined' (stats + ranks)
-  const [statsView, setStatsView] = useState<'stats' | 'rankings' | 'combined'>('stats');
+  // Stats view toggle: 'stats' (raw stats), 'rankings' (ranks only), 'combined' (stats + ranks), 'advanced' (betting analytics)
+  const [statsView, setStatsView] = useState<'stats' | 'rankings' | 'combined' | 'advanced'>('stats');
 
   // Market type toggle: 'spread', 'moneyline', 'totals'
   const [selectedMarket, setSelectedMarket] = useState<'spread' | 'moneyline' | 'totals' | 'halves'>('totals');
+
+  // Advanced Systems toggle
+  const [isAdvancedOpen, setIsAdvancedOpen] = useState<boolean>(false);
 
   // Handle bet tracking when bookmaker is clicked
   const handleBookmakerClick = async (bookmakerName: string, odd: any, bookmakerUrl: string) => {
@@ -214,7 +221,16 @@ export function GameCard({ game }: GameCardProps) {
                      state.sport_key?.includes('americanfootball_ncaaf') ? 'NCAAF' :
                      state.sport_key?.includes('americanfootball_nfl') ? 'NFL' :
                      state.sport_key?.includes('baseball_mlb') ? 'MLB' :
+                     state.sport_key?.includes('basketball_ncaab') ? 'NCAAB' :
                      state.sport_key?.includes('basketball_nba') ? 'NBA' : 'NBA';
+
+  // Determine which analytics to use based on sport
+  const advancedAnalytics = sportBadge === 'NCAAB' ? ncaab_analytics :
+                             sportBadge === 'NBA' ? nba_analytics :
+                             sportBadge === 'NFL' ? nfl_analytics :
+                             sportBadge === 'NCAAF' ? ncaaf_analytics :
+                             sportBadge === 'MLB' ? mlb_analytics :
+                             sportBadge === 'NHL' ? nhl_analytics : null;
 
   // Team logos removed for legal compliance - no copyrighted league/team imagery
 
@@ -323,7 +339,7 @@ export function GameCard({ game }: GameCardProps) {
   const dividerClass = (isNHL || isTennis) ? '' : 'border-t border-slate-700';
 
   return (
-    <div className={`${cardBackground} ${cardRounding} p-4 ${cardBorder} hover:shadow-lg transition-shadow relative overflow-hidden`}>
+    <div className={`${cardBackground} ${cardRounding} p-3 ${cardBorder} hover:shadow-lg transition-shadow relative overflow-hidden`}>
       {/* Hockey Rink Lines (NHL only) - Horizontal lines like looking down at ice */}
       {isNHL && (
         <div className="absolute inset-0 pointer-events-none opacity-15">
@@ -367,22 +383,107 @@ export function GameCard({ game }: GameCardProps) {
       )}
 
       {/* Header */}
-      <div className="flex justify-between items-start mb-3 relative z-10">
-        <div>
-          <div className={`text-base ${textLabel}`}>{gameDate}</div>
-          <div className={`text-lg font-semibold ${textSecondary}`}>{gameTime} CST</div>
+      <div className="flex justify-between items-start mb-2 relative z-10">
+        <div className="flex items-start gap-2">
+          {/* Pin/Star Button */}
+          {onTogglePin && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onTogglePin(state.id);
+              }}
+              className="mt-0.5 hover:scale-125 transition-transform"
+              title={isPinned ? "Unpin game" : "Pin to top"}
+            >
+              <span className="text-2xl">
+                {isPinned ? '⭐' : '☆'}
+              </span>
+            </button>
+          )}
+
+          <div>
+            <div className={`text-base ${textLabel}`}>{gameDate}</div>
+            <div className={`text-lg font-semibold ${textSecondary}`}>{gameTime} CST</div>
+          </div>
         </div>
-        <div className={`px-2 py-1 rounded text-base font-semibold ${
-          state.status === 'live'
-            ? 'bg-red-600 text-white'
-            : (isNHL || isNBA) ? 'bg-gray-200 text-black' : 'bg-slate-700 ${textSecondary}'
-        }`}>
-          {state.status === 'live' ? 'LIVE' : 'UPCOMING'}
+        <div className="flex flex-col items-end gap-1">
+          {/* League Badge with Emoji */}
+          <div className={`px-2 py-1 rounded text-base font-bold ${
+            (isNHL || isNBA || sportBadge === 'NCAAB') ? 'bg-gray-200 text-black' : 'bg-slate-700 ${textSecondary}'
+          }`}>
+            {sportBadge === 'NCAAB' && '🏀 NCAAB'}
+            {sportBadge === 'NBA' && '🏀 NBA'}
+            {sportBadge === 'NHL' && '🏒 NHL'}
+            {sportBadge === 'NFL' && '🏈 NFL'}
+            {sportBadge === 'NCAAF' && '🏈 NCAAF'}
+            {sportBadge === 'MLB' && '⚾ MLB'}
+          </div>
+
+          {/* Period/Quarter/Half + Time Remaining */}
+          {state.status === 'live' && state.quarter && state.time_remaining && (() => {
+            let periodLabel = '';
+
+            if (sportBadge === 'NCAAB') {
+              // NCAAB uses halves: Q1-Q2 = 1H, Q3-Q4 = 2H
+              if (state.quarter <= 2) {
+                periodLabel = '1H';
+              } else if (state.quarter <= 4) {
+                periodLabel = '2H';
+              } else {
+                const otNum = state.quarter - 4;
+                periodLabel = otNum === 1 ? 'OT' : `${otNum}OT`;
+              }
+            } else if (sportBadge === 'NBA') {
+              // NBA uses quarters: Q1, Q2, Q3, Q4, OT
+              if (state.quarter <= 4) {
+                periodLabel = `Q${state.quarter}`;
+              } else {
+                const otNum = state.quarter - 4;
+                periodLabel = otNum === 1 ? 'OT' : `${otNum}OT`;
+              }
+            } else if (sportBadge === 'NHL') {
+              // NHL uses periods
+              if (state.quarter <= 3) {
+                const ordinals = ['', '1st', '2nd', '3rd'];
+                periodLabel = ordinals[state.quarter] || `${state.quarter}th`;
+              } else {
+                const otNum = state.quarter - 3;
+                periodLabel = otNum === 1 ? 'OT' : `${otNum}OT`;
+              }
+            } else if (sportBadge === 'MLB') {
+              // MLB uses innings
+              const inningNum = Math.ceil(state.quarter / 2);
+              const isTop = state.quarter % 2 === 1;
+              periodLabel = `${isTop ? 'T' : 'B'}${inningNum}`;
+            } else {
+              // NFL, NCAAF use quarters
+              if (state.quarter <= 4) {
+                periodLabel = `Q${state.quarter}`;
+              } else {
+                const otNum = state.quarter - 4;
+                periodLabel = otNum === 1 ? 'OT' : `${otNum}OT`;
+              }
+            }
+
+            return (
+              <div className="flex items-center gap-2">
+                <span className="bg-red-600 text-white px-2 py-1 rounded text-base font-bold">{periodLabel}</span>
+                <span className={`text-base font-bold ${textSecondary}`}>{state.time_remaining}</span>
+              </div>
+            );
+          })()}
+
+          {/* LIVE badge if live but no period info */}
+          {state.status === 'live' && !(state.quarter && state.time_remaining) && (
+            <div className="bg-red-600 text-white px-2 py-1 rounded text-base font-bold">
+              LIVE
+            </div>
+          )}
         </div>
       </div>
 
       {/* Teams */}
-      <div className="space-y-3 mb-3">
+      <div className="space-y-2 mb-2">
         {/* Away Team */}
         <div>
           <div className="flex justify-between items-center mb-1">
@@ -438,47 +539,52 @@ export function GameCard({ game }: GameCardProps) {
         </div>
       </div>
 
-      {/* Game Status - Period/Quarter/Inning Display */}
-      {state.status === 'live' && state.quarter && state.time_remaining && (() => {
-        // Format period/quarter based on sport
-        let periodLabel = '';
+      {/* Max Ev Boost Alerts - Advanced Systems Dropdown */}
+      <AdvancedSystemsDropdown
+        sportKey={state.sport_key}
+        gameId={state.id}
+      />
 
-        if (sportBadge === 'NHL') {
-          // NHL uses periods: 1st, 2nd, 3rd, OT, 2OT, etc.
-          if (state.quarter <= 3) {
-            const ordinals = ['', '1st', '2nd', '3rd'];
-            periodLabel = ordinals[state.quarter] || `${state.quarter}th`;
-          } else {
-            // Overtime periods
-            const otNum = state.quarter - 3;
-            periodLabel = otNum === 1 ? 'OT' : `${otNum}OT`;
-          }
-        } else if (sportBadge === 'MLB') {
-          // MLB uses innings with Top/Bottom
-          const inningNum = Math.ceil(state.quarter / 2);
-          const isTop = state.quarter % 2 === 1;
-          periodLabel = `${isTop ? 'Top' : 'Bot'} ${inningNum}`;
-        } else {
-          // NBA, NFL, NCAAF use quarters: Q1, Q2, Q3, Q4, OT, 2OT
-          if (state.quarter <= 4) {
-            periodLabel = `Q${state.quarter}`;
-          } else {
-            // Overtime periods
-            const otNum = state.quarter - 4;
-            periodLabel = otNum === 1 ? 'OT' : `${otNum}OT`;
-          }
-        }
+      {/* Edge Lab - Multi-Model Predictions (NBA/NCAAB only for now) */}
+      {(sportBadge === 'NBA' || sportBadge === 'NCAAB') && (() => {
+        // Construct real game data for ML models
+        const edgeLabGameData = {
+          game_id: state.id,
+          home_team: state.home_team.name,
+          away_team: state.away_team.name,
+          home_stats: {
+            pace: home_team_stats?.pace || 100,
+            off_rating: home_team_stats?.off_rating || 110,
+            def_rating: home_team_stats?.def_rating || 108,
+            rest_days: 1  // Could calculate from schedule if available
+          },
+          away_stats: {
+            pace: away_team_stats?.pace || 98,
+            off_rating: away_team_stats?.off_rating || 108,
+            def_rating: away_team_stats?.def_rating || 110,
+            rest_days: 1  // Could calculate from schedule if available
+          },
+          market_total: state.status === 'live' && projection.current_total
+            ? projection.current_total
+            : projection.pregame_total,
+          sport: sportBadge === 'NBA' ? 'nba' : 'ncaab'
+        };
 
         return (
-          <div className={`text-base font-semibold ${textLabel} mb-3 flex items-center gap-2`}>
-            <span className="bg-red-600 text-white px-2 py-1 rounded">{periodLabel}</span>
-            <span>{state.time_remaining}</span>
-          </div>
+          <EdgeLabDropdown
+            gameId={state.id}
+            marketLine={state.status === 'live' && projection.current_total
+              ? projection.current_total
+              : projection.pregame_total}
+            sport={sportBadge === 'NBA' ? 'nba' : 'ncaab'}
+            betType="totals"
+            gameData={edgeLabGameData}
+          />
         );
       })()}
 
-      {/* Team Momentum Bar (NBA only, live games) */}
-      {sportBadge === 'NBA' && state.status === 'live' && (state.home_team.momentum !== null || state.away_team.momentum !== null) && (
+      {/* Team Momentum Bar (NBA/NCAAB only, live games) */}
+      {(sportBadge === 'NBA' || sportBadge === 'NCAAB') && state.status === 'live' && (state.home_team.momentum !== null || state.away_team.momentum !== null) && (
         <div className="mb-3">
           <div className={`text-base ${textLabel} mb-1`}>Game Momentum</div>
           <div className="flex items-center gap-2">
@@ -513,8 +619,8 @@ export function GameCard({ game }: GameCardProps) {
         </div>
       )}
 
-      {/* NBA Momentum Stats (NBA only, live games) */}
-      {sportBadge === 'NBA' && state.status === 'live' && (away_nba_momentum || home_nba_momentum) && (
+      {/* NBA/NCAAB Momentum Stats (live games only) */}
+      {(sportBadge === 'NBA' || sportBadge === 'NCAAB') && state.status === 'live' && (away_nba_momentum || home_nba_momentum) && (
         <div className="mb-3 border border-blue-600/30 bg-blue-900/10 rounded p-2">
           <div className="text-base text-blue-400 font-semibold mb-2">Recent Momentum (Last ~5 Min)</div>
           <div className="grid grid-cols-2 gap-3 text-base">
@@ -668,6 +774,65 @@ export function GameCard({ game }: GameCardProps) {
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Advanced Systems Section - All Sports */}
+      {advancedAnalytics && (
+        <div className={`${dividerClass} mt-2 pt-2`}>
+          <button
+            onClick={() => setIsAdvancedOpen(!isAdvancedOpen)}
+            className="w-full text-left px-2 py-1 rounded text-sm font-bold bg-gray-200 text-black mb-1 flex items-center justify-between hover:opacity-80 transition-opacity"
+          >
+            <span>Advanced Systems</span>
+            <span className="text-lg">{isAdvancedOpen ? '▼' : '▶'}</span>
+          </button>
+          {isAdvancedOpen && (
+            <div className="bg-gradient-to-br from-purple-900/20 via-slate-900/50 to-purple-900/20 border border-purple-600/30 rounded p-2">
+            {/* Compact inline metrics matching sportsbooks style */}
+            <div className="space-y-1">
+              {/* Direction */}
+              <div className="flex items-center justify-between text-base p-1">
+                <span className={`${textSecondary}`}>Direction:</span>
+                <span className={`font-bold ${advancedAnalytics.direction === 'OVER' ? 'text-green-400' : 'text-red-400'}`}>
+                  {advancedAnalytics.direction} {advancedAnalytics.line} {advancedAnalytics.direction === 'OVER' ? '↑' : '↓'}
+                </span>
+              </div>
+
+              {/* Z-Score + Edge */}
+              <div className="flex items-center justify-between text-base p-1">
+                <span className={`${textSecondary}`}>Z-Score & Edge:</span>
+                <span className="font-bold text-purple-400">
+                  +{advancedAnalytics.z_score.toFixed(1)}σ | {advancedAnalytics.edge_points.toFixed(1)} pts
+                </span>
+              </div>
+
+              {/* Model vs Live */}
+              <div className="flex items-center justify-between text-base p-1">
+                <span className={`${textSecondary}`}>Model vs Live:</span>
+                <span className="font-bold text-blue-400">
+                  {advancedAnalytics.model_prediction.toFixed(1)} → {advancedAnalytics.live_total.toFixed(1)}
+                </span>
+              </div>
+
+              {/* Kelly Sizing */}
+              <div className="flex items-center justify-between text-base p-1">
+                <span className={`${textSecondary}`}>Kelly Sizing:</span>
+                <span className="font-bold text-yellow-400">
+                  {advancedAnalytics.kelly_percentage.toFixed(1)}%
+                </span>
+              </div>
+
+              {/* Confidence */}
+              <div className="flex items-center justify-between text-base p-1">
+                <span className={`${textSecondary}`}>Confidence:</span>
+                <span className="font-bold text-green-400">
+                  {advancedAnalytics.confidence}%
+                </span>
+              </div>
+            </div>
+          </div>
+          )}
         </div>
       )}
 
@@ -871,56 +1036,6 @@ export function GameCard({ game }: GameCardProps) {
         );
       })()}
 
-      {/* Live Betting Lines (All Sports, Live Games) */}
-      {state.status === 'live' && (state.away_team.money_line || state.home_team.money_line || state.away_team.spread || state.home_team.spread) && (
-        <div className="mb-3 border border-yellow-600/30 bg-yellow-900/10 rounded p-3">
-          <div className={`text-lg ${isNHL ? 'text-yellow-600' : 'text-yellow-400'} font-bold mb-2`}>Live Betting Lines</div>
-
-          {/* Live Spreads */}
-          {(state.away_team.spread !== null || state.home_team.spread !== null) && (
-            <div className="mb-2">
-              <div className={`text-base ${textLabel} mb-1`}>Spreads</div>
-              <div className="flex justify-between text-base">
-                <div className={textSecondary}>
-                  <span className={textTertiary}>{formatTeamName(state.away_team.name, state.sport_key).split(' ').pop()}: </span>
-                  <span className={`font-bold ${isNHL ? 'text-green-600' : 'text-green-400'}`}>
-                    {state.away_team.spread !== null ? `${state.away_team.spread > 0 ? '+' : ''}${state.away_team.spread}` : 'N/A'}
-                    {state.away_team.spread_price && <span className="text-sm"> ({state.away_team.spread_price > 0 ? '+' : ''}{state.away_team.spread_price})</span>}
-                  </span>
-                </div>
-                <div className={textSecondary}>
-                  <span className={textTertiary}>{formatTeamName(state.home_team.name, state.sport_key).split(' ').pop()}: </span>
-                  <span className={`font-bold ${isNHL ? 'text-green-600' : 'text-green-400'}`}>
-                    {state.home_team.spread !== null ? `${state.home_team.spread > 0 ? '+' : ''}${state.home_team.spread}` : 'N/A'}
-                    {state.home_team.spread_price && <span className="text-sm"> ({state.home_team.spread_price > 0 ? '+' : ''}{state.home_team.spread_price})</span>}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Live Money Lines */}
-          {(state.away_team.money_line !== null || state.home_team.money_line !== null) && (
-            <div>
-              <div className={`text-base ${textLabel} mb-1`}>Money Lines</div>
-              <div className="flex justify-between text-base">
-                <div className={textSecondary}>
-                  <span className={textTertiary}>{formatTeamName(state.away_team.name, state.sport_key).split(' ').pop()}: </span>
-                  <span className={`font-bold ${(state.away_team.money_line || 0) > 0 ? (isNHL ? 'text-blue-600' : 'text-blue-400') : textPrimary}`}>
-                    {state.away_team.money_line !== null ? `${state.away_team.money_line > 0 ? '+' : ''}${state.away_team.money_line}` : 'N/A'}
-                  </span>
-                </div>
-                <div className={textSecondary}>
-                  <span className={textTertiary}>{formatTeamName(state.home_team.name, state.sport_key).split(' ').pop()}: </span>
-                  <span className={`font-bold ${(state.home_team.money_line || 0) > 0 ? (isNHL ? 'text-blue-600' : 'text-blue-400') : textPrimary}`}>
-                    {state.home_team.money_line !== null ? `${state.home_team.money_line > 0 ? '+' : ''}${state.home_team.money_line}` : 'N/A'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* First Half Lines (All Sports, 1st half only) */}
       {state.status === 'live' && state.quarter && state.quarter <= 2 && (
@@ -1912,10 +2027,6 @@ export function GameCard({ game }: GameCardProps) {
       {/* Odds Summary */}
       <div className={`${dividerClass} pt-3 space-y-2`}>
         <div className="flex justify-between text-base">
-          <span className={`${textLabel}`}>Pregame Total (FD):</span>
-          <span className={`font-bold ${textValue}`}>{Math.round(projection.pregame_total)}</span>
-        </div>
-        <div className="flex justify-between text-base">
           <span className={`${textLabel}`}>Current Live Avg:</span>
           <span className={`font-bold ${textValue}`}>{avgTotal}</span>
         </div>
@@ -1937,7 +2048,7 @@ export function GameCard({ game }: GameCardProps) {
 
       {/* Projection (only for live games) */}
       {state.status === 'live' && projection.projected_final > 0 && (
-        <div className={`${dividerClass} mt-3 pt-3 space-y-2`}>
+        <div className={`${dividerClass} mt-2 pt-2 space-y-2`}>
           <div className="flex justify-between text-base">
             <span className={`${textLabel}`}>Projected:</span>
             <span className="font-bold text-blue-400">{projection.projected_final.toFixed(1)}</span>
@@ -1991,82 +2102,167 @@ export function GameCard({ game }: GameCardProps) {
             </div>
           )}
           {projection.recommendation && (
-            <div className={`text-center font-bold text-lg py-2 rounded ${
+            <div className={`text-center font-bold text-lg py-3 rounded-lg transition-all ${
               projection.recommendation === 'OVER'
-                ? 'bg-green-900 text-green-200'
-                : 'bg-red-900 text-red-200'
+                ? 'bg-gradient-to-r from-green-900 to-green-800 text-green-100 shadow-lg shadow-green-500/50 animate-pulse'
+                : 'bg-gradient-to-r from-red-900 to-red-800 text-red-100 shadow-lg shadow-red-500/50 animate-pulse'
+            } ${
+              projection.strength_factor && projection.strength_factor >= 70
+                ? 'ring-2 ring-offset-2 ring-offset-slate-800 ' + (projection.recommendation === 'OVER' ? 'ring-green-400' : 'ring-red-400')
+                : ''
             }`}>
-              BET {projection.recommendation}
+              <div className="flex items-center justify-center gap-2">
+                {projection.recommendation === 'OVER' ? '⬆️' : '⬇️'}
+                <span>TRENDING {projection.recommendation}</span>
+                {projection.strength_factor && projection.strength_factor >= 80 && '⚡'}
+              </div>
             </div>
           )}
         </div>
       )}
 
-      {/* All Odds */}
+      {/* Best Available Lines Section (Replaces Live Betting Lines) */}
       {odds.length > 0 && (
-        <div className={`${dividerClass} mt-3 pt-3`}>
-          {/* Market Type Tabs */}
-          <div className="flex gap-2 mb-3">
-            <button
-              onClick={() => setSelectedMarket('spread')}
-              className={`flex-1 px-3 py-2 rounded-lg text-lg font-semibold transition-all ${
-                selectedMarket === 'spread'
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
-                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-              }`}
-            >
-              Spread
-            </button>
-            <button
-              onClick={() => setSelectedMarket('moneyline')}
-              className={`flex-1 px-3 py-2 rounded-lg text-lg font-semibold transition-all ${
-                selectedMarket === 'moneyline'
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
-                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-              }`}
-            >
-              Moneyline
-            </button>
-            <button
-              onClick={() => setSelectedMarket('totals')}
-              className={`flex-1 px-3 py-2 rounded-lg text-lg font-semibold transition-all ${
-                selectedMarket === 'totals'
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
-                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-              }`}
-            >
-              Totals
-            </button>
-            <button
-              onClick={() => setSelectedMarket('halves')}
-              className={`flex-1 px-3 py-2 rounded-lg text-lg font-semibold transition-all ${
-                selectedMarket === 'halves'
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
-                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-              }`}
-            >
-              1H/2H
-            </button>
-          </div>
+        <div className={`${dividerClass} mt-2 pt-2`}>
+          <div className={`text-lg ${textSecondary} font-bold mb-2`}>Best Available Lines</div>
+          <div className="space-y-2 text-base">
+            {/* Best Totals */}
+            {(() => {
+              const oddsWithTotal = odds.filter(o => o.total !== null && o.total !== undefined);
+              if (oddsWithTotal.length === 0) return null;
 
-          {/* Section Header */}
-          <div className={`text-base ${textLabel} mb-2`}>
-            {selectedMarket === 'totals' && (
-              <>
-                Sportsbook Lines (Best Overs ↑ / Best Unders ↓)
-              </>
-            )}
-            {selectedMarket === 'spread' && (
-              <>
-                Sportsbook Spreads
-              </>
-            )}
-            {selectedMarket === 'moneyline' && (
-              <>
-                Sportsbook Moneylines
-              </>
-            )}
+              // Find best Over (highest total + best price)
+              const bestOver = oddsWithTotal.reduce((best, curr) => {
+                if (!best) return curr;
+                if (curr.total! > best.total!) return curr;
+                if (curr.total === best.total && (curr.over_price || 0) > (best.over_price || 0)) return curr;
+                return best;
+              });
+
+              // Find best Under (lowest total + best price)
+              const bestUnder = oddsWithTotal.reduce((best, curr) => {
+                if (!best) return curr;
+                if (curr.total! < best.total!) return curr;
+                if (curr.total === best.total && (curr.under_price || 0) > (best.under_price || 0)) return curr;
+                return best;
+              });
+
+              return (
+                <div>
+                  <div className={`text-base ${textValue} mb-1 font-bold`}>Totals</div>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <span className={`${textValue} font-bold`}>Over: </span>
+                      <span className="text-green-400 font-bold">
+                        {bestOver.total} ({bestOver.over_price! > 0 ? '+' : ''}{bestOver.over_price})
+                      </span>
+                      <span className={`${textSecondary} text-base ml-1 font-semibold`}>@{bestOver.bookmaker}</span>
+                    </div>
+                    <div>
+                      <span className={`${textValue} font-bold`}>Under: </span>
+                      <span className="text-red-400 font-bold">
+                        {bestUnder.total} ({bestUnder.under_price! > 0 ? '+' : ''}{bestUnder.under_price})
+                      </span>
+                      <span className={`${textSecondary} text-base ml-1 font-semibold`}>@{bestUnder.bookmaker}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Best Spreads */}
+            {(() => {
+              const oddsWithSpread = odds.filter(o => o.home_spread !== null && o.home_spread !== undefined);
+              if (oddsWithSpread.length === 0) return null;
+
+              // Find best spreads for each team (more favorable number + best price)
+              const bestHomeSpread = oddsWithSpread.reduce((best, curr) => {
+                if (!best) return curr;
+                // Home team wants lowest spread (less points to give)
+                if (curr.home_spread! > best.home_spread!) return curr;
+                if (curr.home_spread === best.home_spread && (curr.home_spread_price || 0) > (best.home_spread_price || 0)) return curr;
+                return best;
+              });
+
+              const bestAwaySpread = oddsWithSpread.reduce((best, curr) => {
+                if (!best) return curr;
+                // Away team wants highest spread (more points to get)
+                if (curr.away_spread! > best.away_spread!) return curr;
+                if (curr.away_spread === best.away_spread && (curr.away_spread_price || 0) > (best.away_spread_price || 0)) return curr;
+                return best;
+              });
+
+              return (
+                <div>
+                  <div className={`text-base ${textValue} mb-1 font-bold`}>Spreads</div>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <span className={`${textValue} font-bold`}>{formatTeamName(state.away_team.name, state.sport_key).split(' ').slice(-1)[0]}: </span>
+                      <span className="text-green-400 font-bold">
+                        {bestAwaySpread.away_spread! > 0 ? '+' : ''}{bestAwaySpread.away_spread}
+                        ({bestAwaySpread.away_spread_price! > 0 ? '+' : ''}{bestAwaySpread.away_spread_price})
+                      </span>
+                      <span className={`${textSecondary} text-base ml-1 font-semibold`}>@{bestAwaySpread.bookmaker}</span>
+                    </div>
+                    <div>
+                      <span className={`${textValue} font-bold`}>{formatTeamName(state.home_team.name, state.sport_key).split(' ').slice(-1)[0]}: </span>
+                      <span className="text-green-400 font-bold">
+                        {bestHomeSpread.home_spread! > 0 ? '+' : ''}{bestHomeSpread.home_spread}
+                        ({bestHomeSpread.home_spread_price! > 0 ? '+' : ''}{bestHomeSpread.home_spread_price})
+                      </span>
+                      <span className={`${textSecondary} text-base ml-1 font-semibold`}>@{bestHomeSpread.bookmaker}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Best Money Lines */}
+            {(() => {
+              const oddsWithML = odds.filter(o => o.home_ml !== null && o.home_ml !== undefined);
+              if (oddsWithML.length === 0) return null;
+
+              // Find best ML for each team (highest odds = best value)
+              const bestHomeML = oddsWithML.reduce((best, curr) => {
+                if (!best) return curr;
+                if (curr.home_ml! > best.home_ml!) return curr;
+                return best;
+              });
+
+              const bestAwayML = oddsWithML.reduce((best, curr) => {
+                if (!best) return curr;
+                if (curr.away_ml! > best.away_ml!) return curr;
+                return best;
+              });
+
+              return (
+                <div>
+                  <div className={`text-base ${textValue} mb-1 font-bold`}>Money Lines</div>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <span className={`${textValue} font-bold`}>{formatTeamName(state.away_team.name, state.sport_key).split(' ').slice(-1)[0]}: </span>
+                      <span className="text-blue-400 font-bold">
+                        {bestAwayML.away_ml! > 0 ? '+' : ''}{bestAwayML.away_ml}
+                      </span>
+                      <span className={`${textSecondary} text-base ml-1 font-semibold`}>@{bestAwayML.bookmaker}</span>
+                    </div>
+                    <div>
+                      <span className={`${textValue} font-bold`}>{formatTeamName(state.home_team.name, state.sport_key).split(' ').slice(-1)[0]}: </span>
+                      <span className="text-blue-400 font-bold">
+                        {bestHomeML.home_ml! > 0 ? '+' : ''}{bestHomeML.home_ml}
+                      </span>
+                      <span className={`${textSecondary} text-base ml-1 font-semibold`}>@{bestHomeML.bookmaker}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
+        </div>
+      )}
+      {/* Sportsbook Lines with bookmaker icons */}
+      {odds.length > 0 && (
+        <div className={`${dividerClass} mt-2 pt-2`}>
           <div className="space-y-1">
             {(() => {
               // Deduplicate odds by bookmaker (keep first occurrence)
@@ -2185,13 +2381,13 @@ export function GameCard({ game }: GameCardProps) {
           </div>
 
           {/* Alternate Lines (1H/2H) Section */}
-          {selectedMarket === 'halves' && game.alternate_lines && game.alternate_lines.length > 0 && (
+          {selectedMarket === 'halves' && alternate_lines && alternate_lines.length > 0 && (
             <>
               <div className={`text-base ${textLabel} mb-2`}>First Half (1H) & Second Half (2H) Lines</div>
 
               {/* Group by market type */}
               {['1H', '2H'].map(marketType => {
-                const linesForMarket = game.alternate_lines.filter(line => line.market_type === marketType);
+                const linesForMarket = alternate_lines.filter(line => line.market_type === marketType);
                 if (linesForMarket.length === 0) return null;
 
                 return (
@@ -2223,105 +2419,10 @@ export function GameCard({ game }: GameCardProps) {
         </div>
       )}
 
-      {/* Best Spreads and ML Section */}
-      {odds.length > 0 && odds.some(o => o.home_spread !== null && o.home_spread !== undefined) && (
-        <div className={`${dividerClass} mt-3 pt-3`}>
-          <div className={`text-lg ${textSecondary} font-bold mb-2`}>Best Available Lines</div>
-          <div className="space-y-2 text-base">
-            {/* Best Spreads */}
-            {(() => {
-              const oddsWithSpread = odds.filter(o => o.home_spread !== null && o.home_spread !== undefined);
-              if (oddsWithSpread.length === 0) return null;
-
-              // Find best spreads for each team (more favorable number + best price)
-              const bestHomeSpread = oddsWithSpread.reduce((best, curr) => {
-                if (!best) return curr;
-                // Home team wants lowest spread (less points to give)
-                if (curr.home_spread! > best.home_spread!) return curr;
-                if (curr.home_spread === best.home_spread && (curr.home_spread_price || 0) > (best.home_spread_price || 0)) return curr;
-                return best;
-              });
-
-              const bestAwaySpread = oddsWithSpread.reduce((best, curr) => {
-                if (!best) return curr;
-                // Away team wants highest spread (more points to get)
-                if (curr.away_spread! > best.away_spread!) return curr;
-                if (curr.away_spread === best.away_spread && (curr.away_spread_price || 0) > (best.away_spread_price || 0)) return curr;
-                return best;
-              });
-
-              return (
-                <div>
-                  <div className={`text-base ${textLabel} mb-1 font-semibold`}>Spreads</div>
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <span className={`${textSecondary} font-semibold`}>{formatTeamName(state.away_team.name, state.sport_key).split(' ').slice(-1)[0]}: </span>
-                      <span className="text-green-400 font-bold">
-                        {bestAwaySpread.away_spread! > 0 ? '+' : ''}{bestAwaySpread.away_spread}
-                        ({bestAwaySpread.away_spread_price! > 0 ? '+' : ''}{bestAwaySpread.away_spread_price})
-                      </span>
-                      <span className={`${textMuted} text-base ml-1`}>@{bestAwaySpread.bookmaker}</span>
-                    </div>
-                    <div>
-                      <span className={`${textSecondary} font-semibold`}>{formatTeamName(state.home_team.name, state.sport_key).split(' ').slice(-1)[0]}: </span>
-                      <span className="text-green-400 font-bold">
-                        {bestHomeSpread.home_spread! > 0 ? '+' : ''}{bestHomeSpread.home_spread}
-                        ({bestHomeSpread.home_spread_price! > 0 ? '+' : ''}{bestHomeSpread.home_spread_price})
-                      </span>
-                      <span className={`${textMuted} text-base ml-1`}>@{bestHomeSpread.bookmaker}</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* Best Money Lines */}
-            {(() => {
-              const oddsWithML = odds.filter(o => o.home_ml !== null && o.home_ml !== undefined);
-              if (oddsWithML.length === 0) return null;
-
-              // Find best ML for each team (highest odds = best value)
-              const bestHomeML = oddsWithML.reduce((best, curr) => {
-                if (!best) return curr;
-                if (curr.home_ml! > best.home_ml!) return curr;
-                return best;
-              });
-
-              const bestAwayML = oddsWithML.reduce((best, curr) => {
-                if (!best) return curr;
-                if (curr.away_ml! > best.away_ml!) return curr;
-                return best;
-              });
-
-              return (
-                <div>
-                  <div className={`text-base ${textLabel} mb-1 font-semibold`}>Money Lines</div>
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <span className={`${textSecondary} font-semibold`}>{formatTeamName(state.away_team.name, state.sport_key).split(' ').slice(-1)[0]}: </span>
-                      <span className="text-blue-400 font-bold">
-                        {bestAwayML.away_ml! > 0 ? '+' : ''}{bestAwayML.away_ml}
-                      </span>
-                      <span className={`${textMuted} text-base ml-1`}>@{bestAwayML.bookmaker}</span>
-                    </div>
-                    <div>
-                      <span className={`${textSecondary} font-semibold`}>{formatTeamName(state.home_team.name, state.sport_key).split(' ').slice(-1)[0]}: </span>
-                      <span className="text-blue-400 font-bold">
-                        {bestHomeML.home_ml! > 0 ? '+' : ''}{bestHomeML.home_ml}
-                      </span>
-                      <span className={`${textMuted} text-base ml-1`}>@{bestHomeML.bookmaker}</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
-          </div>
-        </div>
-      )}
 
       {/* Player Props Badge */}
       {(sportBadge === 'NBA' || sportBadge === 'NHL' || sportBadge === 'NFL') && game.player_props_count && game.player_props_count > 0 && (
-        <div className={`${dividerClass} mt-3 pt-3`}>
+        <div className={`${dividerClass} mt-2 pt-2`}>
           <a
             href="/props"
             className="block bg-gradient-to-r from-purple-900 via-purple-800 to-purple-900 border-2 border-purple-500 rounded-lg p-3 hover:border-purple-400 transition-all group"
@@ -2354,11 +2455,11 @@ export function GameCard({ game }: GameCardProps) {
         </div>
       )}
 
-      {/* NBA Season Stats Section */}
-      {sportBadge === 'NBA' && (away_team_stats || home_team_stats) && (
-        <div className={`${dividerClass} mt-3 pt-3`}>
+      {/* NBA/NCAAB Season Stats Section */}
+      {(sportBadge === 'NBA' || sportBadge === 'NCAAB') && ((away_team_stats || home_team_stats) || ncaab_analytics) && (
+        <div className={`${dividerClass} mt-2 pt-2`}>
           <div className="mb-3">
-            <div className={`text-base ${textLabel} mb-2`}>NBA Season Stats</div>
+            <div className={`text-base ${textLabel} mb-2`}>{sportBadge} Season Stats</div>
             <div className="flex gap-2">
               <button
                 onClick={() => setStatsView('stats')}
@@ -2392,6 +2493,9 @@ export function GameCard({ game }: GameCardProps) {
               </button>
             </div>
           </div>
+
+          {/* Regular Team Stats View */}
+          {(
           <div className="grid grid-cols-2 gap-4 text-base">
             {/* Away Team Stats */}
             <div className="space-y-1">
@@ -2797,6 +2901,7 @@ export function GameCard({ game }: GameCardProps) {
               )}
             </div>
           </div>
+          )}
         </div>
       )}
 
@@ -2827,7 +2932,7 @@ export function GameCard({ game }: GameCardProps) {
         };
 
         return (
-        <div className={`${dividerClass} mt-3 pt-3`}>
+        <div className={`${dividerClass} mt-2 pt-2`}>
           <div className={`text-base ${textLabel} mb-2 font-semibold`}>Live Game Stats</div>
           <div className="grid grid-cols-3 gap-2 text-base">
             {/* Stat Label Column */}
@@ -2991,25 +3096,25 @@ export function GameCard({ game }: GameCardProps) {
         )
       })()}
 
+
+        <div className="flex justify-between text-base">
+          <span className={`${textLabel}`}>Pregame Total (FD):</span>
+          <span className={`font-bold ${textValue}`}>{Math.round(projection.pregame_total)}</span>
+        </div>
+
       {/* Momentum Bar - NHL/NBA Live Games */}
-      {state.status === 'live' && (
-        (state.sport_key === 'icehockey_nhl' && game.home_nhl_momentum && game.away_nhl_momentum) ||
-        (state.sport_key === 'basketball_nba' && game.home_nba_momentum && game.away_nba_momentum)
-      ) && (
+      {state.status === 'live' &&
+       state.home_team.momentum !== null &&
+       state.home_team.momentum !== undefined &&
+       state.away_team.momentum !== null &&
+       state.away_team.momentum !== undefined &&
+       (state.sport_key === 'icehockey_nhl' || state.sport_key === 'basketball_nba') && (
         <div className="px-4 pb-4 pt-2">
           <MomentumBar
             homeTeam={formatTeamName(state.home_team.name, state.sport_key)}
             awayTeam={formatTeamName(state.away_team.name, state.sport_key)}
-            homeMomentum={
-              state.sport_key === 'icehockey_nhl'
-                ? (game.home_nhl_momentum?.momentum_score || 50)
-                : (game.home_nba_momentum?.momentum_score || 50)
-            }
-            awayMomentum={
-              state.sport_key === 'icehockey_nhl'
-                ? (game.away_nhl_momentum?.momentum_score || 50)
-                : (game.away_nba_momentum?.momentum_score || 50)
-            }
+            homeMomentum={state.home_team.momentum}
+            awayMomentum={state.away_team.momentum}
           />
         </div>
       )}

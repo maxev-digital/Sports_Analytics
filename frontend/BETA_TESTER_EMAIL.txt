@@ -1,0 +1,132 @@
+═══════════════════════════════════════════════════════════════
+           MAX EV SPORTS - DESKTOP CLIENT BETA ACCESS
+═══════════════════════════════════════════════════════════════
+
+🎉 You're In!
+
+Hi there,
+
+Thank you for being an Elite subscriber! You now have exclusive access
+to test the new MAX EV SPORTS Desktop Client.
+
+
+🚀 WHAT'S NEW IN DESKTOP
+─────────────────────────────────────────────────────────────────
+
+✓ Multi-window support for pro workflows
+✓ System tray for quick access
+✓ Native desktop performance
+✓ Multi-monitor optimization
+✓ Always-on alert monitoring
+
+
+📥 DOWNLOAD
+─────────────────────────────────────────────────────────────────
+
+Download Link:
+https://max-ev-sports.com/downloads/MAX-EV-SPORTS-Desktop-v1.0.0.zip
+
+Version: 1.0.0
+Size: ~280 MB
+OS: Windows 10 or later
+
+
+📋 INSTALLATION GUIDE
+─────────────────────────────────────────────────────────────────
+
+Step 1: Download the ZIP File
+   Click the link above to download MAX-EV-SPORTS-Desktop-v1.0.0.zip
+
+Step 2: Extract the Files
+   Right-click the ZIP file → "Extract All"
+   Choose a location (Desktop or Documents recommended)
+
+Step 3: Open the Folder
+   Navigate to extracted folder → Open "win-unpacked"
+
+Step 4: Launch the App
+   Double-click "MAX EV SPORTS.exe"
+   Login with your Elite credentials
+
+
+⚠️ WINDOWS SECURITY WARNING (EXPECTED)
+─────────────────────────────────────────────────────────────────
+
+You may see: "Windows protected your PC"
+
+This is normal! The app isn't code-signed yet (we're adding that soon).
+
+TO PROCEED:
+1. Click "More info"
+2. Then click "Run anyway"
+
+
+💻 SYSTEM REQUIREMENTS
+─────────────────────────────────────────────────────────────────
+
+Operating System: Windows 10 or later
+RAM: 4GB minimum (8GB recommended)
+Disk Space: 500MB available
+Internet: Required for real-time data
+
+
+🧪 WHAT WE NEED YOU TO TEST
+─────────────────────────────────────────────────────────────────
+
+• Login and authentication process
+• Live games data loading and updates
+• Alert notifications and accuracy
+• Multi-window features (open multiple views)
+• System tray functionality
+• Performance and responsiveness
+• Any bugs, errors, or weird behavior
+
+
+💬 SEND US YOUR FEEDBACK
+─────────────────────────────────────────────────────────────────
+
+Your feedback is crucial! Please share:
+
+• What works well
+• What doesn't work
+• Feature suggestions
+• Comparison to web version
+
+Email: support@max-ev-sports.com
+
+
+🛠️ TROUBLESHOOTING
+─────────────────────────────────────────────────────────────────
+
+App Won't Launch?
+   • Check Windows Defender settings
+   • Try running as Administrator (right-click → Run as administrator)
+   • Restart your computer and try again
+
+Blank Screen After Login?
+   • Check your internet connection
+   • Press Ctrl+Shift+I to open Developer Tools
+   • Try logging out and back in
+
+Still Having Issues?
+   Email: support@max-ev-sports.com
+
+   Include:
+   • Screenshot of the issue
+   • What you were trying to do
+   • Your Windows version
+
+
+═══════════════════════════════════════════════════════════════
+
+Thank you for being part of our Elite community and
+helping us test!
+
+🎯 Casino Tears - MAX EV SPORTS™
+
+Website: https://max-ev-sports.com
+Documentation: https://max-ev-sports.com/learn
+
+© 2025 Casino Tears. All rights reserved.
+
+═══════════════════════════════════════════════════════════════

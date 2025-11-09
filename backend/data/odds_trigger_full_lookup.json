@@ -1,0 +1,2010 @@
+[
+  {
+    "win_rate_pct": 50.0,
+    "win_probability": 0.5,
+    "decimal_odds": 2.0,
+    "american_odds_exact": 100,
+    "american_odds_rounded": 100,
+    "min_acceptable_odds": "+100"
+  },
+  {
+    "win_rate_pct": 50.1,
+    "win_probability": 0.501,
+    "decimal_odds": 2.0,
+    "american_odds_exact": -100.4,
+    "american_odds_rounded": -100,
+    "min_acceptable_odds": "-100"
+  },
+  {
+    "win_rate_pct": 50.2,
+    "win_probability": 0.502,
+    "decimal_odds": 1.99,
+    "american_odds_exact": -100.8,
+    "american_odds_rounded": -100,
+    "min_acceptable_odds": "-100"
+  },
+  {
+    "win_rate_pct": 50.3,
+    "win_probability": 0.503,
+    "decimal_odds": 1.99,
+    "american_odds_exact": -101.2,
+    "american_odds_rounded": -100,
+    "min_acceptable_odds": "-100"
+  },
+  {
+    "win_rate_pct": 50.4,
+    "win_probability": 0.504,
+    "decimal_odds": 1.98,
+    "american_odds_exact": -101.6,
+    "american_odds_rounded": -100,
+    "min_acceptable_odds": "-100"
+  },
+  {
+    "win_rate_pct": 50.5,
+    "win_probability": 0.505,
+    "decimal_odds": 1.98,
+    "american_odds_exact": -102.0,
+    "american_odds_rounded": -100,
+    "min_acceptable_odds": "-100"
+  },
+  {
+    "win_rate_pct": 50.6,
+    "win_probability": 0.506,
+    "decimal_odds": 1.98,
+    "american_odds_exact": -102.4,
+    "american_odds_rounded": -100,
+    "min_acceptable_odds": "-100"
+  },
+  {
+    "win_rate_pct": 50.7,
+    "win_probability": 0.507,
+    "decimal_odds": 1.97,
+    "american_odds_exact": -102.8,
+    "american_odds_rounded": -105,
+    "min_acceptable_odds": "-105"
+  },
+  {
+    "win_rate_pct": 50.8,
+    "win_probability": 0.508,
+    "decimal_odds": 1.97,
+    "american_odds_exact": -103.3,
+    "american_odds_rounded": -105,
+    "min_acceptable_odds": "-105"
+  },
+  {
+    "win_rate_pct": 50.9,
+    "win_probability": 0.509,
+    "decimal_odds": 1.96,
+    "american_odds_exact": -103.7,
+    "american_odds_rounded": -105,
+    "min_acceptable_odds": "-105"
+  },
+  {
+    "win_rate_pct": 51.0,
+    "win_probability": 0.51,
+    "decimal_odds": 1.96,
+    "american_odds_exact": -104.1,
+    "american_odds_rounded": -105,
+    "min_acceptable_odds": "-105"
+  },
+  {
+    "win_rate_pct": 51.1,
+    "win_probability": 0.511,
+    "decimal_odds": 1.96,
+    "american_odds_exact": -104.5,
+    "american_odds_rounded": -105,
+    "min_acceptable_odds": "-105"
+  },
+  {
+    "win_rate_pct": 51.2,
+    "win_probability": 0.512,
+    "decimal_odds": 1.95,
+    "american_odds_exact": -104.9,
+    "american_odds_rounded": -105,
+    "min_acceptable_odds": "-105"
+  },
+  {
+    "win_rate_pct": 51.3,
+    "win_probability": 0.513,
+    "decimal_odds": 1.95,
+    "american_odds_exact": -105.3,
+    "american_odds_rounded": -105,
+    "min_acceptable_odds": "-105"
+  },
+  {
+    "win_rate_pct": 51.4,
+    "win_probability": 0.514,
+    "decimal_odds": 1.95,
+    "american_odds_exact": -105.8,
+    "american_odds_rounded": -105,
+    "min_acceptable_odds": "-105"
+  },
+  {
+    "win_rate_pct": 51.5,
+    "win_probability": 0.515,
+    "decimal_odds": 1.94,
+    "american_odds_exact": -106.2,
+    "american_odds_rounded": -105,
+    "min_acceptable_odds": "-105"
+  },
+  {
+    "win_rate_pct": 51.6,
+    "win_probability": 0.516,
+    "decimal_odds": 1.94,
+    "american_odds_exact": -106.6,
+    "american_odds_rounded": -105,
+    "min_acceptable_odds": "-105"
+  },
+  {
+    "win_rate_pct": 51.7,
+    "win_probability": 0.517,
+    "decimal_odds": 1.93,
+    "american_odds_exact": -107.0,
+    "american_odds_rounded": -105,
+    "min_acceptable_odds": "-105"
+  },
+  {
+    "win_rate_pct": 51.8,
+    "win_probability": 0.518,
+    "decimal_odds": 1.93,
+    "american_odds_exact": -107.5,
+    "american_odds_rounded": -105,
+    "min_acceptable_odds": "-105"
+  },
+  {
+    "win_rate_pct": 51.9,
+    "win_probability": 0.519,
+    "decimal_odds": 1.93,
+    "american_odds_exact": -107.9,
+    "american_odds_rounded": -110,
+    "min_acceptable_odds": "-110"
+  },
+  {
+    "win_rate_pct": 52.0,
+    "win_probability": 0.52,
+    "decimal_odds": 1.92,
+    "american_odds_exact": -108.3,
+    "american_odds_rounded": -110,
+    "min_acceptable_odds": "-110"
+  },
+  {
+    "win_rate_pct": 52.1,
+    "win_probability": 0.521,
+    "decimal_odds": 1.92,
+    "american_odds_exact": -108.8,
+    "american_odds_rounded": -110,
+    "min_acceptable_odds": "-110"
+  },
+  {
+    "win_rate_pct": 52.2,
+    "win_probability": 0.522,
+    "decimal_odds": 1.92,
+    "american_odds_exact": -109.2,
+    "american_odds_rounded": -110,
+    "min_acceptable_odds": "-110"
+  },
+  {
+    "win_rate_pct": 52.3,
+    "win_probability": 0.523,
+    "decimal_odds": 1.91,
+    "american_odds_exact": -109.6,
+    "american_odds_rounded": -110,
+    "min_acceptable_odds": "-110"
+  },
+  {
+    "win_rate_pct": 52.4,
+    "win_probability": 0.524,
+    "decimal_odds": 1.91,
+    "american_odds_exact": -110.1,
+    "american_odds_rounded": -110,
+    "min_acceptable_odds": "-110"
+  },
+  {
+    "win_rate_pct": 52.5,
+    "win_probability": 0.525,
+    "decimal_odds": 1.9,
+    "american_odds_exact": -110.5,
+    "american_odds_rounded": -110,
+    "min_acceptable_odds": "-110"
+  },
+  {
+    "win_rate_pct": 52.6,
+    "win_probability": 0.526,
+    "decimal_odds": 1.9,
+    "american_odds_exact": -111.0,
+    "american_odds_rounded": -110,
+    "min_acceptable_odds": "-110"
+  },
+  {
+    "win_rate_pct": 52.7,
+    "win_probability": 0.527,
+    "decimal_odds": 1.9,
+    "american_odds_exact": -111.4,
+    "american_odds_rounded": -110,
+    "min_acceptable_odds": "-110"
+  },
+  {
+    "win_rate_pct": 52.8,
+    "win_probability": 0.528,
+    "decimal_odds": 1.89,
+    "american_odds_exact": -111.9,
+    "american_odds_rounded": -110,
+    "min_acceptable_odds": "-110"
+  },
+  {
+    "win_rate_pct": 52.9,
+    "win_probability": 0.529,
+    "decimal_odds": 1.89,
+    "american_odds_exact": -112.3,
+    "american_odds_rounded": -110,
+    "min_acceptable_odds": "-110"
+  },
+  {
+    "win_rate_pct": 53.0,
+    "win_probability": 0.53,
+    "decimal_odds": 1.89,
+    "american_odds_exact": -112.8,
+    "american_odds_rounded": -115,
+    "min_acceptable_odds": "-115"
+  },
+  {
+    "win_rate_pct": 53.1,
+    "win_probability": 0.531,
+    "decimal_odds": 1.88,
+    "american_odds_exact": -113.2,
+    "american_odds_rounded": -115,
+    "min_acceptable_odds": "-115"
+  },
+  {
+    "win_rate_pct": 53.2,
+    "win_probability": 0.532,
+    "decimal_odds": 1.88,
+    "american_odds_exact": -113.7,
+    "american_odds_rounded": -115,
+    "min_acceptable_odds": "-115"
+  },
+  {
+    "win_rate_pct": 53.3,
+    "win_probability": 0.533,
+    "decimal_odds": 1.88,
+    "american_odds_exact": -114.1,
+    "american_odds_rounded": -115,
+    "min_acceptable_odds": "-115"
+  },
+  {
+    "win_rate_pct": 53.4,
+    "win_probability": 0.534,
+    "decimal_odds": 1.87,
+    "american_odds_exact": -114.6,
+    "american_odds_rounded": -115,
+    "min_acceptable_odds": "-115"
+  },
+  {
+    "win_rate_pct": 53.5,
+    "win_probability": 0.535,
+    "decimal_odds": 1.87,
+    "american_odds_exact": -115.1,
+    "american_odds_rounded": -115,
+    "min_acceptable_odds": "-115"
+  },
+  {
+    "win_rate_pct": 53.6,
+    "win_probability": 0.536,
+    "decimal_odds": 1.87,
+    "american_odds_exact": -115.5,
+    "american_odds_rounded": -115,
+    "min_acceptable_odds": "-115"
+  },
+  {
+    "win_rate_pct": 53.7,
+    "win_probability": 0.537,
+    "decimal_odds": 1.86,
+    "american_odds_exact": -116.0,
+    "american_odds_rounded": -115,
+    "min_acceptable_odds": "-115"
+  },
+  {
+    "win_rate_pct": 53.8,
+    "win_probability": 0.538,
+    "decimal_odds": 1.86,
+    "american_odds_exact": -116.5,
+    "american_odds_rounded": -115,
+    "min_acceptable_odds": "-115"
+  },
+  {
+    "win_rate_pct": 53.9,
+    "win_probability": 0.539,
+    "decimal_odds": 1.86,
+    "american_odds_exact": -116.9,
+    "american_odds_rounded": -115,
+    "min_acceptable_odds": "-115"
+  },
+  {
+    "win_rate_pct": 54.0,
+    "win_probability": 0.54,
+    "decimal_odds": 1.85,
+    "american_odds_exact": -117.4,
+    "american_odds_rounded": -115,
+    "min_acceptable_odds": "-115"
+  },
+  {
+    "win_rate_pct": 54.1,
+    "win_probability": 0.541,
+    "decimal_odds": 1.85,
+    "american_odds_exact": -117.9,
+    "american_odds_rounded": -120,
+    "min_acceptable_odds": "-120"
+  },
+  {
+    "win_rate_pct": 54.2,
+    "win_probability": 0.542,
+    "decimal_odds": 1.85,
+    "american_odds_exact": -118.3,
+    "american_odds_rounded": -120,
+    "min_acceptable_odds": "-120"
+  },
+  {
+    "win_rate_pct": 54.3,
+    "win_probability": 0.543,
+    "decimal_odds": 1.84,
+    "american_odds_exact": -118.8,
+    "american_odds_rounded": -120,
+    "min_acceptable_odds": "-120"
+  },
+  {
+    "win_rate_pct": 54.4,
+    "win_probability": 0.544,
+    "decimal_odds": 1.84,
+    "american_odds_exact": -119.3,
+    "american_odds_rounded": -120,
+    "min_acceptable_odds": "-120"
+  },
+  {
+    "win_rate_pct": 54.5,
+    "win_probability": 0.545,
+    "decimal_odds": 1.83,
+    "american_odds_exact": -119.8,
+    "american_odds_rounded": -120,
+    "min_acceptable_odds": "-120"
+  },
+  {
+    "win_rate_pct": 54.6,
+    "win_probability": 0.546,
+    "decimal_odds": 1.83,
+    "american_odds_exact": -120.3,
+    "american_odds_rounded": -120,
+    "min_acceptable_odds": "-120"
+  },
+  {
+    "win_rate_pct": 54.7,
+    "win_probability": 0.547,
+    "decimal_odds": 1.83,
+    "american_odds_exact": -120.8,
+    "american_odds_rounded": -120,
+    "min_acceptable_odds": "-120"
+  },
+  {
+    "win_rate_pct": 54.8,
+    "win_probability": 0.548,
+    "decimal_odds": 1.82,
+    "american_odds_exact": -121.2,
+    "american_odds_rounded": -120,
+    "min_acceptable_odds": "-120"
+  },
+  {
+    "win_rate_pct": 54.9,
+    "win_probability": 0.549,
+    "decimal_odds": 1.82,
+    "american_odds_exact": -121.7,
+    "american_odds_rounded": -120,
+    "min_acceptable_odds": "-120"
+  },
+  {
+    "win_rate_pct": 55.0,
+    "win_probability": 0.55,
+    "decimal_odds": 1.82,
+    "american_odds_exact": -122.2,
+    "american_odds_rounded": -120,
+    "min_acceptable_odds": "-120"
+  },
+  {
+    "win_rate_pct": 55.1,
+    "win_probability": 0.551,
+    "decimal_odds": 1.81,
+    "american_odds_exact": -122.7,
+    "american_odds_rounded": -125,
+    "min_acceptable_odds": "-125"
+  },
+  {
+    "win_rate_pct": 55.2,
+    "win_probability": 0.552,
+    "decimal_odds": 1.81,
+    "american_odds_exact": -123.2,
+    "american_odds_rounded": -125,
+    "min_acceptable_odds": "-125"
+  },
+  {
+    "win_rate_pct": 55.3,
+    "win_probability": 0.553,
+    "decimal_odds": 1.81,
+    "american_odds_exact": -123.7,
+    "american_odds_rounded": -125,
+    "min_acceptable_odds": "-125"
+  },
+  {
+    "win_rate_pct": 55.4,
+    "win_probability": 0.554,
+    "decimal_odds": 1.81,
+    "american_odds_exact": -124.2,
+    "american_odds_rounded": -125,
+    "min_acceptable_odds": "-125"
+  },
+  {
+    "win_rate_pct": 55.5,
+    "win_probability": 0.555,
+    "decimal_odds": 1.8,
+    "american_odds_exact": -124.7,
+    "american_odds_rounded": -125,
+    "min_acceptable_odds": "-125"
+  },
+  {
+    "win_rate_pct": 55.6,
+    "win_probability": 0.556,
+    "decimal_odds": 1.8,
+    "american_odds_exact": -125.2,
+    "american_odds_rounded": -125,
+    "min_acceptable_odds": "-125"
+  },
+  {
+    "win_rate_pct": 55.7,
+    "win_probability": 0.557,
+    "decimal_odds": 1.8,
+    "american_odds_exact": -125.7,
+    "american_odds_rounded": -125,
+    "min_acceptable_odds": "-125"
+  },
+  {
+    "win_rate_pct": 55.8,
+    "win_probability": 0.558,
+    "decimal_odds": 1.79,
+    "american_odds_exact": -126.2,
+    "american_odds_rounded": -125,
+    "min_acceptable_odds": "-125"
+  },
+  {
+    "win_rate_pct": 55.9,
+    "win_probability": 0.559,
+    "decimal_odds": 1.79,
+    "american_odds_exact": -126.8,
+    "american_odds_rounded": -125,
+    "min_acceptable_odds": "-125"
+  },
+  {
+    "win_rate_pct": 56.0,
+    "win_probability": 0.56,
+    "decimal_odds": 1.79,
+    "american_odds_exact": -127.3,
+    "american_odds_rounded": -125,
+    "min_acceptable_odds": "-125"
+  },
+  {
+    "win_rate_pct": 56.1,
+    "win_probability": 0.561,
+    "decimal_odds": 1.78,
+    "american_odds_exact": -127.8,
+    "american_odds_rounded": -130,
+    "min_acceptable_odds": "-130"
+  },
+  {
+    "win_rate_pct": 56.2,
+    "win_probability": 0.562,
+    "decimal_odds": 1.78,
+    "american_odds_exact": -128.3,
+    "american_odds_rounded": -130,
+    "min_acceptable_odds": "-130"
+  },
+  {
+    "win_rate_pct": 56.3,
+    "win_probability": 0.563,
+    "decimal_odds": 1.78,
+    "american_odds_exact": -128.8,
+    "american_odds_rounded": -130,
+    "min_acceptable_odds": "-130"
+  },
+  {
+    "win_rate_pct": 56.4,
+    "win_probability": 0.564,
+    "decimal_odds": 1.77,
+    "american_odds_exact": -129.4,
+    "american_odds_rounded": -130,
+    "min_acceptable_odds": "-130"
+  },
+  {
+    "win_rate_pct": 56.5,
+    "win_probability": 0.565,
+    "decimal_odds": 1.77,
+    "american_odds_exact": -129.9,
+    "american_odds_rounded": -130,
+    "min_acceptable_odds": "-130"
+  },
+  {
+    "win_rate_pct": 56.6,
+    "win_probability": 0.566,
+    "decimal_odds": 1.77,
+    "american_odds_exact": -130.4,
+    "american_odds_rounded": -130,
+    "min_acceptable_odds": "-130"
+  },
+  {
+    "win_rate_pct": 56.7,
+    "win_probability": 0.567,
+    "decimal_odds": 1.76,
+    "american_odds_exact": -130.9,
+    "american_odds_rounded": -130,
+    "min_acceptable_odds": "-130"
+  },
+  {
+    "win_rate_pct": 56.8,
+    "win_probability": 0.568,
+    "decimal_odds": 1.76,
+    "american_odds_exact": -131.5,
+    "american_odds_rounded": -130,
+    "min_acceptable_odds": "-130"
+  },
+  {
+    "win_rate_pct": 56.9,
+    "win_probability": 0.569,
+    "decimal_odds": 1.76,
+    "american_odds_exact": -132.0,
+    "american_odds_rounded": -130,
+    "min_acceptable_odds": "-130"
+  },
+  {
+    "win_rate_pct": 57.0,
+    "win_probability": 0.57,
+    "decimal_odds": 1.75,
+    "american_odds_exact": -132.6,
+    "american_odds_rounded": -135,
+    "min_acceptable_odds": "-135"
+  },
+  {
+    "win_rate_pct": 57.1,
+    "win_probability": 0.571,
+    "decimal_odds": 1.75,
+    "american_odds_exact": -133.1,
+    "american_odds_rounded": -135,
+    "min_acceptable_odds": "-135"
+  },
+  {
+    "win_rate_pct": 57.2,
+    "win_probability": 0.572,
+    "decimal_odds": 1.75,
+    "american_odds_exact": -133.6,
+    "american_odds_rounded": -135,
+    "min_acceptable_odds": "-135"
+  },
+  {
+    "win_rate_pct": 57.3,
+    "win_probability": 0.573,
+    "decimal_odds": 1.75,
+    "american_odds_exact": -134.2,
+    "american_odds_rounded": -135,
+    "min_acceptable_odds": "-135"
+  },
+  {
+    "win_rate_pct": 57.4,
+    "win_probability": 0.574,
+    "decimal_odds": 1.74,
+    "american_odds_exact": -134.7,
+    "american_odds_rounded": -135,
+    "min_acceptable_odds": "-135"
+  },
+  {
+    "win_rate_pct": 57.5,
+    "win_probability": 0.575,
+    "decimal_odds": 1.74,
+    "american_odds_exact": -135.3,
+    "american_odds_rounded": -135,
+    "min_acceptable_odds": "-135"
+  },
+  {
+    "win_rate_pct": 57.6,
+    "win_probability": 0.576,
+    "decimal_odds": 1.74,
+    "american_odds_exact": -135.8,
+    "american_odds_rounded": -135,
+    "min_acceptable_odds": "-135"
+  },
+  {
+    "win_rate_pct": 57.7,
+    "win_probability": 0.577,
+    "decimal_odds": 1.73,
+    "american_odds_exact": -136.4,
+    "american_odds_rounded": -135,
+    "min_acceptable_odds": "-135"
+  },
+  {
+    "win_rate_pct": 57.8,
+    "win_probability": 0.578,
+    "decimal_odds": 1.73,
+    "american_odds_exact": -137.0,
+    "american_odds_rounded": -135,
+    "min_acceptable_odds": "-135"
+  },
+  {
+    "win_rate_pct": 57.9,
+    "win_probability": 0.579,
+    "decimal_odds": 1.73,
+    "american_odds_exact": -137.5,
+    "american_odds_rounded": -140,
+    "min_acceptable_odds": "-140"
+  },
+  {
+    "win_rate_pct": 58.0,
+    "win_probability": 0.58,
+    "decimal_odds": 1.72,
+    "american_odds_exact": -138.1,
+    "american_odds_rounded": -140,
+    "min_acceptable_odds": "-140"
+  },
+  {
+    "win_rate_pct": 58.1,
+    "win_probability": 0.581,
+    "decimal_odds": 1.72,
+    "american_odds_exact": -138.7,
+    "american_odds_rounded": -140,
+    "min_acceptable_odds": "-140"
+  },
+  {
+    "win_rate_pct": 58.2,
+    "win_probability": 0.582,
+    "decimal_odds": 1.72,
+    "american_odds_exact": -139.2,
+    "american_odds_rounded": -140,
+    "min_acceptable_odds": "-140"
+  },
+  {
+    "win_rate_pct": 58.3,
+    "win_probability": 0.583,
+    "decimal_odds": 1.72,
+    "american_odds_exact": -139.8,
+    "american_odds_rounded": -140,
+    "min_acceptable_odds": "-140"
+  },
+  {
+    "win_rate_pct": 58.4,
+    "win_probability": 0.584,
+    "decimal_odds": 1.71,
+    "american_odds_exact": -140.4,
+    "american_odds_rounded": -140,
+    "min_acceptable_odds": "-140"
+  },
+  {
+    "win_rate_pct": 58.5,
+    "win_probability": 0.585,
+    "decimal_odds": 1.71,
+    "american_odds_exact": -141.0,
+    "american_odds_rounded": -140,
+    "min_acceptable_odds": "-140"
+  },
+  {
+    "win_rate_pct": 58.6,
+    "win_probability": 0.586,
+    "decimal_odds": 1.71,
+    "american_odds_exact": -141.5,
+    "american_odds_rounded": -140,
+    "min_acceptable_odds": "-140"
+  },
+  {
+    "win_rate_pct": 58.7,
+    "win_probability": 0.587,
+    "decimal_odds": 1.7,
+    "american_odds_exact": -142.1,
+    "american_odds_rounded": -140,
+    "min_acceptable_odds": "-140"
+  },
+  {
+    "win_rate_pct": 58.8,
+    "win_probability": 0.588,
+    "decimal_odds": 1.7,
+    "american_odds_exact": -142.7,
+    "american_odds_rounded": -145,
+    "min_acceptable_odds": "-145"
+  },
+  {
+    "win_rate_pct": 58.9,
+    "win_probability": 0.589,
+    "decimal_odds": 1.7,
+    "american_odds_exact": -143.3,
+    "american_odds_rounded": -145,
+    "min_acceptable_odds": "-145"
+  },
+  {
+    "win_rate_pct": 59.0,
+    "win_probability": 0.59,
+    "decimal_odds": 1.69,
+    "american_odds_exact": -143.9,
+    "american_odds_rounded": -145,
+    "min_acceptable_odds": "-145"
+  },
+  {
+    "win_rate_pct": 59.1,
+    "win_probability": 0.591,
+    "decimal_odds": 1.69,
+    "american_odds_exact": -144.5,
+    "american_odds_rounded": -145,
+    "min_acceptable_odds": "-145"
+  },
+  {
+    "win_rate_pct": 59.2,
+    "win_probability": 0.592,
+    "decimal_odds": 1.69,
+    "american_odds_exact": -145.1,
+    "american_odds_rounded": -145,
+    "min_acceptable_odds": "-145"
+  },
+  {
+    "win_rate_pct": 59.3,
+    "win_probability": 0.593,
+    "decimal_odds": 1.69,
+    "american_odds_exact": -145.7,
+    "american_odds_rounded": -145,
+    "min_acceptable_odds": "-145"
+  },
+  {
+    "win_rate_pct": 59.4,
+    "win_probability": 0.594,
+    "decimal_odds": 1.68,
+    "american_odds_exact": -146.3,
+    "american_odds_rounded": -145,
+    "min_acceptable_odds": "-145"
+  },
+  {
+    "win_rate_pct": 59.5,
+    "win_probability": 0.595,
+    "decimal_odds": 1.68,
+    "american_odds_exact": -146.9,
+    "american_odds_rounded": -145,
+    "min_acceptable_odds": "-145"
+  },
+  {
+    "win_rate_pct": 59.6,
+    "win_probability": 0.596,
+    "decimal_odds": 1.68,
+    "american_odds_exact": -147.5,
+    "american_odds_rounded": -150,
+    "min_acceptable_odds": "-150"
+  },
+  {
+    "win_rate_pct": 59.7,
+    "win_probability": 0.597,
+    "decimal_odds": 1.68,
+    "american_odds_exact": -148.1,
+    "american_odds_rounded": -150,
+    "min_acceptable_odds": "-150"
+  },
+  {
+    "win_rate_pct": 59.8,
+    "win_probability": 0.598,
+    "decimal_odds": 1.67,
+    "american_odds_exact": -148.8,
+    "american_odds_rounded": -150,
+    "min_acceptable_odds": "-150"
+  },
+  {
+    "win_rate_pct": 59.9,
+    "win_probability": 0.599,
+    "decimal_odds": 1.67,
+    "american_odds_exact": -149.4,
+    "american_odds_rounded": -150,
+    "min_acceptable_odds": "-150"
+  },
+  {
+    "win_rate_pct": 60.0,
+    "win_probability": 0.6,
+    "decimal_odds": 1.67,
+    "american_odds_exact": -150.0,
+    "american_odds_rounded": -150,
+    "min_acceptable_odds": "-150"
+  },
+  {
+    "win_rate_pct": 60.1,
+    "win_probability": 0.601,
+    "decimal_odds": 1.66,
+    "american_odds_exact": -150.6,
+    "american_odds_rounded": -150,
+    "min_acceptable_odds": "-150"
+  },
+  {
+    "win_rate_pct": 60.2,
+    "win_probability": 0.602,
+    "decimal_odds": 1.66,
+    "american_odds_exact": -151.3,
+    "american_odds_rounded": -150,
+    "min_acceptable_odds": "-150"
+  },
+  {
+    "win_rate_pct": 60.3,
+    "win_probability": 0.603,
+    "decimal_odds": 1.66,
+    "american_odds_exact": -151.9,
+    "american_odds_rounded": -150,
+    "min_acceptable_odds": "-150"
+  },
+  {
+    "win_rate_pct": 60.4,
+    "win_probability": 0.604,
+    "decimal_odds": 1.66,
+    "american_odds_exact": -152.5,
+    "american_odds_rounded": -155,
+    "min_acceptable_odds": "-155"
+  },
+  {
+    "win_rate_pct": 60.5,
+    "win_probability": 0.605,
+    "decimal_odds": 1.65,
+    "american_odds_exact": -153.2,
+    "american_odds_rounded": -155,
+    "min_acceptable_odds": "-155"
+  },
+  {
+    "win_rate_pct": 60.6,
+    "win_probability": 0.606,
+    "decimal_odds": 1.65,
+    "american_odds_exact": -153.8,
+    "american_odds_rounded": -155,
+    "min_acceptable_odds": "-155"
+  },
+  {
+    "win_rate_pct": 60.7,
+    "win_probability": 0.607,
+    "decimal_odds": 1.65,
+    "american_odds_exact": -154.5,
+    "american_odds_rounded": -155,
+    "min_acceptable_odds": "-155"
+  },
+  {
+    "win_rate_pct": 60.8,
+    "win_probability": 0.608,
+    "decimal_odds": 1.64,
+    "american_odds_exact": -155.1,
+    "american_odds_rounded": -155,
+    "min_acceptable_odds": "-155"
+  },
+  {
+    "win_rate_pct": 60.9,
+    "win_probability": 0.609,
+    "decimal_odds": 1.64,
+    "american_odds_exact": -155.8,
+    "american_odds_rounded": -155,
+    "min_acceptable_odds": "-155"
+  },
+  {
+    "win_rate_pct": 61.0,
+    "win_probability": 0.61,
+    "decimal_odds": 1.64,
+    "american_odds_exact": -156.4,
+    "american_odds_rounded": -155,
+    "min_acceptable_odds": "-155"
+  },
+  {
+    "win_rate_pct": 61.1,
+    "win_probability": 0.611,
+    "decimal_odds": 1.64,
+    "american_odds_exact": -157.1,
+    "american_odds_rounded": -155,
+    "min_acceptable_odds": "-155"
+  },
+  {
+    "win_rate_pct": 61.2,
+    "win_probability": 0.612,
+    "decimal_odds": 1.63,
+    "american_odds_exact": -157.7,
+    "american_odds_rounded": -160,
+    "min_acceptable_odds": "-160"
+  },
+  {
+    "win_rate_pct": 61.3,
+    "win_probability": 0.613,
+    "decimal_odds": 1.63,
+    "american_odds_exact": -158.4,
+    "american_odds_rounded": -160,
+    "min_acceptable_odds": "-160"
+  },
+  {
+    "win_rate_pct": 61.4,
+    "win_probability": 0.614,
+    "decimal_odds": 1.63,
+    "american_odds_exact": -159.1,
+    "american_odds_rounded": -160,
+    "min_acceptable_odds": "-160"
+  },
+  {
+    "win_rate_pct": 61.5,
+    "win_probability": 0.615,
+    "decimal_odds": 1.63,
+    "american_odds_exact": -159.7,
+    "american_odds_rounded": -160,
+    "min_acceptable_odds": "-160"
+  },
+  {
+    "win_rate_pct": 61.6,
+    "win_probability": 0.616,
+    "decimal_odds": 1.62,
+    "american_odds_exact": -160.4,
+    "american_odds_rounded": -160,
+    "min_acceptable_odds": "-160"
+  },
+  {
+    "win_rate_pct": 61.7,
+    "win_probability": 0.617,
+    "decimal_odds": 1.62,
+    "american_odds_exact": -161.1,
+    "american_odds_rounded": -160,
+    "min_acceptable_odds": "-160"
+  },
+  {
+    "win_rate_pct": 61.8,
+    "win_probability": 0.618,
+    "decimal_odds": 1.62,
+    "american_odds_exact": -161.8,
+    "american_odds_rounded": -160,
+    "min_acceptable_odds": "-160"
+  },
+  {
+    "win_rate_pct": 61.9,
+    "win_probability": 0.619,
+    "decimal_odds": 1.62,
+    "american_odds_exact": -162.5,
+    "american_odds_rounded": -160,
+    "min_acceptable_odds": "-160"
+  },
+  {
+    "win_rate_pct": 62.0,
+    "win_probability": 0.62,
+    "decimal_odds": 1.61,
+    "american_odds_exact": -163.2,
+    "american_odds_rounded": -165,
+    "min_acceptable_odds": "-165"
+  },
+  {
+    "win_rate_pct": 62.1,
+    "win_probability": 0.621,
+    "decimal_odds": 1.61,
+    "american_odds_exact": -163.9,
+    "american_odds_rounded": -165,
+    "min_acceptable_odds": "-165"
+  },
+  {
+    "win_rate_pct": 62.2,
+    "win_probability": 0.622,
+    "decimal_odds": 1.61,
+    "american_odds_exact": -164.6,
+    "american_odds_rounded": -165,
+    "min_acceptable_odds": "-165"
+  },
+  {
+    "win_rate_pct": 62.3,
+    "win_probability": 0.623,
+    "decimal_odds": 1.61,
+    "american_odds_exact": -165.3,
+    "american_odds_rounded": -165,
+    "min_acceptable_odds": "-165"
+  },
+  {
+    "win_rate_pct": 62.4,
+    "win_probability": 0.624,
+    "decimal_odds": 1.6,
+    "american_odds_exact": -166.0,
+    "american_odds_rounded": -165,
+    "min_acceptable_odds": "-165"
+  },
+  {
+    "win_rate_pct": 62.5,
+    "win_probability": 0.625,
+    "decimal_odds": 1.6,
+    "american_odds_exact": -166.7,
+    "american_odds_rounded": -165,
+    "min_acceptable_odds": "-165"
+  },
+  {
+    "win_rate_pct": 62.6,
+    "win_probability": 0.626,
+    "decimal_odds": 1.6,
+    "american_odds_exact": -167.4,
+    "american_odds_rounded": -165,
+    "min_acceptable_odds": "-165"
+  },
+  {
+    "win_rate_pct": 62.7,
+    "win_probability": 0.627,
+    "decimal_odds": 1.59,
+    "american_odds_exact": -168.1,
+    "american_odds_rounded": -170,
+    "min_acceptable_odds": "-170"
+  },
+  {
+    "win_rate_pct": 62.8,
+    "win_probability": 0.628,
+    "decimal_odds": 1.59,
+    "american_odds_exact": -168.8,
+    "american_odds_rounded": -170,
+    "min_acceptable_odds": "-170"
+  },
+  {
+    "win_rate_pct": 62.9,
+    "win_probability": 0.629,
+    "decimal_odds": 1.59,
+    "american_odds_exact": -169.5,
+    "american_odds_rounded": -170,
+    "min_acceptable_odds": "-170"
+  },
+  {
+    "win_rate_pct": 63.0,
+    "win_probability": 0.63,
+    "decimal_odds": 1.59,
+    "american_odds_exact": -170.3,
+    "american_odds_rounded": -170,
+    "min_acceptable_odds": "-170"
+  },
+  {
+    "win_rate_pct": 63.1,
+    "win_probability": 0.631,
+    "decimal_odds": 1.58,
+    "american_odds_exact": -171.0,
+    "american_odds_rounded": -170,
+    "min_acceptable_odds": "-170"
+  },
+  {
+    "win_rate_pct": 63.2,
+    "win_probability": 0.632,
+    "decimal_odds": 1.58,
+    "american_odds_exact": -171.7,
+    "american_odds_rounded": -170,
+    "min_acceptable_odds": "-170"
+  },
+  {
+    "win_rate_pct": 63.3,
+    "win_probability": 0.633,
+    "decimal_odds": 1.58,
+    "american_odds_exact": -172.5,
+    "american_odds_rounded": -170,
+    "min_acceptable_odds": "-170"
+  },
+  {
+    "win_rate_pct": 63.4,
+    "win_probability": 0.634,
+    "decimal_odds": 1.58,
+    "american_odds_exact": -173.2,
+    "american_odds_rounded": -175,
+    "min_acceptable_odds": "-175"
+  },
+  {
+    "win_rate_pct": 63.5,
+    "win_probability": 0.635,
+    "decimal_odds": 1.57,
+    "american_odds_exact": -174.0,
+    "american_odds_rounded": -175,
+    "min_acceptable_odds": "-175"
+  },
+  {
+    "win_rate_pct": 63.6,
+    "win_probability": 0.636,
+    "decimal_odds": 1.57,
+    "american_odds_exact": -174.7,
+    "american_odds_rounded": -175,
+    "min_acceptable_odds": "-175"
+  },
+  {
+    "win_rate_pct": 63.7,
+    "win_probability": 0.637,
+    "decimal_odds": 1.57,
+    "american_odds_exact": -175.5,
+    "american_odds_rounded": -175,
+    "min_acceptable_odds": "-175"
+  },
+  {
+    "win_rate_pct": 63.8,
+    "win_probability": 0.638,
+    "decimal_odds": 1.57,
+    "american_odds_exact": -176.2,
+    "american_odds_rounded": -175,
+    "min_acceptable_odds": "-175"
+  },
+  {
+    "win_rate_pct": 63.9,
+    "win_probability": 0.639,
+    "decimal_odds": 1.56,
+    "american_odds_exact": -177.0,
+    "american_odds_rounded": -175,
+    "min_acceptable_odds": "-175"
+  },
+  {
+    "win_rate_pct": 64.0,
+    "win_probability": 0.64,
+    "decimal_odds": 1.56,
+    "american_odds_exact": -177.8,
+    "american_odds_rounded": -180,
+    "min_acceptable_odds": "-180"
+  },
+  {
+    "win_rate_pct": 64.1,
+    "win_probability": 0.641,
+    "decimal_odds": 1.56,
+    "american_odds_exact": -178.6,
+    "american_odds_rounded": -180,
+    "min_acceptable_odds": "-180"
+  },
+  {
+    "win_rate_pct": 64.2,
+    "win_probability": 0.642,
+    "decimal_odds": 1.56,
+    "american_odds_exact": -179.3,
+    "american_odds_rounded": -180,
+    "min_acceptable_odds": "-180"
+  },
+  {
+    "win_rate_pct": 64.3,
+    "win_probability": 0.643,
+    "decimal_odds": 1.56,
+    "american_odds_exact": -180.1,
+    "american_odds_rounded": -180,
+    "min_acceptable_odds": "-180"
+  },
+  {
+    "win_rate_pct": 64.4,
+    "win_probability": 0.644,
+    "decimal_odds": 1.55,
+    "american_odds_exact": -180.9,
+    "american_odds_rounded": -180,
+    "min_acceptable_odds": "-180"
+  },
+  {
+    "win_rate_pct": 64.5,
+    "win_probability": 0.645,
+    "decimal_odds": 1.55,
+    "american_odds_exact": -181.7,
+    "american_odds_rounded": -180,
+    "min_acceptable_odds": "-180"
+  },
+  {
+    "win_rate_pct": 64.6,
+    "win_probability": 0.646,
+    "decimal_odds": 1.55,
+    "american_odds_exact": -182.5,
+    "american_odds_rounded": -180,
+    "min_acceptable_odds": "-180"
+  },
+  {
+    "win_rate_pct": 64.7,
+    "win_probability": 0.647,
+    "decimal_odds": 1.55,
+    "american_odds_exact": -183.3,
+    "american_odds_rounded": -185,
+    "min_acceptable_odds": "-185"
+  },
+  {
+    "win_rate_pct": 64.8,
+    "win_probability": 0.648,
+    "decimal_odds": 1.54,
+    "american_odds_exact": -184.1,
+    "american_odds_rounded": -185,
+    "min_acceptable_odds": "-185"
+  },
+  {
+    "win_rate_pct": 64.9,
+    "win_probability": 0.649,
+    "decimal_odds": 1.54,
+    "american_odds_exact": -184.9,
+    "american_odds_rounded": -185,
+    "min_acceptable_odds": "-185"
+  },
+  {
+    "win_rate_pct": 65.0,
+    "win_probability": 0.65,
+    "decimal_odds": 1.54,
+    "american_odds_exact": -185.7,
+    "american_odds_rounded": -185,
+    "min_acceptable_odds": "-185"
+  },
+  {
+    "win_rate_pct": 65.1,
+    "win_probability": 0.651,
+    "decimal_odds": 1.54,
+    "american_odds_exact": -186.5,
+    "american_odds_rounded": -185,
+    "min_acceptable_odds": "-185"
+  },
+  {
+    "win_rate_pct": 65.2,
+    "win_probability": 0.652,
+    "decimal_odds": 1.53,
+    "american_odds_exact": -187.4,
+    "american_odds_rounded": -185,
+    "min_acceptable_odds": "-185"
+  },
+  {
+    "win_rate_pct": 65.3,
+    "win_probability": 0.653,
+    "decimal_odds": 1.53,
+    "american_odds_exact": -188.2,
+    "american_odds_rounded": -190,
+    "min_acceptable_odds": "-190"
+  },
+  {
+    "win_rate_pct": 65.4,
+    "win_probability": 0.654,
+    "decimal_odds": 1.53,
+    "american_odds_exact": -189.0,
+    "american_odds_rounded": -190,
+    "min_acceptable_odds": "-190"
+  },
+  {
+    "win_rate_pct": 65.5,
+    "win_probability": 0.655,
+    "decimal_odds": 1.53,
+    "american_odds_exact": -189.9,
+    "american_odds_rounded": -190,
+    "min_acceptable_odds": "-190"
+  },
+  {
+    "win_rate_pct": 65.6,
+    "win_probability": 0.656,
+    "decimal_odds": 1.52,
+    "american_odds_exact": -190.7,
+    "american_odds_rounded": -190,
+    "min_acceptable_odds": "-190"
+  },
+  {
+    "win_rate_pct": 65.7,
+    "win_probability": 0.657,
+    "decimal_odds": 1.52,
+    "american_odds_exact": -191.5,
+    "american_odds_rounded": -190,
+    "min_acceptable_odds": "-190"
+  },
+  {
+    "win_rate_pct": 65.8,
+    "win_probability": 0.658,
+    "decimal_odds": 1.52,
+    "american_odds_exact": -192.4,
+    "american_odds_rounded": -190,
+    "min_acceptable_odds": "-190"
+  },
+  {
+    "win_rate_pct": 65.9,
+    "win_probability": 0.659,
+    "decimal_odds": 1.52,
+    "american_odds_exact": -193.3,
+    "american_odds_rounded": -195,
+    "min_acceptable_odds": "-195"
+  },
+  {
+    "win_rate_pct": 66.0,
+    "win_probability": 0.66,
+    "decimal_odds": 1.52,
+    "american_odds_exact": -194.1,
+    "american_odds_rounded": -195,
+    "min_acceptable_odds": "-195"
+  },
+  {
+    "win_rate_pct": 66.1,
+    "win_probability": 0.661,
+    "decimal_odds": 1.51,
+    "american_odds_exact": -195.0,
+    "american_odds_rounded": -195,
+    "min_acceptable_odds": "-195"
+  },
+  {
+    "win_rate_pct": 66.2,
+    "win_probability": 0.662,
+    "decimal_odds": 1.51,
+    "american_odds_exact": -195.9,
+    "american_odds_rounded": -195,
+    "min_acceptable_odds": "-195"
+  },
+  {
+    "win_rate_pct": 66.3,
+    "win_probability": 0.663,
+    "decimal_odds": 1.51,
+    "american_odds_exact": -196.7,
+    "american_odds_rounded": -195,
+    "min_acceptable_odds": "-195"
+  },
+  {
+    "win_rate_pct": 66.4,
+    "win_probability": 0.664,
+    "decimal_odds": 1.51,
+    "american_odds_exact": -197.6,
+    "american_odds_rounded": -200,
+    "min_acceptable_odds": "-200"
+  },
+  {
+    "win_rate_pct": 66.5,
+    "win_probability": 0.665,
+    "decimal_odds": 1.5,
+    "american_odds_exact": -198.5,
+    "american_odds_rounded": -200,
+    "min_acceptable_odds": "-200"
+  },
+  {
+    "win_rate_pct": 66.6,
+    "win_probability": 0.666,
+    "decimal_odds": 1.5,
+    "american_odds_exact": -199.4,
+    "american_odds_rounded": -200,
+    "min_acceptable_odds": "-200"
+  },
+  {
+    "win_rate_pct": 66.7,
+    "win_probability": 0.667,
+    "decimal_odds": 1.5,
+    "american_odds_exact": -200.3,
+    "american_odds_rounded": -200,
+    "min_acceptable_odds": "-200"
+  },
+  {
+    "win_rate_pct": 66.8,
+    "win_probability": 0.668,
+    "decimal_odds": 1.5,
+    "american_odds_exact": -201.2,
+    "american_odds_rounded": -200,
+    "min_acceptable_odds": "-200"
+  },
+  {
+    "win_rate_pct": 66.9,
+    "win_probability": 0.669,
+    "decimal_odds": 1.49,
+    "american_odds_exact": -202.1,
+    "american_odds_rounded": -200,
+    "min_acceptable_odds": "-200"
+  },
+  {
+    "win_rate_pct": 67.0,
+    "win_probability": 0.67,
+    "decimal_odds": 1.49,
+    "american_odds_exact": -203.0,
+    "american_odds_rounded": -205,
+    "min_acceptable_odds": "-205"
+  },
+  {
+    "win_rate_pct": 67.1,
+    "win_probability": 0.671,
+    "decimal_odds": 1.49,
+    "american_odds_exact": -204.0,
+    "american_odds_rounded": -205,
+    "min_acceptable_odds": "-205"
+  },
+  {
+    "win_rate_pct": 67.2,
+    "win_probability": 0.672,
+    "decimal_odds": 1.49,
+    "american_odds_exact": -204.9,
+    "american_odds_rounded": -205,
+    "min_acceptable_odds": "-205"
+  },
+  {
+    "win_rate_pct": 67.3,
+    "win_probability": 0.673,
+    "decimal_odds": 1.49,
+    "american_odds_exact": -205.8,
+    "american_odds_rounded": -205,
+    "min_acceptable_odds": "-205"
+  },
+  {
+    "win_rate_pct": 67.4,
+    "win_probability": 0.674,
+    "decimal_odds": 1.48,
+    "american_odds_exact": -206.7,
+    "american_odds_rounded": -205,
+    "min_acceptable_odds": "-205"
+  },
+  {
+    "win_rate_pct": 67.5,
+    "win_probability": 0.675,
+    "decimal_odds": 1.48,
+    "american_odds_exact": -207.7,
+    "american_odds_rounded": -210,
+    "min_acceptable_odds": "-210"
+  },
+  {
+    "win_rate_pct": 67.6,
+    "win_probability": 0.676,
+    "decimal_odds": 1.48,
+    "american_odds_exact": -208.6,
+    "american_odds_rounded": -210,
+    "min_acceptable_odds": "-210"
+  },
+  {
+    "win_rate_pct": 67.7,
+    "win_probability": 0.677,
+    "decimal_odds": 1.48,
+    "american_odds_exact": -209.6,
+    "american_odds_rounded": -210,
+    "min_acceptable_odds": "-210"
+  },
+  {
+    "win_rate_pct": 67.8,
+    "win_probability": 0.678,
+    "decimal_odds": 1.47,
+    "american_odds_exact": -210.6,
+    "american_odds_rounded": -210,
+    "min_acceptable_odds": "-210"
+  },
+  {
+    "win_rate_pct": 67.9,
+    "win_probability": 0.679,
+    "decimal_odds": 1.47,
+    "american_odds_exact": -211.5,
+    "american_odds_rounded": -210,
+    "min_acceptable_odds": "-210"
+  },
+  {
+    "win_rate_pct": 68.0,
+    "win_probability": 0.68,
+    "decimal_odds": 1.47,
+    "american_odds_exact": -212.5,
+    "american_odds_rounded": -210,
+    "min_acceptable_odds": "-210"
+  },
+  {
+    "win_rate_pct": 68.1,
+    "win_probability": 0.681,
+    "decimal_odds": 1.47,
+    "american_odds_exact": -213.5,
+    "american_odds_rounded": -215,
+    "min_acceptable_odds": "-215"
+  },
+  {
+    "win_rate_pct": 68.2,
+    "win_probability": 0.682,
+    "decimal_odds": 1.47,
+    "american_odds_exact": -214.5,
+    "american_odds_rounded": -215,
+    "min_acceptable_odds": "-215"
+  },
+  {
+    "win_rate_pct": 68.3,
+    "win_probability": 0.683,
+    "decimal_odds": 1.46,
+    "american_odds_exact": -215.5,
+    "american_odds_rounded": -215,
+    "min_acceptable_odds": "-215"
+  },
+  {
+    "win_rate_pct": 68.4,
+    "win_probability": 0.684,
+    "decimal_odds": 1.46,
+    "american_odds_exact": -216.5,
+    "american_odds_rounded": -215,
+    "min_acceptable_odds": "-215"
+  },
+  {
+    "win_rate_pct": 68.5,
+    "win_probability": 0.685,
+    "decimal_odds": 1.46,
+    "american_odds_exact": -217.5,
+    "american_odds_rounded": -215,
+    "min_acceptable_odds": "-215"
+  },
+  {
+    "win_rate_pct": 68.6,
+    "win_probability": 0.686,
+    "decimal_odds": 1.46,
+    "american_odds_exact": -218.5,
+    "american_odds_rounded": -220,
+    "min_acceptable_odds": "-220"
+  },
+  {
+    "win_rate_pct": 68.7,
+    "win_probability": 0.687,
+    "decimal_odds": 1.46,
+    "american_odds_exact": -219.5,
+    "american_odds_rounded": -220,
+    "min_acceptable_odds": "-220"
+  },
+  {
+    "win_rate_pct": 68.8,
+    "win_probability": 0.688,
+    "decimal_odds": 1.45,
+    "american_odds_exact": -220.5,
+    "american_odds_rounded": -220,
+    "min_acceptable_odds": "-220"
+  },
+  {
+    "win_rate_pct": 68.9,
+    "win_probability": 0.689,
+    "decimal_odds": 1.45,
+    "american_odds_exact": -221.5,
+    "american_odds_rounded": -220,
+    "min_acceptable_odds": "-220"
+  },
+  {
+    "win_rate_pct": 69.0,
+    "win_probability": 0.69,
+    "decimal_odds": 1.45,
+    "american_odds_exact": -222.6,
+    "american_odds_rounded": -225,
+    "min_acceptable_odds": "-225"
+  },
+  {
+    "win_rate_pct": 69.1,
+    "win_probability": 0.691,
+    "decimal_odds": 1.45,
+    "american_odds_exact": -223.6,
+    "american_odds_rounded": -225,
+    "min_acceptable_odds": "-225"
+  },
+  {
+    "win_rate_pct": 69.2,
+    "win_probability": 0.692,
+    "decimal_odds": 1.45,
+    "american_odds_exact": -224.7,
+    "american_odds_rounded": -225,
+    "min_acceptable_odds": "-225"
+  },
+  {
+    "win_rate_pct": 69.3,
+    "win_probability": 0.693,
+    "decimal_odds": 1.44,
+    "american_odds_exact": -225.7,
+    "american_odds_rounded": -225,
+    "min_acceptable_odds": "-225"
+  },
+  {
+    "win_rate_pct": 69.4,
+    "win_probability": 0.694,
+    "decimal_odds": 1.44,
+    "american_odds_exact": -226.8,
+    "american_odds_rounded": -225,
+    "min_acceptable_odds": "-225"
+  },
+  {
+    "win_rate_pct": 69.5,
+    "win_probability": 0.695,
+    "decimal_odds": 1.44,
+    "american_odds_exact": -227.9,
+    "american_odds_rounded": -230,
+    "min_acceptable_odds": "-230"
+  },
+  {
+    "win_rate_pct": 69.6,
+    "win_probability": 0.696,
+    "decimal_odds": 1.44,
+    "american_odds_exact": -228.9,
+    "american_odds_rounded": -230,
+    "min_acceptable_odds": "-230"
+  },
+  {
+    "win_rate_pct": 69.7,
+    "win_probability": 0.697,
+    "decimal_odds": 1.43,
+    "american_odds_exact": -230.0,
+    "american_odds_rounded": -230,
+    "min_acceptable_odds": "-230"
+  },
+  {
+    "win_rate_pct": 69.8,
+    "win_probability": 0.698,
+    "decimal_odds": 1.43,
+    "american_odds_exact": -231.1,
+    "american_odds_rounded": -230,
+    "min_acceptable_odds": "-230"
+  },
+  {
+    "win_rate_pct": 69.9,
+    "win_probability": 0.699,
+    "decimal_odds": 1.43,
+    "american_odds_exact": -232.2,
+    "american_odds_rounded": -230,
+    "min_acceptable_odds": "-230"
+  },
+  {
+    "win_rate_pct": 70.0,
+    "win_probability": 0.7,
+    "decimal_odds": 1.43,
+    "american_odds_exact": -233.3,
+    "american_odds_rounded": -235,
+    "min_acceptable_odds": "-235"
+  },
+  {
+    "win_rate_pct": 70.1,
+    "win_probability": 0.701,
+    "decimal_odds": 1.43,
+    "american_odds_exact": -234.4,
+    "american_odds_rounded": -235,
+    "min_acceptable_odds": "-235"
+  },
+  {
+    "win_rate_pct": 70.2,
+    "win_probability": 0.702,
+    "decimal_odds": 1.42,
+    "american_odds_exact": -235.6,
+    "american_odds_rounded": -235,
+    "min_acceptable_odds": "-235"
+  },
+  {
+    "win_rate_pct": 70.3,
+    "win_probability": 0.703,
+    "decimal_odds": 1.42,
+    "american_odds_exact": -236.7,
+    "american_odds_rounded": -235,
+    "min_acceptable_odds": "-235"
+  },
+  {
+    "win_rate_pct": 70.4,
+    "win_probability": 0.704,
+    "decimal_odds": 1.42,
+    "american_odds_exact": -237.8,
+    "american_odds_rounded": -240,
+    "min_acceptable_odds": "-240"
+  },
+  {
+    "win_rate_pct": 70.5,
+    "win_probability": 0.705,
+    "decimal_odds": 1.42,
+    "american_odds_exact": -239.0,
+    "american_odds_rounded": -240,
+    "min_acceptable_odds": "-240"
+  },
+  {
+    "win_rate_pct": 70.6,
+    "win_probability": 0.706,
+    "decimal_odds": 1.42,
+    "american_odds_exact": -240.1,
+    "american_odds_rounded": -240,
+    "min_acceptable_odds": "-240"
+  },
+  {
+    "win_rate_pct": 70.7,
+    "win_probability": 0.707,
+    "decimal_odds": 1.41,
+    "american_odds_exact": -241.3,
+    "american_odds_rounded": -240,
+    "min_acceptable_odds": "-240"
+  },
+  {
+    "win_rate_pct": 70.8,
+    "win_probability": 0.708,
+    "decimal_odds": 1.41,
+    "american_odds_exact": -242.5,
+    "american_odds_rounded": -240,
+    "min_acceptable_odds": "-240"
+  },
+  {
+    "win_rate_pct": 70.9,
+    "win_probability": 0.709,
+    "decimal_odds": 1.41,
+    "american_odds_exact": -243.6,
+    "american_odds_rounded": -245,
+    "min_acceptable_odds": "-245"
+  },
+  {
+    "win_rate_pct": 71.0,
+    "win_probability": 0.71,
+    "decimal_odds": 1.41,
+    "american_odds_exact": -244.8,
+    "american_odds_rounded": -245,
+    "min_acceptable_odds": "-245"
+  },
+  {
+    "win_rate_pct": 71.1,
+    "win_probability": 0.711,
+    "decimal_odds": 1.41,
+    "american_odds_exact": -246.0,
+    "american_odds_rounded": -245,
+    "min_acceptable_odds": "-245"
+  },
+  {
+    "win_rate_pct": 71.2,
+    "win_probability": 0.712,
+    "decimal_odds": 1.4,
+    "american_odds_exact": -247.2,
+    "american_odds_rounded": -245,
+    "min_acceptable_odds": "-245"
+  },
+  {
+    "win_rate_pct": 71.3,
+    "win_probability": 0.713,
+    "decimal_odds": 1.4,
+    "american_odds_exact": -248.4,
+    "american_odds_rounded": -250,
+    "min_acceptable_odds": "-250"
+  },
+  {
+    "win_rate_pct": 71.4,
+    "win_probability": 0.714,
+    "decimal_odds": 1.4,
+    "american_odds_exact": -249.7,
+    "american_odds_rounded": -250,
+    "min_acceptable_odds": "-250"
+  },
+  {
+    "win_rate_pct": 71.5,
+    "win_probability": 0.715,
+    "decimal_odds": 1.4,
+    "american_odds_exact": -250.9,
+    "american_odds_rounded": -250,
+    "min_acceptable_odds": "-250"
+  },
+  {
+    "win_rate_pct": 71.6,
+    "win_probability": 0.716,
+    "decimal_odds": 1.4,
+    "american_odds_exact": -252.1,
+    "american_odds_rounded": -250,
+    "min_acceptable_odds": "-250"
+  },
+  {
+    "win_rate_pct": 71.7,
+    "win_probability": 0.717,
+    "decimal_odds": 1.39,
+    "american_odds_exact": -253.4,
+    "american_odds_rounded": -255,
+    "min_acceptable_odds": "-255"
+  },
+  {
+    "win_rate_pct": 71.8,
+    "win_probability": 0.718,
+    "decimal_odds": 1.39,
+    "american_odds_exact": -254.6,
+    "american_odds_rounded": -255,
+    "min_acceptable_odds": "-255"
+  },
+  {
+    "win_rate_pct": 71.9,
+    "win_probability": 0.719,
+    "decimal_odds": 1.39,
+    "american_odds_exact": -255.9,
+    "american_odds_rounded": -255,
+    "min_acceptable_odds": "-255"
+  },
+  {
+    "win_rate_pct": 72.0,
+    "win_probability": 0.72,
+    "decimal_odds": 1.39,
+    "american_odds_exact": -257.1,
+    "american_odds_rounded": -255,
+    "min_acceptable_odds": "-255"
+  },
+  {
+    "win_rate_pct": 72.1,
+    "win_probability": 0.721,
+    "decimal_odds": 1.39,
+    "american_odds_exact": -258.4,
+    "american_odds_rounded": -260,
+    "min_acceptable_odds": "-260"
+  },
+  {
+    "win_rate_pct": 72.2,
+    "win_probability": 0.722,
+    "decimal_odds": 1.39,
+    "american_odds_exact": -259.7,
+    "american_odds_rounded": -260,
+    "min_acceptable_odds": "-260"
+  },
+  {
+    "win_rate_pct": 72.3,
+    "win_probability": 0.723,
+    "decimal_odds": 1.38,
+    "american_odds_exact": -261.0,
+    "american_odds_rounded": -260,
+    "min_acceptable_odds": "-260"
+  },
+  {
+    "win_rate_pct": 72.4,
+    "win_probability": 0.724,
+    "decimal_odds": 1.38,
+    "american_odds_exact": -262.3,
+    "american_odds_rounded": -260,
+    "min_acceptable_odds": "-260"
+  },
+  {
+    "win_rate_pct": 72.5,
+    "win_probability": 0.725,
+    "decimal_odds": 1.38,
+    "american_odds_exact": -263.6,
+    "american_odds_rounded": -265,
+    "min_acceptable_odds": "-265"
+  },
+  {
+    "win_rate_pct": 72.6,
+    "win_probability": 0.726,
+    "decimal_odds": 1.38,
+    "american_odds_exact": -265.0,
+    "american_odds_rounded": -265,
+    "min_acceptable_odds": "-265"
+  },
+  {
+    "win_rate_pct": 72.7,
+    "win_probability": 0.727,
+    "decimal_odds": 1.38,
+    "american_odds_exact": -266.3,
+    "american_odds_rounded": -265,
+    "min_acceptable_odds": "-265"
+  },
+  {
+    "win_rate_pct": 72.8,
+    "win_probability": 0.728,
+    "decimal_odds": 1.37,
+    "american_odds_exact": -267.6,
+    "american_odds_rounded": -270,
+    "min_acceptable_odds": "-270"
+  },
+  {
+    "win_rate_pct": 72.9,
+    "win_probability": 0.729,
+    "decimal_odds": 1.37,
+    "american_odds_exact": -269.0,
+    "american_odds_rounded": -270,
+    "min_acceptable_odds": "-270"
+  },
+  {
+    "win_rate_pct": 73.0,
+    "win_probability": 0.73,
+    "decimal_odds": 1.37,
+    "american_odds_exact": -270.4,
+    "american_odds_rounded": -270,
+    "min_acceptable_odds": "-270"
+  },
+  {
+    "win_rate_pct": 73.1,
+    "win_probability": 0.731,
+    "decimal_odds": 1.37,
+    "american_odds_exact": -271.7,
+    "american_odds_rounded": -270,
+    "min_acceptable_odds": "-270"
+  },
+  {
+    "win_rate_pct": 73.2,
+    "win_probability": 0.732,
+    "decimal_odds": 1.37,
+    "american_odds_exact": -273.1,
+    "american_odds_rounded": -275,
+    "min_acceptable_odds": "-275"
+  },
+  {
+    "win_rate_pct": 73.3,
+    "win_probability": 0.733,
+    "decimal_odds": 1.36,
+    "american_odds_exact": -274.5,
+    "american_odds_rounded": -275,
+    "min_acceptable_odds": "-275"
+  },
+  {
+    "win_rate_pct": 73.4,
+    "win_probability": 0.734,
+    "decimal_odds": 1.36,
+    "american_odds_exact": -275.9,
+    "american_odds_rounded": -275,
+    "min_acceptable_odds": "-275"
+  },
+  {
+    "win_rate_pct": 73.5,
+    "win_probability": 0.735,
+    "decimal_odds": 1.36,
+    "american_odds_exact": -277.4,
+    "american_odds_rounded": -275,
+    "min_acceptable_odds": "-275"
+  },
+  {
+    "win_rate_pct": 73.6,
+    "win_probability": 0.736,
+    "decimal_odds": 1.36,
+    "american_odds_exact": -278.8,
+    "american_odds_rounded": -280,
+    "min_acceptable_odds": "-280"
+  },
+  {
+    "win_rate_pct": 73.7,
+    "win_probability": 0.737,
+    "decimal_odds": 1.36,
+    "american_odds_exact": -280.2,
+    "american_odds_rounded": -280,
+    "min_acceptable_odds": "-280"
+  },
+  {
+    "win_rate_pct": 73.8,
+    "win_probability": 0.738,
+    "decimal_odds": 1.36,
+    "american_odds_exact": -281.7,
+    "american_odds_rounded": -280,
+    "min_acceptable_odds": "-280"
+  },
+  {
+    "win_rate_pct": 73.9,
+    "win_probability": 0.739,
+    "decimal_odds": 1.35,
+    "american_odds_exact": -283.1,
+    "american_odds_rounded": -285,
+    "min_acceptable_odds": "-285"
+  },
+  {
+    "win_rate_pct": 74.0,
+    "win_probability": 0.74,
+    "decimal_odds": 1.35,
+    "american_odds_exact": -284.6,
+    "american_odds_rounded": -285,
+    "min_acceptable_odds": "-285"
+  },
+  {
+    "win_rate_pct": 74.1,
+    "win_probability": 0.741,
+    "decimal_odds": 1.35,
+    "american_odds_exact": -286.1,
+    "american_odds_rounded": -285,
+    "min_acceptable_odds": "-285"
+  },
+  {
+    "win_rate_pct": 74.2,
+    "win_probability": 0.742,
+    "decimal_odds": 1.35,
+    "american_odds_exact": -287.6,
+    "american_odds_rounded": -290,
+    "min_acceptable_odds": "-290"
+  },
+  {
+    "win_rate_pct": 74.3,
+    "win_probability": 0.743,
+    "decimal_odds": 1.35,
+    "american_odds_exact": -289.1,
+    "american_odds_rounded": -290,
+    "min_acceptable_odds": "-290"
+  },
+  {
+    "win_rate_pct": 74.4,
+    "win_probability": 0.744,
+    "decimal_odds": 1.34,
+    "american_odds_exact": -290.6,
+    "american_odds_rounded": -290,
+    "min_acceptable_odds": "-290"
+  },
+  {
+    "win_rate_pct": 74.5,
+    "win_probability": 0.745,
+    "decimal_odds": 1.34,
+    "american_odds_exact": -292.2,
+    "american_odds_rounded": -290,
+    "min_acceptable_odds": "-290"
+  },
+  {
+    "win_rate_pct": 74.6,
+    "win_probability": 0.746,
+    "decimal_odds": 1.34,
+    "american_odds_exact": -293.7,
+    "american_odds_rounded": -295,
+    "min_acceptable_odds": "-295"
+  },
+  {
+    "win_rate_pct": 74.7,
+    "win_probability": 0.747,
+    "decimal_odds": 1.34,
+    "american_odds_exact": -295.3,
+    "american_odds_rounded": -295,
+    "min_acceptable_odds": "-295"
+  },
+  {
+    "win_rate_pct": 74.8,
+    "win_probability": 0.748,
+    "decimal_odds": 1.34,
+    "american_odds_exact": -296.8,
+    "american_odds_rounded": -295,
+    "min_acceptable_odds": "-295"
+  },
+  {
+    "win_rate_pct": 74.9,
+    "win_probability": 0.749,
+    "decimal_odds": 1.34,
+    "american_odds_exact": -298.4,
+    "american_odds_rounded": -300,
+    "min_acceptable_odds": "-300"
+  },
+  {
+    "win_rate_pct": 75.0,
+    "win_probability": 0.75,
+    "decimal_odds": 1.33,
+    "american_odds_exact": -300.0,
+    "american_odds_rounded": -300,
+    "min_acceptable_odds": "-300"
+  }
+]

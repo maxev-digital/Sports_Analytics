@@ -1,0 +1,190 @@
+
+================================================================================
+TeamRankings.com Stat URL Discovery
+================================================================================
+
+================================================================================
+Discovering NBA Stats
+================================================================================
+
+[1/20] Testing: points-per-game... [OK] FOUND (30 teams, sample: 124.7)
+[2/20] Testing: opponent-points-per-game... [OK] FOUND (30 teams, sample: 109.3)
+[3/20] Testing: average-scoring-margin... [OK] FOUND (30 teams, sample: +13.0)
+[4/20] Testing: pace... [!] NO_TABLE
+[5/20] Testing: possessions-per-game... [OK] FOUND (30 teams, sample: 108.2)
+[6/20] Testing: offensive-rebounds-per-game... [OK] FOUND (30 teams, sample: 15.3)
+[7/20] Testing: defensive-rebounds-per-game... [OK] FOUND (30 teams, sample: 36.6)
+[8/20] Testing: rebounds-per-game... [!] NO_TABLE
+[9/20] Testing: assists-per-game... [OK] FOUND (30 teams, sample: 30.5)
+[10/20] Testing: turnovers-per-game... [OK] FOUND (30 teams, sample: 10.2)
+[11/20] Testing: steals-per-game... [OK] FOUND (30 teams, sample: 11.6)
+[12/20] Testing: blocks-per-game... [OK] FOUND (30 teams, sample: 7.3)
+[13/20] Testing: field-goal-percentage... [!] NO_TABLE
+[14/20] Testing: three-point-percentage... [!] NO_TABLE
+[15/20] Testing: free-throw-percentage... [!] NO_TABLE
+[16/20] Testing: effective-field-goal-percentage... [!] NO_TABLE
+[17/20] Testing: true-shooting-percentage... [OK] FOUND (30 teams, sample: 123.9%)
+[18/20] Testing: personal-fouls-per-game... [OK] FOUND (30 teams, sample: 19.3)
+[19/20] Testing: fast-break-points-per-game... [!] NO_TABLE
+[20/20] Testing: points-in-paint-per-game... [OK] FOUND (30 teams, sample: 58.3)
+
+--------------------------------------------------------------------------------
+Summary for NBA:
+  [OK] Found: 13/20
+  [X] Not Found: 0
+  [!] Errors: 7
+--------------------------------------------------------------------------------
+
+[OK] Available Stats:
+  - points-per-game
+  - opponent-points-per-game
+  - average-scoring-margin
+  - possessions-per-game
+  - offensive-rebounds-per-game
+  - defensive-rebounds-per-game
+  - assists-per-game
+  - turnovers-per-game
+  - steals-per-game
+  - blocks-per-game
+  - true-shooting-percentage
+  - personal-fouls-per-game
+  - points-in-paint-per-game
+
+================================================================================
+Discovering NFL Stats
+================================================================================
+
+[1/21] Testing: points-per-game... [OK] FOUND (32 teams, sample: 32.2)
+[2/21] Testing: opponent-points-per-game... [OK] FOUND (32 teams, sample: 15.1)
+[3/21] Testing: average-scoring-margin... [OK] FOUND (32 teams, sample: +12.1)
+[4/21] Testing: yards-per-game... [OK] FOUND (32 teams, sample: 385.5)
+[5/21] Testing: opponent-yards-per-game... [OK] FOUND (32 teams, sample: 267.4)
+[6/21] Testing: third-down-conversion-pct... [OK] FOUND (32 teams, sample: 49.21%)
+[7/21] Testing: opponent-third-down-conversion-pct... [OK] FOUND (32 teams, sample: 28.06%)
+[8/21] Testing: red-zone-scoring-pct... [OK] FOUND (32 teams, sample: 85.00%)
+[9/21] Testing: opponent-red-zone-scoring-pct... [OK] FOUND (32 teams, sample: 37.50%)
+[10/21] Testing: sacks-per-game... [OK] FOUND (32 teams, sample: 4.6)
+[11/21] Testing: opponent-sacks-per-game... [!] NO_TABLE
+[12/21] Testing: time-of-possession... [!] NO_TABLE
+[13/21] Testing: passing-yards-per-game... [OK] FOUND (32 teams, sample: 258.0)
+[14/21] Testing: rushing-yards-per-game... [OK] FOUND (32 teams, sample: 161.5)
+[15/21] Testing: opponent-passing-yards-per-game... [OK] FOUND (32 teams, sample: 158.1)
+[16/21] Testing: opponent-rushing-yards-per-game... [OK] FOUND (32 teams, sample: 75.4)
+[17/21] Testing: penalties-per-game... [OK] FOUND (32 teams, sample: 5.1)
+[18/21] Testing: takeaways-per-game... [OK] FOUND (32 teams, sample: 2.4)
+[19/21] Testing: turnovers-lost-per-game... [!] NO_TABLE
+[20/21] Testing: turnover-margin... [!] NO_TABLE
+[21/21] Testing: first-downs-per-game... [OK] FOUND (32 teams, sample: 23.6)
+
+--------------------------------------------------------------------------------
+Summary for NFL:
+  [OK] Found: 17/21
+  [X] Not Found: 0
+  [!] Errors: 4
+--------------------------------------------------------------------------------
+
+[OK] Available Stats:
+  - points-per-game
+  - opponent-points-per-game
+  - average-scoring-margin
+  - yards-per-game
+  - opponent-yards-per-game
+  - third-down-conversion-pct
+  - opponent-third-down-conversion-pct
+  - red-zone-scoring-pct
+  - opponent-red-zone-scoring-pct
+  - sacks-per-game
+  - passing-yards-per-game
+  - rushing-yards-per-game
+  - opponent-passing-yards-per-game
+  - opponent-rushing-yards-per-game
+  - penalties-per-game
+  - takeaways-per-game
+  - first-downs-per-game
+
+================================================================================
+Discovering COLLEGE-FOOTBALL Stats
+================================================================================
+
+[1/13] Testing: points-per-game... [OK] FOUND (136 teams, sample: 43.6)
+[2/13] Testing: opponent-points-per-game... [OK] FOUND (136 teams, sample: 7.9)
+[3/13] Testing: average-scoring-margin... [OK] FOUND (136 teams, sample: +31.0)
+[4/13] Testing: yards-per-game... [OK] FOUND (136 teams, sample: 505.9)
+[5/13] Testing: opponent-yards-per-game... [OK] FOUND (136 teams, sample: 221.7)
+[6/13] Testing: third-down-conversion-pct... [OK] FOUND (136 teams, sample: 56.86%)
+[7/13] Testing: red-zone-scoring-pct... [OK] FOUND (136 teams, sample: 100.00%)
+[8/13] Testing: sacks-per-game... [OK] FOUND (136 teams, sample: 4.0)
+[9/13] Testing: time-of-possession... [!] NO_TABLE
+[10/13] Testing: passing-yards-per-game... [OK] FOUND (136 teams, sample: 348.7)
+[11/13] Testing: rushing-yards-per-game... [OK] FOUND (136 teams, sample: 296.3)
+[12/13] Testing: turnovers-per-game... [!] NO_TABLE
+[13/13] Testing: takeaways-per-game... [OK] FOUND (136 teams, sample: 2.4)
+
+--------------------------------------------------------------------------------
+Summary for COLLEGE-FOOTBALL:
+  [OK] Found: 11/13
+  [X] Not Found: 0
+  [!] Errors: 2
+--------------------------------------------------------------------------------
+
+[OK] Available Stats:
+  - points-per-game
+  - opponent-points-per-game
+  - average-scoring-margin
+  - yards-per-game
+  - opponent-yards-per-game
+  - third-down-conversion-pct
+  - red-zone-scoring-pct
+  - sacks-per-game
+  - passing-yards-per-game
+  - rushing-yards-per-game
+  - takeaways-per-game
+
+================================================================================
+Discovering MLB Stats
+================================================================================
+
+[1/14] Testing: runs-per-game... [OK] FOUND (30 teams, sample: 5.19)
+[2/14] Testing: opponent-runs-per-game... [OK] FOUND (30 teams, sample: 3.73)
+[3/14] Testing: average-run-differential... [!] NO_TABLE
+[4/14] Testing: batting-average... [OK] FOUND (30 teams, sample: 0.267)
+[5/14] Testing: earned-run-average... [OK] FOUND (30 teams, sample: 3.49)
+[6/14] Testing: home-runs-per-game... [OK] FOUND (30 teams, sample: 1.66)
+[7/14] Testing: strikeouts-per-game... [OK] FOUND (30 teams, sample: 6.77)
+[8/14] Testing: walks-per-game... [OK] FOUND (30 teams, sample: 3.90)
+[9/14] Testing: on-base-percentage... [!] NO_TABLE
+[10/14] Testing: slugging-percentage... [!] NO_TABLE
+[11/14] Testing: ops... [!] NO_TABLE
+[12/14] Testing: whip... [!] NO_TABLE
+[13/14] Testing: hits-per-game... [OK] FOUND (30 teams, sample: 9.15)
+[14/14] Testing: errors-per-game... [OK] FOUND (30 teams, sample: 0.32)
+
+--------------------------------------------------------------------------------
+Summary for MLB:
+  [OK] Found: 9/14
+  [X] Not Found: 0
+  [!] Errors: 5
+--------------------------------------------------------------------------------
+
+[OK] Available Stats:
+  - runs-per-game
+  - opponent-runs-per-game
+  - batting-average
+  - earned-run-average
+  - home-runs-per-game
+  - strikeouts-per-game
+  - walks-per-game
+  - hits-per-game
+  - errors-per-game
+
+================================================================================
+FINAL SUMMARY
+================================================================================
+NBA: 13 stats available
+NFL: 17 stats available
+NCAAF: 11 stats available
+MLB: 9 stats available
+
+Total: 50 stats
+================================================================================
+
