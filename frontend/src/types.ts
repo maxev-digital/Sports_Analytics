@@ -273,6 +273,71 @@ export interface MLBTeamStats {
   saves_rank?: number | null;
 }
 
+export interface StrategyAlert {
+  strategy_id: string;  // 'quarter_reversal', 'favorite_comeback', 'halftime_tracker', etc.
+  strategy_name: string;  // 'NBA Quarter Reversal', 'Favorite Comeback', etc.
+  confidence: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  trigger: string;  // Why the alert fired: "Q2 hot start reversal detected"
+  recommendation: string;  // "Bet UNDER 2H total", "Fade favorite", etc.
+  edge_percentage: number;  // Expected edge: 8.5%
+  expected_roi: number;  // Expected ROI: 12.1%
+  win_probability: number;  // Historical win rate: 58.3%
+  stake_recommendation: number;  // Kelly-sized units: 1.5 units
+  bet_options?: BetOption[];  // Multiple bet options with odds
+  reasoning?: string;  // Detailed explanation
+  urgency?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';  // How urgent
+  expires_in?: number;  // Seconds until alert expires
+  sound_alert?: boolean;  // Play audio alert?
+  timestamp: string;  // When alert was generated
+}
+
+export interface BetOption {
+  label: string;  // "Under 2H 110.5"
+  market_type: string;  // "totals", "spread", "moneyline"
+  bet_side: string;  // "UNDER", "OVER", "HOME", "AWAY"
+  line?: number;  // 110.5
+  odds: number;  // -110
+  bookmaker: string;  // "draftkings"
+  bookmaker_title?: string;  // "DraftKings"
+  probability: number;  // 0.583
+  expected_value: number;  // 0.089 (8.9%)
+  kelly_size?: number;  // 1.5 units
+  alt_bookmakers?: Array<{
+    bookmaker: string;
+    bookmaker_title?: string;
+    odds: number;
+  }>;
+}
+
+// Generic Advanced Analytics (from custom models) - Used for all sports
+export interface AdvancedAnalytics {
+  // Top 5 Must-Have Metrics (Always Visible)
+  direction: 'OVER' | 'UNDER';  // Bet direction
+  line: number;  // Current total line (e.g., 164.5)
+  z_score: number;  // Statistical deviation (e.g., 2.2)
+  edge_points: number;  // Edge in points (e.g., 8.3)
+  model_prediction: number;  // Model's predicted total (e.g., 156.2)
+  live_total: number;  // Current live total (e.g., 164.5)
+  kelly_percentage: number;  // Kelly criterion bankroll % (e.g., 3.2)
+  confidence: number;  // Confidence percentage (e.g., 78)
+
+  // Secondary Metrics (Below fold or on hover)
+  pregame_total?: number;  // Opening line
+  line_movement?: number;  // Change from open to current
+  standard_deviation?: number;  // Uncertainty metric
+  home_tempo?: number;  // Possessions per game (basketball) or pace (other sports)
+  away_tempo?: number;  // Possessions per game (basketball) or pace (other sports)
+  home_offensive_efficiency?: number;  // Points per 100 possessions
+  away_offensive_efficiency?: number;  // Points per 100 possessions
+  home_defensive_efficiency?: number;  // Points allowed per 100 possessions
+  away_defensive_efficiency?: number;  // Points allowed per 100 possessions
+  time_remaining?: string;  // "12:34" format
+  deviation_description?: string;  // Human-readable explanation
+}
+
+// NCAAB Advanced Analytics (alias for backwards compatibility)
+export type NCAABAnalytics = AdvancedAnalytics;
+
 export interface LiveGame {
   state: GameState;
   odds: GameOdds[];
@@ -297,6 +362,13 @@ export interface LiveGame {
   home_mlb_stats: MLBTeamStats | null;
   away_mlb_stats: MLBTeamStats | null;
   player_props_count?: number | null;
+  strategy_alerts?: StrategyAlert[];  // NEW: Strategy alerts for this game
+  ncaab_analytics?: NCAABAnalytics | null;  // NCAAB custom analytics from our models
+  nba_analytics?: AdvancedAnalytics | null;  // NBA custom analytics
+  nfl_analytics?: AdvancedAnalytics | null;  // NFL custom analytics
+  ncaaf_analytics?: AdvancedAnalytics | null;  // NCAAF custom analytics
+  mlb_analytics?: AdvancedAnalytics | null;  // MLB custom analytics
+  nhl_analytics?: AdvancedAnalytics | null;  // NHL custom analytics
 }
 
 export interface AlternateMarketLine {
@@ -309,4 +381,26 @@ export interface AlternateMarketLine {
   away_spread?: number | null;
   home_spread_price?: number | null;
   away_spread_price?: number | null;
+}
+
+export interface AdvancedSystem {
+  id: number;
+  name: string;
+  status: 'live' | 'active' | 'proven' | 'pending';
+  description: string;
+  sports: string[];  // ['basketball_nba', 'icehockey_nhl'] or ['multi-sport']
+  difficulty: 'EASY' | 'MEDIUM' | 'HARD';
+  evRange: {
+    min: number;
+    max: number;
+  };
+  performance?: {
+    winRate?: number;
+    roi?: number;
+    alerts?: number;
+    games?: number;
+  };
+  backend?: string;
+  apiEndpoint?: string;
+  strategyId?: number;
 }
