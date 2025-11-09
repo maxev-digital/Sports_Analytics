@@ -46,6 +46,25 @@ async def generate_prediction_for_game(game, model_name, bet_type):
     try:
         sport = game['state']['sport_key'].replace('basketball_', '').replace('football_', '').replace('hockey_', '')
 
+        # Determine if game is pregame or live
+        game_time_str = game['state']['commence_time']
+        try:
+            # Parse game time and compare to current time
+            if game_time_str.endswith('Z'):
+                game_time_dt = datetime.fromisoformat(game_time_str.replace('Z', '+00:00'))
+            else:
+                game_time_dt = datetime.fromisoformat(game_time_str)
+
+            # Make current time timezone-aware
+            from datetime import timezone
+            current_time = datetime.now(timezone.utc)
+
+            # Game is pregame if commence_time is in the future
+            is_pregame = current_time < game_time_dt
+        except Exception as e:
+            logger.warning(f"Could not parse game time {game_time_str}: {e}")
+            is_pregame = True  # Default to pregame if parsing fails
+
         # Get the appropriate market line
         market_line = None
         if bet_type == "totals":
@@ -119,6 +138,8 @@ async def generate_prediction_for_game(game, model_name, bet_type):
             "kelly_fraction": float(kelly_fraction),
             "suggested_bet_size": f"{kelly_fraction*100:.1f}% of bankroll",
             "probability": float(prediction) if bet_type == "moneyline" else 0.5 + float(edge)/10,
+            "is_pregame": is_pregame,
+            "projection_type": "pregame" if is_pregame else "live",
             "features_used": {},
             "model_performance": metadata.get('training_stats', {}).get(model_name, {}),
             "consensus": {
@@ -137,7 +158,8 @@ async def get_best_plays(
     sport: Optional[str] = None,
     min_edge: float = 2.0,
     min_confidence: float = 0.60,
-    limit: int = 50
+    limit: int = 50,
+    projection_type: Optional[str] = "pregame"
 ):
     """
     Get best betting plays across all models and sports
@@ -147,6 +169,10 @@ async def get_best_plays(
         min_edge: Minimum edge in points/probability (default 2.0)
         min_confidence: Minimum model confidence (default 0.60)
         limit: Maximum number of plays to return (default 50)
+        projection_type: Filter by projection type - 'pregame', 'live', or 'all' (default 'pregame')
+                        - 'pregame': Only games that haven't started yet
+                        - 'live': Only games currently in progress
+                        - 'all': Both pregame and live games
 
     Returns:
         List of best plays sorted by edge * confidence score
@@ -178,6 +204,8 @@ async def get_best_plays(
                 "kelly_fraction": 0.042,
                 "suggested_bet_size": "4.2% of bankroll",
                 "probability": 0.651,
+                "is_pregame": True,
+                "projection_type": "pregame",
                 "features_used": {
                     "home_pace": 100.5,
                     "away_pace": 98.3,
@@ -218,6 +246,8 @@ async def get_best_plays(
                 "kelly_fraction": 0.031,
                 "suggested_bet_size": "3.1% of bankroll",
                 "probability": 0.623,
+                "is_pregame": True,
+                "projection_type": "pregame",
                 "features_used": {
                     "home_pace": 102.1,
                     "away_pace": 99.8,
@@ -259,6 +289,8 @@ async def get_best_plays(
                 "suggested_bet_size": "2.5% of bankroll",
                 "probability": 0.72,
                 "implied_probability": 0.642,
+                "is_pregame": True,
+                "projection_type": "pregame",
                 "features_used": {
                     "home_win_pct": 0.688,
                     "away_win_pct": 0.531,
@@ -297,6 +329,8 @@ async def get_best_plays(
                 "kelly_fraction": 0.048,
                 "suggested_bet_size": "4.8% of bankroll",
                 "probability": 0.672,
+                "is_pregame": True,
+                "projection_type": "pregame",
                 "features_used": {
                     "home_adj_tempo": 72.5,
                     "away_adj_tempo": 70.1,
@@ -322,6 +356,10 @@ async def get_best_plays(
             if sport:
                 mock_plays = [p for p in mock_plays if p['sport'].lower() == sport.lower()]
 
+            # Filter by projection type
+            if projection_type and projection_type.lower() != 'all':
+                mock_plays = [p for p in mock_plays if p.get('projection_type', 'pregame') == projection_type.lower()]
+
             # Filter by minimum edge and confidence
             filtered_plays = [
                 p for p in mock_plays
@@ -342,7 +380,8 @@ async def get_best_plays(
                 "filters": {
                     "sport": sport or "ALL",
                     "min_edge": min_edge,
-                    "min_confidence": min_confidence
+                    "min_confidence": min_confidence,
+                    "projection_type": projection_type or "pregame"
                 },
                 "plays": result_plays,
                 "generated_at": datetime.utcnow().isoformat() + 'Z'
@@ -375,8 +414,15 @@ async def get_best_plays(
                     model_key = f"{game_sport}_{model_name}_{bet_type}"
                     if model_key in available_models:
                         prediction = await generate_prediction_for_game(game, model_name, bet_type)
-                        if prediction and abs(prediction['edge']) >= min_edge and prediction['model_confidence'] >= min_confidence:
-                            all_plays.append(prediction)
+                        if prediction:
+                            # Filter by projection type
+                            if projection_type and projection_type.lower() != 'all':
+                                if prediction.get('projection_type', 'pregame') != projection_type.lower():
+                                    continue
+
+                            # Filter by edge and confidence
+                            if abs(prediction['edge']) >= min_edge and prediction['model_confidence'] >= min_confidence:
+                                all_plays.append(prediction)
 
         # Calculate consensus (group by game_id + bet_type)
         from collections import defaultdict
@@ -413,7 +459,8 @@ async def get_best_plays(
             "filters": {
                 "sport": sport or "ALL",
                 "min_edge": min_edge,
-                "min_confidence": min_confidence
+                "min_confidence": min_confidence,
+                "projection_type": projection_type or "pregame"
             },
             "plays": result_plays,
             "generated_at": datetime.utcnow().isoformat() + 'Z'
@@ -440,6 +487,8 @@ async def get_available_sports():
             "mlb": 0
         }
 
+        total_models = sum(sport_counts.values())
+
         return {
             "sports": [
                 {"id": "nba", "name": "NBA", "models": sport_counts["nba"], "active": sport_counts["nba"] > 0},
@@ -448,18 +497,22 @@ async def get_available_sports():
                 {"id": "nhl", "name": "NHL", "models": sport_counts["nhl"], "active": sport_counts["nhl"] > 0},
                 {"id": "ncaaf", "name": "NCAAF", "models": sport_counts["ncaaf"], "active": sport_counts["ncaaf"] > 0},
                 {"id": "mlb", "name": "MLB", "models": 0, "active": False}
-            ]
+            ],
+            "total_models": total_models
         }
     except Exception as e:
         logger.error(f"Error getting available sports: {str(e)}")
+        import traceback
+        traceback.print_exc()
         # Return default if error
         return {
             "sports": [
-                {"id": "nba", "name": "NBA", "models": 9, "active": True},
+                {"id": "nba", "name": "NBA", "models": 12, "active": True},
                 {"id": "ncaab", "name": "NCAAB", "models": 12, "active": True},
-                {"id": "nfl", "name": "NFL", "models": 9, "active": True},
+                {"id": "nfl", "name": "NFL", "models": 12, "active": True},
                 {"id": "nhl", "name": "NHL", "models": 12, "active": True},
                 {"id": "ncaaf", "name": "NCAAF", "models": 12, "active": True},
                 {"id": "mlb", "name": "MLB", "models": 0, "active": False}
-            ]
+            ],
+            "total_models": 60
         }

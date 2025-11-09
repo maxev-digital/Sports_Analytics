@@ -1,0 +1,29 @@
+{
+  "feature_names": [
+    "time_remaining",
+    "time_remaining_binned",
+    "score_diff",
+    "score_diff_squared",
+    "score_time_interaction",
+    "period",
+    "is_overtime",
+    "is_5v5",
+    "is_shorthanded",
+    "is_powerplay",
+    "zone_offensive",
+    "zone_defensive",
+    "has_possession",
+    "coach_aggressive_rating",
+    "coach_median_pull_time",
+    "coach_pull_variability",
+    "coach_pulls_before_2min_rate",
+    "playoff_game",
+    "home_game",
+    "timeout_available",
+    "xg_for_last_5min",
+    "xg_against_last_5min",
+    "recent_goal"
+  ],
+  "model_type": "XGBClassifier",
+  "training_date": "2025-11-09T08:04:26.162804"
+}

@@ -1,10 +1,11 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Navigation } from './components/Navigation';
 import { Footer } from './components/Footer';
 import { ElectronWindowControls } from './components/ElectronWindowControls';
 import { ToastProvider } from './components/Toast';
+import { BetAlertNotificationProvider } from './contexts/BetAlertNotificationContext';
 import { Login } from './pages/Login';
 import { SignUp } from './pages/SignUp';
 import { LiveGames } from './pages/LiveGames';
@@ -24,6 +25,7 @@ import { Odds } from './pages/Odds';
 import { HandicapperPicks } from './pages/HandicapperPicks';
 import { Settings } from './pages/Settings';
 import { StrategySettings } from './pages/StrategySettings';
+import AlertPreferences from './pages/AlertPreferences';
 import SoundPreview from './pages/SoundPreview';
 import SubscriptionSuccess from './pages/SubscriptionSuccess';
 import SubscriptionCancel from './pages/SubscriptionCancel';
@@ -33,6 +35,9 @@ import { Disclaimer } from './pages/Disclaimer';
 import { FloatingFeedbackButton } from './components/FloatingFeedbackButton';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { MyFeedback } from './pages/MyFeedback';
+import { MaxEvEdges } from './pages/MaxEvEdges';
+import GoaliePull from './pages/GoaliePull';
+import { EdgeScannerAlertMonitor } from './components/EdgeScannerAlertMonitor';
 import { isElectron } from './utils/isElectron';
 
 function App() {
@@ -43,7 +48,15 @@ function App() {
     <Router>
       <AuthProvider>
         <ToastProvider>
-        <Routes>
+          <BetAlertNotificationProvider>
+            {/* Edge Scanner Live Alert Monitor - runs in background */}
+            <EdgeScannerAlertMonitor
+              enabled={true}
+              minEdge={3.5}
+              minConfidence={0.70}
+              pollInterval={20000}
+            />
+            <Routes>
           {/* Public routes - Login and SignUp pages */}
           <Route path="/login" element={
             <>
@@ -156,9 +169,12 @@ function App() {
 
                       <Route path="/alerts" element={<Alerts />} />
                       <Route path="/odds" element={<Odds />} />
+                      <Route path="/max-ev-edges" element={<MaxEvEdges />} />
+                      <Route path="/goalie-pull" element={<GoaliePull />} />
                       <Route path="/handicapper-picks" element={<HandicapperPicks />} />
                       <Route path="/settings" element={<Settings />} />
                       <Route path="/strategy-settings" element={<StrategySettings />} />
+                      <Route path="/alert-preferences" element={<AlertPreferences />} />
                       <Route path="/my-feedback" element={<MyFeedback />} />
                       {/* Learn pages - redirect to home in desktop mode */}
                       <Route path="/learn" element={isDesktop ? <Navigate to="/live-games" replace /> : <Learn />} />
@@ -181,7 +197,8 @@ function App() {
               </ProtectedRoute>
             }
           />
-        </Routes>
+            </Routes>
+          </BetAlertNotificationProvider>
         </ToastProvider>
       </AuthProvider>
     </Router>

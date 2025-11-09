@@ -17,8 +17,10 @@
     "electron:dist": "electron-builder"
   },
   "dependencies": {
+    "lucide-react": "^0.553.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-hot-toast": "^2.6.0",
     "react-router-dom": "^7.9.4"
   },
   "devDependencies": {
@@ -26,6 +28,7 @@
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.3",
     "autoprefixer": "^10.4.20",
+    "cross-env": "^10.1.0",
     "electron": "^39.0.0",
     "electron-builder": "^24.13.3",
     "postcss": "^8.4.49",
