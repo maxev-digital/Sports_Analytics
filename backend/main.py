@@ -108,9 +108,10 @@ app.include_router(alert_preferences_router)
 print(f"DEBUG: Alert Preferences router registered with prefix: {alert_preferences_router.prefix}")
 
 # Import and register Simulation router
-from routes.simulation import router as simulation_router
-app.include_router(simulation_router)
-print(f"DEBUG: Simulation router registered with prefix: {simulation_router.prefix}")
+# TEMPORARILY DISABLED due to missing monte_carlo_totals dependency
+# from routes.simulation import router as simulation_router
+# app.include_router(simulation_router)
+# print(f"DEBUG: Simulation router registered with prefix: {simulation_router.prefix}")
 
 # Import and register Models router (Random Forest, XGBoost, LightGBM, Linear Regression)
 try:
