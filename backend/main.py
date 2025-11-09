@@ -28,9 +28,9 @@ from dotenv import load_dotenv
 import auth  # Authentication module
 from brevo_crm import sync_signup_to_brevo, send_welcome_email, send_admin_signup_notification, send_admin_payment_notification  # Brevo CRM integration
 
-# Twitter injury monitoring
-from twitter_injury_monitor import TwitterInjuryMonitor
-from injury_props_analyzer import InjuryPropsAnalyzer
+# Twitter injury monitoring - DISABLED (now runs as separate service)
+# from twitter_injury_monitor import TwitterInjuryMonitor
+# from injury_props_analyzer import InjuryPropsAnalyzer
 
 # Betting ensemble temporarily disabled to avoid import conflicts
 # from backend.models.ensemble.betting_ensemble import BettingEnsemble, GameData, EnsemblePrediction
@@ -52,7 +52,7 @@ if cors_origins_env:
     # Production: use comma-separated list from environment
     cors_origins = [origin.strip() for origin in cors_origins_env.split(',')]
 else:
-    # Local development: allow all local ports
+    # Local development: allow all local ports + Chrome extensions
     cors_origins = [
         "http://localhost:5173",
         "http://localhost:5174",
@@ -74,6 +74,7 @@ else:
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
+    allow_origin_regex=r"chrome-extension://.*",  # Allow Chrome/Brave extensions
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -96,22 +97,62 @@ from routes.bankroll import router as bankroll_router
 app.include_router(bankroll_router)
 print(f"DEBUG: Bankroll router registered with prefix: {bankroll_router.prefix}")
 
+# Import and register Max EV Boost router
+from routes.max_ev_boost import router as max_ev_boost_router
+app.include_router(max_ev_boost_router)
+print(f"DEBUG: Max EV Boost router registered with prefix: {max_ev_boost_router.prefix}")
+
+# Import and register Alert Preferences router
+from routes.alert_preferences import router as alert_preferences_router
+app.include_router(alert_preferences_router)
+print(f"DEBUG: Alert Preferences router registered with prefix: {alert_preferences_router.prefix}")
+
+# Import and register Simulation router
+from routes.simulation import router as simulation_router
+app.include_router(simulation_router)
+print(f"DEBUG: Simulation router registered with prefix: {simulation_router.prefix}")
+
+# Import and register Models router (Random Forest, XGBoost, LightGBM, Linear Regression)
+try:
+    print("DEBUG: About to import models router...")
+    from routes.models import router as models_router
+    print("DEBUG: Models router imported successfully")
+    app.include_router(models_router)
+    print(f"DEBUG: Models router registered with prefix: {models_router.prefix}")
+except Exception as e:
+    print(f"ERROR importing/registering models router: {type(e).__name__}: {e}")
+    import traceback
+    traceback.print_exc()
+
+# Import and register Edge Scanner router
+try:
+    print("DEBUG: About to import edge_scanner router...")
+    from routes.edge_scanner import router as edge_scanner_router
+    print("DEBUG: Edge Scanner router imported successfully")
+    app.include_router(edge_scanner_router)
+    print(f"DEBUG: Edge Scanner router registered with prefix: {edge_scanner_router.prefix}")
+except Exception as e:
+    print(f"ERROR importing/registering edge_scanner router: {type(e).__name__}: {e}")
+    import traceback
+    traceback.print_exc()
+
 # Game tracker instance
 tracker = GameTracker()
 
-# Initialize Twitter injury monitoring if token available
+# Twitter injury monitoring DISABLED - now runs as separate service (injury_monitor_service.py)
+# This prevents Twitter API issues from crashing the main site
 twitter_injury_monitor = None
 injury_props_analyzer = None
-if os.getenv("TWITTER_BEARER_TOKEN"):
-    logger.info("Twitter API token found - initializing injury monitoring...")
-    twitter_injury_monitor = TwitterInjuryMonitor(
-        bearer_token=os.getenv("TWITTER_BEARER_TOKEN")
-    )
-    injury_props_analyzer = InjuryPropsAnalyzer(tracker.odds_client)
-    twitter_injury_monitor.set_props_analyzer(injury_props_analyzer)
-    logger.info("Twitter injury monitor initialized (Tier 1 reporters only)")
-else:
-    logger.warning("No TWITTER_BEARER_TOKEN found - Twitter injury monitoring disabled")
+# if os.getenv("TWITTER_BEARER_TOKEN"):
+#     logger.info("Twitter API token found - initializing injury monitoring...")
+#     twitter_injury_monitor = TwitterInjuryMonitor(
+#         bearer_token=os.getenv("TWITTER_BEARER_TOKEN")
+#     )
+#     injury_props_analyzer = InjuryPropsAnalyzer(tracker.odds_client)
+#     twitter_injury_monitor.set_props_analyzer(injury_props_analyzer)
+#     logger.info("Twitter injury monitor initialized (Tier 1 reporters only)")
+# else:
+#     logger.warning("No TWITTER_BEARER_TOKEN found - Twitter injury monitoring disabled")
 
 # Alert monitor instance
 alert_monitor = AlertMonitor(odds_api_key=os.getenv('ODDS_API_KEY', ''))
@@ -272,15 +313,17 @@ async def startup():
     asyncio.create_task(broadcast_game_updates())
     logger.info("WebSocket broadcaster started (3s intervals - real-time odds pushes)")
 
-    # Start Twitter injury monitoring if enabled
-    if twitter_injury_monitor:
-        asyncio.create_task(
-            twitter_injury_monitor.start_monitoring(
-                interval_seconds=60,  # Check every 60 seconds
-                sport=None  # Monitor all in-season sports (NBA, NFL, NHL)
-            )
-        )
-        logger.info("Twitter injury monitoring started (60s intervals - tracking Woj, Shams, Schefter, etc.)")
+    # Twitter injury monitoring DISABLED - now runs as separate service
+    # This prevents Twitter API crashes from killing the main site
+    # Run injury_monitor_service.py separately to enable injury alerts
+    # if twitter_injury_monitor:
+    #     asyncio.create_task(
+    #         twitter_injury_monitor.start_monitoring(
+    #             interval_seconds=60,  # Check every 60 seconds
+    #             sport=None  # Monitor all in-season sports (NBA, NFL, NHL)
+    #         )
+    #     )
+    #     logger.info("Twitter injury monitoring started (60s intervals - tracking Woj, Shams, Schefter, etc.)")
 
     # Start automatic bet grading task
     asyncio.create_task(auto_grade_bets())
@@ -1504,6 +1547,46 @@ async def get_injury_props_opportunities():
         "count": len(serialized_opportunities),
         "opportunities": serialized_opportunities
     }
+
+@app.get("/api/injuries/alerts")
+async def get_injury_alerts():
+    """
+    Get real-time injury alerts from standalone monitoring service
+
+    This endpoint reads from a shared JSON file written by injury_monitor_service.py
+    The monitoring service runs separately, so if it crashes, main.py stays up!
+    """
+    import json
+    from pathlib import Path
+
+    alerts_file = Path(__file__).parent / "data" / "injury_alerts.json"
+
+    try:
+        if not alerts_file.exists():
+            return {
+                "count": 0,
+                "alerts": [],
+                "status": "no_alerts_yet",
+                "message": "Injury monitor service hasn't generated alerts yet"
+            }
+
+        with open(alerts_file, 'r') as f:
+            alerts = json.load(f)
+
+        return {
+            "count": len(alerts),
+            "alerts": alerts,
+            "status": "ok"
+        }
+
+    except Exception as e:
+        logger.error(f"Error reading injury alerts: {e}")
+        return {
+            "count": 0,
+            "alerts": [],
+            "status": "error",
+            "message": str(e)
+        }
 
 # ========== ALERT ENDPOINTS ==========
 
@@ -4308,3 +4391,5 @@ async def get_all_feedback(status: Optional[str] = None):
     except Exception as e:
         logger.error(f"Error retrieving feedback: {e}")
         raise HTTPException(status_code=500, detail="Failed to retrieve feedback")
+
+
