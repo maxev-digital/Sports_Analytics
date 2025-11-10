@@ -12,6 +12,7 @@ import { BetTypePerformance } from '../components/BetTypePerformance';
 import { BetAlertTestPanel } from '../components/BetAlertTestPanel';
 import { getApiUrl } from '../config';
 import { useSoundEffect } from '../hooks/useSoundEffect';
+import { useToast } from '../components/Toast';
 
 interface StrategyInfo {
   id: string;
@@ -37,7 +38,7 @@ const ALL_STRATEGIES: StrategyInfo[] = [
   { id: 'steam', name: 'Steam Plays', description: 'Track sudden line movements from sharp money hitting the market', sport: 'Multi-Sport', sportColor: 'bg-purple-600', category: 'pregame', hasComponent: true },
   { id: 'arbitrage', name: 'Arbitrage', description: 'Risk-free profit opportunities across different sportsbooks', sport: 'Multi-Sport', sportColor: 'bg-purple-600', category: 'pregame', hasComponent: true },
   { id: 'lines', name: 'Middles', description: 'Bet both sides with a gap to win both or push one', sport: 'Multi-Sport', sportColor: 'bg-purple-600', category: 'pregame', hasComponent: true },
-  { id: 'sharp-money', name: 'Sharp Money Tracking', description: 'Identify where professional bettors are placing their money', sport: 'Multi-Sport', sportColor: 'bg-purple-600', category: 'pregame', hasComponent: false },
+  { id: 'sharp-money', name: 'Sharp Money Tracking', description: 'Identify where professional bettors are placing their money', sport: 'Multi-Sport', sportColor: 'bg-purple-600', category: 'pregame', hasComponent: true },
   { id: 'clv', name: 'Closing Line Value (CLV)', description: 'Beat the closing line to ensure long-term profitability', sport: 'Multi-Sport', sportColor: 'bg-purple-600', category: 'pregame', hasComponent: false },
   { id: 'fatigue', name: 'Schedule Fatigue', description: 'Back-to-back games and rest differential analysis', sport: 'Multi-Sport', sportColor: 'bg-purple-600', category: 'pregame', hasComponent: false },
   { id: 'weather', name: 'NFL Weather Impact', description: 'Rain, snow, wind, and temperature effects on totals', sport: 'NFL', sportColor: 'bg-green-600', category: 'pregame', hasComponent: true },
@@ -126,10 +127,32 @@ interface MiddleAlert {
   expires_in: number;
 }
 
+interface SharpMoneyAlert {
+  id: string;
+  game_id: string;
+  sport: string;
+  home_team: string;
+  away_team: string;
+  alert_type: string;
+  market_type: string;
+  recommendation: string;
+  opening_line?: number;
+  current_line?: number;
+  movement?: number;
+  sharp_books_involved: string[];
+  confidence: number;
+  confidence_level: string;
+  reasoning: string;
+  key_factors: string[];
+  edge_percent: number;
+  timestamp: string;
+}
+
 interface AlertsData {
   arbitrage: { count: number; alerts: ArbitrageAlert[] };
   steam_moves: { count: number; alerts: SteamMoveAlert[] };
   middles: { count: number; alerts: MiddleAlert[] };
+  sharp_money: { count: number; alerts: SharpMoneyAlert[] };
 }
 
 export function Alerts() {
@@ -148,10 +171,14 @@ export function Alerts() {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const alertBellRef = useRef<HTMLAudioElement>(null);
   const sirenRef = useRef<HTMLAudioElement>(null);
-  const previousCountRef = useRef({ arbitrage: 0, steam: 0, lines: 0, goaliePull: 0 });
+  const previousCountRef = useRef({ arbitrage: 0, steam: 0, lines: 0, goaliePull: 0, sharpMoney: 0 });
+  const { showToast } = useToast();
 
   // Sound effects for different alert types
   const playGoaliePullSound = useSoundEffect('alert-bell.mp3', 0.6);
+  const playArbitrageSound = useSoundEffect('alert-bell.mp3', 0.7);
+  const playMiddleSound = useSoundEffect('alert-bell.mp3', 0.6);
+  const playSteamMoveSound = useSoundEffect('alert-bell.mp3', 0.7);
 
   const fetchAlerts = async () => {
     try {
@@ -231,6 +258,66 @@ export function Alerts() {
     }
     previousCountRef.current.goaliePull = goaliePullCount;
   }, [goaliePullCount, playGoaliePullSound]);
+
+  // Play sound and show toast when new arbitrage alerts arrive
+  useEffect(() => {
+    const currentCount = alertsData?.arbitrage.count || 0;
+    if (currentCount > previousCountRef.current.arbitrage && previousCountRef.current.arbitrage >= 0) {
+      console.log('[ARBITRAGE ALERT] New alert detected! Playing sound and showing toast...');
+      playArbitrageSound();
+      const newAlerts = currentCount - previousCountRef.current.arbitrage;
+      showToast(
+        `🚨 ${newAlerts} NEW ARBITRAGE OPPORTUNIT${newAlerts > 1 ? 'IES' : 'Y'} - Risk-Free Profit!`,
+        'success'
+      );
+    }
+    previousCountRef.current.arbitrage = currentCount;
+  }, [alertsData?.arbitrage.count, playArbitrageSound, showToast]);
+
+  // Play sound and show toast when new middle alerts arrive
+  useEffect(() => {
+    const currentCount = alertsData?.middles.count || 0;
+    if (currentCount > previousCountRef.current.lines && previousCountRef.current.lines >= 0) {
+      console.log('[MIDDLE ALERT] New alert detected! Playing sound and showing toast...');
+      playMiddleSound();
+      const newAlerts = currentCount - previousCountRef.current.lines;
+      showToast(
+        `💎 ${newAlerts} NEW MIDDLE OPPORTUNIT${newAlerts > 1 ? 'IES' : 'Y'} - Bet Both Sides!`,
+        'info'
+      );
+    }
+    previousCountRef.current.lines = currentCount;
+  }, [alertsData?.middles.count, playMiddleSound, showToast]);
+
+  // Play sound and show toast when new steam move alerts arrive
+  useEffect(() => {
+    const currentCount = alertsData?.steam_moves.count || 0;
+    if (currentCount > previousCountRef.current.steam && previousCountRef.current.steam >= 0) {
+      console.log('[STEAM MOVE ALERT] New alert detected! Playing sound and showing toast...');
+      playSteamMoveSound();
+      const newAlerts = currentCount - previousCountRef.current.steam;
+      showToast(
+        `⚡ ${newAlerts} NEW STEAM MOVE${newAlerts > 1 ? 'S' : ''} - Sharp Money Alert!`,
+        'warning'
+      );
+    }
+    previousCountRef.current.steam = currentCount;
+  }, [alertsData?.steam_moves.count, playSteamMoveSound, showToast]);
+
+  // Play sound and show toast when new sharp money alerts arrive
+  useEffect(() => {
+    const currentCount = alertsData?.sharp_money.count || 0;
+    if (currentCount > previousCountRef.current.sharpMoney && previousCountRef.current.sharpMoney >= 0) {
+      console.log('[SHARP MONEY ALERT] New alert detected! Playing sound and showing toast...');
+      playSteamMoveSound(); // Reuse steam move sound
+      const newAlerts = currentCount - previousCountRef.current.sharpMoney;
+      showToast(
+        `💰 ${newAlerts} NEW SHARP MONEY ALERT${newAlerts > 1 ? 'S' : ''} - Pro Bettors Active!`,
+        'info'
+      );
+    }
+    previousCountRef.current.sharpMoney = currentCount;
+  }, [alertsData?.sharp_money.count, playSteamMoveSound, showToast]);
 
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
@@ -341,6 +428,10 @@ export function Alerts() {
               <div className="text-base text-white font-bold tracking-wide mb-1">MIDDLES</div>
               <div className="text-3xl font-bold text-white">{alertsData?.middles.count || 0}</div>
             </div>
+            <div className="bg-slate-900 border-2 border-purple-700 p-6 hover:border-purple-500 transition-all">
+              <div className="text-base text-white font-bold tracking-wide mb-1">💰 SHARP MONEY</div>
+              <div className="text-3xl font-bold text-white">{alertsData?.sharp_money.count || 0}</div>
+            </div>
           </div>
         </div>
 
@@ -391,6 +482,7 @@ export function Alerts() {
               {strategy.id === 'arbitrage' && ` (${alertsData?.arbitrage.count || 0})`}
               {strategy.id === 'steam' && ` (${alertsData?.steam_moves.count || 0})`}
               {strategy.id === 'lines' && ` (${alertsData?.middles.count || 0})`}
+              {strategy.id === 'sharp-money' && ` (${alertsData?.sharp_money.count || 0})`}
             </button>
           ))}
         </div>
@@ -588,6 +680,98 @@ export function Alerts() {
                       </div>
                     </div>
                   </div>
+
+                  <div className="text-sm text-slate-500 text-right">
+                    {formatTime(alert.timestamp)}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {/* Sharp Money Alerts */}
+        {activeTab === 'sharp-money' && (
+          <div className="space-y-4">
+            {alertsData?.sharp_money.alerts.length === 0 ? (
+              <div className="bg-slate-800 border-2 border-slate-700 p-12 text-center">
+                <div className="text-slate-400 text-lg">No sharp money movements detected</div>
+                <div className="text-slate-500 text-sm mt-2">Scanning every 2 minutes...</div>
+              </div>
+            ) : (
+              alertsData?.sharp_money.alerts.map((alert, idx) => (
+                <div key={idx} className="bg-slate-900 border-2 border-purple-600 p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <span className={`px-3 py-1 text-xs font-bold text-white ${getSportBadgeColor(alert.sport)}`}>
+                        {alert.sport.toUpperCase()}
+                      </span>
+                      <span className={`px-3 py-1 text-xs font-bold text-white ${
+                        alert.confidence_level === 'HIGH' ? 'bg-green-600' :
+                        alert.confidence_level === 'MEDIUM' ? 'bg-yellow-600' : 'bg-slate-600'
+                      }`}>
+                        {alert.confidence_level} CONFIDENCE
+                      </span>
+                      <span className="px-3 py-1 text-xs font-bold bg-purple-600 text-white">
+                        {getMarketLabel(alert.market_type)}
+                      </span>
+                      <span className="text-lg font-bold text-white">
+                        {alert.away_team} @ {alert.home_team}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-purple-400">
+                        {alert.recommendation}
+                      </div>
+                      <div className="text-sm text-green-400">
+                        {alert.edge_percent.toFixed(1)}% edge
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div className="bg-slate-800 border-2 border-slate-700 p-4">
+                      <div className="text-sm text-slate-400 mb-2">Line Movement</div>
+                      <div className="text-lg font-bold text-white mb-1">
+                        {alert.opening_line !== undefined && alert.current_line !== undefined ? (
+                          <>
+                            {alert.opening_line} → {alert.current_line}
+                            <span className="text-sm text-yellow-400 ml-2">
+                              ({alert.movement && alert.movement > 0 ? '+' : ''}{alert.movement?.toFixed(1)})
+                            </span>
+                          </>
+                        ) : (
+                          'Tracking...'
+                        )}
+                      </div>
+                    </div>
+                    <div className="bg-slate-800 border-2 border-slate-700 p-4">
+                      <div className="text-sm text-slate-400 mb-2">Sharp Books Involved</div>
+                      <div className="text-sm font-bold text-purple-400">
+                        {alert.sharp_books_involved.join(', ')}
+                      </div>
+                    </div>
+                  </div>
+
+                  {alert.reasoning && (
+                    <div className="bg-slate-800 border-2 border-slate-700 p-4 mb-4">
+                      <div className="text-sm text-slate-400 mb-2">Analysis</div>
+                      <div className="text-sm text-slate-200">{alert.reasoning}</div>
+                    </div>
+                  )}
+
+                  {alert.key_factors.length > 0 && (
+                    <div className="mb-4">
+                      <div className="text-sm text-slate-400 mb-2">Key Factors</div>
+                      <div className="flex flex-wrap gap-2">
+                        {alert.key_factors.map((factor, i) => (
+                          <span key={i} className="px-3 py-1 text-xs bg-slate-700 text-slate-300 border border-slate-600">
+                            {factor}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="text-sm text-slate-500 text-right">
                     {formatTime(alert.timestamp)}
