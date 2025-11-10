@@ -6,10 +6,11 @@ interface Toast {
   id: string;
   message: string;
   type: ToastType;
+  onClick?: () => void;
 }
 
 interface ToastContextType {
-  showToast: (message: string, type?: ToastType) => void;
+  showToast: (message: string, type?: ToastType, onClick?: () => void) => void;
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
@@ -25,16 +26,16 @@ export function useToast() {
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const showToast = useCallback((message: string, type: ToastType = 'info') => {
+  const showToast = useCallback((message: string, type: ToastType = 'info', onClick?: () => void) => {
     const id = Date.now().toString();
-    const newToast: Toast = { id, message, type };
+    const newToast: Toast = { id, message, type, onClick };
 
     setToasts(prev => [...prev, newToast]);
 
-    // Auto dismiss after 4 seconds
+    // Auto dismiss after 10 seconds (longer for betting alerts)
     setTimeout(() => {
       setToasts(prev => prev.filter(t => t.id !== id));
-    }, 4000);
+    }, 10000);
   }, []);
 
   const removeToast = (id: string) => {
@@ -76,10 +77,17 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {toasts.map(toast => (
           <div
             key={toast.id}
+            onClick={() => {
+              if (toast.onClick) {
+                toast.onClick();
+                removeToast(toast.id);
+              }
+            }}
             className={`
               ${getToastStyles(toast.type)}
               border-2 rounded-lg shadow-lg p-4 min-w-[300px] max-w-[500px]
               animate-slide-in-right
+              ${toast.onClick ? 'cursor-pointer hover:scale-105 transition-transform' : ''}
             `}
           >
             <div className="flex items-start gap-3">

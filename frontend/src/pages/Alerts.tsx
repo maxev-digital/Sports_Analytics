@@ -171,7 +171,8 @@ export function Alerts() {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const alertBellRef = useRef<HTMLAudioElement>(null);
   const sirenRef = useRef<HTMLAudioElement>(null);
-  const previousCountRef = useRef({ arbitrage: 0, steam: 0, lines: 0, goaliePull: 0, sharpMoney: 0 });
+  const previousCountRef = useRef({ arbitrage: -1, steam: -1, lines: -1, goaliePull: -1, sharpMoney: -1 });
+  const isInitialLoadRef = useRef(true);
   const { showToast } = useToast();
 
   // Sound effects for different alert types
@@ -250,6 +251,13 @@ export function Alerts() {
     }
   }, [autoRefresh]);
 
+  // Mark initial load as complete after first data fetch
+  useEffect(() => {
+    if (alertsData) {
+      isInitialLoadRef.current = false;
+    }
+  }, [alertsData]);
+
   // Play sound when new goalie pull alerts arrive
   useEffect(() => {
     if (goaliePullCount > previousCountRef.current.goaliePull && previousCountRef.current.goaliePull > 0) {
@@ -262,13 +270,24 @@ export function Alerts() {
   // Play sound and show toast when new arbitrage alerts arrive
   useEffect(() => {
     const currentCount = alertsData?.arbitrage.count || 0;
+
+    // Skip on initial load
+    if (isInitialLoadRef.current) {
+      previousCountRef.current.arbitrage = currentCount;
+      return;
+    }
+
     if (currentCount > previousCountRef.current.arbitrage && previousCountRef.current.arbitrage >= 0) {
       console.log('[ARBITRAGE ALERT] New alert detected! Playing sound and showing toast...');
       playArbitrageSound();
       const newAlerts = currentCount - previousCountRef.current.arbitrage;
       showToast(
         `🚨 ${newAlerts} NEW ARBITRAGE OPPORTUNIT${newAlerts > 1 ? 'IES' : 'Y'} - Risk-Free Profit!`,
-        'success'
+        'success',
+        () => {
+          setCategoryTab('pregame');
+          setActiveTab('arbitrage');
+        }
       );
     }
     previousCountRef.current.arbitrage = currentCount;
@@ -277,13 +296,24 @@ export function Alerts() {
   // Play sound and show toast when new middle alerts arrive
   useEffect(() => {
     const currentCount = alertsData?.middles.count || 0;
+
+    // Skip on initial load
+    if (isInitialLoadRef.current) {
+      previousCountRef.current.lines = currentCount;
+      return;
+    }
+
     if (currentCount > previousCountRef.current.lines && previousCountRef.current.lines >= 0) {
       console.log('[MIDDLE ALERT] New alert detected! Playing sound and showing toast...');
       playMiddleSound();
       const newAlerts = currentCount - previousCountRef.current.lines;
       showToast(
         `💎 ${newAlerts} NEW MIDDLE OPPORTUNIT${newAlerts > 1 ? 'IES' : 'Y'} - Bet Both Sides!`,
-        'info'
+        'info',
+        () => {
+          setCategoryTab('pregame');
+          setActiveTab('lines');
+        }
       );
     }
     previousCountRef.current.lines = currentCount;
@@ -292,13 +322,24 @@ export function Alerts() {
   // Play sound and show toast when new steam move alerts arrive
   useEffect(() => {
     const currentCount = alertsData?.steam_moves.count || 0;
+
+    // Skip on initial load
+    if (isInitialLoadRef.current) {
+      previousCountRef.current.steam = currentCount;
+      return;
+    }
+
     if (currentCount > previousCountRef.current.steam && previousCountRef.current.steam >= 0) {
       console.log('[STEAM MOVE ALERT] New alert detected! Playing sound and showing toast...');
       playSteamMoveSound();
       const newAlerts = currentCount - previousCountRef.current.steam;
       showToast(
         `⚡ ${newAlerts} NEW STEAM MOVE${newAlerts > 1 ? 'S' : ''} - Sharp Money Alert!`,
-        'warning'
+        'warning',
+        () => {
+          setCategoryTab('pregame');
+          setActiveTab('steam');
+        }
       );
     }
     previousCountRef.current.steam = currentCount;
@@ -307,13 +348,24 @@ export function Alerts() {
   // Play sound and show toast when new sharp money alerts arrive
   useEffect(() => {
     const currentCount = alertsData?.sharp_money.count || 0;
+
+    // Skip on initial load
+    if (isInitialLoadRef.current) {
+      previousCountRef.current.sharpMoney = currentCount;
+      return;
+    }
+
     if (currentCount > previousCountRef.current.sharpMoney && previousCountRef.current.sharpMoney >= 0) {
       console.log('[SHARP MONEY ALERT] New alert detected! Playing sound and showing toast...');
       playSteamMoveSound(); // Reuse steam move sound
       const newAlerts = currentCount - previousCountRef.current.sharpMoney;
       showToast(
         `💰 ${newAlerts} NEW SHARP MONEY ALERT${newAlerts > 1 ? 'S' : ''} - Pro Bettors Active!`,
-        'info'
+        'info',
+        () => {
+          setCategoryTab('pregame');
+          setActiveTab('sharp-money');
+        }
       );
     }
     previousCountRef.current.sharpMoney = currentCount;
