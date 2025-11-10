@@ -50,8 +50,8 @@ export const STRATEGY_MAPPINGS: StrategyMapping[] = [
     systemId: 110, // Fatigue Spreads (Back-to-Backs)
     name: 'Schedule Fatigue',
     category: 'pregame',
-    hasBackendDetection: false, // TODO: Needs implementation
-    hasAlertEndpoint: false
+    hasBackendDetection: true, // ✅ Implemented in Phase 3
+    hasAlertEndpoint: true // ✅ /api/alerts/schedule-fatigue
   },
   {
     settingsId: 'nfl-weather',

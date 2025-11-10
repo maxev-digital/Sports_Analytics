@@ -12,6 +12,7 @@ from game_tracker import GameTracker
 from live_models import LiveGame
 from alert_monitor import AlertMonitor, ArbitrageAlert, SteamMoveAlert, MiddleAlert
 from strategies.sharp_money_monitor_service import get_sharp_money_service
+from strategies.schedule_fatigue_service import get_fatigue_service
 from storage.alert_storage import alert_storage
 from live_analytics_engine import analytics_engine
 from plays_database import plays_db
@@ -181,6 +182,9 @@ alert_monitor = AlertMonitor(odds_api_key=os.getenv('ODDS_API_KEY', ''))
 # Sharp money monitor instance
 sharp_money_service = get_sharp_money_service(api_key=os.getenv('ODDS_API_KEY', ''))
 
+# Schedule fatigue monitor instance
+fatigue_service = get_fatigue_service(api_key=os.getenv('ODDS_API_KEY', ''))
+
 # Betting ensemble instance (temporarily disabled)
 # betting_ensemble = BettingEnsemble(
 #     pace_weight=0.40,
@@ -341,6 +345,15 @@ async def startup():
         )
     )
     logger.info("Sharp money monitoring started for NBA, NFL, NHL (120s intervals - tracking sharp book movements)")
+
+    # Start schedule fatigue monitoring for NBA, NFL, NHL
+    asyncio.create_task(
+        fatigue_service.monitor_loop(
+            sports=['basketball_nba', 'americanfootball_nfl', 'icehockey_nhl'],
+            interval_seconds=3600  # Check every hour for schedule changes
+        )
+    )
+    logger.info("Schedule fatigue monitoring started for NBA, NFL, NHL (hourly - tracking B2B and rest advantages)")
 
     # Start WebSocket broadcaster for real-time updates
     asyncio.create_task(broadcast_game_updates())
@@ -1893,6 +1906,53 @@ async def get_sharp_money_alerts(user_id: str = 'default'):
             "error": str(e)
         }
 
+@app.get("/api/alerts/schedule-fatigue")
+async def get_schedule_fatigue_alerts(user_id: str = 'default'):
+    """Get schedule fatigue alerts"""
+    try:
+        # Get schedule fatigue alerts from storage (status='pending' means active)
+        tracked_alerts = alert_storage.get_alerts_by_type('schedule_fatigue', status='pending', limit=50)
+
+        # Convert to response format
+        alerts = []
+        for tracked_alert in tracked_alerts:
+            details = tracked_alert.strategy_details or {}
+
+            alerts.append({
+                "game_id": tracked_alert.game_id,
+                "sport": tracked_alert.sport,
+                "home_team": tracked_alert.home_team,
+                "away_team": tracked_alert.away_team,
+                "fatigue_type": details.get('fatigue_type', 'rest_advantage'),
+                "favored_side": details.get('favored_side', 'home'),
+                "recommended_side": tracked_alert.recommended_side,
+                "home_rest_days": details.get('home_rest_days', 0),
+                "away_rest_days": details.get('away_rest_days', 0),
+                "rest_differential": details.get('rest_differential', 0),
+                "home_is_b2b": details.get('home_is_b2b', False),
+                "away_is_b2b": details.get('away_is_b2b', False),
+                "confidence": details.get('confidence', 0),
+                "confidence_level": details.get('confidence_level', 'MEDIUM'),
+                "reasoning": details.get('reasoning', ''),
+                "key_factors": details.get('key_factors', []),
+                "edge_percent": tracked_alert.edge_percent,
+                "timestamp": tracked_alert.generated_at.isoformat(),
+                "id": tracked_alert.id
+            })
+
+        return {
+            "count": len(alerts),
+            "alerts": alerts
+        }
+
+    except Exception as e:
+        logger.error(f"Error fetching schedule fatigue alerts: {str(e)}")
+        return {
+            "count": 0,
+            "alerts": [],
+            "error": str(e)
+        }
+
 @app.get("/api/alerts/all")
 async def get_all_alerts(user_id: str = 'default'):
     """Get all alerts filtered by user's enabled bookmakers"""
@@ -1908,6 +1968,9 @@ async def get_all_alerts(user_id: str = 'default'):
 
         # Get sharp money alerts from storage
         sharp_money_tracked = alert_storage.get_alerts_by_type('sharp_money', status='pending', limit=50)
+
+        # Get schedule fatigue alerts from storage
+        fatigue_tracked = alert_storage.get_alerts_by_type('schedule_fatigue', status='pending', limit=50)
 
         # Filter if settings exist
         if enabled_bookmakers:
@@ -1985,6 +2048,25 @@ async def get_all_alerts(user_id: str = 'default'):
                     for tracked_alert in sharp_money_tracked
                 ]
             },
+            "schedule_fatigue": {
+                "count": len(fatigue_tracked),
+                "alerts": [
+                    {
+                        "game_id": tracked_alert.game_id,
+                        "sport": tracked_alert.sport,
+                        "home_team": tracked_alert.home_team,
+                        "away_team": tracked_alert.away_team,
+                        "fatigue_type": (tracked_alert.strategy_details or {}).get('fatigue_type', 'rest_advantage'),
+                        "favored_side": (tracked_alert.strategy_details or {}).get('favored_side', 'home'),
+                        "recommended_side": tracked_alert.recommended_side,
+                        "confidence_level": (tracked_alert.strategy_details or {}).get('confidence_level', 'MEDIUM'),
+                        "rest_differential": (tracked_alert.strategy_details or {}).get('rest_differential', 0),
+                        "timestamp": tracked_alert.generated_at.isoformat(),
+                        "id": tracked_alert.id
+                    }
+                    for tracked_alert in fatigue_tracked
+                ]
+            },
             "last_updated": alert_monitor.active_alerts.get('last_updated', None)
         }
 
@@ -2026,6 +2108,10 @@ async def get_all_alerts(user_id: str = 'default'):
                 ]
             },
             "sharp_money": {
+                "count": 0,
+                "alerts": []
+            },
+            "schedule_fatigue": {
                 "count": 0,
                 "alerts": []
             },
