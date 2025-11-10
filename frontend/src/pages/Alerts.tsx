@@ -148,11 +148,35 @@ interface SharpMoneyAlert {
   timestamp: string;
 }
 
+interface ScheduleFatigueAlert {
+  id: string;
+  game_id: string;
+  sport: string;
+  home_team: string;
+  away_team: string;
+  alert_type: string;
+  market_type: string;
+  fatigue_type: string;
+  favored_side: string;
+  home_rest_days: number;
+  away_rest_days: number;
+  rest_differential: number;
+  home_is_b2b: boolean;
+  away_is_b2b: boolean;
+  confidence: number;
+  confidence_level: string;
+  reasoning: string;
+  key_factors: string[];
+  edge_percent: number;
+  timestamp: string;
+}
+
 interface AlertsData {
   arbitrage: { count: number; alerts: ArbitrageAlert[] };
   steam_moves: { count: number; alerts: SteamMoveAlert[] };
   middles: { count: number; alerts: MiddleAlert[] };
   sharp_money: { count: number; alerts: SharpMoneyAlert[] };
+  schedule_fatigue: { count: number; alerts: ScheduleFatigueAlert[] };
 }
 
 export function Alerts() {
@@ -171,7 +195,7 @@ export function Alerts() {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const alertBellRef = useRef<HTMLAudioElement>(null);
   const sirenRef = useRef<HTMLAudioElement>(null);
-  const previousCountRef = useRef({ arbitrage: -1, steam: -1, lines: -1, goaliePull: -1, sharpMoney: -1 });
+  const previousCountRef = useRef({ arbitrage: -1, steam: -1, lines: -1, goaliePull: -1, sharpMoney: -1, scheduleFatigue: -1 });
   const isInitialLoadRef = useRef(true);
   const { showToast } = useToast();
 
@@ -371,6 +395,32 @@ export function Alerts() {
     previousCountRef.current.sharpMoney = currentCount;
   }, [alertsData?.sharp_money.count, playSteamMoveSound, showToast]);
 
+  // Play sound and show toast when new schedule fatigue alerts arrive
+  useEffect(() => {
+    const currentCount = alertsData?.schedule_fatigue.count || 0;
+
+    // Skip on initial load
+    if (isInitialLoadRef.current) {
+      previousCountRef.current.scheduleFatigue = currentCount;
+      return;
+    }
+
+    if (currentCount > previousCountRef.current.scheduleFatigue && previousCountRef.current.scheduleFatigue >= 0) {
+      console.log('[SCHEDULE FATIGUE ALERT] New alert detected! Playing sound and showing toast...');
+      playSteamMoveSound(); // Reuse steam move sound
+      const newAlerts = currentCount - previousCountRef.current.scheduleFatigue;
+      showToast(
+        `😴 ${newAlerts} NEW SCHEDULE FATIGUE ALERT${newAlerts > 1 ? 'S' : ''} - Rest Advantage Detected!`,
+        'warning',
+        () => {
+          setCategoryTab('pregame');
+          setActiveTab('fatigue');
+        }
+      );
+    }
+    previousCountRef.current.scheduleFatigue = currentCount;
+  }, [alertsData?.schedule_fatigue.count, playSteamMoveSound, showToast]);
+
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
     return date.toLocaleTimeString();
@@ -535,6 +585,7 @@ export function Alerts() {
               {strategy.id === 'steam' && ` (${alertsData?.steam_moves.count || 0})`}
               {strategy.id === 'lines' && ` (${alertsData?.middles.count || 0})`}
               {strategy.id === 'sharp-money' && ` (${alertsData?.sharp_money.count || 0})`}
+              {strategy.id === 'fatigue' && ` (${alertsData?.schedule_fatigue.count || 0})`}
             </button>
           ))}
         </div>
@@ -801,6 +852,95 @@ export function Alerts() {
                       <div className="text-sm text-slate-400 mb-2">Sharp Books Involved</div>
                       <div className="text-sm font-bold text-purple-400">
                         {alert.sharp_books_involved.join(', ')}
+                      </div>
+                    </div>
+                  </div>
+
+                  {alert.reasoning && (
+                    <div className="bg-slate-800 border-2 border-slate-700 p-4 mb-4">
+                      <div className="text-sm text-slate-400 mb-2">Analysis</div>
+                      <div className="text-sm text-slate-200">{alert.reasoning}</div>
+                    </div>
+                  )}
+
+                  {alert.key_factors.length > 0 && (
+                    <div className="mb-4">
+                      <div className="text-sm text-slate-400 mb-2">Key Factors</div>
+                      <div className="flex flex-wrap gap-2">
+                        {alert.key_factors.map((factor, i) => (
+                          <span key={i} className="px-3 py-1 text-xs bg-slate-700 text-slate-300 border border-slate-600">
+                            {factor}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="text-sm text-slate-500 text-right">
+                    {formatTime(alert.timestamp)}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {/* Schedule Fatigue Alerts */}
+        {activeTab === 'fatigue' && (
+          <div className="space-y-4">
+            {alertsData?.schedule_fatigue.alerts.length === 0 ? (
+              <div className="bg-slate-800 border-2 border-slate-700 p-12 text-center">
+                <div className="text-slate-400 text-lg">No schedule fatigue situations detected</div>
+                <div className="text-slate-500 text-sm mt-2">Scanning every hour for rest advantages...</div>
+              </div>
+            ) : (
+              alertsData?.schedule_fatigue.alerts.map((alert, idx) => (
+                <div key={idx} className="bg-slate-900 border-2 border-yellow-600 p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <span className={`px-3 py-1 text-xs font-bold text-white ${getSportBadgeColor(alert.sport)}`}>
+                        {alert.sport.toUpperCase()}
+                      </span>
+                      <span className={`px-3 py-1 text-xs font-bold text-white ${
+                        alert.confidence_level === 'HIGH' ? 'bg-green-600' :
+                        alert.confidence_level === 'MEDIUM' ? 'bg-yellow-600' : 'bg-slate-600'
+                      }`}>
+                        {alert.confidence_level} CONFIDENCE
+                      </span>
+                      <span className="px-3 py-1 text-xs font-bold bg-yellow-600 text-white">
+                        {alert.fatigue_type.replace('_', ' ').toUpperCase()}
+                      </span>
+                      <span className="text-lg font-bold text-white">
+                        {alert.away_team} @ {alert.home_team}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-yellow-400">
+                        FAVOR {alert.favored_side.toUpperCase()}
+                      </div>
+                      <div className="text-sm text-green-400">
+                        {alert.edge_percent.toFixed(1)}% edge
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div className="bg-slate-800 border-2 border-slate-700 p-4">
+                      <div className="text-sm text-slate-400 mb-2">Rest Differential</div>
+                      <div className="text-lg font-bold text-white mb-1">
+                        {alert.rest_differential} days
+                      </div>
+                      <div className="text-sm text-slate-300">
+                        Home: {alert.home_rest_days} days {alert.home_is_b2b && '(B2B)'}
+                      </div>
+                      <div className="text-sm text-slate-300">
+                        Away: {alert.away_rest_days} days {alert.away_is_b2b && '(B2B)'}
+                      </div>
+                    </div>
+                    <div className="bg-slate-800 border-2 border-slate-700 p-4">
+                      <div className="text-sm text-slate-400 mb-2">Fatigue Impact</div>
+                      <div className="text-sm font-bold text-yellow-400">
+                        {alert.favored_side === 'home' ? alert.home_team : alert.away_team} has rest advantage
                       </div>
                     </div>
                   </div>
