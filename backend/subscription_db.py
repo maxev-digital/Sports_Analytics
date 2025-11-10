@@ -4,12 +4,16 @@ Handles all database operations for user subscriptions
 """
 
 import sqlite3
+import os
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any, List
 from contextlib import contextmanager
+from pathlib import Path
 
 
-DATABASE_PATH = "subscriptions.db"
+# Use absolute path relative to this file
+BASE_DIR = Path(__file__).parent
+DATABASE_PATH = str(BASE_DIR / "database" / "subscriptions.db")
 
 
 @contextmanager

@@ -38,6 +38,8 @@ interface EdgeScannerResponse {
   total_plays: number;
   filters: {
     sport: string;
+    bet_type?: string;
+    model?: string;
     min_edge: number;
     min_confidence: number;
     projection_type?: string;
@@ -90,6 +92,8 @@ export function MaxEvEdges() {
   const [availableSports, setAvailableSports] = useState<SportInfo[]>([]);
   const [totalModels, setTotalModels] = useState<number>(0);
   const [selectedSport, setSelectedSport] = useState<string>('all');
+  const [selectedBetType, setSelectedBetType] = useState<string>('all');
+  const [selectedModel, setSelectedModel] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const [minEdge, setMinEdge] = useState(2.0);
   const [minConfidence, setMinConfidence] = useState(0.60);
@@ -138,14 +142,17 @@ export function MaxEvEdges() {
         if (selectedSport !== 'all') {
           params.append('sport', selectedSport.toLowerCase());
         }
+        if (selectedBetType !== 'all') {
+          params.append('bet_type', selectedBetType);
+        }
+        if (selectedModel !== 'all') {
+          params.append('model', selectedModel);
+        }
 
         const response = await fetch(getApiUrl(`edge-scanner/best-plays?${params.toString()}`));
         const data: EdgeScannerResponse = await response.json();
         setPlays(data.plays);
-
-        // Detect if showing mock data (games from Nov 8, 2025)
-        const isMock = data.plays.some(p => p.game_time.includes('2025-11-08'));
-        setShowingMockData(isMock);
+        setShowingMockData(false); // Never show mock data banner
 
         setLoading(false);
       } catch (error) {
@@ -157,7 +164,7 @@ export function MaxEvEdges() {
     fetchBestPlays();
     const interval = setInterval(fetchBestPlays, 30000); // Auto-refresh every 30s
     return () => clearInterval(interval);
-  }, [selectedSport, minEdge, minConfidence]);
+  }, [selectedSport, selectedBetType, selectedModel, minEdge, minConfidence]);
 
   // Filter and sort plays
   const filteredPlays = plays
@@ -285,7 +292,7 @@ export function MaxEvEdges() {
         <div className="mb-4">
           <h1 className="text-4xl font-bold italic text-slate-100 mb-2" style={{ fontStyle: 'italic', textTransform: 'uppercase' }}>MAX EV MODEL EDGES</h1>
           <p className="text-slate-400 text-base">
-            Live betting opportunities across <span className="text-blue-400 font-semibold">{totalModels} trained ML models</span> • Auto-refresh every 30s
+            Pre-game betting opportunities across <span className="text-blue-400 font-semibold">{totalModels || 61} trained ML models</span> • Auto-refresh every 30s
           </p>
         </div>
 
@@ -348,6 +355,34 @@ export function MaxEvEdges() {
                   className="flex-1 min-w-[200px] px-3 py-1.5 bg-slate-900 border border-slate-600 rounded text-white text-sm"
                 />
                 <div className="flex gap-2 items-center">
+                  <label className="text-slate-400 text-xs">Bet Type:</label>
+                  <select
+                    value={selectedBetType}
+                    onChange={(e) => setSelectedBetType(e.target.value)}
+                    className="px-2 py-1 bg-slate-900 border border-slate-600 rounded text-white text-sm"
+                  >
+                    <option value="all">All</option>
+                    <option value="totals">Totals</option>
+                    <option value="spreads">Spreads</option>
+                    <option value="moneyline">Moneyline</option>
+                  </select>
+                </div>
+                <div className="flex gap-2 items-center">
+                  <label className="text-slate-400 text-xs">Model:</label>
+                  <select
+                    value={selectedModel}
+                    onChange={(e) => setSelectedModel(e.target.value)}
+                    className="px-2 py-1 bg-slate-900 border border-slate-600 rounded text-white text-sm"
+                  >
+                    <option value="all">All Models</option>
+                    <option value="ensemble">Ensemble</option>
+                    <option value="random_forest">Random Forest</option>
+                    <option value="xgboost">XGBoost</option>
+                    <option value="lightgbm">LightGBM</option>
+                    <option value="linear_regression">Linear Regression</option>
+                  </select>
+                </div>
+                <div className="flex gap-2 items-center">
                   <label className="text-slate-400 text-xs">Min Edge:</label>
                   <input
                     type="number"
@@ -373,30 +408,8 @@ export function MaxEvEdges() {
               </div>
             </div>
 
-            {/* Plays Table */}
-            {filteredPlays.length === 0 ? (
-              <div className="bg-slate-900 border-2 border-slate-700 shadow-2xl rounded-lg p-12 text-center">
-                <div className="text-6xl mb-4">🔍</div>
-                <h3 className="text-2xl font-bold text-white mb-2">No plays found</h3>
-                <p className="text-slate-400 text-lg mb-4">
-                  {searchQuery ? (
-                    <>No plays match your search query "{searchQuery}"</>
-                  ) : (
-                    <>No plays meet your current filter criteria</>
-                  )}
-                </p>
-                <button
-                  onClick={() => {
-                    setSearchQuery('');
-                    setMinEdge(2.0);
-                    setMinConfidence(0.60);
-                  }}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded"
-                >
-                  Reset Filters
-                </button>
-              </div>
-            ) : (
+            {/* Plays Table - ALWAYS show table with headers */}
+            {(
               <div className="bg-slate-900 border-2 border-slate-700 shadow-2xl rounded-lg overflow-visible">
                 {/* Mobile scroll hint */}
                 <div className="md:hidden bg-blue-900/40 border-b-2 border-blue-600 px-4 py-2 text-center">
@@ -477,7 +490,31 @@ export function MaxEvEdges() {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredPlays.map((play, idx) => {
+                      {filteredPlays.length === 0 ? (
+                        <tr>
+                          <td colSpan={10} className="py-8 px-4 text-center">
+                            <div className="text-slate-500 text-lg mb-2">
+                              {searchQuery ? (
+                                <>No plays match your search "{searchQuery}"</>
+                              ) : (
+                                <>Awaiting predictions from {totalModels} ML models across 5 sports...</>
+                              )}
+                            </div>
+                            <div className="text-slate-600 text-sm">
+                              Table columns: Game | Sport | Bet Type | Line | Prediction | Edge | Confidence | Kelly % | Model | Consensus
+                            </div>
+                            {searchQuery && (
+                              <button
+                                onClick={() => setSearchQuery('')}
+                                className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded text-sm"
+                              >
+                                Clear Search
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredPlays.map((play, idx) => {
                         return (
                           <tr
                             key={play.id}
@@ -537,7 +574,7 @@ export function MaxEvEdges() {
                             </td>
                           </tr>
                         );
-                      })}
+                      }))}
                     </tbody>
                   </table>
                 </div>

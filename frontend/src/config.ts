@@ -16,18 +16,8 @@ export function getApiUrl(endpoint: string): string {
   // Remove leading slash if present
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
 
-  // TEMPORARY: Edge Lab endpoints use localhost for testing with C1's backend
-  // TODO: Remove this once Edge Lab endpoints are deployed to production
-  if (isDevelopment && (
-    cleanEndpoint.startsWith('models/') ||
-    cleanEndpoint.startsWith('simulation/') ||
-    cleanEndpoint.startsWith('edge-scanner/')
-  )) {
-    return `http://localhost:8001/api/${cleanEndpoint}`;
-  }
-
-  // All other endpoints use production API
-  return `https://max-ev-sports.com/api/${cleanEndpoint}`;
+  // Always use production API for all endpoints
+  return `${API_BASE_URL}/${cleanEndpoint}`;
 }
 
 // Debug logging

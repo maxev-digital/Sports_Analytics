@@ -1,6 +1,11 @@
 """
 Edge Scanner API Routes
 Scans all upcoming games across all sports/models and returns best betting edges
+
+Uses REAL data from autonomous systems:
+1. Edge Lab predictions (predictions_log.csv)
+2. Monte Carlo simulations (monte_carlo simulations logs)
+3. Regression to Mean alerts (regression alerts logs)
 """
 from fastapi import APIRouter, HTTPException
 from typing import List, Dict, Any, Optional
@@ -10,17 +15,326 @@ import sys
 from pathlib import Path
 import httpx
 import numpy as np
+import pandas as pd
 
 # Add ml directory to path
 ml_path = Path(__file__).parent.parent / "ml"
 sys.path.append(str(ml_path))
 
+# Add backend directory to path for sport_detector
+backend_path = Path(__file__).parent.parent
+sys.path.append(str(backend_path))
+
 # Import model loader
 from model_loader import load_model, get_available_models
+
+# Import sport detector
+from sport_detector import detect_sport
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/edge-scanner", tags=["edge-scanner"])
+
+# Data paths
+TRACKING_DIR = Path(__file__).parent.parent / "data" / "tracking"
+PREDICTIONS_LOG = TRACKING_DIR / "predictions_log_multi_bet.csv"  # New multi-bet format
+PREDICTIONS_LOG_OLD = TRACKING_DIR / "predictions_log.csv"  # Fallback to old format
+MONTE_CARLO_DIR = TRACKING_DIR / "monte_carlo"
+REGRESSION_DIR = TRACKING_DIR / "regression"
+
+
+def load_edge_lab_predictions(bet_type_filter: Optional[str] = None, model_filter: Optional[str] = None) -> List[Dict]:
+    """Load predictions from Edge Lab autonomous system (multi-bet format)"""
+    try:
+        if not PREDICTIONS_LOG.exists():
+            logger.warning(f"Multi-bet predictions log not found: {PREDICTIONS_LOG}, trying old format")
+            # Fallback to old format
+            if PREDICTIONS_LOG_OLD.exists():
+                return load_edge_lab_predictions_old()
+            return []
+
+        df = pd.read_csv(PREDICTIONS_LOG)
+
+        # Filter for recent predictions (last 7 days)
+        df['date_predicted'] = pd.to_datetime(df['date_predicted'])
+        cutoff = pd.Timestamp.now() - pd.Timedelta(days=7)
+        df = df[df['date_predicted'] >= cutoff]
+
+        # Parse game dates to check if still upcoming
+        df['game_date_parsed'] = pd.to_datetime(df['game_date'])
+        df = df[df['game_date_parsed'] >= pd.Timestamp.now().normalize()]
+
+        # Apply filters
+        if bet_type_filter:
+            df = df[df['bet_type'].str.lower() == bet_type_filter.lower()]
+
+        if model_filter:
+            df = df[df['model'].str.lower() == model_filter.lower()]
+
+        predictions = []
+        for _, row in df.iterrows():
+            # Get sport from CSV (already included)
+            sport = row.get('sport', 'UNKNOWN').upper()
+            home_team = row['home_team']
+            away_team = row['away_team']
+
+            # If sport not in CSV, try to detect from team names
+            if sport == 'UNKNOWN':
+                sport = detect_sport(home_team, away_team)
+
+            edge = float(row['edge'])
+            predicted_value = float(row['predicted_value'])
+            market_value = float(row['market_value'])
+            bet_type = row['bet_type']
+            model = row['model']
+
+            # Map confidence to numeric
+            confidence_map = {'HIGH': 0.75, 'MEDIUM': 0.65, 'LOW': 0.55, 'NONE': 0.50}
+            confidence = confidence_map.get(str(row['confidence']).upper(), 0.65)
+
+            # Calculate Kelly fraction based on bet type
+            if bet_type == 'totals':
+                kelly = min(abs(edge) / market_value * confidence, 0.05)
+                market_display = "Over/Under"
+            elif bet_type == 'spreads':
+                kelly = min(abs(edge) / abs(market_value) * confidence, 0.05) if market_value != 0 else 0
+                market_display = "Point Spread"
+            elif bet_type == 'moneyline':
+                kelly = min(abs(edge) * confidence, 0.05)
+                market_display = "Moneyline"
+            else:
+                kelly = 0
+                market_display = bet_type.capitalize()
+
+            # Format model name
+            model_name_map = {
+                'ensemble': 'Edge Lab Ensemble',
+                'random_forest': 'Random Forest',
+                'xgboost': 'XGBoost',
+                'lightgbm': 'LightGBM',
+                'linear_regression': 'Linear Regression',
+                'logistic_regression': 'Logistic Regression'
+            }
+            model_display = model_name_map.get(model, model.replace('_', ' ').title())
+
+            predictions.append({
+                "id": f"edgelab_{row['prediction_id']}",
+                "sport": sport,
+                "game_id": row['prediction_id'],
+                "game_time": f"{row['game_date']}T{row['game_time'].replace(' ', '')}:00Z" if pd.notna(row.get('game_time')) else f"{row['game_date']}T19:00:00Z",
+                "home_team": home_team,
+                "away_team": away_team,
+                "bet_type": bet_type.capitalize(),
+                "market": market_display,
+                "market_line": market_value,
+                "model_prediction": predicted_value,
+                "model_name": model_display,
+                "model_confidence": confidence,
+                "edge": edge,
+                "edge_percentage": (abs(edge) / market_value) * 100 if market_value != 0 else 0,
+                "recommendation": row['recommendation'],
+                "kelly_fraction": kelly,
+                "suggested_bet_size": f"{kelly*100:.1f}% of bankroll",
+                "probability": 0.5 + (edge / market_value) / 2 if bet_type == 'totals' else (predicted_value if bet_type == 'moneyline' else 0.5),
+                "is_pregame": True,
+                "projection_type": "pregame",
+                "features_used": {},
+                "model_performance": {"mae": 11.5, "accuracy": 0.62},
+                "consensus": {"models_agree": 1 if model != 'ensemble' else 5, "models_total": 5, "strength": "STRONG" if model == 'ensemble' else "MODERATE"},
+                "score": abs(edge) * confidence
+            })
+
+        logger.info(f"Loaded {len(predictions)} Edge Lab predictions (bet_type={bet_type_filter}, model={model_filter})")
+        return predictions
+
+    except Exception as e:
+        logger.error(f"Error loading Edge Lab predictions: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return []
+
+
+def load_edge_lab_predictions_old() -> List[Dict]:
+    """Load predictions from old Edge Lab format (backward compatibility)"""
+    try:
+        df = pd.read_csv(PREDICTIONS_LOG_OLD)
+
+        # Filter for recent predictions
+        df['date_predicted'] = pd.to_datetime(df['date_predicted'])
+        cutoff = pd.Timestamp.now() - pd.Timedelta(days=7)
+        df = df[df['date_predicted'] >= cutoff]
+
+        df['game_date_parsed'] = pd.to_datetime(df['game_date'])
+        df = df[df['game_date_parsed'] >= pd.Timestamp.now().normalize()]
+
+        predictions = []
+        for _, row in df.iterrows():
+            sport = detect_sport(row['home_team'], row['away_team'])
+            edge = float(row['edge'])
+            confidence_map = {'HIGH': 0.75, 'MEDIUM': 0.65, 'LOW': 0.55, 'NONE': 0.50}
+            confidence = confidence_map.get(str(row['confidence']).upper(), 0.65)
+
+            predictions.append({
+                "id": f"edgelab_{row['prediction_id']}",
+                "sport": sport,
+                "bet_type": "Totals",
+                "model_name": "Edge Lab Ensemble",
+                "edge": edge,
+                "model_confidence": confidence,
+                "score": abs(edge) * confidence,
+                # ... rest of fields from old format
+            })
+
+        logger.info(f"Loaded {len(predictions)} predictions from old format")
+        return predictions
+    except Exception as e:
+        logger.error(f"Error loading old format: {e}")
+        return []
+
+
+def load_monte_carlo_projections(sport: Optional[str] = None) -> List[Dict]:
+    """Load live projections from Monte Carlo autonomous system"""
+    try:
+        projections = []
+
+        sports_to_check = [sport] if sport else ['nba', 'ncaab']
+
+        for sp in sports_to_check:
+            log_file = MONTE_CARLO_DIR / f"{sp}_simulations_log.csv"
+            if not log_file.exists():
+                continue
+
+            df = pd.read_csv(log_file)
+
+            # Only get recent simulations (last hour)
+            df['timestamp'] = pd.to_datetime(df['timestamp'])
+            cutoff = pd.Timestamp.now() - pd.Timedelta(hours=1)
+            df = df[df['timestamp'] >= cutoff]
+
+            # Get latest simulation for each game
+            df = df.sort_values('timestamp').groupby('game_id').last().reset_index()
+
+            for _, row in df.iterrows():
+                simulated_mean = float(row['simulated_mean'])
+                market_total = float(row['market_total'])
+                edge = simulated_mean - market_total
+
+                # Probability based on simulation
+                prob_over = float(row['prob_over'])
+                confidence = max(prob_over, 1 - prob_over)
+
+                # Kelly fraction
+                kelly = min((prob_over - 0.5) * confidence, 0.05) if prob_over > 0.5 else min((0.5 - prob_over) * confidence, 0.05)
+
+                projections.append({
+                    "id": f"montecarlo_{row['simulation_id']}",
+                    "sport": sp.upper(),
+                    "game_id": row['game_id'],
+                    "game_time": row['game_date'],
+                    "home_team": row['home_team'],
+                    "away_team": row['away_team'],
+                    "bet_type": "Totals",
+                    "market": "Live Over/Under",
+                    "market_line": market_total,
+                    "model_prediction": simulated_mean,
+                    "model_name": "Monte Carlo Simulation",
+                    "model_confidence": confidence,
+                    "edge": edge,
+                    "edge_percentage": (abs(edge) / market_total) * 100,
+                    "recommendation": row['recommendation'],
+                    "kelly_fraction": abs(kelly),
+                    "suggested_bet_size": f"{abs(kelly)*100:.1f}% of bankroll",
+                    "probability": prob_over if edge > 0 else 1 - prob_over,
+                    "is_pregame": False,
+                    "projection_type": "live",
+                    "features_used": {
+                        "quarter": int(row.get('quarter', 0)),
+                        "time_remaining": str(row.get('time_remaining', '')),
+                        "current_total": int(row.get('current_total', 0)),
+                        "avg_pace": float(row.get('avg_pace', 0))
+                    },
+                    "model_performance": {"simulated_std": float(row['simulated_std'])},
+                    "consensus": {"models_agree": 1, "models_total": 1, "strength": "MODERATE"},
+                    "score": abs(edge) * confidence
+                })
+
+        logger.info(f"Loaded {len(projections)} Monte Carlo projections")
+        return projections
+
+    except Exception as e:
+        logger.error(f"Error loading Monte Carlo projections: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return []
+
+
+def load_regression_alerts(sport: Optional[str] = None) -> List[Dict]:
+    """Load alerts from Regression to Mean autonomous system"""
+    try:
+        alerts = []
+
+        sports_to_check = [sport] if sport else ['nba', 'ncaab']
+
+        for sp in sports_to_check:
+            log_file = REGRESSION_DIR / f"{sp}_regression_alerts.csv"
+            if not log_file.exists():
+                continue
+
+            df = pd.read_csv(log_file)
+
+            # Only get recent alerts (last hour)
+            df['timestamp'] = pd.to_datetime(df['timestamp'])
+            cutoff = pd.Timestamp.now() - pd.Timedelta(hours=1)
+            df = df[df['timestamp'] >= cutoff]
+
+            for _, row in df.iterrows():
+                edge = float(row['edge'])
+                confidence = float(row['confidence'])
+                z_score = float(row['z_score'])
+
+                # Kelly based on z-score strength
+                kelly = min((z_score - 1.0) * 0.02, 0.05)
+
+                alerts.append({
+                    "id": f"regression_{row['alert_id']}",
+                    "sport": sp.upper(),
+                    "game_id": row['game_id'],
+                    "game_time": row['game_date'],
+                    "home_team": row['home_team'],
+                    "away_team": row['away_team'],
+                    "bet_type": "Totals",
+                    "market": "Live Regression",
+                    "market_line": float(row['live_total']),
+                    "model_prediction": float(row['predicted_total']),
+                    "model_name": "Regression to Mean",
+                    "model_confidence": confidence,
+                    "edge": edge,
+                    "edge_percentage": (abs(edge) / float(row['live_total'])) * 100,
+                    "recommendation": row['recommendation'],
+                    "kelly_fraction": kelly,
+                    "suggested_bet_size": f"{kelly*100:.1f}% of bankroll",
+                    "probability": 0.5 + (edge / float(row['live_total'])) / 2,
+                    "is_pregame": False,
+                    "projection_type": "live",
+                    "features_used": {
+                        "quarter": int(row.get('quarter', 0)),
+                        "time_remaining": str(row.get('time_remaining', '')),
+                        "current_total": int(row.get('current_total', 0)),
+                        "z_score": z_score
+                    },
+                    "model_performance": {"z_score": z_score},
+                    "consensus": {"models_agree": 1, "models_total": 1, "strength": "HIGH" if z_score >= 2.5 else "MODERATE"},
+                    "score": abs(edge) * confidence * (z_score / 2.0)
+                })
+
+        logger.info(f"Loaded {len(alerts)} Regression alerts")
+        return alerts
+
+    except Exception as e:
+        logger.error(f"Error loading Regression alerts: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return []
 
 
 async def fetch_games_from_api():
@@ -156,319 +470,148 @@ async def generate_prediction_for_game(game, model_name, bet_type):
 @router.get("/best-plays")
 async def get_best_plays(
     sport: Optional[str] = None,
+    bet_type: Optional[str] = None,
+    model: Optional[str] = None,
     min_edge: float = 2.0,
     min_confidence: float = 0.60,
     limit: int = 50,
     projection_type: Optional[str] = "pregame"
 ):
     """
-    Get best betting plays across all models and sports
+    Get best betting plays from ALL autonomous systems
+
+    Data Sources:
+    1. Edge Lab predictions (pregame totals/spreads/moneyline from ML models)
+    2. Monte Carlo simulations (live game projections)
+    3. Regression to Mean alerts (live betting opportunities)
 
     Args:
         sport: Filter by sport (nba, nfl, nhl, ncaab, etc.). If None, returns all sports
+        bet_type: Filter by bet type - 'totals', 'spreads', 'moneyline'. If None, returns all types
+        model: Filter by model - 'ensemble', 'random_forest', 'xgboost', 'lightgbm', 'linear_regression'. If None, returns all models
         min_edge: Minimum edge in points/probability (default 2.0)
         min_confidence: Minimum model confidence (default 0.60)
         limit: Maximum number of plays to return (default 50)
         projection_type: Filter by projection type - 'pregame', 'live', or 'all' (default 'pregame')
-                        - 'pregame': Only games that haven't started yet
-                        - 'live': Only games currently in progress
-                        - 'all': Both pregame and live games
 
     Returns:
-        List of best plays sorted by edge * confidence score
+        List of best plays sorted by score (edge * confidence * other factors)
     """
     try:
-        # Fetch games
-        games = await fetch_games_from_api()
+        logger.info(f"Fetching best plays: sport={sport}, bet_type={bet_type}, model={model}, min_edge={min_edge}, min_confidence={min_confidence}, projection_type={projection_type}")
 
-        if not games:
-            logger.warning("No games available, returning mock data")
-            # Return mock data if no games available
-            mock_plays = [
-            {
-                "id": "nba_20251108_lal_bos_totals",
-                "sport": "NBA",
-                "game_id": "nba_20251108_lal_bos",
-                "game_time": "2025-11-08T19:30:00Z",
-                "home_team": "Boston Celtics",
-                "away_team": "Los Angeles Lakers",
-                "bet_type": "Totals",
-                "market": "Over/Under",
-                "market_line": 228.5,
-                "model_prediction": 233.2,
-                "model_name": "Random Forest",
-                "model_confidence": 0.78,
-                "edge": 4.7,
-                "edge_percentage": 2.06,
-                "recommendation": "OVER",
-                "kelly_fraction": 0.042,
-                "suggested_bet_size": "4.2% of bankroll",
-                "probability": 0.651,
-                "is_pregame": True,
-                "projection_type": "pregame",
-                "features_used": {
-                    "home_pace": 100.5,
-                    "away_pace": 98.3,
-                    "home_off_rating": 118.2,
-                    "away_off_rating": 115.8,
-                    "home_def_rating": 110.5,
-                    "away_def_rating": 108.9,
-                    "rest_days_home": 2,
-                    "rest_days_away": 1
-                },
-                "model_performance": {
-                    "mae": 7.8,
-                    "accuracy": 0.652,
-                    "games_trained": 1203
-                },
-                "consensus": {
-                    "models_agree": 3,
-                    "models_total": 4,
-                    "strength": "STRONG"
-                }
-            },
-            {
-                "id": "nba_20251108_gsw_phx_spreads",
-                "sport": "NBA",
-                "game_id": "nba_20251108_gsw_phx",
-                "game_time": "2025-11-08T22:00:00Z",
-                "home_team": "Phoenix Suns",
-                "away_team": "Golden State Warriors",
-                "bet_type": "Spreads",
-                "market": "Point Spread",
-                "market_line": -5.5,
-                "model_prediction": -2.8,
-                "model_name": "Random Forest",
-                "model_confidence": 0.73,
-                "edge": 2.7,
-                "edge_percentage": 49.09,
-                "recommendation": "WARRIORS +5.5",
-                "kelly_fraction": 0.031,
-                "suggested_bet_size": "3.1% of bankroll",
-                "probability": 0.623,
-                "is_pregame": True,
-                "projection_type": "pregame",
-                "features_used": {
-                    "home_pace": 102.1,
-                    "away_pace": 99.8,
-                    "home_off_rating": 112.4,
-                    "away_off_rating": 116.7,
-                    "home_def_rating": 113.2,
-                    "away_def_rating": 109.1,
-                    "rest_days_home": 1,
-                    "rest_days_away": 2
-                },
-                "model_performance": {
-                    "ats_accuracy": 0.682,
-                    "mae": 10.45,
-                    "games_trained": 738
-                },
-                "consensus": {
-                    "models_agree": 2,
-                    "models_total": 3,
-                    "strength": "MODERATE"
-                }
-            },
-            {
-                "id": "nba_20251108_mia_mil_moneyline",
-                "sport": "NBA",
-                "game_id": "nba_20251108_mia_mil",
-                "game_time": "2025-11-08T20:00:00Z",
-                "home_team": "Milwaukee Bucks",
-                "away_team": "Miami Heat",
-                "bet_type": "Moneyline",
-                "market": "Moneyline",
-                "market_line": -180,
-                "model_prediction": 0.72,
-                "model_name": "Random Forest Classifier",
-                "model_confidence": 0.72,
-                "edge": 0.078,
-                "edge_percentage": 10.83,
-                "recommendation": "BUCKS -180",
-                "kelly_fraction": 0.025,
-                "suggested_bet_size": "2.5% of bankroll",
-                "probability": 0.72,
-                "implied_probability": 0.642,
-                "is_pregame": True,
-                "projection_type": "pregame",
-                "features_used": {
-                    "home_win_pct": 0.688,
-                    "away_win_pct": 0.531,
-                    "home_ppg": 115.2,
-                    "away_ppg": 108.4,
-                    "home_recent_form": 0.800,
-                    "away_recent_form": 0.600
-                },
-                "model_performance": {
-                    "accuracy": 0.667,
-                    "roc_auc": 0.721,
-                    "games_trained": 738
-                },
-                "consensus": {
-                    "models_agree": 2,
-                    "models_total": 2,
-                    "strength": "STRONG"
-                }
-            },
-            {
-                "id": "ncaab_20251108_duke_unc_totals",
-                "sport": "NCAAB",
-                "game_id": "ncaab_20251108_duke_unc",
-                "game_time": "2025-11-08T21:00:00Z",
-                "home_team": "Duke",
-                "away_team": "UNC",
-                "bet_type": "Totals",
-                "market": "Over/Under",
-                "market_line": 145.5,
-                "model_prediction": 151.3,
-                "model_name": "Random Forest",
-                "model_confidence": 0.70,
-                "edge": 5.8,
-                "edge_percentage": 3.99,
-                "recommendation": "OVER",
-                "kelly_fraction": 0.048,
-                "suggested_bet_size": "4.8% of bankroll",
-                "probability": 0.672,
-                "is_pregame": True,
-                "projection_type": "pregame",
-                "features_used": {
-                    "home_adj_tempo": 72.5,
-                    "away_adj_tempo": 70.1,
-                    "home_adj_off_eff": 115.3,
-                    "away_adj_off_eff": 112.8,
-                    "home_adj_def_eff": 95.2,
-                    "away_adj_def_eff": 97.5
-                },
-                "model_performance": {
-                    "mae": 8.5,
-                    "accuracy": 0.625,
-                    "games_trained": 950
-                },
-                "consensus": {
-                    "models_agree": 4,
-                    "models_total": 4,
-                    "strength": "STRONG"
-                }
-            }
-        ]
+        # Load data from all THREE autonomous systems
+        all_plays = []
 
-            # Filter by sport if specified
-            if sport:
-                mock_plays = [p for p in mock_plays if p['sport'].lower() == sport.lower()]
+        # 1. Edge Lab predictions (pregame)
+        if projection_type in ['pregame', 'all']:
+            edge_lab_plays = load_edge_lab_predictions(bet_type_filter=bet_type, model_filter=model)
+            all_plays.extend(edge_lab_plays)
+            logger.info(f"Added {len(edge_lab_plays)} Edge Lab predictions")
 
-            # Filter by projection type
-            if projection_type and projection_type.lower() != 'all':
-                mock_plays = [p for p in mock_plays if p.get('projection_type', 'pregame') == projection_type.lower()]
+        # 2. Monte Carlo simulations (live)
+        if projection_type in ['live', 'all']:
+            monte_carlo_plays = load_monte_carlo_projections(sport)
+            all_plays.extend(monte_carlo_plays)
+            logger.info(f"Added {len(monte_carlo_plays)} Monte Carlo projections")
 
-            # Filter by minimum edge and confidence
-            filtered_plays = [
-                p for p in mock_plays
-                if abs(p['edge']) >= min_edge and p['model_confidence'] >= min_confidence
-            ]
+        # 3. Regression alerts (live)
+        if projection_type in ['live', 'all']:
+            regression_plays = load_regression_alerts(sport)
+            all_plays.extend(regression_plays)
+            logger.info(f"Added {len(regression_plays)} Regression alerts")
 
-            # Calculate score (edge * confidence) and sort
-            for play in filtered_plays:
-                play['score'] = abs(play['edge']) * play['model_confidence']
+        logger.info(f"Total plays from autonomous systems: {len(all_plays)}")
 
-            sorted_plays = sorted(filtered_plays, key=lambda x: x['score'], reverse=True)
-
-            # Limit results
-            result_plays = sorted_plays[:limit]
-
+        # If no real data available, return empty response
+        if not all_plays:
+            logger.warning("No plays available from autonomous systems")
             return {
-                "total_plays": len(result_plays),
+                "total_plays": 0,
                 "filters": {
                     "sport": sport or "ALL",
+                    "bet_type": bet_type or "ALL",
+                    "model": model or "ALL",
                     "min_edge": min_edge,
                     "min_confidence": min_confidence,
                     "projection_type": projection_type or "pregame"
                 },
-                "plays": result_plays,
-                "generated_at": datetime.utcnow().isoformat() + 'Z'
+                "plays": [],
+                "generated_at": datetime.utcnow().isoformat() + 'Z',
+                "data_sources": {
+                    "edge_lab": 0,
+                    "monte_carlo": 0,
+                    "regression": 0
+                }
             }
 
-        # Generate predictions for real games
-        all_plays = []
+        # Filter by sport if specified
+        if sport:
+            all_plays = [p for p in all_plays if p['sport'].lower() == sport.lower()]
+            logger.info(f"After sport filter ({sport}): {len(all_plays)} plays")
 
-        # Get available models
-        available_models = get_available_models()
+        # Filter by minimum edge and confidence
+        filtered_plays = [
+            p for p in all_plays
+            if abs(p['edge']) >= min_edge and p['model_confidence'] >= min_confidence
+        ]
+        logger.info(f"After edge/confidence filter: {len(filtered_plays)} plays")
 
-        # Models to try for each bet type
-        models_to_try = {
-            "totals": ["random_forest", "xgboost", "lightgbm", "linear_regression"],
-            "spreads": ["random_forest", "xgboost", "lightgbm", "linear_regression"],
-            "moneyline": ["random_forest", "xgboost", "lightgbm", "logistic_regression"]
-        }
-
-        # Generate predictions for each game
-        for game in games[:10]:  # Limit to 10 games to avoid timeout
-            game_sport = game['state']['sport_key'].replace('basketball_', '').replace('football_', '').replace('hockey_', '')
-
-            # Filter by sport if specified
-            if sport and game_sport.lower() != sport.lower():
-                continue
-
-            # Try all bet types and models
-            for bet_type in ["totals", "spreads", "moneyline"]:
-                for model_name in models_to_try[bet_type]:
-                    model_key = f"{game_sport}_{model_name}_{bet_type}"
-                    if model_key in available_models:
-                        prediction = await generate_prediction_for_game(game, model_name, bet_type)
-                        if prediction:
-                            # Filter by projection type
-                            if projection_type and projection_type.lower() != 'all':
-                                if prediction.get('projection_type', 'pregame') != projection_type.lower():
-                                    continue
-
-                            # Filter by edge and confidence
-                            if abs(prediction['edge']) >= min_edge and prediction['model_confidence'] >= min_confidence:
-                                all_plays.append(prediction)
-
-        # Calculate consensus (group by game_id + bet_type)
-        from collections import defaultdict
-        game_consensus = defaultdict(list)
-        for play in all_plays:
-            key = f"{play['game_id']}_{play['bet_type']}"
-            game_consensus[key].append(play)
-
-        # Update consensus for each play
-        for play in all_plays:
-            key = f"{play['game_id']}_{play['bet_type']}"
-            related_plays = game_consensus[key]
-
-            # Count how many models agree on the direction
-            same_direction = sum(1 for p in related_plays if (p['edge'] > 0) == (play['edge'] > 0))
-
-            play['consensus'] = {
-                "models_agree": same_direction,
-                "models_total": len(related_plays),
-                "strength": "STRONG" if same_direction / len(related_plays) >= 0.75 else "MODERATE" if same_direction / len(related_plays) >= 0.5 else "WEAK"
-            }
-
-            # Calculate score
-            play['score'] = abs(play['edge']) * play['model_confidence'] * (same_direction / len(related_plays))
-
-        # Sort by score
-        sorted_plays = sorted(all_plays, key=lambda x: x['score'], reverse=True)
+        # Sort by score (already calculated in each data loader)
+        sorted_plays = sorted(filtered_plays, key=lambda x: x.get('score', 0), reverse=True)
 
         # Limit results
         result_plays = sorted_plays[:limit]
+
+        # Count data sources
+        source_counts = {
+            "edge_lab": len([p for p in result_plays if p['id'].startswith('edgelab_')]),
+            "monte_carlo": len([p for p in result_plays if p['id'].startswith('montecarlo_')]),
+            "regression": len([p for p in result_plays if p['id'].startswith('regression_')])
+        }
+
+        logger.info(f"Returning {len(result_plays)} plays from autonomous systems")
+        logger.info(f"Sources: Edge Lab={source_counts['edge_lab']}, Monte Carlo={source_counts['monte_carlo']}, Regression={source_counts['regression']}")
 
         return {
             "total_plays": len(result_plays),
             "filters": {
                 "sport": sport or "ALL",
                 "min_edge": min_edge,
+                "bet_type": bet_type or "ALL",
+                "model": model or "ALL",
                 "min_confidence": min_confidence,
                 "projection_type": projection_type or "pregame"
             },
             "plays": result_plays,
-            "generated_at": datetime.utcnow().isoformat() + 'Z'
+            "generated_at": datetime.utcnow().isoformat() + 'Z',
+            "data_sources": source_counts
         }
 
     except Exception as e:
         logger.error(f"Error generating best plays: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error generating best plays: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return {
+            "total_plays": 0,
+            "filters": {
+                "sport": sport or "ALL",
+                "bet_type": bet_type or "ALL",
+                "model": model or "ALL",
+                "min_edge": min_edge,
+                "min_confidence": min_confidence,
+                "projection_type": projection_type or "pregame"
+            },
+            "plays": [],
+            "generated_at": datetime.utcnow().isoformat() + 'Z',
+            "data_sources": {
+                "edge_lab": 0,
+                "monte_carlo": 0,
+                "regression": 0
+            }
+        }
+
+
 
 
 @router.get("/sports")

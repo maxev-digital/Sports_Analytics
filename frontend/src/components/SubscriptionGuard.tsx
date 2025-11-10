@@ -21,6 +21,12 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
       return;
     }
 
+    // DEVELOPMENT MODE: Bypass subscription check on localhost
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      console.log(`DEV MODE: Bypassing subscription check for ${username}`);
+      return;
+    }
+
     // Admins bypass subscription checks
     if (role === 'admin') {
       console.log(`User ${username} is admin - bypassing subscription check`);
@@ -33,8 +39,9 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
     }
   }, [subscriptionTier, navigate, username, role, location.pathname]);
 
-  // Allow access for admins OR paid users
-  if (role === 'admin' || (subscriptionTier !== 'free' && subscriptionTier !== 'trial')) {
+  // Allow access for admins OR paid users OR development mode
+  const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  if (isDev || role === 'admin' || (subscriptionTier !== 'free' && subscriptionTier !== 'trial')) {
     return <>{children}</>;
   }
 
