@@ -18,6 +18,18 @@ from storage.alert_storage import alert_storage
 
 logger = logging.getLogger(__name__)
 
+
+def serialize_datetime_dict(data):
+    """Recursively convert datetime objects to ISO format strings in a dictionary"""
+    if isinstance(data, dict):
+        return {key: serialize_datetime_dict(value) for key, value in data.items()}
+    elif isinstance(data, list):
+        return [serialize_datetime_dict(item) for item in data]
+    elif isinstance(data, datetime):
+        return data.isoformat()
+    else:
+        return data
+
 @dataclass
 class AlertPerformance:
     """Track performance of alerts over time"""
@@ -187,6 +199,11 @@ class AlertMonitor:
             else:
                 return None
 
+            # Convert alert to dict and serialize datetime objects
+            alert_dict = asdict(alert) if hasattr(alert, '__dataclass_fields__') else None
+            if alert_dict:
+                alert_dict = serialize_datetime_dict(alert_dict)
+
             # Create tracked alert
             tracked_alert = alert_storage.create_alert(
                 alert_type=alert_type,
@@ -202,7 +219,7 @@ class AlertMonitor:
                 edge_percent=edge_percent,
                 profit_potential=profit_potential,
                 expires_at=None,  # Can add expiry logic later
-                strategy_details=asdict(alert) if hasattr(alert, '__dataclass_fields__') else None
+                strategy_details=alert_dict
             )
 
             return tracked_alert.id
