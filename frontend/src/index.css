@@ -186,24 +186,3 @@ code {
     filter: blur(40px);
   }
 }
-
-/* ========================================
-   SportsDataIO Badge Styles
-   ======================================== */
-
-.sdio-badge {
-  display: inline-block;
-  text-decoration: none;
-  border: none;
-  transition: opacity 0.2s ease;
-}
-
-.sdio-badge:hover {
-  opacity: 0.8;
-}
-
-.sdio-badge .sdio-logo-img {
-  height: 32px;
-  width: auto;
-  display: block;
-}

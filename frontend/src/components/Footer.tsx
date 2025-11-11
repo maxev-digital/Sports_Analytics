@@ -1,13 +1,6 @@
-import { SportsDataIOBadge } from './SportsDataIOBadge';
-
 export const Footer = () => {
   return (
     <footer className="bg-black text-slate-400 text-xs py-6 border-t border-slate-800">
-      {/* SportsDataIO Badge - Left Aligned */}
-      <div className="max-w-7xl mx-auto px-4 mb-6">
-        <SportsDataIOBadge />
-      </div>
-
       {/* Social Media Icons - Centered */}
       <div className="flex justify-center gap-6 mb-6">
         {/* X (Twitter) */}
@@ -66,7 +59,6 @@ export const Footer = () => {
       <div className="text-center">
       <p className="mb-2">
         © 2025 <strong>Max EV Holdings, LLC</strong>. All rights reserved.
-        Wyoming Limited Liability Company • Filing ID: <span className="text-yellow-500">2025-001800389</span>
       </p>
 
       {/* Bookmaker Logo Disclaimer */}

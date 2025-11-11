@@ -97,6 +97,8 @@ export function MaxEvEdges() {
   const [loading, setLoading] = useState(true);
   const [minEdge, setMinEdge] = useState(2.0);
   const [minConfidence, setMinConfidence] = useState(0.60);
+  const [debouncedMinEdge, setDebouncedMinEdge] = useState(2.0);
+  const [debouncedMinConfidence, setDebouncedMinConfidence] = useState(0.60);
   const [sortField, setSortField] = useState<SortField>('edge');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [searchQuery, setSearchQuery] = useState('');
@@ -111,6 +113,21 @@ export function MaxEvEdges() {
     { key: 'mlb', name: 'MLB', emoji: '⚾' },
     { key: 'ncaaf', name: 'NCAAF', emoji: '🏈' },
   ];
+
+  // Debounce minEdge and minConfidence inputs (wait 800ms after user stops typing)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedMinEdge(minEdge);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [minEdge]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedMinConfidence(minConfidence);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [minConfidence]);
 
   // Fetch available sports
   useEffect(() => {
@@ -127,14 +144,14 @@ export function MaxEvEdges() {
     fetchSports();
   }, []);
 
-  // Fetch best plays
+  // Fetch best plays (uses debounced values to avoid flickering while typing)
   useEffect(() => {
     const fetchBestPlays = async () => {
       try {
         setLoading(true);
         const params = new URLSearchParams({
-          min_edge: minEdge.toString(),
-          min_confidence: minConfidence.toString(),
+          min_edge: debouncedMinEdge.toString(),
+          min_confidence: debouncedMinConfidence.toString(),
           limit: '50',
           projection_type: 'pregame' // Only show pregame projections on this page
         });
@@ -164,7 +181,7 @@ export function MaxEvEdges() {
     fetchBestPlays();
     const interval = setInterval(fetchBestPlays, 30000); // Auto-refresh every 30s
     return () => clearInterval(interval);
-  }, [selectedSport, selectedBetType, selectedModel, minEdge, minConfidence]);
+  }, [selectedSport, selectedBetType, selectedModel, debouncedMinEdge, debouncedMinConfidence]);
 
   // Filter and sort plays
   const filteredPlays = plays
@@ -221,19 +238,69 @@ export function MaxEvEdges() {
     return <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>;
   };
 
-  // Format game time
+  // Format game time - always show consistent date/time format
   const formatGameTime = (dateString: string) => {
     const date = new Date(dateString);
-    const now = new Date();
-    const diffMinutes = Math.floor((date.getTime() - now.getTime()) / 60000);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit'
+    });
+  };
 
-    if (diffMinutes < 60) {
-      return `${diffMinutes}m`;
-    } else if (diffMinutes < 1440) {
-      return `${Math.floor(diffMinutes / 60)}h ${diffMinutes % 60}m`;
-    } else {
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  // Round to nearest half point (standard betting lines)
+  const roundToHalfPoint = (value: number): number => {
+    return Math.round(value * 2) / 2;
+  };
+
+  // Convert API sport codes to clean display names
+  const getSportDisplayName = (sport: string): string => {
+    const sportMap: Record<string, string> = {
+      'basketball_nba': 'NBA',
+      'basketball_ncaab': 'NCAAB',
+      'americanfootball_nfl': 'NFL',
+      'americanfootball_ncaaf': 'NCAAF',
+      'icehockey_nhl': 'NHL',
+      'baseball_mlb': 'MLB'
+    };
+    return sportMap[sport.toLowerCase()] || sport.toUpperCase();
+  };
+
+  // Helper function to get bet label for display
+  const getBetLabel = (play: BestPlay) => {
+    const { bet_type, recommendation, market_line, home_team, away_team } = play;
+    const betTypeLower = bet_type.toLowerCase();
+
+    // For totals, show OVER/UNDER as-is
+    if (betTypeLower === 'totals') {
+      return recommendation;
     }
+
+    // For spreads, convert HOME/AWAY to Favorite/Underdog
+    if (betTypeLower === 'spreads') {
+      // Negative spread means home is favored (using rounded value)
+      const roundedLine = roundToHalfPoint(market_line);
+      const homeIsFavorite = roundedLine < 0;
+
+      if (recommendation === 'HOME') {
+        return homeIsFavorite ? 'Favorite' : 'Underdog';
+      } else if (recommendation === 'AWAY') {
+        return homeIsFavorite ? 'Underdog' : 'Favorite';
+      }
+    }
+
+    // For moneyline, show the actual team name
+    if (betTypeLower === 'moneyline') {
+      if (recommendation === 'HOME') {
+        return home_team;
+      } else if (recommendation === 'AWAY') {
+        return away_team;
+      }
+    }
+
+    // Fallback
+    return recommendation;
   };
 
   // Consensus badge
@@ -442,6 +509,11 @@ export function MaxEvEdges() {
                             <span className="cursor-help">Prediction</span>
                           </Tooltip>
                         </th>
+                        <th className="text-center py-2 px-3 text-slate-300 font-bold text-xs uppercase tracking-wider border-r border-b-2 border-slate-600">
+                          <Tooltip text="Recommended bet based on model prediction">
+                            <span className="cursor-help">Bet</span>
+                          </Tooltip>
+                        </th>
                         <th
                           className="text-center py-2 px-3 text-slate-300 font-bold text-xs uppercase tracking-wider border-r border-b-2 border-slate-600 cursor-pointer hover:bg-slate-700 transition-colors"
                           onClick={() => toggleSort('edge')}
@@ -492,7 +564,7 @@ export function MaxEvEdges() {
                     <tbody>
                       {filteredPlays.length === 0 ? (
                         <tr>
-                          <td colSpan={10} className="py-8 px-4 text-center">
+                          <td colSpan={11} className="py-8 px-4 text-center">
                             <div className="text-slate-500 text-lg mb-2">
                               {searchQuery ? (
                                 <>No plays match your search "{searchQuery}"</>
@@ -501,7 +573,7 @@ export function MaxEvEdges() {
                               )}
                             </div>
                             <div className="text-slate-600 text-sm">
-                              Table columns: Game | Sport | Bet Type | Line | Prediction | Edge | Confidence | Kelly % | Model | Consensus
+                              Table columns: Game | Sport | Bet Type | Line | Prediction | Bet | Edge | Confidence | Kelly % | Model | Consensus
                             </div>
                             {searchQuery && (
                               <button
@@ -523,16 +595,24 @@ export function MaxEvEdges() {
                             }`}
                           >
                             <td className="py-3 px-3 border-r border-slate-600">
-                              <div className="text-white font-semibold text-sm">
-                                {play.away_team} @ {play.home_team}
+                              <div className="text-white font-semibold text-base">
+                                <span className="text-slate-400 text-sm">(A)</span> {play.away_team}
+                                {play.bet_type.toLowerCase() === 'spreads' && play.market_line > 0 && (
+                                  <span className="text-yellow-400 ml-1 text-sm">({-roundToHalfPoint(Math.abs(play.market_line))})</span>
+                                )}
+                                {' @ '}
+                                <span className="text-slate-400 text-sm">(H)</span> {play.home_team}
+                                {play.bet_type.toLowerCase() === 'spreads' && play.market_line < 0 && (
+                                  <span className="text-yellow-400 ml-1 text-sm">({roundToHalfPoint(play.market_line)})</span>
+                                )}
                               </div>
-                              <div className="text-slate-400 text-xs mt-0.5">
+                              <div className="text-slate-400 text-sm mt-0.5">
                                 {formatGameTime(play.game_time)}
                               </div>
                             </td>
                             <td className="py-3 px-3 text-center border-r border-slate-600">
                               <span className="px-2 py-0.5 bg-slate-700 text-slate-300 text-xs rounded font-semibold">
-                                {play.sport}
+                                {getSportDisplayName(play.sport)}
                               </span>
                             </td>
                             <td className="py-3 px-3 text-center border-r border-slate-600">
@@ -540,12 +620,21 @@ export function MaxEvEdges() {
                             </td>
                             <td className="py-3 px-3 text-center border-r border-slate-600">
                               <div className="text-white font-semibold text-base">
-                                {play.market_line > 0 ? '+' : ''}{play.market_line}
+                                {roundToHalfPoint(play.market_line) > 0 ? '+' : ''}{roundToHalfPoint(play.market_line)}
                               </div>
                             </td>
                             <td className="py-3 px-3 text-center border-r border-slate-600">
                               <div className="text-blue-400 font-semibold text-base">
                                 {play.model_prediction.toFixed(1)}
+                              </div>
+                            </td>
+                            <td className="py-3 px-3 text-center border-r border-slate-600">
+                              <div className={`font-bold text-base ${
+                                play.recommendation === 'OVER' || play.recommendation === 'HOME' ? 'text-green-400' :
+                                play.recommendation === 'UNDER' || play.recommendation === 'AWAY' ? 'text-red-400' :
+                                'text-yellow-400'
+                              }`}>
+                                {getBetLabel(play)}
                               </div>
                             </td>
                             <td className="py-3 px-3 text-center border-r border-slate-600">

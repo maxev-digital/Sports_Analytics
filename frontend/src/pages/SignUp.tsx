@@ -9,19 +9,48 @@ export function SignUp() {
     username: '',
     password: '',
     confirmPassword: '',
+    referralCode: '',
   });
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [showFireRing, setShowFireRing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [referralValidation, setReferralValidation] = useState<{valid: boolean, message: string} | null>(null);
+  const [checkingCode, setCheckingCode] = useState(false);
   const navigate = useNavigate();
   const audioRef = useRef<HTMLAudioElement>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [name]: value,
     });
+
+    // Validate referral code when it changes
+    if (name === 'referralCode' && value.length >= 3) {
+      validateReferralCode(value);
+    } else if (name === 'referralCode' && value.length < 3) {
+      setReferralValidation(null);
+    }
+  };
+
+  const validateReferralCode = async (code: string) => {
+    setCheckingCode(true);
+    try {
+      const response = await fetch(getApiUrl('/influencer/validate-code'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      });
+      const result = await response.json();
+      setReferralValidation(result);
+    } catch (err) {
+      console.error('Error validating code:', err);
+      setReferralValidation(null);
+    } finally {
+      setCheckingCode(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -57,6 +86,7 @@ export function SignUp() {
           email: formData.email,
           username: formData.username,
           password: formData.password,
+          referral_code: formData.referralCode || undefined,
         }),
       });
 
@@ -212,6 +242,49 @@ export function SignUp() {
                 placeholder="Confirm your password"
                 disabled={loading}
               />
+            </div>
+
+            {/* Referral Code Field */}
+            <div>
+              <label htmlFor="referralCode" className="block text-sm font-medium text-slate-300 mb-2">
+                Referral Code (Optional)
+              </label>
+              <div className="relative">
+                <input
+                  id="referralCode"
+                  name="referralCode"
+                  type="text"
+                  value={formData.referralCode}
+                  onChange={handleChange}
+                  className="appearance-none relative block w-full px-4 py-3 border-2 border-slate-600 bg-slate-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 uppercase"
+                  placeholder="Enter influencer code"
+                  disabled={loading}
+                  maxLength={20}
+                />
+                {formData.referralCode.length >= 3 && (
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    {checkingCode ? (
+                      <svg className="animate-spin h-5 w-5 text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    ) : referralValidation?.valid ? (
+                      <svg className="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : referralValidation && !referralValidation.valid ? (
+                      <svg className="h-5 w-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    ) : null}
+                  </div>
+                )}
+              </div>
+              {referralValidation && (
+                <p className={`mt-1 text-xs ${referralValidation.valid ? 'text-green-400' : 'text-red-400'}`}>
+                  {referralValidation.message}
+                </p>
+              )}
             </div>
 
             {/* Terms Agreement Checkbox */}

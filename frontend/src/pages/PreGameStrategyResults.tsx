@@ -572,21 +572,6 @@ export function PreGameStrategyResults() {
           </p>
         </div>
 
-        {/* Beta Disclaimer Banner */}
-        <div className="mb-4 bg-gradient-to-r from-green-900/40 via-green-800/30 to-green-900/40 border-2 border-green-600/50 rounded-lg p-4">
-          <div className="flex items-start gap-3">
-            <div className="text-2xl">🧪</div>
-            <div className="flex-1">
-              <h3 className="text-green-400 font-bold text-lg mb-2">Beta Mode - Data Optimization in Progress</h3>
-              <p className="text-green-200 text-sm leading-relaxed">
-                Results in Beta Mode are based on our historical game and odds data with backtesting ongoing.
-                Live games are being logged and stored for our Machine Learning Models every day.
-                By the time we launch the official site after beta, data will be refined and optimized for more accurate results.
-              </p>
-            </div>
-          </div>
-        </div>
-
         {/* Sport Tabs & Content */}
         <div className="flex gap-4 mb-2">
           {/* Sport Tabs - Vertical */}
@@ -1052,6 +1037,38 @@ export function PreGameStrategyResults() {
               Showing {filteredStrategies.length} strategies
               {selectedSport !== 'all' && ` for ${sports.find(s => s.key === selectedSport)?.name}`}
               • {backtestedCount} backtested • {collectingCount} collecting data
+            </div>
+
+            {/* Explanatory Section */}
+            <div className="mt-8 bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-blue-600 rounded-lg p-6">
+              <h2 className="text-xl font-bold text-blue-300 mb-4 flex items-center gap-2">
+                <span>🧠</span>
+                Understanding the Strategy Results
+              </h2>
+
+              <div className="space-y-4 text-slate-300 text-sm leading-relaxed">
+                <p>
+                  The data shown above represents <strong className="text-white">historical and simulated performance baselines</strong> for each pregame betting strategy tracked by <strong className="text-blue-400">Max EV Sports</strong>.
+                  These results are not betting advice — they are <strong className="text-white">reference models</strong> that help you understand how often certain pregame patterns occur and what kind of edge could exist under defined conditions.
+                </p>
+
+                <ul className="list-disc list-inside space-y-2 pl-4">
+                  <li><strong className="text-green-400">Win Rate (%)</strong> – How often the situation historically resulted in a win.</li>
+                  <li><strong className="text-blue-400">ROI (%)</strong> – The simulated return if you placed an equal stake on every qualifying event at average market odds.</li>
+                  <li><strong className="text-purple-400">Typical EV (%)</strong> – Expected value per wager, based on probability vs. price.</li>
+                  <li><strong className="text-amber-400">Minimum Odds Threshold</strong> – The lowest odds where the edge remains positive.</li>
+                  <li><strong className="text-red-400">Edge Decay</strong> – How much the historical edge has changed over time.</li>
+                </ul>
+
+                <blockquote className="border-l-4 border-blue-500 pl-4 italic text-slate-200 bg-slate-800/50 py-3 rounded-r">
+                  "If this situation happened 100 times and I always bet it at the listed minimum odds or better, what would the long-term expectation look like?"
+                </blockquote>
+
+                <p className="text-amber-300 text-xs italic border-t border-slate-600 pt-4 mt-4">
+                  <strong>Note:</strong> All simulations assume equal-sized bets, average market availability, and no slippage.
+                  Past performance is not a guarantee of future results.
+                </p>
+              </div>
             </div>
           </div>
         </div>

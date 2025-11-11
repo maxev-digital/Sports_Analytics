@@ -12,12 +12,14 @@ export function Navigation() {
   const { username, role, token, logout } = useAuth();
   const [strategyDropdownOpen, setStrategyDropdownOpen] = useState(false);
   const [strategyResultsDropdownOpen, setStrategyResultsDropdownOpen] = useState(false);
+  const [edgesDropdownOpen, setEdgesDropdownOpen] = useState(false);
   const [toolsDropdownOpen, setToolsDropdownOpen] = useState(false);
   const [learnDropdownOpen, setLearnDropdownOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [unreadFeedbackCount, setUnreadFeedbackCount] = useState(0);
   const strategyRef = useRef<HTMLDivElement>(null);
   const strategyResultsRef = useRef<HTMLDivElement>(null);
+  const edgesRef = useRef<HTMLDivElement>(null);
   const toolsRef = useRef<HTMLDivElement>(null);
   const learnRef = useRef<HTMLDivElement>(null);
   const userRef = useRef<HTMLDivElement>(null);
@@ -68,7 +70,12 @@ export function Navigation() {
     { path: '/analytics', label: 'PERFORMANCE', emoji: uiEmojis.search },
     { path: '/alerts', label: 'ALERTS', emoji: uiEmojis.lightning },
     { path: '/props', label: 'PLAYER PROPS', emoji: uiEmojis.book },
-    { path: '/max-ev-edges', label: 'MAX EV EDGES', emoji: uiEmojis.star },
+  ];
+
+  // Edges dropdown items (ML Model Edges)
+  const edgesItems = [
+    { path: '/max-ev-edges', label: 'ML EDGES', emoji: uiEmojis.star },
+    { path: '/model-performance', label: 'MODEL PERFORMANCE', emoji: uiEmojis.chart },
   ];
 
   // Strategy Results dropdown items (Live vs Pre-Game)
@@ -213,7 +220,45 @@ export function Navigation() {
               )}
             </div>
 
-            {/* Main Nav Items - Remaining items (MAX EV Picks) */}
+            {/* Edges Dropdown - ML Model Edges & Performance */}
+            <div className="relative" ref={edgesRef}>
+              <button
+                onClick={() => handleDropdownToggle(setEdgesDropdownOpen, edgesDropdownOpen)}
+                className={`px-5 py-2.5 rounded-lg font-bold transition-all text-base flex items-center gap-2 italic ${
+                  isDropdownActive(edgesItems)
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+                    : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
+                }`}
+              >
+                {/* <img src={uiEmojis.star} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} /> */}
+                MAX EV EDGES
+                <svg className={`w-5 h-5 transition-transform ${edgesDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {edgesDropdownOpen && (
+                <div className="absolute top-full mt-1 left-0 bg-slate-800 border border-slate-700 rounded-lg shadow-xl min-w-[220px] py-2 z-50">
+                  {edgesItems.map((item) => (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      onClick={() => { /* Sound disabled */ setEdgesDropdownOpen(false); }}
+                      className={`px-4 py-2.5 flex items-center gap-3 transition-all ${
+                        isActive(item.path)
+                          ? 'bg-blue-600 text-white'
+                          : 'text-slate-300 hover:bg-slate-700 hover:text-slate-100'
+                      }`}
+                    >
+                      {/* <img src={item.emoji} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} /> */}
+                      <span className="font-semibold text-base italic">{item.label}</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Main Nav Items - Remaining items */}
             {mainNavItems.slice(5).map((item) => (
               <Link
                 key={item.path}

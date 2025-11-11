@@ -26,11 +26,11 @@ export const ADVANCED_SYSTEMS: AdvancedSystem[] = [
     description: "Teams winning 2 consecutive quarters lose the next quarter at 55-61% rate",
     sports: ["basketball_nba"],
     difficulty: "MEDIUM",
-    evRange: { min: 8, max: 35 },
+    evRange: { min: 8, max: 15 },
     performance: {
-      winRate: 55,
-      roi: 12.1,
-      games: 1230
+      winRate: 55.7,
+      roi: 10.5,
+      games: 423
     },
     strategyId: 14
   },
@@ -41,10 +41,11 @@ export const ADVANCED_SYSTEMS: AdvancedSystem[] = [
     description: "2H betting opportunities based on 1H performance and regression",
     sports: ["basketball_nba", "basketball_ncaab"],
     difficulty: "MEDIUM",
-    evRange: { min: 9, max: 13 },
+    evRange: { min: 3, max: 6 },
     performance: {
       winRate: 60.2,
-      roi: 11.3
+      roi: 3.9,
+      games: 892
     },
     strategyId: 23
   },
@@ -55,7 +56,12 @@ export const ADVANCED_SYSTEMS: AdvancedSystem[] = [
     description: "Detects when teams are 'on a run' and live odds haven't adjusted",
     sports: ["basketball_nba", "icehockey_nhl"],
     difficulty: "MEDIUM",
-    evRange: { min: 6, max: 15 },
+    evRange: { min: 2, max: 5 },
+    performance: {
+      winRate: 57.8,
+      roi: 2.3,
+      games: 234
+    },
     strategyId: 24
   },
   {
@@ -65,10 +71,11 @@ export const ADVANCED_SYSTEMS: AdvancedSystem[] = [
     description: "Detects EV opportunities based on pace tempo mismatches",
     sports: ["basketball_nba", "basketball_ncaab"],
     difficulty: "MEDIUM",
-    evRange: { min: 8, max: 15 },
+    evRange: { min: 7, max: 12 },
     performance: {
-      winRate: 56,
-      roi: 10
+      winRate: 56.8,
+      roi: 8.4,
+      games: 256
     },
     strategyId: 25
   },
@@ -79,7 +86,12 @@ export const ADVANCED_SYSTEMS: AdvancedSystem[] = [
     description: "Bet Q4 under when there's a blowout after Q3",
     sports: ["basketball_nba", "basketball_ncaab"],
     difficulty: "EASY",
-    evRange: { min: 10, max: 20 },
+    evRange: { min: 4, max: 7 },
+    performance: {
+      winRate: 61.7,
+      roi: 5.1,
+      games: 223
+    },
     strategyId: 8
   },
   {
@@ -212,11 +224,11 @@ export const ADVANCED_SYSTEMS: AdvancedSystem[] = [
     description: "Bet team totals over when trailing teams pull their goalie early",
     sports: ["icehockey_nhl"],
     difficulty: "EASY",
-    evRange: { min: 45, max: 65 },
+    evRange: { min: 5, max: 10 },
     performance: {
       winRate: 80.4,
-      roi: 42.0,
-      games: 581
+      roi: 6.8,
+      games: 467
     },
     backend: "backend/strategies/Goalie_Pull_Predictor.py",
     strategyId: 6

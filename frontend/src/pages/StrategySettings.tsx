@@ -1,4 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../components/Toast';
+import {
+  getAlertPreferences,
+  toggleSystemAlerts,
+  enableSystemAlerts,
+  disableSystemAlerts
+} from '../api/alertPreferences';
+import { getSystemIdForStrategy, hasBackendDetection } from '../data/strategyMapping';
 
 interface Strategy {
   id: string;
@@ -344,6 +353,8 @@ const STRATEGIES: Strategy[] = [
 ];
 
 export function StrategySettings() {
+  const { username } = useAuth();
+  const { showToast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSport, setSelectedSport] = useState<string>('all');
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'pregame' | 'live'>('all');
@@ -351,6 +362,40 @@ export function StrategySettings() {
     new Set(STRATEGIES.filter(s => s.defaultEnabled).map(s => s.id))
   );
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // Load enabled strategies from backend on mount
+  useEffect(() => {
+    const loadPreferences = async () => {
+      if (!username) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const prefs = await getAlertPreferences(username);
+        const enabledSystemIds = new Set(prefs.enabled_systems);
+
+        // Map enabled system IDs back to strategy IDs
+        const enabledStrategyIds = new Set<string>();
+        STRATEGIES.forEach(strategy => {
+          const systemId = getSystemIdForStrategy(strategy.id);
+          if (systemId && enabledSystemIds.has(systemId)) {
+            enabledStrategyIds.add(strategy.id);
+          }
+        });
+
+        setEnabledStrategies(enabledStrategyIds);
+      } catch (error) {
+        console.error('Failed to load strategy preferences:', error);
+        // Keep default enabled strategies on error
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadPreferences();
+  }, [username]);
 
   // Filter strategies
   const getFilteredStrategies = () => {
@@ -383,51 +428,188 @@ export function StrategySettings() {
   const pregameCount = STRATEGIES.filter(s => s.category === 'pregame').length;
   const liveCount = STRATEGIES.filter(s => s.category === 'live').length;
 
-  const toggleStrategy = (strategyId: string) => {
-    setSaving(true);
+  const toggleStrategy = async (strategyId: string) => {
+    if (!username) {
+      showToast('Please log in to save strategy preferences', 'error');
+      return;
+    }
 
-    setEnabledStrategies(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(strategyId)) {
-        newSet.delete(strategyId);
-      } else {
-        newSet.add(strategyId);
+    // Get the system ID for this strategy
+    const systemId = getSystemIdForStrategy(strategyId);
+
+    if (!systemId) {
+      // Strategy doesn't have backend detection yet
+      const strategy = STRATEGIES.find(s => s.id === strategyId);
+      if (!hasBackendDetection(strategyId)) {
+        showToast(`${strategy?.name || 'This strategy'} is coming soon!`, 'info');
+        return;
       }
-      return newSet;
-    });
+    }
 
-    // Simulate API call
-    setTimeout(() => setSaving(false), 500);
+    setSaving(true);
+
+    try {
+      // Make real API call
+      if (systemId) {
+        await toggleSystemAlerts(username, systemId);
+      }
+
+      // Update local state
+      setEnabledStrategies(prev => {
+        const newSet = new Set(prev);
+        if (newSet.has(strategyId)) {
+          newSet.delete(strategyId);
+        } else {
+          newSet.add(strategyId);
+        }
+        return newSet;
+      });
+
+      const strategy = STRATEGIES.find(s => s.id === strategyId);
+      const isNowEnabled = !enabledStrategies.has(strategyId);
+      showToast(
+        `Alerts ${isNowEnabled ? 'enabled' : 'disabled'} for ${strategy?.name || 'strategy'}`,
+        'success'
+      );
+    } catch (error) {
+      console.error('Failed to toggle strategy:', error);
+      showToast('Failed to update strategy preference', 'error');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const enableAll = () => {
+  const enableAll = async () => {
+    if (!username) {
+      showToast('Please log in to save preferences', 'error');
+      return;
+    }
+
     setSaving(true);
-    setEnabledStrategies(new Set(STRATEGIES.map(s => s.id)));
-    setTimeout(() => setSaving(false), 500);
+    try {
+      // Enable all strategies that have backend detection
+      const promises = STRATEGIES
+        .filter(s => hasBackendDetection(s.id))
+        .map(async (strategy) => {
+          const systemId = getSystemIdForStrategy(strategy.id);
+          if (systemId && !enabledStrategies.has(strategy.id)) {
+            await enableSystemAlerts(username, systemId);
+          }
+        });
+
+      await Promise.all(promises);
+      setEnabledStrategies(new Set(STRATEGIES.map(s => s.id)));
+      showToast(`Enabled all available strategies`, 'success');
+    } catch (error) {
+      showToast('Failed to enable all strategies', 'error');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const disableAll = () => {
+  const disableAll = async () => {
+    if (!username) {
+      showToast('Please log in to save preferences', 'error');
+      return;
+    }
+
     setSaving(true);
-    setEnabledStrategies(new Set());
-    setTimeout(() => setSaving(false), 500);
+    try {
+      const promises = Array.from(enabledStrategies).map(async (strategyId) => {
+        const systemId = getSystemIdForStrategy(strategyId);
+        if (systemId) {
+          await disableSystemAlerts(username, systemId);
+        }
+      });
+
+      await Promise.all(promises);
+      setEnabledStrategies(new Set());
+      showToast('Disabled all strategies', 'success');
+    } catch (error) {
+      showToast('Failed to disable all strategies', 'error');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const enableDefaults = () => {
+  const enableDefaults = async () => {
+    if (!username) {
+      showToast('Please log in to save preferences', 'error');
+      return;
+    }
+
     setSaving(true);
-    setEnabledStrategies(new Set(STRATEGIES.filter(s => s.defaultEnabled).map(s => s.id)));
-    setTimeout(() => setSaving(false), 500);
+    try {
+      await disableAll();
+
+      const defaultStrategies = STRATEGIES.filter(s => s.defaultEnabled && hasBackendDetection(s.id));
+      const promises = defaultStrategies.map(async (strategy) => {
+        const systemId = getSystemIdForStrategy(strategy.id);
+        if (systemId) {
+          await enableSystemAlerts(username, systemId);
+        }
+      });
+
+      await Promise.all(promises);
+      setEnabledStrategies(new Set(STRATEGIES.filter(s => s.defaultEnabled).map(s => s.id)));
+      showToast(`Enabled ${defaultStrategies.length} recommended strategies`, 'success');
+    } catch (error) {
+      showToast('Failed to enable defaults', 'error');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const enablePregame = () => {
+  const enablePregame = async () => {
+    if (!username) {
+      showToast('Please log in to save preferences', 'error');
+      return;
+    }
+
     setSaving(true);
-    setEnabledStrategies(new Set(STRATEGIES.filter(s => s.category === 'pregame').map(s => s.id)));
-    setTimeout(() => setSaving(false), 500);
+    try {
+      const pregameStrategies = STRATEGIES.filter(s => s.category === 'pregame' && hasBackendDetection(s.id));
+      const promises = pregameStrategies.map(async (strategy) => {
+        const systemId = getSystemIdForStrategy(strategy.id);
+        if (systemId && !enabledStrategies.has(strategy.id)) {
+          await enableSystemAlerts(username, systemId);
+        }
+      });
+
+      await Promise.all(promises);
+      setEnabledStrategies(new Set(STRATEGIES.filter(s => s.category === 'pregame').map(s => s.id)));
+      showToast(`Enabled ${pregameStrategies.length} pre-game strategies`, 'success');
+    } catch (error) {
+      showToast('Failed to enable pre-game strategies', 'error');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const enableLive = () => {
+  const enableLive = async () => {
+    if (!username) {
+      showToast('Please log in to save preferences', 'error');
+      return;
+    }
+
     setSaving(true);
-    setEnabledStrategies(new Set(STRATEGIES.filter(s => s.category === 'live').map(s => s.id)));
-    setTimeout(() => setSaving(false), 500);
+    try {
+      const liveStrategies = STRATEGIES.filter(s => s.category === 'live' && hasBackendDetection(s.id));
+      const promises = liveStrategies.map(async (strategy) => {
+        const systemId = getSystemIdForStrategy(strategy.id);
+        if (systemId && !enabledStrategies.has(strategy.id)) {
+          await enableSystemAlerts(username, systemId);
+        }
+      });
+
+      await Promise.all(promises);
+      setEnabledStrategies(new Set(STRATEGIES.filter(s => s.category === 'live').map(s => s.id)));
+      showToast(`Enabled ${liveStrategies.length} live strategies`, 'success');
+    } catch (error) {
+      showToast('Failed to enable live strategies', 'error');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const sportOptions = [

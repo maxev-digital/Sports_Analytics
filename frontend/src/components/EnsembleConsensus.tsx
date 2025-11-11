@@ -47,10 +47,10 @@ export function EnsembleConsensus({ ensemble, marketLine }: EnsembleConsensusPro
         {/* Weighted Average */}
         <div className="bg-slate-900/60 rounded-lg p-6 border-2 border-purple-500">
           <div className="text-sm text-purple-300 mb-2">Ensemble Prediction</div>
-          <div className="text-5xl font-bold text-white mb-2">
+          <div className="text-5xl font-bold text-white mb-2 truncate">
             {ensemble.weighted_average?.toFixed(2) || 'N/A'}
           </div>
-          <div className="text-sm text-slate-400">Confidence: {((ensemble.confidence || 0) * 100).toFixed(0)}%</div>
+          <div className="text-sm text-slate-400">Confidence: {((ensemble.confidence || 0) * 100).toFixed(2)}%</div>
           <div className="w-full bg-slate-700 rounded-full h-2 mt-3">
             <div
               className="bg-gradient-to-r from-purple-500 to-blue-500 h-full rounded-full transition-all"
@@ -62,7 +62,7 @@ export function EnsembleConsensus({ ensemble, marketLine }: EnsembleConsensusPro
         {/* Market Comparison */}
         <div className="bg-slate-900/60 rounded-lg p-6 border-2 border-slate-600">
           <div className="text-sm text-slate-400 mb-2">Market Line</div>
-          <div className="text-5xl font-bold text-yellow-300 mb-2">
+          <div className="text-5xl font-bold text-yellow-300 mb-2 truncate">
             {marketLine?.toFixed(2) || 'N/A'}
           </div>
           <div className="text-sm text-slate-400">
@@ -88,10 +88,10 @@ export function EnsembleConsensus({ ensemble, marketLine }: EnsembleConsensusPro
         <div className="bg-slate-900/40 rounded-lg p-4">
           <div className="text-xs text-slate-400 mb-2">Edge</div>
           <div className="flex items-center gap-2">
-            <span className={`text-3xl font-bold ${
+            <span className={`text-3xl font-bold truncate ${
               (ensemble.edge || 0) > 0 ? 'text-green-400' : 'text-red-400'
             }`}>
-              {(ensemble.edge || 0) > 0 ? '+' : ''}{(ensemble.edge || 0).toFixed(1)}%
+              {(ensemble.edge || 0) > 0 ? '+' : ''}{(ensemble.edge || 0).toFixed(2)}%
             </span>
             {hasStrongEdge && (
               <span className="text-xs px-2 py-1 bg-green-900/50 border border-green-500 text-green-300 rounded-full">
@@ -104,8 +104,8 @@ export function EnsembleConsensus({ ensemble, marketLine }: EnsembleConsensusPro
         <div className="bg-slate-900/40 rounded-lg p-4">
           <div className="text-xs text-slate-400 mb-2">Kelly Size</div>
           <div className="flex items-center gap-2">
-            <span className="text-3xl font-bold text-purple-400">
-              {((ensemble.kelly_fraction || 0) * 100).toFixed(1)}%
+            <span className="text-3xl font-bold text-purple-400 truncate">
+              {((ensemble.kelly_fraction || 0) * 100).toFixed(2)}%
             </span>
           </div>
         </div>
@@ -125,7 +125,7 @@ export function EnsembleConsensus({ ensemble, marketLine }: EnsembleConsensusPro
               </span>
               <div>
                 <div className={`text-2xl font-bold ${getRecommendationColor()}`}>
-                  {ensemble.recommendation} {marketLine.toFixed(1)}
+                  {ensemble.recommendation} {marketLine.toFixed(2)}
                 </div>
                 <div className="text-sm text-slate-300 mt-1">
                   {ensemble.agreement_count === ensemble.agreement_count + ensemble.disagreement_count
@@ -137,8 +137,8 @@ export function EnsembleConsensus({ ensemble, marketLine }: EnsembleConsensusPro
             </div>
 
             <div className="text-right">
-              <div className="text-3xl font-bold text-white">
-                {(ensemble.edge || 0) > 0 ? '+' : ''}{(ensemble.edge || 0).toFixed(1)}%
+              <div className="text-3xl font-bold text-white truncate">
+                {(ensemble.edge || 0) > 0 ? '+' : ''}{(ensemble.edge || 0).toFixed(2)}%
               </div>
               <div className="text-sm text-slate-400">expected value</div>
             </div>
@@ -149,7 +149,7 @@ export function EnsembleConsensus({ ensemble, marketLine }: EnsembleConsensusPro
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm text-slate-400">Recommended Bet Size</span>
               <span className="text-sm font-bold text-purple-400">
-                {((ensemble.kelly_fraction || 0) * 100).toFixed(1)}% of bankroll
+                {((ensemble.kelly_fraction || 0) * 100).toFixed(2)}% of bankroll
               </span>
             </div>
             <div className="grid grid-cols-3 gap-3 text-xs">
@@ -177,7 +177,7 @@ export function EnsembleConsensus({ ensemble, marketLine }: EnsembleConsensusPro
             <div>
               <div className="text-xl font-bold text-white">No Bet Recommended</div>
               <div className="text-sm text-slate-400 mt-1">
-                Edge too small ({(ensemble.edge || 0).toFixed(1)}%) or models disagree. Wait for better opportunity.
+                Edge too small ({(ensemble.edge || 0).toFixed(2)}%) or models disagree. Wait for better opportunity.
               </div>
             </div>
           </div>

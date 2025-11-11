@@ -153,7 +153,7 @@ export function EdgeLabDropdown({ gameId, marketLine, sport = 'nba', betType = '
               </div>
             </div>
             <p className="text-sm text-slate-400">
-              Run models individually or all at once • {sport.toUpperCase()} {betType} • Market: {marketLine}
+              Run models individually or all at once • {sport.toUpperCase()} {betType} • Market: {marketLine.toFixed(2)}
             </p>
           </div>
 

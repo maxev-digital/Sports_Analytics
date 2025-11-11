@@ -274,7 +274,6 @@ export function Pricing() {
       edgeColor: 'purple',
       features: [
         'Everything in Semi Pro, plus:',
-        'Tech Stack: OpticOdds API, Cloud ML, Redis Cache, Sub-30s WebSocket',
         'Browser Extension Tool',
         'Player Props Module (all sports)',
         'SGP Builder with correlation analysis',
@@ -410,11 +409,14 @@ export function Pricing() {
 
         {/* Hero Banner Image */}
         {!loadingStatus && (
-          <div className="mb-12 rounded-2xl overflow-hidden shadow-2xl">
+          <div className="mb-12 rounded-2xl overflow-hidden shadow-2xl bg-black">
             <img
-              src="/MainBannerPrice.jpg"
+              src="/MainBannerPrice.png"
               alt="Max EV Sports Analytics Dashboard"
-              className="w-full h-auto object-cover"
+              className="w-full h-auto"
+              style={{ imageRendering: 'crisp-edges' }}
+              loading="eager"
+              decoding="sync"
             />
           </div>
         )}
@@ -467,7 +469,7 @@ export function Pricing() {
         {!loadingStatus && (
           <div className="mb-16">
             <h2 className="text-4xl font-bold text-slate-100 mb-4 text-center">
-              Getting The Max Expected Value Out Of Every Situation
+              Maximizing Our Expected Value in Every Wager By Monitoring All Games Systematically Through Automation and Machine Learning
             </h2>
             <p className="text-xl text-slate-300 mb-8 text-center max-w-4xl mx-auto">
               Explore our powerful platform features - Proprietary Algo Betting Engine - 50+ Betting Strategies
@@ -901,18 +903,6 @@ export function Pricing() {
                   <td className="text-center py-4 px-4 text-slate-200 text-base">20+</td>
                 </tr>
 
-                {/* Refresh Speed */}
-                <tr className="border-b border-slate-700/50 hover:bg-slate-700/20">
-                  <td className="py-4 px-4 text-slate-100 text-base">Refresh Speed</td>
-                  <td className="text-center py-4 px-4 bg-blue-900/10">
-                    <span className="text-green-400 font-bold text-base">&lt;1s WebSocket</span>
-                  </td>
-                  <td className="text-center py-4 px-4 text-slate-200 text-base">5-10s polling</td>
-                  <td className="text-center py-4 px-4 text-slate-200 text-base">15-30s polling</td>
-                  <td className="text-center py-4 px-4 text-slate-200 text-base">10-15s polling</td>
-                  <td className="text-center py-4 px-4 text-slate-200 text-base">30-60s polling</td>
-                </tr>
-
                 {/* Arbitrage Finder */}
                 <tr className="border-b border-slate-700/50 hover:bg-slate-700/20">
                   <td className="py-4 px-4 text-slate-100 text-base">Arbitrage Finder</td>
@@ -1079,7 +1069,7 @@ export function Pricing() {
           </div>
 
           {/* Value Proposition Callout */}
-          <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-green-900/30 border-2 border-green-600 rounded-xl p-6 text-center">
               <div className="text-3xl font-bold text-green-400 mb-2">$20-70</div>
               <div className="text-sm text-green-300 font-semibold">CHEAPER per month than competitors</div>
@@ -1090,17 +1080,12 @@ export function Pricing() {
               <div className="text-sm text-blue-300 font-semibold">MORE sportsbooks tracked</div>
               <div className="text-xs text-slate-400 mt-2">60+ vs 20-40 for competitors</div>
             </div>
-            <div className="bg-purple-900/30 border-2 border-purple-600 rounded-xl p-6 text-center">
-              <div className="text-3xl font-bold text-purple-400 mb-2">10-100x</div>
-              <div className="text-sm text-purple-300 font-semibold">FASTER data refresh</div>
-              <div className="text-xs text-slate-400 mt-2">Sub-1s WebSocket vs 5-60s polling</div>
-            </div>
           </div>
 
           {/* Bottom CTA */}
           <div className="mt-8 text-center">
             <p className="text-lg text-slate-300 mb-4">
-              <span className="font-bold text-blue-400">Bottom Line:</span> Get more features, faster data, and better support — all for less money.
+              <span className="font-bold text-blue-400">Bottom Line:</span> Get more features, more coverage, and better support — all for less money.
             </p>
             <p className="text-sm text-slate-400">
               Our Semi Pro tier at $79/mo beats OddsJam Premium ($99), Unabated Elite ($99), and BetQL Premium ($49) on every metric that matters.
@@ -1206,11 +1191,11 @@ export function Pricing() {
                     </td>
                     <td className="py-4 px-4 text-slate-300">$129.99/mo</td>
                     <td className="py-4 px-4 text-slate-300 text-xs">
-                      OpticOdds<br />
-                      <span className="text-slate-500">(Sub-30s WebSocket)</span>
+                      Advanced Data<br />
+                      <span className="text-slate-500">(Real-time updates)</span>
                     </td>
                     <td className="py-4 px-4 text-slate-300 text-xs">
-                      Semi Pro + Tech: OpticOdds API/Cloud ML/Redis/Sub-30s WebSocket, Browser Extension, props module, SGP builder, ML true odds, injury/weather alerts, 30+ strategies, 30+ articles
+                      Semi Pro + Browser Extension, props module, SGP builder, ML true odds, injury/weather alerts, 30+ strategies, 30+ articles
                     </td>
                     <td className="py-4 px-4 text-slate-400 text-xs">
                       Sub-50ms, offshore servers
