@@ -1503,7 +1503,8 @@ class GameTracker:
         await self._check_goalie_pull_opportunities()
         await self._check_favorite_comeback_opportunities()
         await self._check_halftime_opportunities()
-        await self._check_momentum_opportunities()
+        # DISABLED: Momentum checker causing AttributeErrors and performance issues
+        # await self._check_momentum_opportunities()
         await self._check_quarter_reversal_opportunities()
 
         # Run Max EV Boost regression analysis (NBA & NCAAB)
