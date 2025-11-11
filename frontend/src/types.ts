@@ -276,6 +276,10 @@ export interface MLBTeamStats {
 export interface StrategyAlert {
   strategy_id: string;  // 'quarter_reversal', 'favorite_comeback', 'halftime_tracker', etc.
   strategy_name: string;  // 'NBA Quarter Reversal', 'Favorite Comeback', etc.
+  game_id?: string;  // Game identifier
+  home_team?: string;  // Home team name
+  away_team?: string;  // Away team name
+  sport?: string;  // Sport key (e.g., 'basketball_nba', 'icehockey_nhl')
   confidence: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   trigger: string;  // Why the alert fired: "Q2 hot start reversal detected"
   recommendation: string;  // "Bet UNDER 2H total", "Fade favorite", etc.
