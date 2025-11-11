@@ -40,4 +40,4 @@ QUIET_HOURS_END = 9     # 9 AM (24-hour format)
 MIN_EDGE = 5.0  # points
 
 # ESPN stats now enabled - NBA working, adding NFL/NHL back
-ENABLE_ESPN_STATS = True  # Enables NFL, NHL, MLB stats fetching from ESPN
+ENABLE_ESPN_STATS = False  # DISABLED: ESPN API calls cause massive slowdown (hundreds of sync calls)
