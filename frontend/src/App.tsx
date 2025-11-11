@@ -6,8 +6,13 @@ import { Footer } from './components/Footer';
 import { ElectronWindowControls } from './components/ElectronWindowControls';
 import { ToastProvider } from './components/Toast';
 import { BetAlertNotificationProvider } from './contexts/BetAlertNotificationContext';
+import { BetSlipProvider } from './contexts/BetSlipContext';
+import { BetSlipToast } from './components/BetSlipToast';
 import { Login } from './pages/Login';
 import { SignUp } from './pages/SignUp';
+import { InfluencerRegister } from './pages/InfluencerRegister';
+import { InfluencerLogin } from './pages/InfluencerLogin';
+import { InfluencerDashboard } from './pages/InfluencerDashboard';
 import { LiveGames } from './pages/LiveGames';
 import { Tools } from './pages/Tools';
 import { Analytics } from './pages/Analytics';
@@ -36,6 +41,7 @@ import { FloatingFeedbackButton } from './components/FloatingFeedbackButton';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { MyFeedback } from './pages/MyFeedback';
 import { MaxEvEdges } from './pages/MaxEvEdges';
+import { ModelPerformance } from './pages/ModelPerformance';
 import GoaliePull from './pages/GoaliePull';
 import { EdgeScannerAlertMonitor } from './components/EdgeScannerAlertMonitor';
 import { GlobalAlertMonitor } from './components/GlobalAlertMonitor';
@@ -49,20 +55,24 @@ function App() {
     <Router>
       <AuthProvider>
         <ToastProvider>
-          <BetAlertNotificationProvider>
-            {/* Edge Scanner Live Alert Monitor - runs in background */}
-            <EdgeScannerAlertMonitor
-              enabled={true}
-              minEdge={3.5}
-              minConfidence={0.70}
-              pollInterval={20000}
-            />
-            {/* Global Alert Monitor - monitors for arbitrage, middles, steam moves, sharp money, fatigue */}
-            <GlobalAlertMonitor
-              enabled={true}
-              pollInterval={10000}
-            />
-            <Routes>
+          <BetSlipProvider>
+            <BetAlertNotificationProvider>
+              {/* Bet Slip Toast - Lower Left Corner */}
+              <BetSlipToast />
+
+              {/* Edge Scanner Live Alert Monitor - runs in background */}
+              <EdgeScannerAlertMonitor
+                enabled={true}
+                minEdge={3.5}
+                minConfidence={0.70}
+                pollInterval={20000}
+              />
+              {/* Global Alert Monitor - monitors for arbitrage, middles, steam moves, sharp money, fatigue */}
+              <GlobalAlertMonitor
+                enabled={true}
+                pollInterval={10000}
+              />
+              <Routes>
           {/* Public routes - Login and SignUp pages */}
           <Route path="/login" element={
             <>
@@ -74,6 +84,23 @@ function App() {
             <>
               <SignUp />
               <Footer />
+            </>
+          } />
+
+          {/* Influencer routes - Public */}
+          <Route path="/influencer-register" element={
+            <>
+              <InfluencerRegister />
+            </>
+          } />
+          <Route path="/influencer-login" element={
+            <>
+              <InfluencerLogin />
+            </>
+          } />
+          <Route path="/influencer-dashboard" element={
+            <>
+              <InfluencerDashboard />
             </>
           } />
 
@@ -176,6 +203,7 @@ function App() {
                       <Route path="/alerts" element={<Alerts />} />
                       <Route path="/odds" element={<Odds />} />
                       <Route path="/max-ev-edges" element={<MaxEvEdges />} />
+                      <Route path="/model-performance" element={<ModelPerformance />} />
                       <Route path="/goalie-pull" element={<GoaliePull />} />
                       <Route path="/handicapper-picks" element={<HandicapperPicks />} />
                       <Route path="/settings" element={<Settings />} />
@@ -205,6 +233,7 @@ function App() {
           />
             </Routes>
           </BetAlertNotificationProvider>
+        </BetSlipProvider>
         </ToastProvider>
       </AuthProvider>
     </Router>
