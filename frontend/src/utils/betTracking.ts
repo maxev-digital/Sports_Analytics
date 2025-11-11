@@ -15,7 +15,7 @@ interface TrackBetClickParams {
   odds: number;
   bookmaker: string;
   alertId?: string;
-  confidence?: 'HIGH' | 'MEDIUM' | 'LOW';
+  confidence?: 'HIGH' | 'MEDIUM' | 'LOW' | 'CRITICAL';
   edgePercent?: number;
   strategy?: string;
 }
@@ -145,7 +145,7 @@ export async function updateBet(
     odds?: number;
     stake?: number;
     bookmaker?: string;
-    confidence?: 'HIGH' | 'MEDIUM' | 'LOW';
+    confidence?: 'HIGH' | 'MEDIUM' | 'LOW' | 'CRITICAL';
     edgePercent?: number;
   }
 ): Promise<UserBet | null> {
@@ -252,7 +252,7 @@ export async function addManualBet(params: {
   odds: number;
   stake: number;
   bookmaker: string;
-  confidence?: 'HIGH' | 'MEDIUM' | 'LOW';
+  confidence?: 'HIGH' | 'MEDIUM' | 'LOW' | 'CRITICAL';
   edgePercent?: number;
   notes?: string;
 }): Promise<UserBet | null> {
