@@ -91,7 +91,11 @@ export function useEdgeLab(gameId: string, gameData?: GameData, isLive: boolean 
 
   // Cache management
   const getCachedResult = useCallback((modelId: ModelId): ModelResult | null => {
-    const cacheKey = `edgelab_${gameId}_${modelId}`;
+    // For live games, include current_score in cache key so cache updates as game progresses
+    const liveGameSuffix = isLive && gameData?.current_score
+      ? `_live_${gameData.current_score}`
+      : '';
+    const cacheKey = `edgelab_${gameId}_${modelId}${liveGameSuffix}`;
     const cached = localStorage.getItem(cacheKey);
 
     if (!cached) return null;
@@ -110,17 +114,21 @@ export function useEdgeLab(gameId: string, gameData?: GameData, isLive: boolean 
     } catch {
       return null;
     }
-  }, [gameId]);
+  }, [gameId, isLive, gameData]);
 
   const setCachedResult = useCallback((modelId: ModelId, result: ModelResult) => {
-    const cacheKey = `edgelab_${gameId}_${modelId}`;
+    // For live games, include current_score in cache key so cache updates as game progresses
+    const liveGameSuffix = isLive && gameData?.current_score
+      ? `_live_${gameData.current_score}`
+      : '';
+    const cacheKey = `edgelab_${gameId}_${modelId}${liveGameSuffix}`;
     const cacheData: ModelCache = {
       result,
       timestamp: Date.now(),
-      ttl: CACHE_TTL
+      ttl: isLive ? 30000 : CACHE_TTL  // 30s for live games, 5min for pregame
     };
     localStorage.setItem(cacheKey, JSON.stringify(cacheData));
-  }, [gameId]);
+  }, [gameId, isLive, gameData]);
 
   // Load cached results on mount
   const loadCachedResults = useCallback(() => {
@@ -134,7 +142,10 @@ export function useEdgeLab(gameId: string, gameData?: GameData, isLive: boolean 
         cached[id] = result;
       } else if (result) {
         // Old format or invalid data - clear from cache
-        const cacheKey = `edgelab_${gameId}_${id}`;
+        const liveGameSuffix = isLive && gameData?.current_score
+          ? `_live_${gameData.current_score}`
+          : '';
+        const cacheKey = `edgelab_${gameId}_${id}${liveGameSuffix}`;
         localStorage.removeItem(cacheKey);
       }
     });
@@ -142,7 +153,7 @@ export function useEdgeLab(gameId: string, gameData?: GameData, isLive: boolean 
     if (Object.keys(cached).length > 0) {
       setModelResults(cached);
     }
-  }, [getCachedResult, gameId]);
+  }, [getCachedResult, gameId, isLive, gameData]);
 
   // Run a single model
   const runModel = useCallback(async (modelId: ModelId, useMock: boolean = false) => {
