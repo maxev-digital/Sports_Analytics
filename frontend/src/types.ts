@@ -299,12 +299,14 @@ export interface BetOption {
   odds: number;  // -110
   bookmaker: string;  // "draftkings"
   bookmaker_title?: string;  // "DraftKings"
+  bookmaker_logo?: string;  // URL to bookmaker favicon/logo
   probability: number;  // 0.583
   expected_value: number;  // 0.089 (8.9%)
   kelly_size?: number;  // 1.5 units
   alt_bookmakers?: Array<{
     bookmaker: string;
     bookmaker_title?: string;
+    bookmaker_logo?: string;
     odds: number;
   }>;
 }

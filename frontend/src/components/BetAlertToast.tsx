@@ -152,7 +152,7 @@ export function BetAlertToast({ alert, onDismiss, position }: BetAlertToastProps
           </div>
         </div>
 
-        {/* Bet Options - Books */}
+        {/* Bet Options - Books with Icons */}
         {alert.bet_options && alert.bet_options.length > 0 && (
           <div className="space-y-2">
             <div className="text-xs font-semibold text-white/70">BOOKS & ODDS</div>
@@ -162,10 +162,24 @@ export function BetAlertToast({ alert, onDismiss, position }: BetAlertToastProps
                 className="bg-black/40 rounded-lg p-2 border border-white/20 flex items-center justify-between"
               >
                 <div className="flex items-center gap-2">
-                  <div className="text-white font-semibold text-sm">
-                    {option.bookmaker_title || option.bookmaker}
+                  {/* Bookmaker Logo */}
+                  {option.bookmaker_logo && (
+                    <img
+                      src={option.bookmaker_logo}
+                      alt={option.bookmaker_title || option.bookmaker}
+                      className="w-5 h-5 rounded"
+                      onError={(e) => {
+                        // Hide image if it fails to load
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  )}
+                  <div className="flex flex-col">
+                    <div className="text-white font-semibold text-sm">
+                      {option.bookmaker_title || option.bookmaker}
+                    </div>
+                    <div className="text-white/70 text-xs">{option.label}</div>
                   </div>
-                  <div className="text-white/70 text-xs">{option.label}</div>
                 </div>
                 <div className="text-white font-bold text-sm">
                   {typeof option.odds === 'number'
