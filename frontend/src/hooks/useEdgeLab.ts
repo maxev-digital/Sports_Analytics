@@ -81,6 +81,11 @@ interface GameData {
   away_stats: TeamStats;
   market_total: number;
   sport?: string;
+  // Live game fields
+  is_live?: boolean;
+  current_score?: number;
+  quarter?: number;
+  time_remaining?: string;
 }
 
 export function useEdgeLab(gameId: string, gameData?: GameData, isLive: boolean = false, sport: string = 'nba') {
