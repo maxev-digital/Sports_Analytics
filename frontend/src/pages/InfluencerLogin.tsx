@@ -1,67 +1,94 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { getApiUrl } from '../config';
 
-export function Login() {
+export function InfluencerLogin() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [showFireRing, setShowFireRing] = useState(false);
-  const { login, error, loading } = useAuth();
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [isSnorting, setIsSnorting] = useState(false);
   const navigate = useNavigate();
-  const audioRef = useRef<HTMLAudioElement>(null);
-  const bullAudioRef = useRef<HTMLAudioElement>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+    setLoading(true);
 
-    const success = await login(username, password);
-    if (success) {
-      // Trigger fire ring animation
-      setShowFireRing(true);
+    try {
+      const response = await fetch(getApiUrl('/influencer/login'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
 
-      // Play bull sound only
-      if (bullAudioRef.current) {
-        bullAudioRef.current.play().catch(err => console.log('Bull audio play failed:', err));
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        // Store influencer token
+        localStorage.setItem('influencer_token', data.token);
+        localStorage.setItem('influencer_username', username);
+        localStorage.setItem('influencer_code', data.influencer.referral_code);
+
+        // Redirect to influencer dashboard
+        navigate('/influencer-dashboard');
+      } else {
+        setError(data.detail || 'Login failed');
+        setLoading(false);
       }
-
-      // Redirect after bull sound finishes (giving it time to play)
-      setTimeout(() => {
-        navigate('/live-games');
-      }, 5000);
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('Network error. Please try again.');
+      setLoading(false);
     }
   };
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-black px-4 relative overflow-hidden">
-      {/* Hidden audio elements for sound effects */}
-      <audio
-        ref={audioRef}
-        src="/flame.mp3"
-        preload="auto"
-      />
-      <audio
-        ref={bullAudioRef}
-        src="/bull.mp3"
-        preload="auto"
-      />
+  const playSnort = () => {
+    // Trigger animation
+    setIsSnorting(true);
 
+    // Play snort sound
+    const audio = new Audio('/snort.mp3');
+    audio.volume = 0.3;
+    audio.play().catch(err => console.log('Audio play failed:', err));
+
+    // Reset animation after 600ms
+    setTimeout(() => {
+      setIsSnorting(false);
+    }, 600);
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-900 via-slate-900 to-black px-4 relative overflow-hidden">
       <div className="max-w-md w-full space-y-6">
         <div className="text-center relative">
-          <img 
-            src="/logo2.png" 
-            alt="Max EV Sports - Bull Market Betting" 
-            className={`mx-auto h-64 w-auto mb-6 transition-all duration-500 ${showFireRing ? 'scale-110 brightness-125 drop-shadow-[0_0_30px_rgba(239,68,68,0.8)]' : 'drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)]'}`}
+          <img
+            src="/logo2.png"
+            alt="Max EV Sports - MAX-EV Partner Dashboard"
+            className={`mx-auto h-48 w-auto mb-6 drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)] cursor-pointer transition-all duration-200 ${
+              isSnorting
+                ? 'animate-bounce scale-110 drop-shadow-[0_0_30px_rgba(239,68,68,0.8)]'
+                : 'hover:scale-105'
+            }`}
+            onClick={playSnort}
           />
-          <h2 className="text-center text-4xl font-bold text-white">
-            Max-EV-Bettors Only
+          <h2 className={`text-center text-4xl font-bold text-white transition-all duration-200 ${
+            isSnorting ? 'text-red-400 scale-105' : ''
+          }`}>
+            MAX-EV Partner Dashboard
           </h2>
-          <p className="mt-2 text-center text-sm text-slate-400">
-            Authorized Access Required
+          <p className={`mt-2 text-center text-sm text-red-300 transition-all duration-200 ${
+            isSnorting ? 'text-red-200 font-semibold' : ''
+          }`}>
+            Invitation-Only Partner Program
+          </p>
+          <p className="mt-1 text-center text-xs text-slate-500">
+            Track your referrals and earnings
           </p>
         </div>
 
-        <div className="bg-gradient-to-br from-red-900 via-red-950 to-black border-4 border-red-800 rounded-lg shadow-xl p-8">
+        <div className="bg-gradient-to-br from-red-900/40 via-slate-900/80 to-black border-4 border-red-700 rounded-lg shadow-xl p-8">
           <form className="space-y-6" onSubmit={handleSubmit}>
             {error && (
               <div className="bg-red-900/50 border-2 border-red-600 rounded-lg p-3 text-red-200 text-sm">
@@ -80,7 +107,7 @@ export function Login() {
                 required
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="appearance-none relative block w-full px-4 py-3 border-2 border-slate-600 bg-slate-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="appearance-none relative block w-full px-4 py-3 border-2 border-slate-600 bg-slate-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
                 placeholder="Enter your username"
                 disabled={loading}
               />
@@ -98,7 +125,7 @@ export function Login() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="appearance-none relative block w-full px-4 py-3 pr-12 border-2 border-slate-600 bg-slate-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="appearance-none relative block w-full px-4 py-3 pr-12 border-2 border-slate-600 bg-slate-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
                   placeholder="Enter your password"
                   disabled={loading}
                 />
@@ -122,17 +149,16 @@ export function Login() {
               </div>
             </div>
 
-
             <div>
               <button
                 type="submit"
                 disabled={loading}
                 className={`
                   group relative w-full flex justify-center py-3 px-4
-                  border-2 border-slate-700 rounded-lg text-white text-sm font-medium
+                  border-2 border-red-700 rounded-lg text-white text-sm font-medium
                   ${loading
                     ? 'bg-slate-600 cursor-not-allowed'
-                    : 'bg-black hover:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500'
+                    : 'bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500'
                   }
                   transition-all duration-200
                 `}
@@ -146,36 +172,27 @@ export function Login() {
                     Signing in...
                   </span>
                 ) : (
-                  'Sign in'
+                  'Sign in to Dashboard'
                 )}
               </button>
             </div>
           </form>
 
-          <div className="mt-6 text-center space-y-3">
-            <p className="text-xs text-slate-500 mb-4">Protected access to betting analytics and arbitrage detection</p>
-            <div className="flex items-center justify-center gap-2 text-sm">
-              <span className="text-slate-400">Don't have an account?</span>
-              <button
-                onClick={() => navigate('/signup')}
-                className="text-blue-400 hover:text-blue-300 font-semibold underline transition-colors"
-              >
-                Create Account
-              </button>
-            </div>
-
-            {/* Partner Dashboard Link */}
-            <div className="pt-3 mt-3 border-t border-slate-700/50">
-              <p className="text-xs text-slate-500 mb-2">Partner Program (By Invitation Only)</p>
-              <button
-                onClick={() => navigate('/influencer-login')}
-                className="flex items-center justify-center gap-2 text-sm text-red-400 hover:text-red-300 font-semibold transition-colors group"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 group-hover:scale-110 transition-transform">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-                </svg>
-                Partner Login →
-              </button>
+          <div className="mt-6 text-center">
+            <p className="text-xs text-slate-400 mb-4">Access your partner dashboard to track earnings</p>
+            <div className="flex flex-col items-center gap-2">
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-slate-400">Invited partner?</span>
+                <button
+                  onClick={() => navigate('/influencer-register')}
+                  className="text-red-400 hover:text-red-300 font-semibold underline transition-colors"
+                >
+                  Apply Now
+                </button>
+              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                Minimum 10,000+ followers required
+              </p>
             </div>
           </div>
         </div>
