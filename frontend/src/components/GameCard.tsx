@@ -571,15 +571,17 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
         };
 
         return (
-          <EdgeLabDropdown
-            gameId={state.id}
-            marketLine={state.status === 'live' && projection.current_total
-              ? projection.current_total
-              : projection.pregame_total}
-            sport={sportBadge === 'NBA' ? 'nba' : 'ncaab'}
-            betType="totals"
-            gameData={edgeLabGameData}
-          />
+          <>
+            <EdgeLabDropdown
+              gameId={state.id}
+              marketLine={state.status === 'live' && projection.current_total
+                ? projection.current_total
+                : projection.pregame_total}
+              sport={sportBadge === 'NBA' ? 'nba' : 'ncaab'}
+              betType="totals"
+              gameData={edgeLabGameData}
+            />
+          </>
         );
       })()}
 
@@ -2125,9 +2127,56 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
       {odds.length > 0 && (
         <div className={`${dividerClass} mt-2 pt-2`}>
           <div className={`text-lg ${textSecondary} font-bold mb-2`}>Best Available Lines</div>
+
+          {/* Market Type Selector Tabs */}
+          <div className="flex gap-2 mb-3">
+            <button
+              onClick={() => setSelectedMarket('spread')}
+              className={`flex-1 px-3 py-2 rounded-lg text-sm font-bold uppercase transition-all ${
+                selectedMarket === 'spread'
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
+                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
+              }`}
+            >
+              Spread
+            </button>
+            <button
+              onClick={() => setSelectedMarket('totals')}
+              className={`flex-1 px-3 py-2 rounded-lg text-sm font-bold uppercase transition-all ${
+                selectedMarket === 'totals'
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
+                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
+              }`}
+            >
+              Totals
+            </button>
+            <button
+              onClick={() => setSelectedMarket('moneyline')}
+              className={`flex-1 px-3 py-2 rounded-lg text-sm font-bold uppercase transition-all ${
+                selectedMarket === 'moneyline'
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
+                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
+              }`}
+            >
+              Moneyline
+            </button>
+            {alternate_lines && alternate_lines.length > 0 && (
+              <button
+                onClick={() => setSelectedMarket('halves')}
+                className={`flex-1 px-3 py-2 rounded-lg text-sm font-bold uppercase transition-all ${
+                  selectedMarket === 'halves'
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
+                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
+                }`}
+              >
+                1H/2H
+              </button>
+            )}
+          </div>
+
           <div className="space-y-2 text-base">
             {/* Best Totals */}
-            {(() => {
+            {selectedMarket === 'totals' && (() => {
               const oddsWithTotal = odds.filter(o => o.total !== null && o.total !== undefined);
               if (oddsWithTotal.length === 0) return null;
 
@@ -2171,7 +2220,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
             })()}
 
             {/* Best Spreads */}
-            {(() => {
+            {selectedMarket === 'spread' && (() => {
               const oddsWithSpread = odds.filter(o => o.home_spread !== null && o.home_spread !== undefined);
               if (oddsWithSpread.length === 0) return null;
 
@@ -2218,7 +2267,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
             })()}
 
             {/* Best Money Lines */}
-            {(() => {
+            {selectedMarket === 'moneyline' && (() => {
               const oddsWithML = odds.filter(o => o.home_ml !== null && o.home_ml !== undefined);
               if (oddsWithML.length === 0) return null;
 
@@ -2351,7 +2400,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                     {/* Display based on selected market */}
                     {selectedMarket === 'totals' && (
                       <span className={`${shouldHighlight ? 'text-blue-200 font-bold text-base' : `${textSecondary} font-bold`}`}>
-                        O/U <span className="font-extrabold text-lg">{odd.total}{odd.total_movement !== null && odd.total_movement !== undefined && Math.abs(odd.total_movement) >= 0.5 && (<span className={`ml-2 text-xs font-semibold ${odd.total_movement > 0 ? 'text-green-400' : 'text-red-400'}`}>{odd.total_movement > 0 ? '↑' : '↓'} {Math.abs(odd.total_movement).toFixed(1)}</span>)}</span> (<span className="font-bold">{odd.over_price > 0 ? '+' : ''}{odd.over_price}/{odd.under_price > 0 ? '+' : ''}{odd.under_price}</span>)
+                        O/U <span className="font-extrabold text-lg">{odd.total}</span> (<span className="font-bold">{odd.over_price > 0 ? '+' : ''}{odd.over_price}/{odd.under_price > 0 ? '+' : ''}{odd.under_price}</span>)
                       </span>
                     )}
                     {selectedMarket === 'spread' && (
