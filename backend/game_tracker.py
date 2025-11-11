@@ -1080,7 +1080,9 @@ class GameTracker:
                 # Get team stats (fetch early so projector can use them) - basketball only (NBA & NCAAB)
                 home_stats = None
                 away_stats = None
-                if sport_key in ['basketball_nba', 'basketball_ncaab']:
+                # Only use _get_team_stats for NBA (uses TeamRankings NBA data)
+                # NCAAB should use KenPom data instead
+                if sport_key == 'basketball_nba':
                     home_stats = self._get_team_stats(game_state.home_team.name)
                     away_stats = self._get_team_stats(game_state.away_team.name)
 
