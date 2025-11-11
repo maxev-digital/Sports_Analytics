@@ -566,7 +566,14 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
           market_total: state.status === 'live' && projection.current_total
             ? projection.current_total
             : projection.pregame_total,
-          sport: sportBadge === 'NBA' ? 'nba' : 'ncaab'
+          sport: sportBadge === 'NBA' ? 'nba' : 'ncaab',
+          // Live game state for in-game projections
+          is_live: state.status === 'live',
+          current_score: state.status === 'live'
+            ? (state.home_team.score || 0) + (state.away_team.score || 0)
+            : null,
+          quarter: state.status === 'live' ? state.quarter : null,
+          time_remaining: state.status === 'live' ? state.time_remaining : null
         };
 
         return (

@@ -48,7 +48,42 @@ class NCAABXGBoostModel:
         home_expected_points = (home_expected_eff / 100.0) * expected_pace
         away_expected_points = (away_expected_eff / 100.0) * expected_pace
 
-        prediction = home_expected_points + away_expected_points
+        # Calculate full game total (40 minutes)
+        full_game_total = home_expected_points + away_expected_points
+
+        # Handle live games - project remaining time
+        is_live = game_data.get('is_live', False)
+        current_score = game_data.get('current_score', 0)
+        quarter = game_data.get('quarter')
+        time_remaining_str = game_data.get('time_remaining')
+
+        if is_live and current_score and quarter and time_remaining_str:
+            # Parse time remaining (format: "MM:SS" or "M:SS")
+            try:
+                time_parts = time_remaining_str.split(':')
+                minutes_remaining = int(time_parts[0])
+                seconds_remaining = int(time_parts[1]) if len(time_parts) > 1 else 0
+                total_seconds_remaining = minutes_remaining * 60 + seconds_remaining
+
+                # NCAAB: 2 halves of 20 minutes each = 40 minutes total = 2400 seconds
+                total_game_seconds = 2400
+                seconds_elapsed = total_game_seconds - total_seconds_remaining
+
+                # Calculate points per second based on full game projection
+                points_per_second = full_game_total / total_game_seconds
+
+                # Project remaining points
+                projected_remaining_points = points_per_second * total_seconds_remaining
+
+                # Final prediction = current score + projected remaining
+                prediction = current_score + projected_remaining_points
+
+            except (ValueError, IndexError):
+                # If time parsing fails, use full game total
+                prediction = full_game_total
+        else:
+            # Pregame - use full game total
+            prediction = full_game_total
 
         # XGBoost confidence - slightly higher due to better feature learning
         pace_variance = abs(home_pace - away_pace) / expected_pace
