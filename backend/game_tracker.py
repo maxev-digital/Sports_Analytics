@@ -572,19 +572,65 @@ class GameTracker:
             return None
 
     def _get_team_stats(self, team_name: str) -> Optional[TeamStats]:
-        """Get NBA team stats from ESPN with caching"""
+        """Get NBA team stats from TeamRankings (PRIMARY) with ESPN fallback"""
         # Check cache first
         if team_name in self.team_stats_cache:
             return self.team_stats_cache[team_name]
 
         try:
-            # Convert team name to ESPN abbreviation
+            # PRIMARY: Try TeamRankings first (has real pace data)
+            teamrankings_data = self.teamrankings_scraper.fetch_all_team_stats()
+
+            # Try to find team in TeamRankings data
+            tr_stats = None
+            for team_key, stats in teamrankings_data.items():
+                if team_name.lower() in team_key.lower() or team_key.lower() in team_name.lower():
+                    tr_stats = stats
+                    break
+
+            if tr_stats:
+                # Use TeamRankings data (has REAL pace!)
+                team_stats = TeamStats(
+                    team_id=str(tr_stats.get('team_id', '')),
+                    team_name=team_name,
+                    games_played=int(tr_stats.get('games_played', 0)),
+                    wins=int(tr_stats.get('wins', 0)),
+                    losses=int(tr_stats.get('losses', 0)),
+                    win_pct=float(tr_stats.get('win_pct', 0.0)),
+                    off_rating=float(tr_stats.get('off_rating', 110.0)),
+                    def_rating=float(tr_stats.get('def_rating', 110.0)),
+                    net_rating=float(tr_stats.get('net_rating', 0.0)),
+                    pace=float(tr_stats.get('pace', 100.0)),  # REAL pace from TeamRankings!
+                    fg_pct=float(tr_stats.get('fg_pct', 45.0)),
+                    fg3_pct=float(tr_stats.get('fg3_pct', 35.0)),
+                    ft_pct=float(tr_stats.get('ft_pct', 75.0)),
+                    pts_per_game=float(tr_stats.get('pts_per_game', 110.0)),
+                    pts_allowed=float(tr_stats.get('pts_allowed', 110.0)),
+                    last_5_record=tr_stats.get('last_5_record'),
+                    last_5_avg_pts=float(tr_stats.get('pts_per_game', 110.0)),
+                    last_5_avg_margin=float(tr_stats.get('point_diff', 0.0)),
+                    form_trend=tr_stats.get('form_trend', 'NEUTRAL'),
+                    pts_per_game_rank=tr_stats.get('pts_per_game_rank'),
+                    off_rating_rank=tr_stats.get('off_rating_rank'),
+                    def_rating_rank=tr_stats.get('def_rating_rank'),
+                    net_rating_rank=tr_stats.get('net_rating_rank'),
+                    pace_rank=tr_stats.get('pace_rank'),
+                    fg_pct_rank=tr_stats.get('fg_pct_rank'),
+                    fg3_pct_rank=tr_stats.get('fg3_pct_rank'),
+                    ft_pct_rank=tr_stats.get('ft_pct_rank')
+                )
+
+                self.team_stats_cache[team_name] = team_stats
+                logger.info(f"✅ Fetched TeamRankings NBA stats for {team_name}: {team_stats.pts_per_game} PPG, {team_stats.pace} pace")
+                return team_stats
+
+            # FALLBACK: Use ESPN if TeamRankings failed
+            logger.warning(f"TeamRankings data not found for {team_name}, trying ESPN fallback")
             team_abbr = self._nba_team_name_to_abbr(team_name)
             if not team_abbr:
                 logger.warning(f"Could not map NBA team name to abbreviation: {team_name}")
                 return None
 
-            # Fetch from ESPN
             espn_data = self.espn_nba_client.fetch_team_season_stats(team_abbr)
             if not espn_data:
                 logger.warning(f"No ESPN stats available for {team_name} ({team_abbr})")
@@ -592,19 +638,12 @@ class GameTracker:
 
             season_stats = espn_data.get('season_stats', {})
             rankings = espn_data.get('rankings', {})
-
-            # Extract stats using ESPN's actual field names
             games_played = int(season_stats.get('gamesplayed', 0))
             ppg = round(season_stats.get('avgpointsfor', 110.0), 1)
             opp_ppg = round(season_stats.get('avgpointsagainst', 110.0), 1)
-
-            # Calculate approximate ratings (ESPN doesn't provide these)
-            # Use simple approximation: offensive rating ≈ PPG * 100 / league_avg_pace
-            # For now, use league average pace of ~100
             approx_off_rating = round(ppg * 100 / 100, 1)
             approx_def_rating = round(opp_ppg * 100 / 100, 1)
 
-            # Map ESPN data to TeamStats model
             team_stats = TeamStats(
                 team_id=str(espn_data.get('team_id', '')),
                 team_name=team_name,
@@ -612,40 +651,35 @@ class GameTracker:
                 wins=espn_data.get('wins', 0),
                 losses=espn_data.get('losses', 0),
                 win_pct=espn_data.get('win_pct', 0.0),
-                # Approximate ratings (ESPN doesn't provide actual pace/ratings)
                 off_rating=approx_off_rating,
                 def_rating=approx_def_rating,
                 net_rating=round(approx_off_rating - approx_def_rating, 1),
-                pace=100.0,  # ESPN doesn't provide pace, use league average
-                # ESPN field names
+                pace=100.0,  # ESPN fallback still uses 100.0
                 fg_pct=round(season_stats.get('fieldgoalpct', 45.0) * 100, 1),
                 fg3_pct=round(season_stats.get('threepoint​pct', 35.0) * 100, 1),
                 ft_pct=round(season_stats.get('freethrowpct', 75.0) * 100, 1),
                 pts_per_game=ppg,
                 pts_allowed=opp_ppg,
                 last_5_record=espn_data.get('last_5_record'),
-                last_5_avg_pts=ppg,  # ESPN doesn't separate L5
+                last_5_avg_pts=ppg,
                 last_5_avg_margin=round(season_stats.get('differential', 0.0), 1),
                 form_trend=espn_data.get('form_trend', 'NEUTRAL'),
-                # Rankings (ESPN may not provide all of these)
                 pts_per_game_rank=rankings.get('avgpointsfor_rank'),
-                off_rating_rank=None,  # Not available from ESPN
-                def_rating_rank=None,  # Not available from ESPN
-                net_rating_rank=None,  # Not available from ESPN
-                pace_rank=None,  # Not available from ESPN
+                off_rating_rank=None,
+                def_rating_rank=None,
+                net_rating_rank=None,
+                pace_rank=None,
                 fg_pct_rank=rankings.get('fieldgoalpct_rank'),
                 fg3_pct_rank=rankings.get('threepointpct_rank'),
                 ft_pct_rank=rankings.get('freethrowpct_rank')
             )
 
-            # Cache it
             self.team_stats_cache[team_name] = team_stats
-            logger.info(f"✅ Fetched ESPN NBA stats for {team_name}: {team_stats.pts_per_game} PPG, {team_stats.pace} pace")
-
+            logger.info(f"⚠️ Fetched ESPN NBA stats (fallback) for {team_name}: {team_stats.pts_per_game} PPG, {team_stats.pace} pace")
             return team_stats
 
         except Exception as e:
-            logger.error(f"Error fetching ESPN NBA stats for {team_name}: {e}")
+            logger.error(f"Error fetching NBA stats for {team_name}: {e}")
             return None
 
     def _nba_team_name_to_abbr(self, team_name: str) -> Optional[str]:
