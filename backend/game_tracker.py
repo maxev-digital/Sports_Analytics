@@ -63,6 +63,8 @@ class GameTracker:
         self.nfl_team_stats_cache: Dict[str, NFLTeamStats] = {}  # Cache NFL team stats
         self.nhl_team_stats_cache: Dict[str, NHLTeamStats] = {}  # Cache NHL team stats
         self.mlb_team_stats_cache: Dict[str, MLBTeamStats] = {}  # Cache MLB team stats
+        self.ncaab_team_stats_cache: Dict[str, TeamStats] = {}  # Cache NCAAB team stats (KenPom)
+        self.kenpom_data: Dict[str, Dict] = {}  # Cached KenPom data
         self.pregame_totals_cache: Dict[str, float] = {}  # Cache pregame totals per game_id
         self.espn_scoreboard_cache: Dict = {}  # Cache ESPN scoreboard data
         self.odds_timestamp_cache: Dict[str, Dict[str, float]] = {}  # Track when each book updates odds: {game_id: {bookmaker: timestamp}}
@@ -189,9 +191,44 @@ class GameTracker:
                     }
 
                 elif sport_key == 'basketball_ncaab':
-                    # NCAAB uses KenPom data - skip if not available
-                    # This would need KenPom integration which isn't in TeamStats
-                    continue
+                    # NCAAB uses KenPom data (now available via _get_ncaab_team_stats)
+                    analyzer = self._get_ncaab_regression_analyzer()
+
+                    # Convert team stats to analyzer format (similar to NBA)
+                    game_data = {
+                        'game_id': game_id,
+                        'home_team': game.state.home_team.name,
+                        'away_team': game.state.away_team.name,
+                        'home_stats': {
+                            'games_played': game.home_team_stats.games_played,
+                            'wins': game.home_team_stats.wins,
+                            'win_pct': game.home_team_stats.win_pct,
+                            'ppg': game.home_team_stats.pts_per_game,
+                            'opp_ppg': game.home_team_stats.pts_allowed,
+                            'point_diff': game.home_team_stats.net_rating,
+                            'fg_pct': game.home_team_stats.fg_pct,
+                            'fg3_pct': game.home_team_stats.fg3_pct,
+                            'ft_pct': game.home_team_stats.ft_pct,
+                            'pace': game.home_team_stats.pace,  # KenPom AdjTempo ~70
+                            'off_rating': game.home_team_stats.off_rating,  # KenPom AdjOffEff
+                            'def_rating': game.home_team_stats.def_rating,  # KenPom AdjDefEff
+                        },
+                        'away_stats': {
+                            'games_played': game.away_team_stats.games_played,
+                            'wins': game.away_team_stats.wins,
+                            'win_pct': game.away_team_stats.win_pct,
+                            'ppg': game.away_team_stats.pts_per_game,
+                            'opp_ppg': game.away_team_stats.pts_allowed,
+                            'point_diff': game.away_team_stats.net_rating,
+                            'fg_pct': game.away_team_stats.fg_pct,
+                            'fg3_pct': game.away_team_stats.fg3_pct,
+                            'ft_pct': game.away_team_stats.ft_pct,
+                            'pace': game.away_team_stats.pace,  # KenPom AdjTempo ~70
+                            'off_rating': game.away_team_stats.off_rating,  # KenPom AdjOffEff
+                            'def_rating': game.away_team_stats.def_rating,  # KenPom AdjDefEff
+                        },
+                        'live_total': live_total
+                    }
 
                 # Run analysis
                 result = analyzer.analyze_game(game_data)
@@ -199,17 +236,28 @@ class GameTracker:
                 # Only create alert if it's a betting opportunity (2.0+ SD)
                 if result.get('is_alert', False):
                     alert = {
+                        'strategy_id': 'max_ev_boost',
+                        'strategy_name': 'Max EV Boost',
                         'game_id': game_id,
-                        'strategy': 'Max EV Boost',
-                        'sport': 'NBA' if sport_key == 'basketball_nba' else 'NCAAB',
+                        'home_team': game_data['home_team'],
+                        'away_team': game_data['away_team'],
+                        'sport': sport_key,
                         'matchup': f"{game_data['away_team']} @ {game_data['home_team']}",
+                        'trigger': f"Live line {result['live_total']} is {abs(result['z_score']):.1f}σ from predicted {result['predicted_mean']}",
                         'recommendation': result['recommended_bet'],
                         'confidence': result['confidence'],
+                        'edge_percentage': abs(result['z_score']) * 10,  # Rough edge estimate
+                        'expected_roi': result['kelly_pct'] * 100,
+                        'win_probability': 0.55 + (abs(result['z_score']) * 0.05),  # Estimate based on Z-score
+                        'stake_recommendation': result['kelly_pct'],
                         'kelly_pct': result['kelly_pct'],
                         'z_score': result['z_score'],
                         'predicted_total': result['predicted_mean'],
                         'live_total': result['live_total'],
-                        'edge_description': f"{result['confidence']} alert: Live total {result['live_total']} is {abs(result['z_score']):.1f} SD from predicted {result['predicted_mean']}"
+                        'edge_description': f"{result['confidence']} alert: Live total {result['live_total']} is {abs(result['z_score']):.1f} SD from predicted {result['predicted_mean']}",
+                        'urgency': 'CRITICAL' if abs(result['z_score']) >= 3.0 else 'HIGH',
+                        'expires_in': 300,  # 5 minutes
+                        'timestamp': datetime.now().isoformat()
                     }
                     self.max_ev_boost_alerts.append(alert)
                     logger.info(f"[MAX EV BOOST] {alert['matchup']}: {alert['recommendation']} @ {live_total} (Z={result['z_score']:.2f}, Confidence={result['confidence']})")
@@ -570,6 +618,117 @@ class GameTracker:
         except Exception as e:
             logger.warning(f"Error fetching MLB stats for {team_name}: {e}")
             return None
+
+    def _load_kenpom_data(self):
+        """Load most recent KenPom data for current season"""
+        if self.kenpom_data:
+            return  # Already loaded
+
+        import pandas as pd
+        from pathlib import Path
+
+        data_dir = Path(__file__).parent / "data" / "raw" / "ncaab"
+
+        # Find most recent KenPom 2025 file (current season)
+        pattern = "kenpom_2025_*.csv"
+        files = list(data_dir.glob(pattern))
+
+        if not files:
+            logger.warning("No KenPom 2025 data found, trying 2024...")
+            pattern = "kenpom_2024_*.csv"
+            files = list(data_dir.glob(pattern))
+
+        if not files:
+            logger.error("No KenPom data found for NCAAB stats")
+            return
+
+        # Use most recent file
+        kenpom_file = sorted(files)[-1]
+        logger.info(f"Loading KenPom data from {kenpom_file.name}")
+
+        try:
+            df = pd.read_csv(kenpom_file)
+
+            # Store as dict with normalized team names as keys
+            for _, row in df.iterrows():
+                team_name = str(row['Team']).strip()
+                # Remove ranking number from team name (e.g., "Duke 1" -> "Duke")
+                team_name = ' '.join(word for word in team_name.split() if not word.isdigit())
+
+                # Normalize for matching
+                team_normalized = team_name.lower()
+
+                self.kenpom_data[team_normalized] = {
+                    'team': team_name,
+                    'conference': row.get('Conference', 'Unknown'),
+                    'adj_em': float(row.get('AdjEM', 0)),
+                    'adj_off_eff': float(row.get('AdjOffEff', 100.0)),
+                    'adj_def_eff': float(row.get('AdjDefEff', 100.0)),
+                    'adj_tempo': float(row.get('AdjTempo', 70.0)),  # NCAAB pace ~70
+                    'rank': int(row.get('Rank', 999))
+                }
+
+            logger.info(f"✅ Loaded KenPom data for {len(self.kenpom_data)} NCAAB teams")
+        except Exception as e:
+            logger.error(f"Error loading KenPom data: {e}")
+
+    def _get_ncaab_team_stats(self, team_name: str) -> Optional[TeamStats]:
+        """Get NCAAB team stats from KenPom data"""
+        # Check cache first
+        if team_name in self.ncaab_team_stats_cache:
+            return self.ncaab_team_stats_cache[team_name]
+
+        # Load KenPom data if not already loaded
+        if not self.kenpom_data:
+            self._load_kenpom_data()
+
+        if not self.kenpom_data:
+            logger.warning(f"No KenPom data available for NCAAB team: {team_name}")
+            return None
+
+        # Normalize team name for matching
+        team_normalized = team_name.lower().strip()
+
+        # Try exact match first
+        kenpom_stats = self.kenpom_data.get(team_normalized)
+
+        # Try partial match if exact fails
+        if not kenpom_stats:
+            for key, stats in self.kenpom_data.items():
+                if key in team_normalized or team_normalized in key:
+                    kenpom_stats = stats
+                    break
+
+        if not kenpom_stats:
+            logger.warning(f"No KenPom data found for NCAAB team: {team_name}")
+            return None
+
+        # Create TeamStats from KenPom data (NCAAB scale: pace ~70, eff ~100-130)
+        team_stats = TeamStats(
+            team_id=str(kenpom_stats['rank']),
+            team_name=team_name,
+            games_played=30,  # Approximate for NCAAB
+            wins=20,  # Default placeholder
+            losses=10,  # Default placeholder
+            win_pct=0.667,  # Default placeholder
+            off_rating=kenpom_stats['adj_off_eff'],  # KenPom AdjOffEff (~100-130)
+            def_rating=kenpom_stats['adj_def_eff'],  # KenPom AdjDefEff (~85-105)
+            net_rating=kenpom_stats['adj_em'],  # KenPom AdjEM
+            pace=kenpom_stats['adj_tempo'],  # KenPom AdjTempo (~65-75) ⚠️ CRITICAL
+            fg_pct=45.0,  # Default
+            fg3_pct=35.0,  # Default
+            ft_pct=70.0,  # Default
+            pts_per_game=kenpom_stats['adj_off_eff'] * kenpom_stats['adj_tempo'] / 100.0,  # Approximate
+            pts_allowed=kenpom_stats['adj_def_eff'] * kenpom_stats['adj_tempo'] / 100.0,  # Approximate
+            last_5_record=None,
+            last_5_avg_pts=None,
+            last_5_avg_margin=None,
+            form_trend='NEUTRAL'
+        )
+
+        self.ncaab_team_stats_cache[team_name] = team_stats
+        logger.info(f"✅ Fetched KenPom NCAAB stats for {team_name}: Pace={team_stats.pace:.1f}, OffEff={team_stats.off_rating:.1f}")
+        return team_stats
 
     def _get_team_stats(self, team_name: str) -> Optional[TeamStats]:
         """Get NBA team stats from TeamRankings (PRIMARY) with ESPN fallback"""
@@ -1080,11 +1239,14 @@ class GameTracker:
                 # Get team stats (fetch early so projector can use them) - basketball only (NBA & NCAAB)
                 home_stats = None
                 away_stats = None
-                # Only use _get_team_stats for NBA (uses TeamRankings NBA data)
-                # NCAAB should use KenPom data instead
                 if sport_key == 'basketball_nba':
+                    # Use TeamRankings NBA data (pace ~100)
                     home_stats = self._get_team_stats(game_state.home_team.name)
                     away_stats = self._get_team_stats(game_state.away_team.name)
+                elif sport_key == 'basketball_ncaab':
+                    # Use KenPom NCAAB data (pace ~70)
+                    home_stats = self._get_ncaab_team_stats(game_state.home_team.name)
+                    away_stats = self._get_ncaab_team_stats(game_state.away_team.name)
 
                 # Calculate projection
                 if game_state.status == 'live' and game_state.quarter and game_state.time_remaining:
@@ -1998,6 +2160,10 @@ class GameTracker:
         return {
             'strategy_id': f"quarter_reversal_{alert.get('strategy', '')}",
             'strategy_name': 'NBA Quarter Reversal',
+            'game_id': alert.get('game_id'),
+            'home_team': alert.get('home_team'),
+            'away_team': alert.get('away_team'),
+            'sport': 'basketball_nba',
             'confidence': confidence_map.get(alert.get('alert_level', 'MEDIUM'), 'MEDIUM'),
             'trigger': alert.get('trigger', ''),
             'recommendation': recommendation_text,
