@@ -21,6 +21,16 @@ interface SimulationModalProps {
         over_under: number;
       };
     };
+    home_stats?: {
+      pace: number;
+      off_rating: number;
+      def_rating: number;
+    };
+    away_stats?: {
+      pace: number;
+      off_rating: number;
+      def_rating: number;
+    };
   };
 }
 
@@ -42,6 +52,17 @@ export function SimulationModal({ isOpen, onClose, game }: SimulationModalProps)
       runSimulation({
         game_id: game.state.id,
         current_state: currentState,
+        home_stats: game.home_stats ? {
+          pace: game.home_stats.pace,
+          off_rating: game.home_stats.off_rating,
+          def_rating: game.home_stats.def_rating,
+        } : undefined,
+        away_stats: game.away_stats ? {
+          pace: game.away_stats.pace,
+          off_rating: game.away_stats.off_rating,
+          def_rating: game.away_stats.def_rating,
+        } : undefined,
+        market_total: game.markets?.totals?.over_under,
         n_simulations: 10000,
       });
     }
@@ -111,10 +132,25 @@ export function SimulationModal({ isOpen, onClose, game }: SimulationModalProps)
                   <h3 className="text-white font-bold mb-2">Simulation Failed</h3>
                   <p className="text-red-300 text-sm">{error}</p>
                   <button
-                    onClick={() => runSimulation({
-                      game_id: game.state.id,
-                      n_simulations: 10000,
-                    })}
+                    onClick={() => {
+                      const currentState = game.state.status === 'live' && game.state.home_score !== undefined
+                        ? {
+                            quarter: parseInt(game.state.period?.replace(/[^0-9]/g, '') || '1'),
+                            time_remaining: game.state.time_remaining || '12:00',
+                            home_score: game.state.home_score || 0,
+                            away_score: game.state.away_score || 0,
+                          }
+                        : undefined;
+
+                      runSimulation({
+                        game_id: game.state.id,
+                        current_state: currentState,
+                        home_stats: game.home_stats,
+                        away_stats: game.away_stats,
+                        market_total: game.markets?.totals?.over_under,
+                        n_simulations: 10000,
+                      });
+                    }}
                     className="mt-4 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded font-semibold transition-colors"
                   >
                     Try Again
@@ -132,6 +168,7 @@ export function SimulationModal({ isOpen, onClose, game }: SimulationModalProps)
                 home: game.state.home_team,
                 away: game.state.away_team,
               }}
+              marketTotal={game.markets?.totals?.over_under}
             />
           )}
         </div>
