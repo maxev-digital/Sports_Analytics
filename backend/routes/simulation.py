@@ -172,7 +172,8 @@ class MonteCarloResponse(BaseModel):
 
 # ========== ENDPOINTS ==========
 
-@router.post("/monte-carlo", response_model=MonteCarloResponse)
+@router.post("/monte-carlo", include_in_schema=True)
+@router.post("/monte-carlo/totals", response_model=MonteCarloResponse)
 async def run_monte_carlo_simulation(request: MonteCarloRequest):
     """
     Run possession-by-possession Monte Carlo simulation for live game
