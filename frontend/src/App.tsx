@@ -38,6 +38,7 @@ import { MyFeedback } from './pages/MyFeedback';
 import { MaxEvEdges } from './pages/MaxEvEdges';
 import GoaliePull from './pages/GoaliePull';
 import { EdgeScannerAlertMonitor } from './components/EdgeScannerAlertMonitor';
+import { GlobalAlertMonitor } from './components/GlobalAlertMonitor';
 import { isElectron } from './utils/isElectron';
 
 function App() {
@@ -55,6 +56,11 @@ function App() {
               minEdge={3.5}
               minConfidence={0.70}
               pollInterval={20000}
+            />
+            {/* Global Alert Monitor - monitors for arbitrage, middles, steam moves, sharp money, fatigue */}
+            <GlobalAlertMonitor
+              enabled={true}
+              pollInterval={10000}
             />
             <Routes>
           {/* Public routes - Login and SignUp pages */}

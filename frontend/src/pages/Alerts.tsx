@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { GoaliePullAlerts } from '../components/GoaliePullAlert';
 import { FavoriteComebackAlerts } from '../components/FavoriteComebackAlert';
 import { HalftimeTrackerAlerts } from '../components/HalftimeTrackerAlert';
@@ -180,6 +181,7 @@ interface AlertsData {
 }
 
 export function Alerts() {
+  const location = useLocation();
   const [alertsData, setAlertsData] = useState<AlertsData | null>(null);
   const [goaliePullCount, setGoaliePullCount] = useState(0);
   const [favoriteComebackCount, setFavoriteComebackCount] = useState(0);
@@ -198,6 +200,15 @@ export function Alerts() {
   const previousCountRef = useRef({ arbitrage: -1, steam: -1, lines: -1, goaliePull: -1, sharpMoney: -1, scheduleFatigue: -1 });
   const isInitialLoadRef = useRef(true);
   const { showToast } = useToast();
+
+  // Handle navigation state from toast clicks (when user clicks toast on other pages)
+  useEffect(() => {
+    const state = location.state as { category?: 'live' | 'pregame'; tab?: string } | null;
+    if (state?.category && state?.tab) {
+      setCategoryTab(state.category);
+      setActiveTab(state.tab);
+    }
+  }, [location]);
 
   // Sound effects for different alert types
   const playGoaliePullSound = useSoundEffect('alert-bell.mp3', 0.6);
