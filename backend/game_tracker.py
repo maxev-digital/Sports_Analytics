@@ -804,15 +804,15 @@ class GameTracker:
                 for book in bookmakers:
                     book_data = {'bookmaker': book['title']}
 
-                    # DEBUG: Log what markets are available
-                    logger.info(f"Book {book['title']} has markets: {[m['key'] for m in book.get('markets', [])]}")
+                    # DEBUG: Log what markets are available (DISABLED - causes CPU spike with 4300+ logs per update)
+                    # logger.info(f"Book {book['title']} has markets: {[m['key'] for m in book.get('markets', [])]}")
 
                     for market in book.get('markets', []):
                         if market['key'] == 'totals':
                             outcomes = market['outcomes']
-                            # DEBUG: Log outcome names to debug NCAAB
-                            if sport_key == 'basketball_ncaab':
-                                logger.info(f"[NCAAB DEBUG] Book {book['title']} totals outcomes: {[o.get('name') for o in outcomes]}")
+                            # DEBUG: Log outcome names to debug NCAAB (DISABLED - causes CPU spike)
+                            # if sport_key == 'basketball_ncaab':
+                            #     logger.info(f"[NCAAB DEBUG] Book {book['title']} totals outcomes: {[o.get('name') for o in outcomes]}")
                             over_outcome = next((o for o in outcomes if o['name'] == 'Over'), None)
                             under_outcome = next((o for o in outcomes if o['name'] == 'Under'), None)
                             if over_outcome:
