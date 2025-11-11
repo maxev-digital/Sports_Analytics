@@ -1,5 +1,5 @@
 """Pydantic models for type safety"""
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from datetime import datetime
 
@@ -305,6 +305,8 @@ class InjuryInfo(BaseModel):
     notes: Optional[str] = None
 
 class LiveGame(BaseModel):
+    model_config = ConfigDict(exclude_none=True)  # Don't serialize None fields (huge perf boost!)
+
     state: GameState
     odds: list[GameOdds]
     projection: GameProjection
