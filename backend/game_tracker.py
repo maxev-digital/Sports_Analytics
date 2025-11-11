@@ -581,10 +581,22 @@ class GameTracker:
             # PRIMARY: Try TeamRankings first (has real pace data)
             teamrankings_data = self.teamrankings_scraper.fetch_all_team_stats()
 
+            # Normalize team name for better matching (handle LA vs Los Angeles)
+            normalized_name = team_name.lower()
+            if normalized_name.startswith('los angeles'):
+                normalized_name_alt = normalized_name.replace('los angeles', 'la')
+            elif normalized_name.startswith('la '):
+                normalized_name_alt = normalized_name.replace('la ', 'los angeles ')
+            else:
+                normalized_name_alt = normalized_name
+
             # Try to find team in TeamRankings data
             tr_stats = None
             for team_key, stats in teamrankings_data.items():
-                if team_name.lower() in team_key.lower() or team_key.lower() in team_name.lower():
+                team_key_lower = team_key.lower()
+                # Try both original and alternate names
+                if (normalized_name in team_key_lower or team_key_lower in normalized_name or
+                    normalized_name_alt in team_key_lower or team_key_lower in normalized_name_alt):
                     tr_stats = stats
                     break
 
