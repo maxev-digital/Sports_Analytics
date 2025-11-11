@@ -6,6 +6,7 @@ import { openSportsbook } from '../utils/deepLinking';
 import { getGameSpecificUrl } from '../utils/gameUrls';
 import { trackBetClick } from '../utils/betTracking';
 import { useAuth } from '../contexts/AuthContext';
+import { useBetSlip } from '../contexts/BetSlipContext';
 import { MomentumBar } from './MomentumBar';
 import { AdvancedSystemsDropdown } from './AdvancedSystemsDropdown';
 import { EdgeLabDropdown } from './EdgeLabDropdown';
@@ -134,6 +135,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
 
   // Get username for bet tracking
   const { username } = useAuth();
+  const { openBetSlip } = useBetSlip();
 
   // Stats view toggle: 'stats' (raw stats), 'rankings' (ranks only), 'combined' (stats + ranks), 'advanced' (betting analytics)
   const [statsView, setStatsView] = useState<'stats' | 'rankings' | 'combined' | 'advanced'>('stats');
@@ -146,9 +148,12 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
 
   // Handle bet tracking when bookmaker is clicked
   const handleBookmakerClick = async (bookmakerName: string, odd: any, bookmakerUrl: string) => {
+    // CRITICAL: Open sportsbook IMMEDIATELY to avoid popup blockers
+    // Must be first line - browsers block window.open() if not direct user action
+    openSportsbook(bookmakerUrl, bookmakerName);
+
     // Only track bet if user is logged in
     if (!username) {
-      openSportsbook(bookmakerUrl, bookmakerName);
       return;
     }
 
@@ -156,9 +161,11 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
     let betType: 'spread' | 'total' | 'moneyline' | 'prop' = 'total';
     let betSide = '';
     let betOdds = 0;
+    let line: number | undefined = undefined;
 
     if (selectedMarket === 'totals') {
       betType = 'total';
+      line = odd.total;
       // Use projection recommendation if available, otherwise default to OVER
       if (projection.recommendation === 'OVER') {
         betSide = 'OVER';
@@ -173,6 +180,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
       }
     } else if (selectedMarket === 'spread') {
       betType = 'spread';
+      line = odd.home_spread;
       // Default to home team spread, but use projection if available
       betSide = `${formatTeamName(state.home_team.name, state.sport_key)} ${odd.home_spread > 0 ? '+' : ''}${odd.home_spread}`;
       betOdds = odd.home_spread_price;
@@ -183,30 +191,21 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
       betOdds = odd.home_ml;
     }
 
-    // Track the bet click
-    try {
-      await trackBetClick({
-        userId: username,
-        gameId: state.id,
-        sport: state.sport_key,
-        homeTeam: formatTeamName(state.home_team.name, state.sport_key),
-        awayTeam: formatTeamName(state.away_team.name, state.sport_key),
-        commenceTime: state.commence_time,
-        betType,
-        betSide,
-        odds: betOdds,
-        bookmaker: bookmakerName,
-        confidence: projection.confidence as 'HIGH' | 'MEDIUM' | 'LOW' | undefined,
-        edgePercent: projection.edge ? Math.abs(projection.edge) : undefined,
-      });
-
-      console.log(`✅ Bet tracked: ${betSide} at ${betOdds} via ${bookmakerName}`);
-    } catch (error) {
-      console.error('Failed to track bet:', error);
-    }
-
-    // Open sportsbook
-    openSportsbook(bookmakerUrl, bookmakerName);
+    // Then open bet slip with pre-filled data (so when they return, they can track the bet)
+    openBetSlip({
+      sport: state.sport_key,
+      homeTeam: formatTeamName(state.home_team.name, state.sport_key),
+      awayTeam: formatTeamName(state.away_team.name, state.sport_key),
+      gameId: state.id,
+      commenceTime: state.commence_time,
+      betType,
+      betSide,
+      line,
+      odds: betOdds,
+      bookmaker: bookmakerName,
+      confidence: projection.confidence as 'HIGH' | 'MEDIUM' | 'LOW' | 'CRITICAL' | undefined,
+      edgePercent: projection.edge ? Math.abs(projection.edge) : undefined,
+    });
   };
 
   // Helper function to get rank color (green for top 10, yellow for 11-20, white for 21+)

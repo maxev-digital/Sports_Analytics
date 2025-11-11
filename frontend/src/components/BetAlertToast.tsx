@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
 import { StrategyAlert } from '../types';
+import { useBetSlip } from '../contexts/BetSlipContext';
+import { openSportsbook } from '../utils/deepLinking';
+import { getBookmaker } from '../utils/bookmakers';
 
 interface BetAlertToastProps {
   alert: StrategyAlert;
@@ -10,6 +13,7 @@ interface BetAlertToastProps {
 export function BetAlertToast({ alert, onDismiss, position }: BetAlertToastProps) {
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [isExiting, setIsExiting] = useState(false);
+  const { openBetSlip } = useBetSlip();
 
   // Update timer every second
   useEffect(() => {
@@ -121,6 +125,11 @@ export function BetAlertToast({ alert, onDismiss, position }: BetAlertToastProps
           <span className="text-2xl">{styles.emoji}</span>
           <div>
             <div className="font-bold text-white text-sm">{alert.strategy_name}</div>
+            {alert.home_team && alert.away_team && (
+              <div className="text-xs text-white/80 font-semibold mt-0.5">
+                {alert.away_team} @ {alert.home_team}
+              </div>
+            )}
             <div className="text-xs text-white/70 uppercase">{alert.confidence} Confidence</div>
           </div>
         </div>
@@ -152,42 +161,67 @@ export function BetAlertToast({ alert, onDismiss, position }: BetAlertToastProps
           </div>
         </div>
 
-        {/* Bet Options - Books with Icons */}
+        {/* Bet Options - Books with Icons (CLICKABLE) */}
         {alert.bet_options && alert.bet_options.length > 0 && (
           <div className="space-y-2">
-            <div className="text-xs font-semibold text-white/70">BOOKS & ODDS</div>
-            {alert.bet_options.slice(0, 3).map((option, idx) => (
-              <div
-                key={idx}
-                className="bg-black/40 rounded-lg p-2 border border-white/20 flex items-center justify-between"
-              >
-                <div className="flex items-center gap-2">
-                  {/* Bookmaker Logo */}
-                  {option.bookmaker_logo && (
-                    <img
-                      src={option.bookmaker_logo}
-                      alt={option.bookmaker_title || option.bookmaker}
-                      className="w-5 h-5 rounded"
-                      onError={(e) => {
-                        // Hide image if it fails to load
-                        (e.target as HTMLImageElement).style.display = 'none';
-                      }}
-                    />
-                  )}
-                  <div className="flex flex-col">
-                    <div className="text-white font-semibold text-sm">
-                      {option.bookmaker_title || option.bookmaker}
+            <div className="text-xs font-semibold text-white/70">BOOKS & ODDS (Click to Open)</div>
+            {alert.bet_options.slice(0, 3).map((option, idx) => {
+              const bookmakerInfo = getBookmaker(option.bookmaker);
+              return (
+                <button
+                  key={idx}
+                  onClick={() => {
+                    // Open sportsbook in new tab
+                    openSportsbook(`https://${bookmakerInfo.domain}`, bookmakerInfo.name);
+
+                    // Also open bet slip with pre-filled data
+                    openBetSlip({
+                      sport: alert.sport,
+                      homeTeam: alert.home_team,
+                      awayTeam: alert.away_team,
+                      gameId: alert.game_id,
+                      betType: option.market_type === 'totals' ? 'total' :
+                               option.market_type === 'spreads' ? 'spread' :
+                               option.market_type === 'h2h' ? 'moneyline' : 'total',
+                      betSide: option.bet_side,
+                      line: option.line,
+                      odds: option.odds,
+                      bookmaker: option.bookmaker,
+                      confidence: alert.confidence,
+                      edgePercent: alert.edge_percentage,
+                      strategy: alert.strategy_name
+                    });
+                  }}
+                  className="w-full bg-black/40 hover:bg-black/60 rounded-lg p-2 border border-white/20 hover:border-white/40 flex items-center justify-between transition-all cursor-pointer"
+                >
+                  <div className="flex items-center gap-2">
+                    {/* Bookmaker Logo */}
+                    {option.bookmaker_logo && (
+                      <img
+                        src={option.bookmaker_logo}
+                        alt={option.bookmaker_title || option.bookmaker}
+                        className="w-5 h-5 rounded"
+                        onError={(e) => {
+                          // Hide image if it fails to load
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                    )}
+                    <div className="flex flex-col text-left">
+                      <div className="text-white font-semibold text-sm">
+                        {option.bookmaker_title || option.bookmaker}
+                      </div>
+                      <div className="text-white/70 text-xs">{option.label}</div>
                     </div>
-                    <div className="text-white/70 text-xs">{option.label}</div>
                   </div>
-                </div>
-                <div className="text-white font-bold text-sm">
-                  {typeof option.odds === 'number'
-                    ? (option.odds > 0 ? `+${Math.round(option.odds)}` : Math.round(option.odds))
-                    : option.odds}
-                </div>
-              </div>
-            ))}
+                  <div className="text-white font-bold text-sm">
+                    {typeof option.odds === 'number'
+                      ? (option.odds > 0 ? `+${Math.round(option.odds)}` : Math.round(option.odds))
+                      : option.odds}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         )}
 
@@ -234,7 +268,7 @@ export function BetAlertToast({ alert, onDismiss, position }: BetAlertToastProps
       {/* Close Button */}
       <button
         onClick={handleDismiss}
-        className="absolute top-2 right-2 text-white/60 hover:text-white transition-colors text-xl font-bold w-6 h-6 flex items-center justify-center"
+        className="absolute top-2 right-2 text-white/60 hover:text-white transition-colors text-xl font-bold w-6 h-6 flex items-center justify-between"
       >
         ×
       </button>

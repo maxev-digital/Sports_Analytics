@@ -4,6 +4,9 @@ import { getBookmaker } from '../data/bookmakers';
 import { OddsMetricsDashboard } from '../components/OddsMetricsDashboard';
 import { formatTeamName } from '../utils/teamNames';
 import { getApiUrl } from '../config';
+import { useAuth } from '../contexts/AuthContext';
+import { useBetSlip } from '../contexts/BetSlipContext';
+import { openSportsbook } from '../utils/deepLinking';
 
 interface WeatherInfo {
   temp_high?: number;
@@ -38,7 +41,7 @@ interface GameOdds {
     is_best_over?: boolean;
     is_best_under?: boolean;
     latency_ms?: number;
-    source?: string;  // 'OddsAPI' or 'SportsDataIO'
+    source?: string;  // Data source identifier
     source_speed?: string;  // 'fast' or 'standard'
   }>;
 }
@@ -47,6 +50,8 @@ type SportKey = 'basketball_nba' | 'basketball_ncaab' | 'americanfootball_nfl' |
 type BetType = 'moneyline' | 'spread' | 'total';
 
 export function Odds() {
+  const { username } = useAuth();
+  const { openBetSlip } = useBetSlip();
   const [activeSport, setActiveSport] = useState<SportKey>('basketball_nba');
   const [activeBetType, setActiveBetType] = useState<BetType>('moneyline');
   const [games, setGames] = useState<GameOdds[]>([]);
@@ -201,6 +206,35 @@ export function Odds() {
     if (diffMins < 60) return `${diffMins}m`;
     if (diffHours < 24) return `${diffHours}h ${diffMins % 60}m`;
     return `${diffDays}d ${diffHours % 24}h`;
+  };
+
+  // Handle opening bet slip with pre-filled data
+  const handleTrackBet = (game: GameOdds, betType: 'moneyline' | 'spread' | 'total', betSide: string, odds: number, bookmaker: string, line?: number) => {
+    // CRITICAL: Get bookmaker info and open sportsbook IMMEDIATELY to avoid popup blockers
+    // Must be first lines - browsers block window.open() if not direct user action
+    const bookmakerInfo = getBookmaker(bookmaker);
+    if (bookmakerInfo?.url) {
+      openSportsbook(bookmakerInfo.url, bookmakerInfo.name);
+    }
+
+    // If user is not logged in, just open sportsbook (already done above) and return
+    if (!username) {
+      return;
+    }
+
+    // Then open bet slip with pre-filled data (so when they return, they can track the bet)
+    openBetSlip({
+      sport: game.sport_key,
+      homeTeam: formatTeamName(game.home_team, game.sport_key),
+      awayTeam: formatTeamName(game.away_team, game.sport_key),
+      gameId: game.id,
+      commenceTime: game.commence_time,
+      betType,
+      betSide,
+      line,
+      odds,
+      bookmaker,
+    });
   };
 
   if (loading) {
@@ -579,40 +613,41 @@ export function Odds() {
                               {/* Moneyline */}
                               {activeBetType === 'moneyline' && (
                                 <div className="space-y-0 divide-y divide-slate-700">
-                                  <a
-                                    href={getBookmaker(bookmaker)?.url || '#'}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="hover:bg-slate-800 transition-colors cursor-pointer px-0.5 py-2 block"
-                                    title={`Bet ${formatTeamName(game.away_team, game.sport_key)} ${formatOdds(bookOdds.away_ml)} on ${getBookmaker(bookmaker)?.name}`}
+                                  <button
+                                    onClick={() => handleTrackBet(game, 'moneyline', formatTeamName(game.away_team, game.sport_key), bookOdds.away_ml, bookmaker)}
+                                    className="hover:bg-slate-800 transition-colors cursor-pointer px-0.5 py-2 block w-full"
+                                    title={`Track bet: ${formatTeamName(game.away_team, game.sport_key)} ${formatOdds(bookOdds.away_ml)} on ${getBookmaker(bookmaker)?.name}`}
                                   >
                                     <div className="text-xl font-medium text-blue-300 leading-tight">
                                       {formatOdds(bookOdds.away_ml)}
                                     </div>
-                                  </a>
-                                  <a
-                                    href={getBookmaker(bookmaker)?.url || '#'}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="hover:bg-slate-800 transition-colors cursor-pointer px-0.5 py-2 block"
-                                    title={`Bet ${formatTeamName(game.home_team, game.sport_key)} ${formatOdds(bookOdds.home_ml)} on ${getBookmaker(bookmaker)?.name}`}
+                                  </button>
+                                  <button
+                                    onClick={() => handleTrackBet(game, 'moneyline', formatTeamName(game.home_team, game.sport_key), bookOdds.home_ml, bookmaker)}
+                                    className="hover:bg-slate-800 transition-colors cursor-pointer px-0.5 py-2 block w-full"
+                                    title={`Track bet: ${formatTeamName(game.home_team, game.sport_key)} ${formatOdds(bookOdds.home_ml)} on ${getBookmaker(bookmaker)?.name}`}
                                   >
                                     <div className="text-xl font-medium text-green-300 leading-tight">
                                       {formatOdds(bookOdds.home_ml)}
                                     </div>
-                                  </a>
+                                  </button>
                                 </div>
                               )}
 
                               {/* Spread */}
                               {activeBetType === 'spread' && (
                                 <div className="space-y-0 divide-y divide-slate-700">
-                                  <a
-                                    href={getBookmaker(bookmaker)?.url || '#'}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="hover:bg-slate-800 transition-colors cursor-pointer px-0.5 py-2 block"
-                                    title={`Bet ${formatTeamName(game.away_team, game.sport_key)} ${bookOdds.away_spread > 0 ? '+' : ''}${bookOdds.away_spread} on ${getBookmaker(bookmaker)?.name}`}
+                                  <button
+                                    onClick={() => handleTrackBet(
+                                      game,
+                                      'spread',
+                                      `${formatTeamName(game.away_team, game.sport_key)} ${bookOdds.away_spread > 0 ? '+' : ''}${bookOdds.away_spread}`,
+                                      bookOdds.away_spread_price,
+                                      bookmaker,
+                                      bookOdds.away_spread
+                                    )}
+                                    className="hover:bg-slate-800 transition-colors cursor-pointer px-0.5 py-2 block w-full"
+                                    title={`Track bet: ${formatTeamName(game.away_team, game.sport_key)} ${bookOdds.away_spread > 0 ? '+' : ''}${bookOdds.away_spread} ${formatOdds(bookOdds.away_spread_price)} on ${getBookmaker(bookmaker)?.name}`}
                                   >
                                     <div className="text-lg font-medium text-slate-100 leading-tight">
                                       {bookOdds.away_spread > 0 ? '+' : ''}{bookOdds.away_spread}
@@ -620,13 +655,18 @@ export function Odds() {
                                     <div className="text-base text-slate-400 mt-0 leading-tight">
                                       {formatOdds(bookOdds.away_spread_price)}
                                     </div>
-                                  </a>
-                                  <a
-                                    href={getBookmaker(bookmaker)?.url || '#'}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="hover:bg-slate-800 transition-colors cursor-pointer px-0.5 py-2 block"
-                                    title={`Bet ${formatTeamName(game.home_team, game.sport_key)} ${bookOdds.home_spread > 0 ? '+' : ''}${bookOdds.home_spread} on ${getBookmaker(bookmaker)?.name}`}
+                                  </button>
+                                  <button
+                                    onClick={() => handleTrackBet(
+                                      game,
+                                      'spread',
+                                      `${formatTeamName(game.home_team, game.sport_key)} ${bookOdds.home_spread > 0 ? '+' : ''}${bookOdds.home_spread}`,
+                                      bookOdds.home_spread_price,
+                                      bookmaker,
+                                      bookOdds.home_spread
+                                    )}
+                                    className="hover:bg-slate-800 transition-colors cursor-pointer px-0.5 py-2 block w-full"
+                                    title={`Track bet: ${formatTeamName(game.home_team, game.sport_key)} ${bookOdds.home_spread > 0 ? '+' : ''}${bookOdds.home_spread} ${formatOdds(bookOdds.home_spread_price)} on ${getBookmaker(bookmaker)?.name}`}
                                   >
                                     <div className="text-lg font-medium text-slate-100 leading-tight">
                                       {bookOdds.home_spread > 0 ? '+' : ''}{bookOdds.home_spread}
@@ -634,21 +674,26 @@ export function Odds() {
                                     <div className="text-base text-slate-400 mt-0 leading-tight">
                                       {formatOdds(bookOdds.home_spread_price)}
                                     </div>
-                                  </a>
+                                  </button>
                                 </div>
                               )}
 
                               {/* Total */}
                               {activeBetType === 'total' && (
                                 <div className="space-y-0">
-                                  <a
-                                    href={getBookmaker(bookmaker)?.url || '#'}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className={`hover:bg-slate-800 transition-colors cursor-pointer px-0.5 py-2 block ${
+                                  <button
+                                    onClick={() => handleTrackBet(
+                                      game,
+                                      'total',
+                                      'OVER',
+                                      bookOdds.over_price,
+                                      bookmaker,
+                                      bookOdds.total
+                                    )}
+                                    className={`hover:bg-slate-800 transition-colors cursor-pointer px-0.5 py-2 block w-full ${
                                       bookOdds.is_best_over ? 'bg-green-900/30' : ''
                                     }`}
-                                    title={`Bet Over ${bookOdds.total} ${formatOdds(bookOdds.over_price)} on ${getBookmaker(bookmaker)?.name}`}
+                                    title={`Track bet: Over ${bookOdds.total} ${formatOdds(bookOdds.over_price)} on ${getBookmaker(bookmaker)?.name}`}
                                   >
                                     <div className="flex items-center gap-1">
                                       <span className={`text-base font-medium ${bookOdds.is_best_over ? 'text-green-300' : 'text-slate-400'} leading-tight w-4`}>
@@ -661,15 +706,20 @@ export function Odds() {
                                         {formatOdds(bookOdds.over_price)}
                                       </span>
                                     </div>
-                                  </a>
-                                  <a
-                                    href={getBookmaker(bookmaker)?.url || '#'}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className={`hover:bg-slate-800 transition-colors cursor-pointer px-0.5 py-2 block ${
+                                  </button>
+                                  <button
+                                    onClick={() => handleTrackBet(
+                                      game,
+                                      'total',
+                                      'UNDER',
+                                      bookOdds.under_price,
+                                      bookmaker,
+                                      bookOdds.total
+                                    )}
+                                    className={`hover:bg-slate-800 transition-colors cursor-pointer px-0.5 py-2 block w-full ${
                                       bookOdds.is_best_under ? 'bg-red-900/30' : ''
                                     }`}
-                                    title={`Bet Under ${bookOdds.total} ${formatOdds(bookOdds.under_price)} on ${getBookmaker(bookmaker)?.name}`}
+                                    title={`Track bet: Under ${bookOdds.total} ${formatOdds(bookOdds.under_price)} on ${getBookmaker(bookmaker)?.name}`}
                                   >
                                     <div className="flex items-center gap-1">
                                       <span className={`text-base font-medium ${bookOdds.is_best_under ? 'text-red-300' : 'text-slate-400'} leading-tight w-4`}>
@@ -682,7 +732,7 @@ export function Odds() {
                                         {formatOdds(bookOdds.under_price)}
                                       </span>
                                     </div>
-                                  </a>
+                                  </button>
                                 </div>
                               )}
                             </div>
