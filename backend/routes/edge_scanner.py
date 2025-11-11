@@ -43,6 +43,20 @@ MONTE_CARLO_DIR = TRACKING_DIR / "monte_carlo"
 REGRESSION_DIR = TRACKING_DIR / "regression"
 
 
+def parse_game_time(game_date: str, game_time: str) -> str:
+    """Convert game date and 12-hour time to ISO 8601 format"""
+    try:
+        # Handle 12-hour format like "07:00 PM"
+        from datetime import datetime
+        time_str = f"{game_date} {game_time}"
+        dt = datetime.strptime(time_str, "%Y-%m-%d %I:%M %p")
+        return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+    except Exception as e:
+        # Fallback to 7PM if parsing fails
+        logger.warning(f"Failed to parse time '{game_time}': {e}")
+        return f"{game_date}T19:00:00Z"
+
+
 def load_edge_lab_predictions(bet_type_filter: Optional[str] = None, model_filter: Optional[str] = None) -> List[Dict]:
     """Load predictions from Edge Lab autonomous system (multi-bet format)"""
     try:
@@ -55,13 +69,13 @@ def load_edge_lab_predictions(bet_type_filter: Optional[str] = None, model_filte
 
         df = pd.read_csv(PREDICTIONS_LOG)
 
-        # Filter for recent predictions (last 7 days)
-        df['date_predicted'] = pd.to_datetime(df['date_predicted'])
+        # Filter for recent predictions (last 7 days) - handle mixed date formats
+        df['date_predicted'] = pd.to_datetime(df['date_predicted'], format='mixed', errors='coerce')
         cutoff = pd.Timestamp.now() - pd.Timedelta(days=7)
         df = df[df['date_predicted'] >= cutoff]
 
         # Parse game dates to check if still upcoming
-        df['game_date_parsed'] = pd.to_datetime(df['game_date'])
+        df['game_date_parsed'] = pd.to_datetime(df['game_date'], format='mixed', errors='coerce')
         df = df[df['game_date_parsed'] >= pd.Timestamp.now().normalize()]
 
         # Apply filters
@@ -73,14 +87,21 @@ def load_edge_lab_predictions(bet_type_filter: Optional[str] = None, model_filte
 
         predictions = []
         for _, row in df.iterrows():
-            # Get sport from CSV (already included)
-            sport = row.get('sport', 'UNKNOWN').upper()
+            # Get sport from CSV and normalize it to API key format
             home_team = row['home_team']
             away_team = row['away_team']
 
-            # If sport not in CSV, try to detect from team names
-            if sport == 'UNKNOWN':
-                sport = detect_sport(home_team, away_team)
+            # Detect sport and convert to API key format (NBA -> basketball_nba)
+            sport_raw = detect_sport(home_team, away_team)
+            sport_map = {
+                'NBA': 'basketball_nba',
+                'NCAAB': 'basketball_ncaab',
+                'NFL': 'americanfootball_nfl',
+                'NCAAF': 'americanfootball_ncaaf',
+                'NHL': 'icehockey_nhl',
+                'MLB': 'baseball_mlb'
+            }
+            sport = sport_map.get(sport_raw.upper(), sport_raw.lower())
 
             edge = float(row['edge'])
             predicted_value = float(row['predicted_value'])
@@ -88,9 +109,28 @@ def load_edge_lab_predictions(bet_type_filter: Optional[str] = None, model_filte
             bet_type = row['bet_type']
             model = row['model']
 
-            # Map confidence to numeric
-            confidence_map = {'HIGH': 0.75, 'MEDIUM': 0.65, 'LOW': 0.55, 'NONE': 0.50}
-            confidence = confidence_map.get(str(row['confidence']).upper(), 0.65)
+            # Calculate confidence based on CSV confidence level with modest adjustments
+            confidence_base = {'HIGH': 0.72, 'MEDIUM': 0.64, 'LOW': 0.56, 'NONE': 0.50}
+            base = confidence_base.get(str(row['confidence']).upper(), 0.64)
+
+            # Add small boost for ensemble models (multiple models agreeing)
+            model_boost = 0.03 if model == 'ensemble' else 0.00
+
+            # Add small edge-based adjustment (capped lower to avoid inflating confidence)
+            if bet_type == 'totals':
+                # For totals, significant edges (5+ points) add small confidence boost
+                edge_adjustment = min(abs(edge) / 100.0, 0.08)
+            elif bet_type == 'spreads':
+                # For spreads, 3+ point edges add small boost
+                edge_adjustment = min(abs(edge) / 60.0, 0.06)
+            elif bet_type == 'moneyline':
+                # For moneyline, probability edges add small boost
+                edge_adjustment = min(abs(edge) * 0.3, 0.05)
+            else:
+                edge_adjustment = 0.00
+
+            # Calculate final confidence (cap at 88% to be realistic)
+            confidence = min(base + model_boost + edge_adjustment, 0.88)
 
             # Calculate Kelly fraction based on bet type
             if bet_type == 'totals':
@@ -121,7 +161,7 @@ def load_edge_lab_predictions(bet_type_filter: Optional[str] = None, model_filte
                 "id": f"edgelab_{row['prediction_id']}",
                 "sport": sport,
                 "game_id": row['prediction_id'],
-                "game_time": f"{row['game_date']}T{row['game_time'].replace(' ', '')}:00Z" if pd.notna(row.get('game_time')) else f"{row['game_date']}T19:00:00Z",
+                "game_time": parse_game_time(row['game_date'], row.get('game_time', '07:00 PM')),
                 "home_team": home_team,
                 "away_team": away_team,
                 "bet_type": bet_type.capitalize(),
@@ -159,20 +199,28 @@ def load_edge_lab_predictions_old() -> List[Dict]:
     try:
         df = pd.read_csv(PREDICTIONS_LOG_OLD)
 
-        # Filter for recent predictions
-        df['date_predicted'] = pd.to_datetime(df['date_predicted'])
+        # Filter for recent predictions - handle mixed date formats
+        df['date_predicted'] = pd.to_datetime(df['date_predicted'], format='mixed', errors='coerce')
         cutoff = pd.Timestamp.now() - pd.Timedelta(days=7)
         df = df[df['date_predicted'] >= cutoff]
 
-        df['game_date_parsed'] = pd.to_datetime(df['game_date'])
+        df['game_date_parsed'] = pd.to_datetime(df['game_date'], format='mixed', errors='coerce')
         df = df[df['game_date_parsed'] >= pd.Timestamp.now().normalize()]
 
         predictions = []
         for _, row in df.iterrows():
             sport = detect_sport(row['home_team'], row['away_team'])
             edge = float(row['edge'])
-            confidence_map = {'HIGH': 0.75, 'MEDIUM': 0.65, 'LOW': 0.55, 'NONE': 0.50}
-            confidence = confidence_map.get(str(row['confidence']).upper(), 0.65)
+
+            # Calculate confidence based on CSV confidence level with modest adjustments
+            confidence_base = {'HIGH': 0.72, 'MEDIUM': 0.64, 'LOW': 0.56, 'NONE': 0.50}
+            base = confidence_base.get(str(row['confidence']).upper(), 0.64)
+
+            # Add small edge-based adjustment for totals (capped lower)
+            edge_adjustment = min(abs(edge) / 100.0, 0.08)
+
+            # Calculate final confidence (cap at 88% to be realistic)
+            confidence = min(base + edge_adjustment, 0.88)
 
             predictions.append({
                 "id": f"edgelab_{row['prediction_id']}",
