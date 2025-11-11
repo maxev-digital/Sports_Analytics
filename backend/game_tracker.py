@@ -947,6 +947,7 @@ class GameTracker:
         for game_data in filtered_odds:
             try:
                 game_id = game_data['id']
+                sport_key = game_data.get('sport_key', 'unknown')  # Get sport_key for this game
 
                 # Parse odds
                 bookmakers = game_data.get('bookmakers', [])
