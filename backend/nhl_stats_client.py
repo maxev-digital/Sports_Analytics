@@ -3,6 +3,8 @@ import httpx
 import logging
 from typing import Dict, Optional, List
 from datetime import datetime
+from pathlib import Path
+import pandas as pd
 from live_models import NHLTeamStats
 
 logger = logging.getLogger(__name__)
@@ -14,6 +16,43 @@ class NHLStatsClient:
         self.season_stats_cache = {}  # Cache season stats
         self.all_team_stats_cache = {}  # Cache all team stats for ranking calculation
         self.cache_timestamp = None
+        self.en_stats_cache = None  # Cache empty net stats
+
+    def load_empty_net_stats(self) -> Dict[str, Dict]:
+        """
+        Load empty net statistics from CSV file
+        Returns dict keyed by team_abbr with EN stats
+        """
+        try:
+            # Look for latest empty net CSV
+            data_dir = Path(__file__).parent / "data" / "raw" / "nhl"
+            en_file = data_dir / "empty_net_stats_latest.csv"
+
+            if not en_file.exists():
+                logger.warning(f"Empty net stats file not found: {en_file}")
+                return {}
+
+            df = pd.read_csv(en_file)
+            logger.info(f"Loaded empty net stats for {len(df)} teams")
+
+            # Convert to dict keyed by team_abbr
+            en_dict = {}
+            for _, row in df.iterrows():
+                team_abbr = row['team_abbr']
+                en_dict[team_abbr] = {
+                    'en_goals_for': float(row['en_goals_for']) if pd.notna(row['en_goals_for']) else 0.0,
+                    'en_goals_against': float(row['en_goals_against']) if pd.notna(row['en_goals_against']) else 0.0,
+                    'en_differential': float(row['en_differential']) if pd.notna(row['en_differential']) else 0.0,
+                    'en_situations': float(row['en_situations']) if pd.notna(row['en_situations']) else 0.0,
+                    'en_success_rate': float(row['en_success_rate']) if pd.notna(row['en_success_rate']) else 0.0,
+                }
+
+            self.en_stats_cache = en_dict
+            return en_dict
+
+        except Exception as e:
+            logger.error(f"Error loading empty net stats: {e}")
+            return {}
 
     async def get_live_game_stats(self, game_id: str) -> Optional[Dict]:
         """Fetch live game statistics including shots, possession, zone time"""
@@ -409,6 +448,9 @@ class NHLStatsClient:
 
             logger.info("Fetching all NHL teams to calculate rankings...")
 
+            # Load empty net statistics
+            en_stats = self.load_empty_net_stats()
+
             all_teams_list = []
 
             # Fetch current standings from the correct endpoint
@@ -474,6 +516,9 @@ class NHLStatsClient:
                     save_pct = 0.0
                     pdo = 100.0  # Neutral PDO
 
+                    # Get empty net stats for this team
+                    team_en_stats = en_stats.get(team_abbr, {})
+
                     # Add to list as dict (rankings will be added later)
                     team_dict = {
                         'team_id': team_abbr,
@@ -497,7 +542,13 @@ class NHLStatsClient:
                         'last_10_record': last_10_record,
                         'form_trend': form_trend,
                         'home_record': None,
-                        'away_record': None
+                        'away_record': None,
+                        # Empty net statistics
+                        'en_goals_for': team_en_stats.get('en_goals_for', 0.0),
+                        'en_goals_against': team_en_stats.get('en_goals_against', 0.0),
+                        'en_differential': team_en_stats.get('en_differential', 0.0),
+                        'en_situations': team_en_stats.get('en_situations', 0.0),
+                        'en_success_rate': team_en_stats.get('en_success_rate', 0.0),
                     }
                     all_teams_list.append(team_dict)
 
@@ -556,6 +607,21 @@ class NHLStatsClient:
             sorted_by_pdo = sorted(all_teams_list, key=lambda x: x['pdo'], reverse=True)
             for rank, team in enumerate(sorted_by_pdo, 1):
                 team['pdo_rank'] = rank
+
+            # Empty Net Goals For (higher is better)
+            sorted_by_engf = sorted(all_teams_list, key=lambda x: x['en_goals_for'], reverse=True)
+            for rank, team in enumerate(sorted_by_engf, 1):
+                team['en_goals_for_rank'] = rank
+
+            # Empty Net Goals Against (lower is better)
+            sorted_by_enga = sorted(all_teams_list, key=lambda x: x['en_goals_against'])
+            for rank, team in enumerate(sorted_by_enga, 1):
+                team['en_goals_against_rank'] = rank
+
+            # Empty Net Differential (higher is better)
+            sorted_by_endiff = sorted(all_teams_list, key=lambda x: x['en_differential'], reverse=True)
+            for rank, team in enumerate(sorted_by_endiff, 1):
+                team['en_differential_rank'] = rank
 
             # Convert list to NHLTeamStats objects keyed by team_id for easy lookup
             all_teams_dict = {}

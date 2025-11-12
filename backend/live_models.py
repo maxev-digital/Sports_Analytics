@@ -191,6 +191,16 @@ class NHLTeamStats(BaseModel):
     shooting_pct_rank: Optional[int] = None  # Shooting % rank
     save_pct_rank: Optional[int] = None  # Save % rank
     pdo_rank: Optional[int] = None  # PDO rank
+    # Empty Net Statistics (courtesy of MoreHockeyStats.com)
+    en_goals_for: Optional[float] = None  # Empty net goals scored
+    en_goals_against: Optional[float] = None  # Empty net goals allowed
+    en_differential: Optional[float] = None  # EN goals for - against
+    en_situations: Optional[float] = None  # Count of EN situations
+    en_success_rate: Optional[float] = None  # Success rate when pulling goalie
+    # Empty Net Rankings (1-32)
+    en_goals_for_rank: Optional[int] = None  # Empty net goals scored rank
+    en_goals_against_rank: Optional[int] = None  # Empty net goals allowed rank
+    en_differential_rank: Optional[int] = None  # Empty net differential rank
 
 class NFLTeamStats(BaseModel):
     """Season statistics for NFL teams"""
@@ -316,6 +326,8 @@ class LiveGame(BaseModel):
     away_nfl_live_stats: Optional[NFLLiveStats] = None  # NFL-specific live stats
     home_nfl_stats: Optional[NFLTeamStats] = None  # NFL-specific season stats
     away_nfl_stats: Optional[NFLTeamStats] = None  # NFL-specific season stats
+    home_ncaaf_stats: Optional[NFLTeamStats] = None  # NCAAF-specific season stats (uses same model as NFL)
+    away_ncaaf_stats: Optional[NFLTeamStats] = None  # NCAAF-specific season stats (uses same model as NFL)
     home_nhl_momentum: Optional[NHLMomentumStats] = None  # NHL-specific momentum
     away_nhl_momentum: Optional[NHLMomentumStats] = None  # NHL-specific momentum
     home_nhl_stats: Optional[NHLTeamStats] = None  # NHL-specific season stats
