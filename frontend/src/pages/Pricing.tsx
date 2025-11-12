@@ -407,40 +407,28 @@ export function Pricing() {
           </div>
         )}
 
-        {/* Feature Screenshots Slider */}
+        {/* Hero Banner Image */}
         {!loadingStatus && (
-          <div className="mb-12">
-            <ImageSlider />
+          <div className="mb-12 rounded-2xl overflow-hidden shadow-2xl bg-black">
+            <img
+              src="/MainBannerPrice.png"
+              alt="Max EV Sports Analytics Dashboard"
+              className="w-full h-auto"
+              style={{ imageRendering: 'crisp-edges' }}
+              loading="eager"
+              decoding="sync"
+            />
           </div>
         )}
 
-        {/* Hero Value Proposition Section */}
-        {!loadingStatus && (
-          <div className="mb-12 text-center max-w-5xl mx-auto">
-            <h1 className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-blue-400 mb-6 tracking-tight">
-              Maximizing Expected Value Through Data
-            </h1>
-            <p className="text-2xl text-slate-300 mb-6 leading-relaxed">
-              The only professional-grade sports betting analytics platform built by sharps, for sharps.
-              Real-time odds aggregation from 18+ sportsbooks, advanced predictive models, and proprietary edge detection
-              algorithms that identify profitable opportunities the second they appear.
-            </p>
-            <p className="text-xl text-slate-400 leading-relaxed">
-              Stop guessing. Stop losing to the market. Our institutional-level infrastructure processes millions of data points
-              per second to surface high-probability edges across NBA, NFL, NHL, NCAAF, NCAAB, and MLB. Live in-game alerts,
-              arbitrage detection, steam moves, and closing line value tracking—everything you need to win long-term.
-            </p>
-          </div>
-        )}
-
-        {/* Main CTA - Sign Up for 14 Day Free Trial */}
+        {/* Early Access Sign Up CTA */}
         {!loadingStatus && !isAuthenticated && (
-          <div className="mb-16 bg-gradient-to-br from-blue-900/40 via-slate-800/60 to-blue-900/40 border-4 border-blue-500 rounded-2xl p-12 text-center shadow-2xl">
-            <h2 className="text-5xl font-bold text-white mb-4">
-              Start Your 14-Day Free Trial
-            </h2>
-            <p className="text-xl text-slate-300 mb-8 max-w-2xl mx-auto">
-              Get full access to all features. No credit card required.
+          <div className="mb-16 bg-gradient-to-br from-blue-900/30 via-slate-800/50 to-purple-900/30 border-2 border-blue-500/50 rounded-2xl p-10 text-center shadow-2xl shadow-blue-500/20">
+            <h3 className="text-3xl font-bold text-white mb-3">
+              Start Winning Today
+            </h3>
+            <p className="text-lg text-slate-300 mb-6 max-w-2xl mx-auto">
+              Join thousands of smart bettors using data-driven insights to gain an edge. Sign up now and lock in 50% off for life.
             </p>
 
             {signupSubmitted ? (
@@ -451,18 +439,145 @@ export function Pricing() {
                 <p className="text-green-300 font-bold text-lg">Redirecting to signup...</p>
               </div>
             ) : (
-              <div>
+              <form onSubmit={handleSignupSubmit} className="flex flex-col sm:flex-row gap-4 justify-center items-center max-w-xl mx-auto">
+                <input
+                  type="email"
+                  value={signupEmail}
+                  onChange={(e) => setSignupEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  required
+                  disabled={signupLoading}
+                  className="px-6 py-4 rounded-lg bg-slate-800 border-2 border-slate-600 text-white placeholder-slate-400 focus:border-blue-500 focus:outline-none w-full sm:w-auto flex-1 disabled:opacity-50 disabled:cursor-not-allowed text-base"
+                />
                 <button
-                  onClick={() => window.location.href = '#/signup'}
-                  className="inline-block px-12 py-5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white text-2xl font-bold rounded-xl transition-all shadow-2xl shadow-blue-600/40 mb-4"
+                  type="submit"
+                  disabled={signupLoading}
+                  className="px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-bold rounded-lg transition-all shadow-lg shadow-blue-600/30 w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Sign Me Up for 14 Day Free Trial
+                  {signupLoading ? 'PROCESSING...' : 'GET STARTED FREE'}
                 </button>
-                <p className="text-sm text-slate-300 font-semibold">
-                  No Credit Card Required
+              </form>
+            )}
+
+            <p className="text-sm text-slate-400 mt-4">
+              No credit card required • 7-day money-back guarantee • Cancel anytime
+            </p>
+          </div>
+        )}
+
+        {/* Feature Screenshots Slider */}
+        {!loadingStatus && (
+          <div className="mb-16">
+            <h2 className="text-4xl font-bold text-slate-100 mb-4 text-center">
+              Maximizing Our Expected Value in Every Wager By Monitoring All Games Systematically Through Automation and Machine Learning
+            </h2>
+            <p className="text-xl text-slate-300 mb-8 text-center max-w-4xl mx-auto">
+              Explore our powerful platform features - Proprietary Algo Betting Engine - 50+ Betting Strategies
+            </p>
+            <ImageSlider />
+          </div>
+        )}
+
+        {/* Desktop Client Highlight Section */}
+        {!loadingStatus && (
+          <div className="mb-16 bg-gradient-to-br from-purple-900/30 via-slate-800/50 to-blue-900/30 border-2 border-purple-500/50 rounded-2xl p-10 shadow-2xl shadow-purple-500/20">
+            <div className="max-w-5xl mx-auto">
+              {/* Header */}
+              <div className="text-center mb-8">
+                <div className="inline-flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-full font-bold text-sm mb-4">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  DOWNLOADABLE DESKTOP CLIENT
+                </div>
+                <h2 className="text-4xl font-bold text-white mb-4">
+                  Professional-Grade Trading Terminal
+                </h2>
+                <p className="text-xl text-slate-300 max-w-3xl mx-auto">
+                  Get lightning-fast access to live odds, advanced analytics, and real-time alerts with our native desktop application
                 </p>
               </div>
-            )}
+
+              {/* Benefits Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+                <div className="bg-slate-900/50 border border-purple-500/30 rounded-xl p-6 text-center">
+                  <h3 className="text-lg font-bold text-white mb-2">Ultra-Fast Performance</h3>
+                  <p className="text-sm text-slate-300">Native app runs 10x faster than web browsers with zero lag</p>
+                </div>
+                <div className="bg-slate-900/50 border border-purple-500/30 rounded-xl p-6 text-center">
+                  <h3 className="text-lg font-bold text-white mb-2">Instant Push Notifications</h3>
+                  <p className="text-sm text-slate-300">Never miss an opportunity with desktop alerts and audio notifications</p>
+                </div>
+                <div className="bg-slate-900/50 border border-purple-500/30 rounded-xl p-6 text-center">
+                  <h3 className="text-lg font-bold text-white mb-2">Multi-Screen Support</h3>
+                  <p className="text-sm text-slate-300">Optimize your workflow across multiple monitors like a pro</p>
+                </div>
+              </div>
+
+              {/* Pricing Comparison */}
+              <div className="bg-gradient-to-r from-slate-900/80 to-slate-800/80 border-2 border-amber-500/50 rounded-xl p-8 mb-8">
+                <div className="text-center mb-6">
+                  <h3 className="text-2xl font-bold text-white mb-2">Unbeatable Value</h3>
+                  <p className="text-slate-300">Similar professional trading terminals cost $499-999/month</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+                  {/* Competitor Price */}
+                  <div className="text-center">
+                    <div className="text-sm text-slate-400 mb-2">Competitors</div>
+                    <div className="text-3xl font-bold text-red-400 line-through">$499/mo</div>
+                    <div className="text-xs text-slate-500 mt-1">Industry Standard</div>
+                  </div>
+
+                  {/* Arrow */}
+                  <div className="hidden md:flex justify-center items-center">
+                    <svg className="w-16 h-16 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  </div>
+
+                  {/* Our Price */}
+                  <div className="text-center">
+                    <div className="text-sm text-slate-400 mb-2">Max EV Sports</div>
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="text-2xl font-bold text-slate-500 line-through">$299</div>
+                      <div className="text-5xl font-bold text-green-400">$150</div>
+                    </div>
+                    <div className="text-xs text-slate-300 mt-1">/month</div>
+                  </div>
+                </div>
+
+                {/* Early Bird Badge - Clickable CTA */}
+                <div className="mt-8 text-center">
+                  <button
+                    onClick={() => handleSubscribe('professional')}
+                    disabled={loading === 'professional'}
+                    className="inline-block bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white px-8 py-4 rounded-xl shadow-lg transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <div className="text-2xl font-bold mb-1">{loading === 'professional' ? 'Loading...' : 'GET DESKTOP CLIENT - EARLY50 Discount'}</div>
+                    <div className="text-sm">Click to Subscribe to Professional • Lock in $75/mo for life</div>
+                  </button>
+                </div>
+              </div>
+
+              {/* CTA */}
+              <div className="text-center">
+                <p className="text-slate-300 mb-4">
+                  Included with <span className="font-bold text-purple-400">Elite</span> and <span className="font-bold text-red-400">Elite Pro</span> plans
+                </p>
+                <p className="text-sm text-slate-500">
+                  50% OFF for early adopters • Save $149/month vs competitors • Cancel anytime
+                </p>
+              </div>
+
+              {/* Desktop Client Screenshots Slider */}
+              <div className="mt-12">
+                <h3 className="text-2xl font-bold text-white text-center mb-6">
+                  See The Desktop Client In Action
+                </h3>
+                <DesktopClientSlider />
+              </div>
+            </div>
           </div>
         )}
 
@@ -666,7 +781,7 @@ export function Pricing() {
               {plan.name !== 'Elite' && plan.name !== 'Elite Pro' && (
                 <div className="text-center mb-4 px-4 py-2 bg-green-900/20 border border-green-600/30 rounded-lg">
                   <p className="text-xs text-green-400 font-semibold">
-                    30-Day Money-Back Guarantee
+                    ✅ 30-Day Money-Back Guarantee
                   </p>
                 </div>
               )}
@@ -1131,7 +1246,7 @@ export function Pricing() {
               {/* Additional Info */}
               <div className="mt-6 p-4 bg-blue-900/20 border border-blue-700/50 rounded-lg">
                 <p className="text-xs text-blue-300">
-                  <strong>Pro Tip:</strong> Higher tiers use faster data sources giving you a competitive edge. Sub-second speeds are crucial for arbitrage and live betting opportunities.
+                  <strong>💡 Pro Tip:</strong> Higher tiers use faster data sources giving you a competitive edge. Sub-second speeds are crucial for arbitrage and live betting opportunities.
                 </p>
               </div>
             </div>
