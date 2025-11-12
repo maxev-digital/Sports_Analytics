@@ -47,7 +47,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshSubscription = async () => {
     if (username) {
-      await fetchSubscription(username);
+      fetchSubscription(username).catch(err => {
+        console.error('Refresh subscription failed:', err);
+      });
     }
   };
 
@@ -143,7 +145,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setIsAuthenticated(true);
           setUsername(username);
           setToken(token);
-          await fetchSubscription(username);
+          fetchSubscription(username).catch(err => {
+            console.error('Token verification subscription fetch failed:', err);
+          });
         } else {
           localStorage.removeItem('auth_token');
           localStorage.removeItem('auth_username');
