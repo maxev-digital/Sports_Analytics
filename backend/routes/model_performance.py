@@ -66,9 +66,13 @@ async def get_performance_overview(
         if bet_type:
             predictions_df = predictions_df[predictions_df['bet_type'].str.lower() == bet_type.lower()]
 
+        # Drop duplicate columns from results before merging
+        results_cols_to_keep = ['prediction_id', 'away_score', 'home_score', 'actual_total', 'result', 'profit_loss']
+        results_df_clean = results_df[results_cols_to_keep]
+
         # Merge predictions with results
         merged_df = predictions_df.merge(
-            results_df,
+            results_df_clean,
             on='prediction_id',
             how='inner'
         )
@@ -206,9 +210,13 @@ async def get_performance_history(
         if bet_type:
             predictions_df = predictions_df[predictions_df['bet_type'].str.lower() == bet_type.lower()]
 
+        # Drop duplicate columns from results before merging
+        results_cols_to_keep = ['prediction_id', 'away_score', 'home_score', 'actual_total', 'result', 'profit_loss']
+        results_df_clean = results_df[results_cols_to_keep]
+
         # Merge with results
         merged_df = predictions_df.merge(
-            results_df,
+            results_df_clean,
             on='prediction_id',
             how='inner'
         )
@@ -310,7 +318,12 @@ async def get_models_info():
             try:
                 predictions_df = pd.read_csv(PREDICTIONS_LOG)
                 results_df = pd.read_csv(RESULTS_LOG)
-                merged_df = predictions_df.merge(results_df, on='prediction_id', how='inner')
+
+                # Drop duplicate columns from results before merging
+                results_cols_to_keep = ['prediction_id', 'away_score', 'home_score', 'actual_total', 'result', 'profit_loss']
+                results_df_clean = results_df[results_cols_to_keep]
+
+                merged_df = predictions_df.merge(results_df_clean, on='prediction_id', how='inner')
 
                 for sport in models_info.keys():
                     sport_df = merged_df[merged_df['sport'].str.lower() == sport.lower()]
