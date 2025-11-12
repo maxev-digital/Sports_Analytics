@@ -192,7 +192,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setToken(data.token);
         setRole(data.role || 'user');
 
-        await fetchSubscription(data.username);
+        // PERF FIX: Fetch subscription in background (non-blocking)
+        // Complete login immediately, fetch subscription after
+        fetchSubscription(data.username).catch(err => {
+          console.error('Background subscription fetch failed:', err);
+          setSubscriptionTier('free'); // Fallback to free tier
+        });
 
         setLoading(false);
         return true;
