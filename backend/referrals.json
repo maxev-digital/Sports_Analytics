@@ -39,7 +39,7 @@
     "signup_date": "2025-09-30T08:46:56.067650",
     "subscription_tier": "starter",
     "status": "active",
-    "monthly_commission": 6.0,
+    "monthly_commission": 7.25,
     "discount_applied": true,
     "discount_end_date": "2025-11-29T08:46:56.067650"
   },
@@ -50,7 +50,7 @@
     "signup_date": "2025-10-11T08:46:56.067650",
     "subscription_tier": "starter",
     "status": "active",
-    "monthly_commission": 6.0,
+    "monthly_commission": 7.25,
     "discount_applied": true,
     "discount_end_date": "2025-12-10T08:46:56.067650"
   },
@@ -61,7 +61,7 @@
     "signup_date": "2025-10-30T08:46:56.067650",
     "subscription_tier": "starter",
     "status": "active",
-    "monthly_commission": 6.0,
+    "monthly_commission": 7.25,
     "discount_applied": true,
     "discount_end_date": "2025-12-29T08:46:56.067650"
   },
@@ -72,7 +72,7 @@
     "signup_date": "2025-10-07T08:46:56.067650",
     "subscription_tier": "starter",
     "status": "active",
-    "monthly_commission": 6.0,
+    "monthly_commission": 7.25,
     "discount_applied": true,
     "discount_end_date": "2025-12-06T08:46:56.067650"
   },
@@ -83,7 +83,7 @@
     "signup_date": "2025-11-04T08:46:56.067650",
     "subscription_tier": "semipro",
     "status": "active",
-    "monthly_commission": 10.0,
+    "monthly_commission": 19.75,
     "discount_applied": true,
     "discount_end_date": "2026-01-03T08:46:56.067650"
   },
@@ -94,7 +94,7 @@
     "signup_date": "2025-08-14T08:46:56.067650",
     "subscription_tier": "semipro",
     "status": "active",
-    "monthly_commission": 10.0,
+    "monthly_commission": 19.75,
     "discount_applied": true,
     "discount_end_date": "2025-10-13T08:46:56.067650"
   },
@@ -105,7 +105,7 @@
     "signup_date": "2025-10-25T08:46:56.067650",
     "subscription_tier": "semipro",
     "status": "active",
-    "monthly_commission": 10.0,
+    "monthly_commission": 19.75,
     "discount_applied": true,
     "discount_end_date": "2025-12-24T08:46:56.067650"
   },
@@ -116,7 +116,7 @@
     "signup_date": "2025-09-23T08:46:56.067650",
     "subscription_tier": "professional",
     "status": "active",
-    "monthly_commission": 20.0,
+    "monthly_commission": 37.25,
     "discount_applied": true,
     "discount_end_date": "2025-11-22T08:46:56.067650"
   },
@@ -127,7 +127,7 @@
     "signup_date": "2025-10-15T08:46:56.067650",
     "subscription_tier": "professional",
     "status": "active",
-    "monthly_commission": 20.0,
+    "monthly_commission": 37.25,
     "discount_applied": true,
     "discount_end_date": "2025-12-14T08:46:56.067650"
   },
@@ -138,7 +138,7 @@
     "signup_date": "2025-09-26T08:46:56.067650",
     "subscription_tier": "professional",
     "status": "active",
-    "monthly_commission": 20.0,
+    "monthly_commission": 37.25,
     "discount_applied": true,
     "discount_end_date": "2025-11-25T08:46:56.067650"
   },
@@ -149,7 +149,7 @@
     "signup_date": "2025-09-10T08:46:56.067650",
     "subscription_tier": "professional",
     "status": "active",
-    "monthly_commission": 20.0,
+    "monthly_commission": 37.25,
     "discount_applied": true,
     "discount_end_date": "2025-11-09T08:46:56.067650"
   },
@@ -160,7 +160,7 @@
     "signup_date": "2025-09-01T08:46:56.067650",
     "subscription_tier": "professional",
     "status": "active",
-    "monthly_commission": 20.0,
+    "monthly_commission": 37.25,
     "discount_applied": true,
     "discount_end_date": "2025-10-31T08:46:56.067650"
   },
@@ -171,7 +171,7 @@
     "signup_date": "2025-10-03T08:46:56.067650",
     "subscription_tier": "elite",
     "status": "active",
-    "monthly_commission": 40.0,
+    "monthly_commission": 74.75,
     "discount_applied": true,
     "discount_end_date": "2025-12-02T08:46:56.067650"
   },
@@ -182,7 +182,7 @@
     "signup_date": "2025-09-02T08:46:56.067650",
     "subscription_tier": "elite",
     "status": "active",
-    "monthly_commission": 40.0,
+    "monthly_commission": 74.75,
     "discount_applied": true,
     "discount_end_date": "2025-11-01T08:46:56.067650"
   },
@@ -193,7 +193,7 @@
     "signup_date": "2025-09-16T08:46:56.067650",
     "subscription_tier": "elite",
     "status": "active",
-    "monthly_commission": 40.0,
+    "monthly_commission": 74.75,
     "discount_applied": true,
     "discount_end_date": "2025-11-15T08:46:56.067650"
   },
@@ -204,7 +204,7 @@
     "signup_date": "2025-09-30T08:46:56.067650",
     "subscription_tier": "elitepro",
     "status": "active",
-    "monthly_commission": 60.0,
+    "monthly_commission": 199.75,
     "discount_applied": true,
     "discount_end_date": "2025-11-29T08:46:56.067650"
   },
@@ -215,7 +215,7 @@
     "signup_date": "2025-08-24T08:46:56.067650",
     "subscription_tier": "elitepro",
     "status": "active",
-    "monthly_commission": 60.0,
+    "monthly_commission": 199.75,
     "discount_applied": true,
     "discount_end_date": "2025-10-23T08:46:56.067650"
   },
@@ -226,7 +226,7 @@
     "signup_date": "2025-10-28T11:59:40.635720",
     "subscription_tier": "professional",
     "status": "active",
-    "monthly_commission": 20.0,
+    "monthly_commission": 37.25,
     "discount_applied": true,
     "discount_end_date": "2025-12-27T11:59:40.635720",
     "full_name": "Gregory Ward"
@@ -238,7 +238,7 @@
     "signup_date": "2025-09-24T11:59:40.635720",
     "subscription_tier": "semipro",
     "status": "active",
-    "monthly_commission": 10.0,
+    "monthly_commission": 19.75,
     "discount_applied": true,
     "discount_end_date": "2025-11-23T11:59:40.635720",
     "full_name": "Jacob Hill"
@@ -250,7 +250,7 @@
     "signup_date": "2025-09-26T11:59:40.635720",
     "subscription_tier": "starter",
     "status": "active",
-    "monthly_commission": 6.0,
+    "monthly_commission": 7.25,
     "discount_applied": true,
     "discount_end_date": "2025-11-25T11:59:40.635720",
     "full_name": "Margaret Wilson"
@@ -262,7 +262,7 @@
     "signup_date": "2025-08-27T11:59:40.635720",
     "subscription_tier": "elite",
     "status": "active",
-    "monthly_commission": 40.0,
+    "monthly_commission": 74.75,
     "discount_applied": true,
     "discount_end_date": "2025-10-26T11:59:40.635720",
     "full_name": "Rachel Nguyen"
@@ -274,7 +274,7 @@
     "signup_date": "2025-08-07T11:59:40.635720",
     "subscription_tier": "starter",
     "status": "active",
-    "monthly_commission": 6.0,
+    "monthly_commission": 7.25,
     "discount_applied": true,
     "discount_end_date": "2025-10-06T11:59:40.635720",
     "full_name": "Rebecca Murphy"
@@ -286,7 +286,7 @@
     "signup_date": "2025-10-22T11:59:40.635720",
     "subscription_tier": "starter",
     "status": "active",
-    "monthly_commission": 6.0,
+    "monthly_commission": 7.25,
     "discount_applied": true,
     "discount_end_date": "2025-12-21T11:59:40.635720",
     "full_name": "Christine Parker"
@@ -298,7 +298,7 @@
     "signup_date": "2025-08-31T11:59:40.635720",
     "subscription_tier": "elite",
     "status": "active",
-    "monthly_commission": 40.0,
+    "monthly_commission": 74.75,
     "discount_applied": true,
     "discount_end_date": "2025-10-30T11:59:40.635720",
     "full_name": "Michael Scott"
@@ -310,7 +310,7 @@
     "signup_date": "2025-08-06T11:59:40.635720",
     "subscription_tier": "semipro",
     "status": "active",
-    "monthly_commission": 10.0,
+    "monthly_commission": 19.75,
     "discount_applied": true,
     "discount_end_date": "2025-10-05T11:59:40.635720",
     "full_name": "Andrew Anderson"
@@ -322,7 +322,7 @@
     "signup_date": "2025-07-25T11:59:40.635720",
     "subscription_tier": "elite",
     "status": "active",
-    "monthly_commission": 40.0,
+    "monthly_commission": 74.75,
     "discount_applied": true,
     "discount_end_date": "2025-09-23T11:59:40.635720",
     "full_name": "Gregory Miller"
@@ -334,7 +334,7 @@
     "signup_date": "2025-07-30T11:59:40.635720",
     "subscription_tier": "semipro",
     "status": "active",
-    "monthly_commission": 10.0,
+    "monthly_commission": 19.75,
     "discount_applied": true,
     "discount_end_date": "2025-09-28T11:59:40.635720",
     "full_name": "Carol Morgan"
@@ -358,7 +358,7 @@
     "signup_date": "2025-09-06T11:59:40.635720",
     "subscription_tier": "starter",
     "status": "active",
-    "monthly_commission": 6.0,
+    "monthly_commission": 7.25,
     "discount_applied": true,
     "discount_end_date": "2025-11-05T11:59:40.635720",
     "full_name": "Andrew Scott"
@@ -370,7 +370,7 @@
     "signup_date": "2025-07-18T11:59:40.635720",
     "subscription_tier": "semipro",
     "status": "active",
-    "monthly_commission": 10.0,
+    "monthly_commission": 19.75,
     "discount_applied": true,
     "discount_end_date": "2025-09-16T11:59:40.635720",
     "full_name": "Amanda Clark"
@@ -382,7 +382,7 @@
     "signup_date": "2025-09-09T11:59:40.635720",
     "subscription_tier": "professional",
     "status": "active",
-    "monthly_commission": 20.0,
+    "monthly_commission": 37.25,
     "discount_applied": true,
     "discount_end_date": "2025-11-08T11:59:40.635720",
     "full_name": "Ruth Kelly"
@@ -394,7 +394,7 @@
     "signup_date": "2025-11-06T11:59:40.635720",
     "subscription_tier": "elite",
     "status": "active",
-    "monthly_commission": 40.0,
+    "monthly_commission": 74.75,
     "discount_applied": true,
     "discount_end_date": "2026-01-05T11:59:40.635720",
     "full_name": "Melissa Kelly"
@@ -406,7 +406,7 @@
     "signup_date": "2025-08-29T11:59:40.635720",
     "subscription_tier": "semipro",
     "status": "active",
-    "monthly_commission": 10.0,
+    "monthly_commission": 19.75,
     "discount_applied": true,
     "discount_end_date": "2025-10-28T11:59:40.635720",
     "full_name": "Daniel Wilson"
@@ -418,7 +418,7 @@
     "signup_date": "2025-08-10T11:59:40.635720",
     "subscription_tier": "professional",
     "status": "active",
-    "monthly_commission": 20.0,
+    "monthly_commission": 37.25,
     "discount_applied": true,
     "discount_end_date": "2025-10-09T11:59:40.635720",
     "full_name": "Kevin Davis"
@@ -430,7 +430,7 @@
     "signup_date": "2025-10-04T11:59:40.635720",
     "subscription_tier": "starter",
     "status": "active",
-    "monthly_commission": 6.0,
+    "monthly_commission": 7.25,
     "discount_applied": true,
     "discount_end_date": "2025-12-03T11:59:40.635720",
     "full_name": "Anna Adams"
@@ -442,7 +442,7 @@
     "signup_date": "2025-07-15T11:59:40.635720",
     "subscription_tier": "starter",
     "status": "active",
-    "monthly_commission": 6.0,
+    "monthly_commission": 7.25,
     "discount_applied": true,
     "discount_end_date": "2025-09-13T11:59:40.635720",
     "full_name": "Justin Young"
@@ -454,7 +454,7 @@
     "signup_date": "2025-10-27T11:59:40.635720",
     "subscription_tier": "starter",
     "status": "active",
-    "monthly_commission": 6.0,
+    "monthly_commission": 7.25,
     "discount_applied": true,
     "discount_end_date": "2025-12-26T11:59:40.635720",
     "full_name": "Cynthia Rodriguez"
@@ -466,7 +466,7 @@
     "signup_date": "2025-07-18T11:59:40.635720",
     "subscription_tier": "semipro",
     "status": "active",
-    "monthly_commission": 10.0,
+    "monthly_commission": 19.75,
     "discount_applied": true,
     "discount_end_date": "2025-09-16T11:59:40.635720",
     "full_name": "Stephanie Brooks"
@@ -478,7 +478,7 @@
     "signup_date": "2025-09-05T11:59:40.635720",
     "subscription_tier": "semipro",
     "status": "active",
-    "monthly_commission": 10.0,
+    "monthly_commission": 19.75,
     "discount_applied": true,
     "discount_end_date": "2025-11-04T11:59:40.635720",
     "full_name": "Susan Ramos"
@@ -490,7 +490,7 @@
     "signup_date": "2025-08-04T11:59:40.635720",
     "subscription_tier": "professional",
     "status": "active",
-    "monthly_commission": 20.0,
+    "monthly_commission": 37.25,
     "discount_applied": true,
     "discount_end_date": "2025-10-03T11:59:40.635720",
     "full_name": "Richard Ramirez"
@@ -502,7 +502,7 @@
     "signup_date": "2025-11-07T11:59:40.635720",
     "subscription_tier": "elite",
     "status": "active",
-    "monthly_commission": 40.0,
+    "monthly_commission": 74.75,
     "discount_applied": true,
     "discount_end_date": "2026-01-06T11:59:40.635720",
     "full_name": "Ryan Turner"
@@ -514,7 +514,7 @@
     "signup_date": "2025-09-25T11:59:40.635720",
     "subscription_tier": "professional",
     "status": "active",
-    "monthly_commission": 20.0,
+    "monthly_commission": 37.25,
     "discount_applied": true,
     "discount_end_date": "2025-11-24T11:59:40.635720",
     "full_name": "Anna Diaz"
@@ -526,7 +526,7 @@
     "signup_date": "2025-08-23T11:59:40.635720",
     "subscription_tier": "starter",
     "status": "active",
-    "monthly_commission": 6.0,
+    "monthly_commission": 7.25,
     "discount_applied": true,
     "discount_end_date": "2025-10-22T11:59:40.635720",
     "full_name": "Anna Reyes"
@@ -538,7 +538,7 @@
     "signup_date": "2025-10-18T11:59:40.635720",
     "subscription_tier": "starter",
     "status": "active",
-    "monthly_commission": 6.0,
+    "monthly_commission": 7.25,
     "discount_applied": true,
     "discount_end_date": "2025-12-17T11:59:40.635720",
     "full_name": "Karen Cook"
@@ -562,7 +562,7 @@
     "signup_date": "2025-09-20T11:59:40.635720",
     "subscription_tier": "professional",
     "status": "active",
-    "monthly_commission": 20.0,
+    "monthly_commission": 37.25,
     "discount_applied": true,
     "discount_end_date": "2025-11-19T11:59:40.635720",
     "full_name": "Betty Stewart"
@@ -574,7 +574,7 @@
     "signup_date": "2025-08-01T11:59:40.635720",
     "subscription_tier": "semipro",
     "status": "active",
-    "monthly_commission": 10.0,
+    "monthly_commission": 19.75,
     "discount_applied": true,
     "discount_end_date": "2025-09-30T11:59:40.635720",
     "full_name": "Amanda Jackson"
@@ -586,7 +586,7 @@
     "signup_date": "2025-10-31T11:59:40.635720",
     "subscription_tier": "professional",
     "status": "active",
-    "monthly_commission": 20.0,
+    "monthly_commission": 37.25,
     "discount_applied": true,
     "discount_end_date": "2025-12-30T11:59:40.635720",
     "full_name": "Nicholas Reyes"
@@ -598,7 +598,7 @@
     "signup_date": "2025-11-06T11:59:40.635720",
     "subscription_tier": "semipro",
     "status": "active",
-    "monthly_commission": 10.0,
+    "monthly_commission": 19.75,
     "discount_applied": true,
     "discount_end_date": "2026-01-05T11:59:40.635720",
     "full_name": "Karen Collins"
@@ -610,7 +610,7 @@
     "signup_date": "2025-09-04T11:59:40.635720",
     "subscription_tier": "semipro",
     "status": "active",
-    "monthly_commission": 10.0,
+    "monthly_commission": 19.75,
     "discount_applied": true,
     "discount_end_date": "2025-11-03T11:59:40.635720",
     "full_name": "Andrew Diaz"
@@ -622,7 +622,7 @@
     "signup_date": "2025-08-09T11:59:40.635720",
     "subscription_tier": "elite",
     "status": "active",
-    "monthly_commission": 40.0,
+    "monthly_commission": 74.75,
     "discount_applied": true,
     "discount_end_date": "2025-10-08T11:59:40.635720",
     "full_name": "Karen Scott"
@@ -634,7 +634,7 @@
     "signup_date": "2025-08-09T11:59:40.635720",
     "subscription_tier": "starter",
     "status": "active",
-    "monthly_commission": 6.0,
+    "monthly_commission": 7.25,
     "discount_applied": true,
     "discount_end_date": "2025-10-08T11:59:40.635720",
     "full_name": "Kimberly Cruz"
@@ -646,7 +646,7 @@
     "signup_date": "2025-09-25T11:59:40.635720",
     "subscription_tier": "professional",
     "status": "active",
-    "monthly_commission": 20.0,
+    "monthly_commission": 37.25,
     "discount_applied": true,
     "discount_end_date": "2025-11-24T11:59:40.635720",
     "full_name": "Ronald Reed"
@@ -658,7 +658,7 @@
     "signup_date": "2025-08-09T11:59:40.635720",
     "subscription_tier": "starter",
     "status": "active",
-    "monthly_commission": 6.0,
+    "monthly_commission": 7.25,
     "discount_applied": true,
     "discount_end_date": "2025-10-08T11:59:40.635720",
     "full_name": "Matthew Rodriguez"
@@ -670,7 +670,7 @@
     "signup_date": "2025-08-02T11:59:40.635720",
     "subscription_tier": "starter",
     "status": "active",
-    "monthly_commission": 6.0,
+    "monthly_commission": 7.25,
     "discount_applied": true,
     "discount_end_date": "2025-10-01T11:59:40.635720",
     "full_name": "Jacob Watson"
@@ -682,7 +682,7 @@
     "signup_date": "2025-09-03T11:59:40.635720",
     "subscription_tier": "professional",
     "status": "active",
-    "monthly_commission": 20.0,
+    "monthly_commission": 37.25,
     "discount_applied": true,
     "discount_end_date": "2025-11-02T11:59:40.635720",
     "full_name": "Ryan King"
@@ -694,7 +694,7 @@
     "signup_date": "2025-10-14T11:59:40.635720",
     "subscription_tier": "elite",
     "status": "active",
-    "monthly_commission": 40.0,
+    "monthly_commission": 74.75,
     "discount_applied": true,
     "discount_end_date": "2025-12-13T11:59:40.635720",
     "full_name": "Amanda Lopez"
@@ -718,7 +718,7 @@
     "signup_date": "2025-08-11T11:59:40.635720",
     "subscription_tier": "starter",
     "status": "active",
-    "monthly_commission": 6.0,
+    "monthly_commission": 7.25,
     "discount_applied": true,
     "discount_end_date": "2025-10-10T11:59:40.635720",
     "full_name": "Cynthia Collins"
@@ -730,7 +730,7 @@
     "signup_date": "2025-10-24T11:59:40.635720",
     "subscription_tier": "elite",
     "status": "active",
-    "monthly_commission": 40.0,
+    "monthly_commission": 74.75,
     "discount_applied": true,
     "discount_end_date": "2025-12-23T11:59:40.635720",
     "full_name": "Kathleen Cruz"
@@ -742,7 +742,7 @@
     "signup_date": "2025-08-20T11:59:40.635720",
     "subscription_tier": "professional",
     "status": "active",
-    "monthly_commission": 20.0,
+    "monthly_commission": 37.25,
     "discount_applied": true,
     "discount_end_date": "2025-10-19T11:59:40.635720",
     "full_name": "Rebecca Cruz"
@@ -754,7 +754,7 @@
     "signup_date": "2025-09-03T11:59:40.635720",
     "subscription_tier": "professional",
     "status": "active",
-    "monthly_commission": 20.0,
+    "monthly_commission": 37.25,
     "discount_applied": true,
     "discount_end_date": "2025-11-02T11:59:40.635720",
     "full_name": "Richard Kelly"
@@ -766,7 +766,7 @@
     "signup_date": "2025-09-09T11:59:40.635720",
     "subscription_tier": "semipro",
     "status": "active",
-    "monthly_commission": 10.0,
+    "monthly_commission": 19.75,
     "discount_applied": true,
     "discount_end_date": "2025-11-08T11:59:40.635720",
     "full_name": "Samantha Williams"
@@ -778,7 +778,7 @@
     "signup_date": "2025-10-28T11:59:40.635720",
     "subscription_tier": "professional",
     "status": "active",
-    "monthly_commission": 20.0,
+    "monthly_commission": 37.25,
     "discount_applied": true,
     "discount_end_date": "2025-12-27T11:59:40.635720",
     "full_name": "Kenneth Roberts"
@@ -790,7 +790,7 @@
     "signup_date": "2025-07-28T11:59:40.635720",
     "subscription_tier": "starter",
     "status": "active",
-    "monthly_commission": 6.0,
+    "monthly_commission": 7.25,
     "discount_applied": true,
     "discount_end_date": "2025-09-26T11:59:40.635720",
     "full_name": "Pamela Taylor"
@@ -802,7 +802,7 @@
     "signup_date": "2025-08-20T11:59:40.635720",
     "subscription_tier": "semipro",
     "status": "active",
-    "monthly_commission": 10.0,
+    "monthly_commission": 19.75,
     "discount_applied": true,
     "discount_end_date": "2025-10-19T11:59:40.635720",
     "full_name": "Robert Richardson"
@@ -814,7 +814,7 @@
     "signup_date": "2025-10-08T11:59:40.635720",
     "subscription_tier": "semipro",
     "status": "active",
-    "monthly_commission": 10.0,
+    "monthly_commission": 19.75,
     "discount_applied": true,
     "discount_end_date": "2025-12-07T11:59:40.635720",
     "full_name": "Jason Murphy"
@@ -826,7 +826,7 @@
     "signup_date": "2025-10-30T11:59:40.635720",
     "subscription_tier": "starter",
     "status": "active",
-    "monthly_commission": 6.0,
+    "monthly_commission": 7.25,
     "discount_applied": true,
     "discount_end_date": "2025-12-29T11:59:40.635720",
     "full_name": "Anthony Sanchez"
@@ -838,7 +838,7 @@
     "signup_date": "2025-09-22T11:59:40.635720",
     "subscription_tier": "professional",
     "status": "cancelled",
-    "monthly_commission": 20.0,
+    "monthly_commission": 37.25,
     "discount_applied": true,
     "discount_end_date": "2025-11-21T11:59:40.635720",
     "full_name": "Ryan Nguyen"
@@ -850,7 +850,7 @@
     "signup_date": "2025-08-02T11:59:40.635720",
     "subscription_tier": "semipro",
     "status": "active",
-    "monthly_commission": 10.0,
+    "monthly_commission": 19.75,
     "discount_applied": true,
     "discount_end_date": "2025-10-01T11:59:40.635720",
     "full_name": "Nancy Cook"
@@ -862,7 +862,7 @@
     "signup_date": "2025-08-16T11:59:40.636721",
     "subscription_tier": "starter",
     "status": "active",
-    "monthly_commission": 6.0,
+    "monthly_commission": 7.25,
     "discount_applied": true,
     "discount_end_date": "2025-10-15T11:59:40.636721",
     "full_name": "Andrew Collins"
@@ -874,7 +874,7 @@
     "signup_date": "2025-09-28T11:59:40.636721",
     "subscription_tier": "starter",
     "status": "active",
-    "monthly_commission": 6.0,
+    "monthly_commission": 7.25,
     "discount_applied": true,
     "discount_end_date": "2025-11-27T11:59:40.636721",
     "full_name": "Katherine Flores"
@@ -898,7 +898,7 @@
     "signup_date": "2025-07-27T11:59:40.636721",
     "subscription_tier": "professional",
     "status": "active",
-    "monthly_commission": 20.0,
+    "monthly_commission": 37.25,
     "discount_applied": true,
     "discount_end_date": "2025-09-25T11:59:40.636721",
     "full_name": "Rachel Howard"
@@ -910,7 +910,7 @@
     "signup_date": "2025-11-09T11:59:40.636721",
     "subscription_tier": "semipro",
     "status": "active",
-    "monthly_commission": 10.0,
+    "monthly_commission": 19.75,
     "discount_applied": true,
     "discount_end_date": "2026-01-08T11:59:40.636721",
     "full_name": "Samuel Young"
@@ -922,7 +922,7 @@
     "signup_date": "2025-10-06T11:59:40.636721",
     "subscription_tier": "starter",
     "status": "active",
-    "monthly_commission": 6.0,
+    "monthly_commission": 7.25,
     "discount_applied": true,
     "discount_end_date": "2025-12-05T11:59:40.636721",
     "full_name": "Jessica Chavez"
@@ -934,7 +934,7 @@
     "signup_date": "2025-10-04T11:59:40.636721",
     "subscription_tier": "starter",
     "status": "active",
-    "monthly_commission": 6.0,
+    "monthly_commission": 7.25,
     "discount_applied": true,
     "discount_end_date": "2025-12-03T11:59:40.636721",
     "full_name": "Rachel Lee"
@@ -946,7 +946,7 @@
     "signup_date": "2025-11-01T11:59:40.636721",
     "subscription_tier": "semipro",
     "status": "active",
-    "monthly_commission": 10.0,
+    "monthly_commission": 19.75,
     "discount_applied": true,
     "discount_end_date": "2025-12-31T11:59:40.636721",
     "full_name": "Benjamin Perez"
@@ -958,7 +958,7 @@
     "signup_date": "2025-08-29T11:59:40.636721",
     "subscription_tier": "professional",
     "status": "active",
-    "monthly_commission": 20.0,
+    "monthly_commission": 37.25,
     "discount_applied": true,
     "discount_end_date": "2025-10-28T11:59:40.636721",
     "full_name": "Gary Brown"
@@ -970,7 +970,7 @@
     "signup_date": "2025-08-15T11:59:40.636721",
     "subscription_tier": "elite",
     "status": "active",
-    "monthly_commission": 40.0,
+    "monthly_commission": 74.75,
     "discount_applied": true,
     "discount_end_date": "2025-10-14T11:59:40.636721",
     "full_name": "Anna Bennett"
@@ -982,7 +982,7 @@
     "signup_date": "2025-07-27T11:59:40.636721",
     "subscription_tier": "professional",
     "status": "active",
-    "monthly_commission": 20.0,
+    "monthly_commission": 37.25,
     "discount_applied": true,
     "discount_end_date": "2025-09-25T11:59:40.636721",
     "full_name": "Helen Rivera"
@@ -994,7 +994,7 @@
     "signup_date": "2025-11-09T11:59:40.636721",
     "subscription_tier": "professional",
     "status": "active",
-    "monthly_commission": 20.0,
+    "monthly_commission": 37.25,
     "discount_applied": true,
     "discount_end_date": "2026-01-08T11:59:40.636721",
     "full_name": "Eric Turner"
@@ -1006,7 +1006,7 @@
     "signup_date": "2025-08-02T11:59:40.636721",
     "subscription_tier": "elite",
     "status": "active",
-    "monthly_commission": 40.0,
+    "monthly_commission": 74.75,
     "discount_applied": true,
     "discount_end_date": "2025-10-01T11:59:40.636721",
     "full_name": "Kevin Peterson"
@@ -1018,7 +1018,7 @@
     "signup_date": "2025-09-10T11:59:40.636721",
     "subscription_tier": "semipro",
     "status": "active",
-    "monthly_commission": 10.0,
+    "monthly_commission": 19.75,
     "discount_applied": true,
     "discount_end_date": "2025-11-09T11:59:40.636721",
     "full_name": "Nicole Cooper"
@@ -1030,7 +1030,7 @@
     "signup_date": "2025-09-02T11:59:40.636721",
     "subscription_tier": "elitepro",
     "status": "active",
-    "monthly_commission": 60.0,
+    "monthly_commission": 199.75,
     "discount_applied": true,
     "discount_end_date": "2025-11-01T11:59:40.636721",
     "full_name": "Richard Robinson"
@@ -1042,7 +1042,7 @@
     "signup_date": "2025-11-02T11:59:40.636721",
     "subscription_tier": "professional",
     "status": "active",
-    "monthly_commission": 20.0,
+    "monthly_commission": 37.25,
     "discount_applied": true,
     "discount_end_date": "2026-01-01T11:59:40.636721",
     "full_name": "Daniel Stewart"
@@ -1054,7 +1054,7 @@
     "signup_date": "2025-07-14T11:59:40.636721",
     "subscription_tier": "elite",
     "status": "active",
-    "monthly_commission": 40.0,
+    "monthly_commission": 74.75,
     "discount_applied": true,
     "discount_end_date": "2025-09-12T11:59:40.636721",
     "full_name": "Janet Wright"
@@ -1066,7 +1066,7 @@
     "signup_date": "2025-10-11T11:59:40.636721",
     "subscription_tier": "elitepro",
     "status": "active",
-    "monthly_commission": 60.0,
+    "monthly_commission": 199.75,
     "discount_applied": true,
     "discount_end_date": "2025-12-10T11:59:40.636721",
     "full_name": "Rachel Cruz"
@@ -1078,7 +1078,7 @@
     "signup_date": "2025-08-27T11:59:40.636721",
     "subscription_tier": "elite",
     "status": "active",
-    "monthly_commission": 40.0,
+    "monthly_commission": 74.75,
     "discount_applied": true,
     "discount_end_date": "2025-10-26T11:59:40.636721",
     "full_name": "Stephen Reed"
@@ -1102,7 +1102,7 @@
     "signup_date": "2025-07-16T11:59:40.636721",
     "subscription_tier": "starter",
     "status": "active",
-    "monthly_commission": 6.0,
+    "monthly_commission": 7.25,
     "discount_applied": true,
     "discount_end_date": "2025-09-14T11:59:40.636721",
     "full_name": "Ruth Howard"
@@ -1126,7 +1126,7 @@
     "signup_date": "2025-10-31T11:59:40.636721",
     "subscription_tier": "elite",
     "status": "active",
-    "monthly_commission": 40.0,
+    "monthly_commission": 74.75,
     "discount_applied": true,
     "discount_end_date": "2025-12-30T11:59:40.636721",
     "full_name": "Betty King"
@@ -1138,7 +1138,7 @@
     "signup_date": "2025-10-20T11:59:40.636721",
     "subscription_tier": "starter",
     "status": "active",
-    "monthly_commission": 6.0,
+    "monthly_commission": 7.25,
     "discount_applied": true,
     "discount_end_date": "2025-12-19T11:59:40.636721",
     "full_name": "Sandra Peterson"
@@ -1150,7 +1150,7 @@
     "signup_date": "2025-10-05T11:59:40.636721",
     "subscription_tier": "elitepro",
     "status": "active",
-    "monthly_commission": 60.0,
+    "monthly_commission": 199.75,
     "discount_applied": true,
     "discount_end_date": "2025-12-04T11:59:40.636721",
     "full_name": "Ryan Nelson"
@@ -1162,7 +1162,7 @@
     "signup_date": "2025-07-20T11:59:40.636721",
     "subscription_tier": "elite",
     "status": "active",
-    "monthly_commission": 40.0,
+    "monthly_commission": 74.75,
     "discount_applied": true,
     "discount_end_date": "2025-09-18T11:59:40.636721",
     "full_name": "Steven Garcia"
@@ -1174,7 +1174,7 @@
     "signup_date": "2025-08-20T11:59:40.636721",
     "subscription_tier": "starter",
     "status": "active",
-    "monthly_commission": 6.0,
+    "monthly_commission": 7.25,
     "discount_applied": true,
     "discount_end_date": "2025-10-19T11:59:40.636721",
     "full_name": "Donald Morgan"
