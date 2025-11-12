@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useRef, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getApiUrl } from '../config';
 
 export function SignUp() {
@@ -19,6 +19,33 @@ export function SignUp() {
   const [checkingCode, setCheckingCode] = useState(false);
   const navigate = useNavigate();
   const audioRef = useRef<HTMLAudioElement>(null);
+  const [searchParams] = useSearchParams();
+
+  // Pre-fill form from URL parameters (partner referral flow)
+  useEffect(() => {
+    const email = searchParams.get('email');
+    const code = searchParams.get('code');
+    const isPartner = searchParams.get('partner') === 'true';
+
+    if (email || code) {
+      setFormData(prev => ({
+        ...prev,
+        email: email || prev.email,
+        referralCode: code || prev.referralCode,
+      }));
+
+      // Validate referral code if provided
+      if (code && code.length >= 3) {
+        validateReferralCode(code);
+      }
+    }
+
+    // Show partner welcome message if coming from partner application
+    if (isPartner) {
+      console.log('Partner signup flow detected');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -76,7 +103,7 @@ export function SignUp() {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/auth/register', {
+      const response = await fetch(getApiUrl('auth/register'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
