@@ -54,7 +54,7 @@ def init_subscription_tables():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id TEXT NOT NULL,
                 stripe_subscription_id TEXT UNIQUE,
-                stripe_customer_id TEXT NOT NULL,
+                stripe_customer_id TEXT,
                 tier TEXT NOT NULL DEFAULT 'free',
                 status TEXT NOT NULL DEFAULT 'active',
                 current_period_start TIMESTAMP,
