@@ -53,9 +53,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Check for existing session on mount
   useEffect(() => {
-    console.log('🔍 AuthContext: Checking authentication...');
-    console.log('🔍 Current hostname:', window.location.hostname);
-    console.log('🔍 Current protocol:', window.location.protocol);
 
     // DEV MODE OR ELECTRON: Auto-login for localhost development and Electron desktop app
     const isDev =
@@ -64,8 +61,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const isDesktop = isElectron();
 
-    console.log('🔍 isDev?', isDev);
-    console.log('🔍 isElectron?', isDesktop);
 
     if (isDev || isDesktop) {
       // Check if we already have valid credentials
@@ -81,7 +76,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setRole(localStorage.getItem('auth_role'));
         setSubscriptionTier(localStorage.getItem('subscription_tier') || 'elite');
         setLoading(false);
-        console.log('✅ Using stored credentials:', { username: storedUsername });
         return;
       }
 
@@ -90,7 +84,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (isDesktop) {
         // Electron: Skip API call, set local authentication immediately
-        console.log(`🔧 ${mode}: Creating local session...`);
         setIsAuthenticated(true);
         setUsername('admin');
         setEmail('admin@maxevsports.com');
@@ -103,17 +96,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem('auth_role', 'admin');
         localStorage.setItem('subscription_tier', 'elite');
         setLoading(false);
-        console.log(`✅ ${mode}: Local session created`);
         return;
       }
 
       // Dev mode: Try API login
-      console.log(`🔧 ${mode}: Auto-logging in with admin credentials...`);
       (async () => {
         try {
           const loginSuccess = await login('admin', 'admin123');
           if (loginSuccess) {
-            console.log(`✅ ${mode}: Auto-login successful`);
           } else {
             console.error(`❌ ${mode}: Auto-login failed`);
             setLoading(false);
@@ -127,7 +117,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     // PRODUCTION: Normal auth flow (web app only)
-    console.log('🔒 PRODUCTION MODE: Using normal auth flow');
     const storedToken = localStorage.getItem('auth_token');
     const storedUsername = localStorage.getItem('auth_username');
     const storedEmail = localStorage.getItem('auth_email');
