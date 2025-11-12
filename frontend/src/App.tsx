@@ -47,6 +47,7 @@ import { EdgeScannerAlertMonitor } from './components/EdgeScannerAlertMonitor';
 import { GlobalAlertMonitor } from './components/GlobalAlertMonitor';
 import { isElectron } from './utils/isElectron';
 import { MLAdvantage } from './pages/MLAdvantage';
+import { EvidenceArchitecture } from './pages/EvidenceArchitecture';
 
 function AppContent() {
   const location = useLocation();
@@ -174,6 +175,17 @@ function AppContent() {
               <div className="min-h-screen bg-slate-900 flex flex-col">
                 <Navigation />
                 <MLAdvantage />
+              </div>
+            }
+          />
+
+          {/* Evidence & Architecture - proof-based technical page */}
+          <Route
+            path="/evidence"
+            element={
+              <div className="min-h-screen bg-slate-950 flex flex-col">
+                <Navigation />
+                <EvidenceArchitecture />
               </div>
             }
           />
