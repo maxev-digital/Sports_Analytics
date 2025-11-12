@@ -434,7 +434,7 @@ export function Pricing() {
             ) : (
               <div>
                 <button
-                  onClick={() => window.location.href = '/signup'}
+                  onClick={() => window.location.href = '#/signup'}
                   className="inline-block px-12 py-5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white text-2xl font-bold rounded-xl transition-all shadow-2xl shadow-blue-600/40 mb-4"
                 >
                   Sign Me Up for 14 Day Free Trial
