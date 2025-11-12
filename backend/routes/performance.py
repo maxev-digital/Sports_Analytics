@@ -325,7 +325,8 @@ async def get_recent_predictions(
         df['bet_type_rank'] = df['bet_type_detected'].map(bet_type_order).fillna(0)
 
         # Create game identifier WITHOUT bet type (one bet per game total)
-        df['game_key'] = df['game_date'].astype(str) + '_' + df['away_team'] + '_' + df['home_team']
+        # IMPORTANT: Must use exact string format to properly deduplicate
+        df['game_key'] = df['game_date'].dt.strftime('%Y-%m-%d') + '_' + df['away_team'].astype(str) + '_' + df['home_team'].astype(str)
 
         # Sort by: ensemble > confidence > bet type preference > keep first
         df = df.sort_values(['game_key', 'is_ensemble', 'confidence_rank', 'bet_type_rank'], ascending=[True, False, False, False])
