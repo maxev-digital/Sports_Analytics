@@ -104,6 +104,7 @@ export function Navigation() {
     { path: '/learn', label: 'LEARN ARTICLES', emoji: uiEmojis.graduation },
     { path: '/getting-started', label: 'GETTING STARTED', emoji: uiEmojis.rocket },
     { path: '/odds-explained', label: 'ODDS EXPLAINED', emoji: uiEmojis.chart },
+    { path: '/ml-advantage', label: 'ML ADVANTAGE', emoji: uiEmojis.star },
   ];
 
   const isActive = (path: string) => {

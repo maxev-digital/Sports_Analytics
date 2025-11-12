@@ -46,6 +46,7 @@ import GoaliePull from './pages/GoaliePull';
 import { EdgeScannerAlertMonitor } from './components/EdgeScannerAlertMonitor';
 import { GlobalAlertMonitor } from './components/GlobalAlertMonitor';
 import { isElectron } from './utils/isElectron';
+import { MLAdvantage } from './pages/MLAdvantage';
 
 function AppContent() {
   const location = useLocation();
@@ -165,6 +166,17 @@ function AppContent() {
           <Route path="/terms" element={<Terms />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/disclaimer" element={<Disclaimer />} />
+
+          {/* ML Advantage / Future Features - public marketing page */}
+          <Route
+            path="/ml-advantage"
+            element={
+              <div className="min-h-screen bg-slate-900 flex flex-col">
+                <Navigation />
+                <MLAdvantage />
+              </div>
+            }
+          />
 
           <Route
             path="/subscription/success"
