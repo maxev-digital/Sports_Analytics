@@ -47,6 +47,23 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Utility to convert numpy types to Python types
+import numpy as np
+
+def convert_numpy_types(obj):
+    """Recursively convert numpy types to Python types for JSON serialization"""
+    if isinstance(obj, (np.integer, np.int32, np.int64)):
+        return int(obj)
+    elif isinstance(obj, (np.floating, np.float32, np.float64)):
+        return float(obj)
+    elif isinstance(obj, np.ndarray):
+        return obj.tolist()
+    elif isinstance(obj, dict):
+        return {k: convert_numpy_types(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_numpy_types(item) for item in obj]
+    return obj
+
 app = FastAPI(title="NBA Live Betting API")
 
 # CORS configuration - supports both production (env var) and local development
@@ -625,7 +642,7 @@ def filter_games_by_bookmakers(games: List[LiveGame], enabled_bookmakers: List[s
     return filtered_games
 
 
-@app.get("/api/games", response_model=List[LiveGame])
+@app.get("/api/games")
 async def get_games(user_id: str = 'default', show_all: bool = False):
     """
     Get all live games filtered by user's enabled bookmakers
@@ -636,14 +653,19 @@ async def get_games(user_id: str = 'default', show_all: bool = False):
         # If show_all parameter is set, return all games (bypasses bookmaker filtering)
         if show_all:
             logger.info("Bypassing bookmaker filter - showing all games for odds testing")
-            return tracker.get_all_games()
+            games = tracker.get_all_games()
+            # Convert Pydantic models to dicts and handle numpy types
+            games_dicts = [game.model_dump() for game in games]
+            return convert_numpy_types(games_dicts)
 
         # Get user settings
         settings = settings_db.get_settings(user_id)
         if not settings:
             # If no settings found, return all games (backwards compatible)
             logger.info(f"No settings found for user {user_id}, returning all games")
-            return tracker.get_all_games()
+            games = tracker.get_all_games()
+            games_dicts = [game.model_dump() for game in games]
+            return convert_numpy_types(games_dicts)
 
         # Get all games
         all_games = tracker.get_all_games()
@@ -651,12 +673,16 @@ async def get_games(user_id: str = 'default', show_all: bool = False):
         # Filter by enabled bookmakers (uses model_copy for performance)
         filtered_games = filter_games_by_bookmakers(all_games, settings['enabled_bookmakers'])
 
-        return filtered_games
+        # Convert to dicts and handle numpy types
+        games_dicts = [game.model_dump() for game in filtered_games]
+        return convert_numpy_types(games_dicts)
 
     except Exception as e:
         logger.error(f"Error filtering games: {str(e)}")
         # On error, return all games (fail-safe)
-        return tracker.get_all_games()
+        games = tracker.get_all_games()
+        games_dicts = [game.model_dump() for game in games]
+        return convert_numpy_types(games_dicts)
 
 @app.get("/api/games/{game_id}", response_model=LiveGame)
 async def get_game(game_id: str, user_id: str = 'default'):

@@ -522,6 +522,10 @@ class GameTracker:
             return self.nfl_team_stats_cache[team_name]
 
         if is_ncaaf:
+            # Check if ESPN stats are enabled
+            if self.nfl_stats_client is None:
+                return None
+
             # For NCAAF, map team name to ESPN's full name format
             mapped_team_name = self._map_ncaaf_team_name(team_name)
             if not mapped_team_name:
@@ -542,6 +546,10 @@ class GameTracker:
                 logger.warning(f"Error fetching NCAAF stats for {team_name} (mapped to {mapped_team_name}): {e}")
                 return None
         else:
+            # Check if ESPN stats are enabled
+            if self.nfl_stats_client is None:
+                return None
+
             # For NFL, map team name to abbreviation
             team_abbr = self._map_nfl_team_name(team_name)
             if not team_abbr:
@@ -564,6 +572,10 @@ class GameTracker:
 
     async def _get_nhl_team_stats(self, team_name: str) -> Optional[NHLTeamStats]:
         """Get NHL team stats with caching"""
+        # Check if ESPN stats are enabled
+        if self.nhl_stats_client is None:
+            return None
+
         # Check if we have cached stats
         if team_name in self.nhl_team_stats_cache:
             return self.nhl_team_stats_cache[team_name]
@@ -593,6 +605,10 @@ class GameTracker:
 
     async def _get_mlb_team_stats(self, team_name: str) -> Optional[MLBTeamStats]:
         """Get MLB team stats with caching"""
+        # Check if ESPN stats are enabled
+        if self.mlb_stats_client is None:
+            return None
+
         # Check if we have cached stats
         if team_name in self.mlb_team_stats_cache:
             return self.mlb_team_stats_cache[team_name]
