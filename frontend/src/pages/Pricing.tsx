@@ -407,6 +407,27 @@ export function Pricing() {
           </div>
         )}
 
+        {/* 14-Day Free Trial CTA - Top of Page */}
+        {!loadingStatus && !isAuthenticated && (
+          <div className="mb-12 bg-gradient-to-br from-blue-900/40 via-slate-800/60 to-blue-900/40 border-4 border-blue-500 rounded-2xl p-12 text-center shadow-2xl">
+            <h2 className="text-5xl font-bold text-white mb-4">
+              Start Your 14-Day Free Trial
+            </h2>
+            <p className="text-xl text-slate-300 mb-8 max-w-2xl mx-auto">
+              Get Semi Pro level access. No credit card required.
+            </p>
+            <button
+              onClick={() => window.location.href = '#/signup'}
+              className="inline-block px-12 py-5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white text-2xl font-bold rounded-xl transition-all shadow-2xl shadow-blue-600/40 mb-4"
+            >
+              Sign Me Up for 14 Day Free Trial
+            </button>
+            <p className="text-sm text-slate-300 font-semibold">
+              No Credit Card Required
+            </p>
+          </div>
+        )}
+
         {/* Hero Banner Image */}
         {!loadingStatus && (
           <div className="mb-12 rounded-2xl overflow-hidden shadow-2xl bg-black">

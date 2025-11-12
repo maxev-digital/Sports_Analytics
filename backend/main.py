@@ -188,6 +188,18 @@ except Exception as e:
     import traceback
     traceback.print_exc()
 
+# Import and register Performance (Historical Results) router
+try:
+    print("DEBUG: About to import performance router...")
+    from routes.performance import router as performance_router
+    print("DEBUG: Performance router imported successfully")
+    app.include_router(performance_router)
+    print(f"DEBUG: Performance router registered with prefix: {performance_router.prefix}")
+except Exception as e:
+    print(f"ERROR importing/registering performance router: {type(e).__name__}: {e}")
+    import traceback
+    traceback.print_exc()
+
 # Import and register Influencer router
 try:
     print("DEBUG: About to import influencer router...")
@@ -760,7 +772,7 @@ class ChangePasswordRequest(BaseModel):
 async def register(request: Request):
     """
     User registration endpoint
-    Creates new user with 14-day free trial
+    Creates new user with 14-day free trial (Semi Pro tier access)
     Optional: accepts referral code for 50% discount on first 2 months
     """
     try:
@@ -812,12 +824,12 @@ async def register(request: Request):
         # Create session
         token = auth.create_session(username)
         
-        # Create free trial subscription
+        # Create 14-day trial subscription with Semi Pro access
         SubscriptionDB.create_subscription(
             user_id=username,
             stripe_subscription_id=None,
             stripe_customer_id=None,
-            tier="free_trial",
+            tier="semipro",
             status="trialing"
         )
 
