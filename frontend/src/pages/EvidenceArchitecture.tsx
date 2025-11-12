@@ -377,7 +377,7 @@ export const EvidenceArchitecture: React.FC = () => {
               <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
                 <div className="text-xs text-slate-400 mb-1">ROI (Last 90d, net)</div>
                 <div className="text-xl font-bold text-green-400">{formatROI(EXAMPLE_ALERT.roi_net_last_90d)}</div>
-                <div className="text-sm text-slate-500">{formatConfidenceInterval(EXAMPLE_ALERT.roi_ci_95)}</div>
+                <div className="text-sm text-slate-500">{formatConfidenceInterval(EXAMPLE_ALERT.roi_ci_95 as [number, number])}</div>
               </div>
             </div>
 
