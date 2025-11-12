@@ -132,9 +132,9 @@ export function SignUp() {
           audioRef.current.play().catch(err => console.log('Audio play failed:', err));
         }
 
-        // Redirect to pricing page after animation
+        // Redirect to live games page after animation
         setTimeout(() => {
-          window.location.href = '/pricing';
+          window.location.href = '#/live-games';
         }, 1500);
       } else {
         setError(data.detail || 'Registration failed');

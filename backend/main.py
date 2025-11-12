@@ -26,6 +26,7 @@ import logging
 import time
 import json
 import sqlite3
+from db_utils import get_optimized_connection
 from datetime import datetime
 from dotenv import load_dotenv
 import auth  # Authentication module
@@ -759,7 +760,7 @@ class ChangePasswordRequest(BaseModel):
 async def register(request: Request):
     """
     User registration endpoint
-    Creates new user with 7-day free trial
+    Creates new user with 14-day free trial
     Optional: accepts referral code for 50% discount on first 2 months
     """
     try:
@@ -802,7 +803,7 @@ async def register(request: Request):
             "full_name": full_name,
             "email": email,
             "trial_start": datetime.now().isoformat(),
-            "trial_days": 7,
+            "trial_days": 14,
             "referral_code": referral_code if influencer_code_valid else None,
             "has_referral_discount": influencer_code_valid
         }
@@ -1400,7 +1401,7 @@ async def get_beta_subscriber_count():
     """
     try:
         # Query subscription database for active beta subscriptions
-        conn = sqlite3.connect("subscriptions.db")
+        conn = get_optimized_connection("subscriptions.db")
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -1440,7 +1441,7 @@ async def add_to_waitlist(request: dict):
             raise HTTPException(status_code=400, detail="Email is required")
 
         # Store in database
-        conn = sqlite3.connect("subscriptions.db")
+        conn = get_optimized_connection("subscriptions.db")
         cursor = conn.cursor()
 
         # Create waitlist table if it doesn't exist
