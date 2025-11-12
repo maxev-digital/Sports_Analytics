@@ -21,17 +21,21 @@ export function AlertsPerformance() {
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(25);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     fetchRecentPredictions();
-  }, []);
+  }, [currentPage]);
 
   const fetchRecentPredictions = async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const url = `${getApiUrl('performance/recent-predictions')}?limit=25`;
+      // Fetch more than we need to enable proper pagination
+      const url = `${getApiUrl('performance/recent-predictions')}?limit=500`;
       const response = await fetch(url);
 
       if (!response.ok) {
@@ -39,7 +43,16 @@ export function AlertsPerformance() {
       }
 
       const data = await response.json();
-      setPredictions(data.predictions || []);
+      const allPredictions = data.predictions || [];
+
+      // Calculate pagination
+      const total = Math.ceil(allPredictions.length / pageSize);
+      setTotalPages(total);
+
+      // Get current page slice
+      const startIdx = (currentPage - 1) * pageSize;
+      const endIdx = startIdx + pageSize;
+      setPredictions(allPredictions.slice(startIdx, endIdx));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
       console.error('Error fetching predictions:', err);
@@ -53,14 +66,21 @@ export function AlertsPerformance() {
     return `${sign}$${value.toFixed(2)}`;
   };
 
+  // Round to nearest 0.5 (so -9.7 becomes -9.5, -10.3 becomes -10.5)
+  const roundToHalf = (num: number): number => {
+    return Math.round(num * 2) / 2;
+  };
+
   const formatBettingLine = (betType: string, marketTotal: number | null) => {
     if (marketTotal === null) return '-';
 
     if (betType === 'TOTALS') {
-      return `O/U ${marketTotal.toFixed(1)}`;
+      const rounded = roundToHalf(marketTotal);
+      return `O/U ${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)}`;
     } else if (betType === 'SPREADS') {
-      const sign = marketTotal >= 0 ? '+' : '';
-      return `${sign}${marketTotal.toFixed(1)}`;
+      const rounded = roundToHalf(marketTotal);
+      const sign = rounded >= 0 ? '+' : '';
+      return `${sign}${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)}`;
     } else if (betType === 'MONEYLINE') {
       // Convert probability to American odds
       if (marketTotal > 0 && marketTotal < 1) {
@@ -72,6 +92,22 @@ export function AlertsPerformance() {
       return marketTotal.toFixed(0);
     }
     return marketTotal.toFixed(1);
+  };
+
+  // Get team name for spread/moneyline recommendations
+  const getTeamForRecommendation = (recommendation: string, homeTeam: string, awayTeam: string, betType: string): string => {
+    if (betType === 'TOTALS') {
+      return recommendation; // OVER/UNDER
+    }
+
+    // For SPREADS and MONEYLINE, replace HOME/AWAY with actual team names
+    if (recommendation === 'HOME') {
+      return homeTeam;
+    } else if (recommendation === 'AWAY') {
+      return awayTeam;
+    }
+
+    return recommendation; // Fallback
   };
 
   const getResultBadge = (result: string) => {
@@ -156,8 +192,8 @@ export function AlertsPerformance() {
                     {pred.bet_type}
                   </span>
                 </td>
-                <td className="py-3 px-2 font-bold text-white">
-                  {pred.recommendation}
+                <td className="py-3 px-2 font-bold text-white text-xs">
+                  {getTeamForRecommendation(pred.recommendation, pred.home_team, pred.away_team, pred.bet_type)}
                 </td>
                 <td className="text-center py-3 px-2">
                   <span className="text-yellow-400 font-bold text-xs">
@@ -199,10 +235,11 @@ export function AlertsPerformance() {
         </table>
       </div>
 
+      {/* Pagination Controls */}
       <div className="mt-4 pt-4 border-t border-slate-700">
-        <div className="flex items-center justify-between text-sm">
+        <div className="flex items-center justify-between text-sm mb-4">
           <div className="text-slate-400">
-            Showing most recent alerts with completed games
+            Showing page {currentPage} of {totalPages} ({predictions.length} results)
           </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
@@ -225,6 +262,83 @@ export function AlertsPerformance() {
               </span>
             </div>
           </div>
+        </div>
+
+        {/* Pagination Buttons */}
+        <div className="flex items-center justify-center gap-2">
+          <button
+            onClick={() => setCurrentPage(1)}
+            disabled={currentPage === 1}
+            className={`px-3 py-2 border ${
+              currentPage === 1
+                ? 'bg-slate-800 text-slate-600 border-slate-700 cursor-not-allowed'
+                : 'bg-slate-900 text-white border-slate-600 hover:border-blue-500'
+            }`}
+          >
+            « First
+          </button>
+          <button
+            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+            disabled={currentPage === 1}
+            className={`px-3 py-2 border ${
+              currentPage === 1
+                ? 'bg-slate-800 text-slate-600 border-slate-700 cursor-not-allowed'
+                : 'bg-slate-900 text-white border-slate-600 hover:border-blue-500'
+            }`}
+          >
+            ‹ Prev
+          </button>
+
+          {/* Page numbers */}
+          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+            let pageNum;
+            if (totalPages <= 5) {
+              pageNum = i + 1;
+            } else if (currentPage <= 3) {
+              pageNum = i + 1;
+            } else if (currentPage >= totalPages - 2) {
+              pageNum = totalPages - 4 + i;
+            } else {
+              pageNum = currentPage - 2 + i;
+            }
+
+            return (
+              <button
+                key={pageNum}
+                onClick={() => setCurrentPage(pageNum)}
+                className={`px-3 py-2 border font-bold ${
+                  currentPage === pageNum
+                    ? 'bg-blue-600 text-white border-blue-500'
+                    : 'bg-slate-900 text-white border-slate-600 hover:border-blue-500'
+                }`}
+              >
+                {pageNum}
+              </button>
+            );
+          })}
+
+          <button
+            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+            disabled={currentPage === totalPages}
+            className={`px-3 py-2 border ${
+              currentPage === totalPages
+                ? 'bg-slate-800 text-slate-600 border-slate-700 cursor-not-allowed'
+                : 'bg-slate-900 text-white border-slate-600 hover:border-blue-500'
+            }`}
+          >
+            Next ›
+          </button>
+          <button
+            onClick={() => setCurrentPage(totalPages)}
+            disabled={currentPage === totalPages}
+            className={`px-3 py-2 border ${
+              currentPage === totalPages
+                ? 'bg-slate-800 text-slate-600 border-slate-700 cursor-not-allowed'
+                : 'bg-slate-900 text-white border-slate-600 hover:border-blue-500'
+            }`}
+          >
+            Last »
+          </button>
         </div>
       </div>
     </div>
