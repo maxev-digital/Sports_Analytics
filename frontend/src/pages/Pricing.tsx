@@ -414,6 +414,25 @@ export function Pricing() {
           </div>
         )}
 
+        {/* Hero Value Proposition Section */}
+        {!loadingStatus && (
+          <div className="mb-12 text-center max-w-5xl mx-auto">
+            <h1 className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-blue-400 mb-6 tracking-tight">
+              Maximizing Expected Value Through Data
+            </h1>
+            <p className="text-2xl text-slate-300 mb-6 leading-relaxed">
+              The only professional-grade sports betting analytics platform built by sharps, for sharps.
+              Real-time odds aggregation from 18+ sportsbooks, advanced predictive models, and proprietary edge detection
+              algorithms that identify profitable opportunities the second they appear.
+            </p>
+            <p className="text-xl text-slate-400 leading-relaxed">
+              Stop guessing. Stop losing to the market. Our institutional-level infrastructure processes millions of data points
+              per second to surface high-probability edges across NBA, NFL, NHL, NCAAF, NCAAB, and MLB. Live in-game alerts,
+              arbitrage detection, steam moves, and closing line value tracking—everything you need to win long-term.
+            </p>
+          </div>
+        )}
+
         {/* Main CTA - Sign Up for 14 Day Free Trial */}
         {!loadingStatus && !isAuthenticated && (
           <div className="mb-16 bg-gradient-to-br from-blue-900/40 via-slate-800/60 to-blue-900/40 border-4 border-blue-500 rounded-2xl p-12 text-center shadow-2xl">
