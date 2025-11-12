@@ -146,6 +146,9 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
   // Advanced Systems toggle
   const [isAdvancedOpen, setIsAdvancedOpen] = useState<boolean>(false);
 
+  // Season Stats expand/collapse toggle
+  const [isStatsExpanded, setIsStatsExpanded] = useState<boolean>(false);
+
   // Handle bet tracking when bookmaker is clicked
   const handleBookmakerClick = async (bookmakerName: string, odd: any, bookmakerUrl: string) => {
     // CRITICAL: Open sportsbook IMMEDIATELY to avoid popup blockers
@@ -1671,6 +1674,9 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                   {/* COMBINED VIEW - Show stats with rankings */}
                   {statsView === 'combined' && (
                     <>
+                      <div className="mb-2 px-2 py-1 bg-blue-900/30 rounded border border-blue-600/30">
+                        <div className={`text-xs ${textLabel} text-center`}>Season Baseline (TeamRankings)</div>
+                      </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>PPG:</span>
                         <span className={`font-bold ${
@@ -1684,7 +1690,8 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                           </span>
                         </span>
                       </div>
-                      <div className="flex items-center justify-between">
+                      <div className={`text-xs ${textMuted} pl-2`}>Average offensive scoring output</div>
+                      <div className="flex items-center justify-between mt-2">
                         <span className={`${textLabel}`}>PA/G:</span>
                         <span className={`font-bold ${
                           home_nfl_stats && away_nfl_stats.points_allowed_per_game < home_nfl_stats.points_allowed_per_game
@@ -1697,7 +1704,9 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                           </span>
                         </span>
                       </div>
-                      <div className="flex items-center justify-between">
+                      <div className={`text-xs ${textMuted} pl-2`}>Average defensive points allowed</div>
+
+                      <div className="flex items-center justify-between mt-2">
                         <span className={`${textLabel}`}>Pass YPG:</span>
                         <span className={`font-bold ${
                           home_nfl_stats && away_nfl_stats.passing_yards_per_game > home_nfl_stats.passing_yards_per_game
@@ -1710,7 +1719,9 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                           </span>
                         </span>
                       </div>
-                      <div className="flex items-center justify-between">
+                      <div className={`text-xs ${textMuted} pl-2`}>Passing attack efficiency</div>
+
+                      <div className="flex items-center justify-between mt-2">
                         <span className={`${textLabel}`}>Rush YPG:</span>
                         <span className={`font-bold ${
                           home_nfl_stats && away_nfl_stats.rushing_yards_per_game > home_nfl_stats.rushing_yards_per_game
@@ -1723,7 +1734,9 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                           </span>
                         </span>
                       </div>
-                      <div className="flex items-center justify-between">
+                      <div className={`text-xs ${textMuted} pl-2`}>Ground game effectiveness</div>
+
+                      <div className="flex items-center justify-between mt-2">
                         <span className={`${textLabel}`}>TO Diff:</span>
                         <span className={`font-bold ${
                           away_nfl_stats.turnover_differential > 0 ? 'text-green-400' :
@@ -1735,6 +1748,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                           </span>
                         </span>
                       </div>
+                      <div className={`text-xs ${textMuted} pl-2`}>Ball security & takeaway margin</div>
                     </>
                   )}
 
@@ -1872,6 +1886,9 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                   {/* COMBINED VIEW - Show stats with rankings */}
                   {statsView === 'combined' && (
                     <>
+                      <div className="mb-2 px-2 py-1 bg-blue-900/30 rounded border border-blue-600/30">
+                        <div className={`text-xs ${textLabel} text-center`}>Season Baseline (TeamRankings)</div>
+                      </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>PPG:</span>
                         <span className={`font-bold ${
@@ -1885,7 +1902,9 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                           </span>
                         </span>
                       </div>
-                      <div className="flex items-center justify-between">
+                      <div className={`text-xs ${textMuted} pl-2`}>Average offensive scoring output</div>
+
+                      <div className="flex items-center justify-between mt-2">
                         <span className={`${textLabel}`}>PA/G:</span>
                         <span className={`font-bold ${
                           away_nfl_stats && home_nfl_stats.points_allowed_per_game < away_nfl_stats.points_allowed_per_game
@@ -1898,7 +1917,9 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                           </span>
                         </span>
                       </div>
-                      <div className="flex items-center justify-between">
+                      <div className={`text-xs ${textMuted} pl-2`}>Average defensive points allowed</div>
+
+                      <div className="flex items-center justify-between mt-2">
                         <span className={`${textLabel}`}>Pass YPG:</span>
                         <span className={`font-bold ${
                           away_nfl_stats && home_nfl_stats.passing_yards_per_game > away_nfl_stats.passing_yards_per_game
@@ -1911,7 +1932,9 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                           </span>
                         </span>
                       </div>
-                      <div className="flex items-center justify-between">
+                      <div className={`text-xs ${textMuted} pl-2`}>Passing attack efficiency</div>
+
+                      <div className="flex items-center justify-between mt-2">
                         <span className={`${textLabel}`}>Rush YPG:</span>
                         <span className={`font-bold ${
                           away_nfl_stats && home_nfl_stats.rushing_yards_per_game > away_nfl_stats.rushing_yards_per_game
@@ -1924,7 +1947,9 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                           </span>
                         </span>
                       </div>
-                      <div className="flex items-center justify-between">
+                      <div className={`text-xs ${textMuted} pl-2`}>Ground game effectiveness</div>
+
+                      <div className="flex items-center justify-between mt-2">
                         <span className={`${textLabel}`}>TO Diff:</span>
                         <span className={`font-bold ${
                           home_nfl_stats.turnover_differential > 0 ? 'text-green-400' :
@@ -1936,6 +1961,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                           </span>
                         </span>
                       </div>
+                      <div className={`text-xs ${textMuted} pl-2`}>Ball security & takeaway margin</div>
                     </>
                   )}
 

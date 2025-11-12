@@ -917,12 +917,12 @@ class GameTracker:
                 rushing_yards_per_game=float(tr_stats.get('rushing_yards_per_game', 100.0)),
                 passing_yards_allowed_per_game=float(tr_stats.get('opponent_passing_yards_per_game', 220.0)),
                 rushing_yards_allowed_per_game=float(tr_stats.get('opponent_rushing_yards_per_game', 100.0)),
-                third_down_conversion_pct=float(tr_stats.get('third_down_conversion_pct', 40.0)),
-                red_zone_scoring_pct=float(tr_stats.get('red_zone_scoring_pct', 55.0)),
-                sacks_per_game=float(tr_stats.get('sacks_per_game', 2.5)),
-                turnovers_lost=int(tr_stats.get('turnovers_lost', 0)),
-                turnovers_gained=int(tr_stats.get('turnovers_gained', 0)),
-                turnover_differential=int(tr_stats.get('turnover_diff', 0))
+                turnovers_per_game=float(tr_stats.get('turnovers_lost', 1.0)),  # Per game turnovers given
+                takeaways_per_game=float(tr_stats.get('turnovers_gained', 1.0)),  # Per game turnovers taken
+                turnover_differential=float(tr_stats.get('turnover_diff', 0.0)),
+                third_down_pct=float(tr_stats.get('third_down_conversion_pct', 40.0)),
+                red_zone_pct=float(tr_stats.get('red_zone_scoring_pct', 55.0)),
+                sacks_per_game=float(tr_stats.get('sacks_per_game', 2.5))
             )
 
             logger.info(f"✅ Fetched TeamRankings {'NCAAF' if is_ncaaf else 'NFL'} stats for {team_name}")
