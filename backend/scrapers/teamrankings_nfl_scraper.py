@@ -167,6 +167,65 @@ class TeamRankingsNFLScraper:
             logger.error(f"Error scraping {stat_name}: {e}")
             return {}
 
+    def scrape_standings(self) -> Dict[str, Dict]:
+        """
+        Scrape NFL standings page for W-L records
+
+        Returns:
+            Dict mapping team name -> {'wins': int, 'losses': int}
+        """
+        try:
+            import re
+            url = f"{self.BASE_URL}/standings/"
+            logger.info(f"Scraping standings from {url}")
+
+            response = self.session.get(url, timeout=10)
+            response.raise_for_status()
+
+            soup = BeautifulSoup(response.content, 'html.parser')
+
+            # Find ALL standings tables (class 'tr-table') - one per division
+            tables = soup.find_all('table', {'class': 'tr-table'})
+            if not tables:
+                logger.error("Could not find standings tables")
+                return {}
+
+            records = {}
+
+            # Parse each table (AFC East, AFC West, NFC East, etc.)
+            for table in tables:
+                tbody = table.find('tbody') if table.find('tbody') else table
+                for row in tbody.find_all('tr'):
+                    cols = row.find_all('td')
+                    if len(cols) < 2:
+                        continue
+
+                    # Get all text from the row to find team name and record
+                    row_text = ' '.join([c.text.strip() for c in cols])
+
+                    # Skip division headers
+                    if any(div in row_text for div in ['AFC East', 'AFC West', 'AFC North', 'AFC South', 'NFC East', 'NFC West', 'NFC North', 'NFC South']):
+                        continue
+
+                    # Extract team name (first column)
+                    team_name = cols[0].text.strip()
+                    if not team_name:
+                        continue
+
+                    # Find W-L record in format "8-2" or "10-1" anywhere in the row
+                    record_match = re.search(r'(\d+)-(\d+)', row_text)
+                    if record_match:
+                        wins = int(record_match.group(1))
+                        losses = int(record_match.group(2))
+                        records[team_name] = {'wins': wins, 'losses': losses}
+
+            logger.info(f"Scraped records for {len(records)} teams from standings")
+            return records
+
+        except Exception as e:
+            logger.error(f"Error scraping standings: {e}")
+            return {}
+
     def fetch_all_team_stats(self, force_refresh: bool = False) -> Dict[str, Dict]:
         """
         Fetch all NFL team statistics from TeamRankings
@@ -219,10 +278,10 @@ class TeamRankingsNFLScraper:
         turnovers_gained = self.scrape_stat_page('takeaways-per-game')
         time.sleep(1)
 
-        wins = self.scrape_stat_page('wins')
-        time.sleep(1)
-
-        losses = self.scrape_stat_page('losses')
+        # Get W-L records from standings page (wins/losses pages don't exist)
+        records = self.scrape_standings()
+        wins = {team: record['wins'] for team, record in records.items()}
+        losses = {team: record['losses'] for team, record in records.items()}
         time.sleep(1)
 
         # NEW: Advanced stats for ML

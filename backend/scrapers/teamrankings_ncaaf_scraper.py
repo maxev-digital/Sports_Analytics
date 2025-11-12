@@ -125,6 +125,68 @@ class TeamRankingsNCAAFScraper:
             logger.error(f"Error scraping {stat_name}: {e}")
             return {}
 
+    def scrape_standings(self) -> Dict[str, Dict]:
+        """
+        Scrape NCAAF standings page for W-L records
+
+        Returns:
+            Dict mapping team name -> {'wins': int, 'losses': int}
+        """
+        try:
+            import re
+            url = f"{self.BASE_URL}/standings/"
+            logger.info(f"Scraping standings from {url}")
+
+            response = self.session.get(url, timeout=10)
+            response.raise_for_status()
+
+            soup = BeautifulSoup(response.content, 'html.parser')
+
+            # Find ALL standings tables (class 'tr-table') - one per conference
+            tables = soup.find_all('table', {'class': 'tr-table'})
+            if not tables:
+                logger.error("Could not find standings tables")
+                return {}
+
+            records = {}
+
+            # Parse each table (conferences)
+            for table in tables:
+                tbody = table.find('tbody') if table.find('tbody') else table
+                for row in tbody.find_all('tr'):
+                    cols = row.find_all('td')
+                    if len(cols) < 2:
+                        continue
+
+                    # Get all text from the row
+                    row_text = ' '.join([c.text.strip() for c in cols])
+
+                    # Skip conference headers
+                    if 'Conference' in row_text:
+                        continue
+
+                    # Extract team name (first column) - may include record like "Ohio St (9-0)"
+                    team_name_full = cols[0].text.strip()
+                    if not team_name_full:
+                        continue
+
+                    # Remove record from team name if present: "Ohio St (9-0)" -> "Ohio St"
+                    team_name = re.sub(r'\s*\(\d+-\d+\)\s*$', '', team_name_full).strip()
+
+                    # Find W-L record in format "9-0" or "10-2" anywhere in the row
+                    record_match = re.search(r'(\d+)-(\d+)', row_text)
+                    if record_match:
+                        wins = int(record_match.group(1))
+                        losses = int(record_match.group(2))
+                        records[team_name] = {'wins': wins, 'losses': losses}
+
+            logger.info(f"Scraped records for {len(records)} teams from standings")
+            return records
+
+        except Exception as e:
+            logger.error(f"Error scraping standings: {e}")
+            return {}
+
     def fetch_all_team_stats(self, force_refresh: bool = False) -> Dict[str, Dict]:
         """
         Fetch all NCAAF team statistics from TeamRankings
@@ -189,21 +251,29 @@ class TeamRankingsNCAAFScraper:
         takeaways = self.scrape_stat_page('takeaways-per-game')
         time.sleep(1)
 
+        # Get W-L records from standings page
+        records = self.scrape_standings()
+
         # Combine all stats
         all_teams = set(ppg.keys()) | set(opp_ppg.keys()) | set(point_diff.keys())
 
         team_stats = {}
         for team in all_teams:
+            # Get W-L record for this team
+            w = records.get(team, {}).get('wins', 0)
+            l = records.get(team, {}).get('losses', 0)
+            games_played = w + l
+
             team_stats[team] = {
                 'team_name': team,
                 # Basic stats
                 'pts_per_game': ppg.get(team, 25.0),
                 'pts_allowed': opp_ppg.get(team, 25.0),
                 'point_diff': point_diff.get(team, 0.0),
-                'wins': 0,  # Would need separate scraping
-                'losses': 0,
-                'games_played': 0,
-                'win_pct': 0.0,
+                'wins': int(w),
+                'losses': int(l),
+                'games_played': int(games_played),
+                'win_pct': round(w / games_played, 3) if games_played > 0 else 0.0,
                 'yards_per_game': yards_per_game.get(team, 350.0),
                 'yards_allowed': yards_allowed.get(team, 350.0),
                 # Advanced stats (NEW for ML)
