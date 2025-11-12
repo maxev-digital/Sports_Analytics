@@ -147,61 +147,79 @@ export function AlertsPerformance() {
     );
   }
 
+  // Format date to MM/DD/YYYY
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
+  };
+
+  // Calculate overall win/loss stats for current page
+  const completedBets = predictions.filter(p => p.result !== 'UNKNOWN');
+  const wins = predictions.filter(p => p.result === 'WIN').length;
+  const losses = predictions.filter(p => p.result === 'LOSS').length;
+  const winRate = completedBets.length > 0 ? ((wins / completedBets.length) * 100).toFixed(1) : '0.0';
+  const totalPL = predictions.reduce((sum, p) => sum + p.profit_loss, 0);
+
   return (
-    <div className="bg-slate-900 border-2 border-slate-700 rounded-lg p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl font-bold text-white">📊 Alerts Performance</h2>
-        <div className="text-sm text-slate-400">Last 25 Results</div>
+    <div className="bg-slate-900 border-4 border-slate-700 rounded-lg p-8">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-4xl font-bold text-white">📊 Alerts Performance</h2>
+        <div className="text-right">
+          <div className="text-2xl font-bold text-white">{wins}W - {losses}L</div>
+          <div className={`text-xl font-bold ${winRate >= '55' ? 'text-green-400' : winRate >= '50' ? 'text-yellow-400' : 'text-red-400'}`}>
+            {winRate}% Win Rate
+          </div>
+        </div>
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-white text-sm">
+        <table className="w-full text-white">
           <thead>
-            <tr className="border-b-2 border-slate-600">
-              <th className="text-left py-3 px-2">Date</th>
-              <th className="text-left py-3 px-2">Sport</th>
-              <th className="text-left py-3 px-2">Game</th>
-              <th className="text-left py-3 px-2">Type</th>
-              <th className="text-left py-3 px-2">Pick</th>
-              <th className="text-center py-3 px-2">Line</th>
-              <th className="text-center py-3 px-2">Conf</th>
-              <th className="text-right py-3 px-2">Score</th>
-              <th className="text-center py-3 px-2">Result</th>
-              <th className="text-right py-3 px-2">P/L</th>
+            <tr className="border-b-4 border-slate-600">
+              <th className="text-left py-4 px-3 text-base font-bold">Date</th>
+              <th className="text-left py-4 px-3 text-base font-bold">Sport</th>
+              <th className="text-left py-4 px-3 text-base font-bold">Game</th>
+              <th className="text-left py-4 px-3 text-base font-bold">Type</th>
+              <th className="text-left py-4 px-3 text-base font-bold">Pick</th>
+              <th className="text-center py-4 px-3 text-base font-bold">Line</th>
+              <th className="text-center py-4 px-3 text-base font-bold">Conf</th>
+              <th className="text-right py-4 px-3 text-base font-bold">Score</th>
+              <th className="text-center py-4 px-3 text-base font-bold">Result</th>
+              <th className="text-right py-4 px-3 text-base font-bold">P/L</th>
             </tr>
           </thead>
           <tbody>
             {predictions.map((pred) => (
               <tr key={pred.prediction_id} className="border-b border-slate-700 hover:bg-slate-800/50">
-                <td className="py-3 px-2 whitespace-nowrap text-slate-300">
-                  {pred.game_date}
+                <td className="py-4 px-3 whitespace-nowrap text-slate-300 text-base">
+                  {formatDate(pred.game_date)}
                 </td>
-                <td className="py-3 px-2">
-                  <span className={`${getSportBadge(pred.sport)} text-white text-xs px-2 py-1 rounded font-bold`}>
+                <td className="py-4 px-3">
+                  <span className={`${getSportBadge(pred.sport)} text-white text-sm px-3 py-1 rounded font-bold`}>
                     {pred.sport}
                   </span>
                 </td>
-                <td className="py-3 px-2">
-                  <div className="text-xs">
-                    <div className="font-semibold">{pred.away_team} @</div>
-                    <div className="font-semibold">{pred.home_team}</div>
+                <td className="py-4 px-3">
+                  <div className="text-sm">
+                    <div className="font-bold">{pred.away_team} @</div>
+                    <div className="font-bold">{pred.home_team}</div>
                   </div>
                 </td>
-                <td className="py-3 px-2">
-                  <span className="bg-slate-700 text-slate-200 text-xs px-2 py-1 rounded">
+                <td className="py-4 px-3">
+                  <span className="bg-slate-700 text-slate-200 text-sm px-3 py-1 rounded font-bold">
                     {pred.bet_type}
                   </span>
                 </td>
-                <td className="py-3 px-2 font-bold text-white text-xs">
+                <td className="py-4 px-3 font-bold text-white text-sm">
                   {getTeamForRecommendation(pred.recommendation, pred.home_team, pred.away_team, pred.bet_type)}
                 </td>
-                <td className="text-center py-3 px-2">
-                  <span className="text-yellow-400 font-bold text-xs">
+                <td className="text-center py-4 px-3">
+                  <span className="text-yellow-400 font-bold text-base">
                     {formatBettingLine(pred.bet_type, pred.market_total)}
                   </span>
                 </td>
-                <td className="text-center py-3 px-2">
-                  <span className={`px-2 py-1 rounded text-xs font-bold ${
+                <td className="text-center py-4 px-3">
+                  <span className={`px-3 py-1 rounded text-sm font-bold ${
                     pred.confidence === 'HIGH' ? 'bg-green-700 text-white' :
                     pred.confidence === 'MEDIUM' ? 'bg-yellow-700 text-white' :
                     'bg-slate-600 text-slate-300'
@@ -209,9 +227,9 @@ export function AlertsPerformance() {
                     {pred.confidence}
                   </span>
                 </td>
-                <td className="text-right py-3 px-2 text-xs text-slate-300">
+                <td className="text-right py-4 px-3 text-base text-slate-300">
                   {pred.away_score !== null && pred.home_score !== null ? (
-                    <div>
+                    <div className="font-bold">
                       <div>{pred.away_score}</div>
                       <div>{pred.home_score}</div>
                     </div>
@@ -219,12 +237,12 @@ export function AlertsPerformance() {
                     <span className="text-slate-500">-</span>
                   )}
                 </td>
-                <td className="text-center py-3 px-2">
-                  <span className={`${getResultBadge(pred.result)} text-xs px-2 py-1 rounded font-bold`}>
+                <td className="text-center py-4 px-3">
+                  <span className={`${getResultBadge(pred.result)} text-sm px-3 py-2 rounded font-bold`}>
                     {pred.result}
                   </span>
                 </td>
-                <td className={`text-right py-3 px-2 font-bold ${
+                <td className={`text-right py-4 px-3 font-bold text-lg ${
                   pred.profit_loss >= 0 ? 'text-green-400' : 'text-red-400'
                 }`}>
                   {formatCurrency(pred.profit_loss)}
@@ -236,40 +254,35 @@ export function AlertsPerformance() {
       </div>
 
       {/* Pagination Controls */}
-      <div className="mt-4 pt-4 border-t border-slate-700">
-        <div className="flex items-center justify-between text-sm mb-4">
-          <div className="text-slate-400">
+      <div className="mt-6 pt-6 border-t-4 border-slate-700">
+        <div className="flex items-center justify-between text-base mb-6">
+          <div className="text-slate-400 text-lg font-bold">
             Showing page {currentPage} of {totalPages} ({predictions.length} results)
           </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-slate-400">Total P/L:</span>
-              <span className={`font-bold ${
-                predictions.reduce((sum, p) => sum + p.profit_loss, 0) >= 0
-                  ? 'text-green-400'
-                  : 'text-red-400'
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-3">
+              <span className="text-slate-400 text-lg">Page P/L:</span>
+              <span className={`font-bold text-2xl ${
+                totalPL >= 0 ? 'text-green-400' : 'text-red-400'
               }`}>
-                {formatCurrency(predictions.reduce((sum, p) => sum + p.profit_loss, 0))}
+                {formatCurrency(totalPL)}
               </span>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-slate-400">Win Rate:</span>
-              <span className="font-bold text-white">
-                {predictions.filter(p => p.result !== 'UNKNOWN').length > 0
-                  ? ((predictions.filter(p => p.result === 'WIN').length /
-                      predictions.filter(p => p.result !== 'UNKNOWN').length) * 100).toFixed(1)
-                  : '0.0'}%
+            <div className="flex items-center gap-3">
+              <span className="text-slate-400 text-lg">Page Record:</span>
+              <span className="font-bold text-white text-2xl">
+                {wins}W - {losses}L ({winRate}%)
               </span>
             </div>
           </div>
         </div>
 
         {/* Pagination Buttons */}
-        <div className="flex items-center justify-center gap-2">
+        <div className="flex items-center justify-center gap-3">
           <button
             onClick={() => setCurrentPage(1)}
             disabled={currentPage === 1}
-            className={`px-3 py-2 border ${
+            className={`px-5 py-3 border-2 text-base font-bold ${
               currentPage === 1
                 ? 'bg-slate-800 text-slate-600 border-slate-700 cursor-not-allowed'
                 : 'bg-slate-900 text-white border-slate-600 hover:border-blue-500'
@@ -280,7 +293,7 @@ export function AlertsPerformance() {
           <button
             onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
             disabled={currentPage === 1}
-            className={`px-3 py-2 border ${
+            className={`px-5 py-3 border-2 text-base font-bold ${
               currentPage === 1
                 ? 'bg-slate-800 text-slate-600 border-slate-700 cursor-not-allowed'
                 : 'bg-slate-900 text-white border-slate-600 hover:border-blue-500'
@@ -306,7 +319,7 @@ export function AlertsPerformance() {
               <button
                 key={pageNum}
                 onClick={() => setCurrentPage(pageNum)}
-                className={`px-3 py-2 border font-bold ${
+                className={`px-5 py-3 border-2 text-base font-bold ${
                   currentPage === pageNum
                     ? 'bg-blue-600 text-white border-blue-500'
                     : 'bg-slate-900 text-white border-slate-600 hover:border-blue-500'
@@ -320,7 +333,7 @@ export function AlertsPerformance() {
           <button
             onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
             disabled={currentPage === totalPages}
-            className={`px-3 py-2 border ${
+            className={`px-5 py-3 border-2 text-base font-bold ${
               currentPage === totalPages
                 ? 'bg-slate-800 text-slate-600 border-slate-700 cursor-not-allowed'
                 : 'bg-slate-900 text-white border-slate-600 hover:border-blue-500'
@@ -331,7 +344,7 @@ export function AlertsPerformance() {
           <button
             onClick={() => setCurrentPage(totalPages)}
             disabled={currentPage === totalPages}
-            className={`px-3 py-2 border ${
+            className={`px-5 py-3 border-2 text-base font-bold ${
               currentPage === totalPages
                 ? 'bg-slate-800 text-slate-600 border-slate-700 cursor-not-allowed'
                 : 'bg-slate-900 text-white border-slate-600 hover:border-blue-500'

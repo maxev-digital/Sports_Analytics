@@ -315,6 +315,25 @@ async def get_recent_predictions(
         df['game_date'] = pd.to_datetime(df['game_date'])
         df = df.sort_values('game_date', ascending=False)
 
+        # Remove duplicates - keep ONLY ONE bet per game (not per bet type)
+        # Prefer: 1) Ensemble, 2) HIGH confidence, 3) TOTALS > SPREADS > MONEYLINE
+        confidence_order = {'HIGH': 4, 'MEDIUM': 3, 'LOW': 2, 'NONE': 1}
+        bet_type_order = {'totals': 3, 'spreads': 2, 'moneyline': 1, 'unknown': 0}
+
+        df['confidence_rank'] = df['confidence'].map(confidence_order).fillna(0)
+        df['is_ensemble'] = df['prediction_id'].str.contains('ensemble', case=False).astype(int)
+        df['bet_type_rank'] = df['bet_type_detected'].map(bet_type_order).fillna(0)
+
+        # Create game identifier WITHOUT bet type (one bet per game total)
+        df['game_key'] = df['game_date'].astype(str) + '_' + df['away_team'] + '_' + df['home_team']
+
+        # Sort by: ensemble > confidence > bet type preference > keep first
+        df = df.sort_values(['game_key', 'is_ensemble', 'confidence_rank', 'bet_type_rank'], ascending=[True, False, False, False])
+        df = df.drop_duplicates(subset='game_key', keep='first')
+
+        # Re-sort by date after deduplication
+        df = df.sort_values('game_date', ascending=False)
+
         # Limit results
         df = df.head(limit)
 
