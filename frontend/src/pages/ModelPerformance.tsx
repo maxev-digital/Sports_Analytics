@@ -359,9 +359,192 @@ export function ModelPerformance() {
           </div>
         )}
 
+        {/* Understanding Section */}
+        <div className="bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-blue-500 rounded-lg p-8 mb-8">
+          <h3 className="text-3xl font-bold text-slate-100 mb-6">📚 Understanding Model Performance</h3>
+
+          <div className="space-y-6 text-slate-300">
+            {/* What You're Looking At */}
+            <div>
+              <h4 className="text-xl font-semibold text-blue-400 mb-3">What You're Looking At</h4>
+              <p className="leading-relaxed">
+                This page tracks the real-world performance of our machine learning (ML) prediction models across all sports.
+                Every prediction made by our system is logged and compared against actual game outcomes to measure accuracy,
+                profitability, and improvement over time. Think of this as the "report card" for our AI betting models.
+              </p>
+            </div>
+
+            {/* Key Metrics */}
+            <div>
+              <h4 className="text-xl font-semibold text-blue-400 mb-3">Key Metrics Explained</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-800/50 rounded-lg p-4">
+                <div>
+                  <p className="font-semibold text-green-400 mb-1">Win Rate</p>
+                  <p className="text-sm">Percentage of predictions that won. Above 52.4% breaks even at standard -110 odds (accounting for the 10% sportsbook commission).</p>
+                </div>
+                <div>
+                  <p className="font-semibold text-green-400 mb-1">ROI (Return on Investment)</p>
+                  <p className="text-sm">Profit per dollar wagered. +5% ROI means you profit $5 for every $100 bet. This accounts for wins, losses, and juice.</p>
+                </div>
+                <div>
+                  <p className="font-semibold text-green-400 mb-1">Edge</p>
+                  <p className="text-sm">How far our prediction differs from the betting line (in points or probability). Larger edges suggest more confident disagreements with the market.</p>
+                </div>
+                <div>
+                  <p className="font-semibold text-green-400 mb-1">Units</p>
+                  <p className="text-sm">Standard betting unit. If you bet $100 per game, 1 unit = $100. Tracks total profit/loss across all predictions.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* The Models */}
+            <div>
+              <h4 className="text-xl font-semibold text-blue-400 mb-3">The Machine Learning Models</h4>
+              <p className="leading-relaxed mb-4">
+                We use 6 different types of AI models, each with unique strengths. Every prediction gets made by all models,
+                and you can see which perform best for different sports and situations:
+              </p>
+              <div className="space-y-3 bg-slate-800/50 rounded-lg p-4">
+                <div className="border-l-4 border-purple-500 pl-4">
+                  <p className="font-semibold text-purple-400">🎯 Ensemble (Meta-Model)</p>
+                  <p className="text-sm mt-1">
+                    Combines predictions from all 4 base models using weighted averaging. Like having a panel of experts vote
+                    on each game. Usually the most reliable because it averages out individual model biases.
+                  </p>
+                </div>
+                <div className="border-l-4 border-blue-500 pl-4">
+                  <p className="font-semibold text-blue-400">⚡ XGBoost (Gradient Boosting)</p>
+                  <p className="text-sm mt-1">
+                    Builds thousands of small decision trees that learn from each other's mistakes. Excels at finding complex,
+                    non-linear patterns in team stats. Best for outlier games with unusual team dynamics.
+                  </p>
+                </div>
+                <div className="border-l-4 border-green-500 pl-4">
+                  <p className="font-semibold text-green-400">🌲 Random Forest</p>
+                  <p className="text-sm mt-1">
+                    Creates hundreds of independent decision trees and averages their predictions. Very stable and resistant
+                    to overfitting. Performs consistently across all game scenarios.
+                  </p>
+                </div>
+                <div className="border-l-4 border-yellow-500 pl-4">
+                  <p className="font-semibold text-yellow-400">🚀 LightGBM (Fast Gradient Boosting)</p>
+                  <p className="text-sm mt-1">
+                    Optimized version of gradient boosting designed for speed. Processes live game data extremely fast,
+                    making it ideal for in-game betting opportunities and real-time adjustments.
+                  </p>
+                </div>
+                <div className="border-l-4 border-orange-500 pl-4">
+                  <p className="font-semibold text-orange-400">📈 Linear Regression</p>
+                  <p className="text-sm mt-1">
+                    Uses linear mathematical relationships between features (like pace, offensive rating, defensive rating).
+                    Great for totals and spreads where relationships are more straightforward. Highly interpretable - you
+                    can see exactly how each stat influences the prediction.
+                  </p>
+                </div>
+                <div className="border-l-4 border-red-500 pl-4">
+                  <p className="font-semibold text-red-400">🎲 Logistic Regression</p>
+                  <p className="text-sm mt-1">
+                    Predicts the probability of binary outcomes (win/loss). Used exclusively for moneyline bets.
+                    Unlike linear regression (which predicts numbers), logistic regression outputs a percentage
+                    chance of each team winning, then converts that to recommended picks.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Confidence Levels */}
+            <div>
+              <h4 className="text-xl font-semibold text-blue-400 mb-3">Confidence Levels</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-green-900/30 border border-green-600 rounded-lg p-4">
+                  <p className="font-bold text-green-400 mb-2">HIGH Confidence</p>
+                  <p className="text-sm">
+                    Our models have a large edge (5+ points or 8%+ probability advantage). These are rare but represent
+                    the strongest disagreements with market pricing.
+                  </p>
+                </div>
+                <div className="bg-yellow-900/30 border border-yellow-600 rounded-lg p-4">
+                  <p className="font-bold text-yellow-400 mb-2">MEDIUM Confidence</p>
+                  <p className="text-sm">
+                    Moderate edges (3-5 points or 5-8% probability). Most predictions fall here. Historically show the
+                    best risk-adjusted returns.
+                  </p>
+                </div>
+                <div className="bg-red-900/30 border border-red-600 rounded-lg p-4">
+                  <p className="font-bold text-red-400 mb-2">LOW Confidence</p>
+                  <p className="text-sm">
+                    Small edges (2-3 points or 3-5% probability). More frequent but lower conviction. Often used for
+                    diversification or when no stronger plays are available.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* How It Learns */}
+            <div>
+              <h4 className="text-xl font-semibold text-blue-400 mb-3">How the System Learns & Improves</h4>
+              <p className="leading-relaxed mb-4">
+                Our system is fully autonomous and self-improving:
+              </p>
+              <ul className="list-disc list-inside space-y-2 ml-4">
+                <li><strong className="text-blue-300">Daily:</strong> Makes predictions at 9-11am CST for upcoming games across all 5 sports</li>
+                <li><strong className="text-blue-300">After Games:</strong> Records actual outcomes and calculates prediction accuracy</li>
+                <li><strong className="text-blue-300">Weekly (Mondays):</strong> Retrains all models with the previous week's results</li>
+                <li><strong className="text-blue-300">Continuously:</strong> Adjusts confidence thresholds and feature weights based on what's working</li>
+              </ul>
+              <div className="bg-blue-900/30 border border-blue-600 rounded-lg p-4 mt-4">
+                <p className="text-sm">
+                  <strong className="text-blue-300">💡 Important:</strong> Short-term performance can vary due to variance (luck).
+                  Look at 50+ game samples and monthly trends to evaluate true model skill. A model hitting 49% over 30 games
+                  might be 53% over 300 games.
+                </p>
+              </div>
+            </div>
+
+            {/* What to Look For */}
+            <div>
+              <h4 className="text-xl font-semibold text-blue-400 mb-3">What to Look For</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="font-semibold text-green-400 mb-2">✅ Good Signs:</p>
+                  <ul className="list-disc list-inside space-y-1 text-sm ml-2">
+                    <li>Win rate above 52.4% (breaks even)</li>
+                    <li>Positive ROI over 50+ predictions</li>
+                    <li>MEDIUM confidence outperforming HIGH</li>
+                    <li>Improving trend over time (charts trending up)</li>
+                    <li>Specific models excelling in certain sports</li>
+                  </ul>
+                </div>
+                <div>
+                  <p className="font-semibold text-red-400 mb-2">⚠️ Red Flags:</p>
+                  <ul className="list-disc list-inside space-y-1 text-sm ml-2">
+                    <li>Declining win rate over several weeks</li>
+                    <li>Negative ROI across all confidence levels</li>
+                    <li>HIGH confidence performing worse than LOW</li>
+                    <li>Large discrepancy between models (suggests overfitting)</li>
+                    <li>Consistent underperformance in specific sports</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Line */}
+            <div className="bg-gradient-to-r from-blue-900/40 to-purple-900/40 border-2 border-blue-500 rounded-lg p-4 mt-6">
+              <p className="text-lg font-semibold text-blue-300 mb-2">The Bottom Line</p>
+              <p className="text-sm leading-relaxed">
+                This page provides complete transparency into how our AI models are performing in the real world.
+                No cherry-picking, no hiding losses - every prediction is tracked and displayed. Use these metrics
+                to decide which models, sports, and confidence levels align with your betting strategy. The models
+                improve over time as they learn from mistakes, so what you see today may not reflect performance
+                next month. Trust the process, follow the data, and manage your bankroll wisely.
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Model Information */}
         {modelsInfo && modelsInfo.models && (
-          <div className="bg-slate-900 border-2 border-slate-700 rounded-lg p-6">
+          <div className="bg-slate-900 border-2 border-slate-700 rounded-lg p-6 mb-8">
             <h3 className="text-2xl font-bold text-slate-100 mb-6">Model Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {Object.entries(modelsInfo.models.nba).map(([key, model]: [string, any]) => (
