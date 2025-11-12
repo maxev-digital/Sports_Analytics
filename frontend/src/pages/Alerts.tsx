@@ -497,38 +497,38 @@ export function Alerts() {
 
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            <div className="bg-slate-900 border-2 border-orange-700 p-6 hover:border-orange-500 transition-all">
-              <div className="text-base text-white font-bold tracking-wide mb-1">🔥 NBA COMEBACKS</div>
-              <div className="text-3xl font-bold text-white">{favoriteComebackCount}</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-2">
+            <div className="bg-gradient-to-br from-orange-900/50 to-orange-800/30 border border-orange-700 rounded-lg p-1.5 transition-all hover:border-orange-500">
+              <div className="text-xs text-orange-400 font-semibold mb-0">🔥 NBA COMEBACKS</div>
+              <div className="text-3xl font-bold text-white leading-tight">{favoriteComebackCount}</div>
             </div>
-            <div className="bg-slate-900 border-2 border-red-700 p-6 hover:border-red-500 transition-all">
-              <div className="text-base text-white font-bold tracking-wide mb-1">🚨 NHL GOALIE PULLS</div>
-              <div className="text-3xl font-bold text-white">{goaliePullCount}</div>
+            <div className="bg-gradient-to-br from-red-900/50 to-red-800/30 border border-red-700 rounded-lg p-1.5 transition-all hover:border-red-500">
+              <div className="text-xs text-red-400 font-semibold mb-0">🚨 NHL GOALIE PULLS</div>
+              <div className="text-3xl font-bold text-white leading-tight">{goaliePullCount}</div>
             </div>
-            <div className="bg-slate-900 border-2 border-purple-600 p-6 hover:border-purple-400 transition-all">
-              <div className="text-base text-white font-bold tracking-wide mb-1">⏰ NBA HALFTIME 2H</div>
-              <div className="text-3xl font-bold text-white">{halftimeCount}</div>
+            <div className="bg-gradient-to-br from-purple-900/50 to-purple-800/30 border border-purple-700 rounded-lg p-1.5 transition-all hover:border-purple-500">
+              <div className="text-xs text-purple-400 font-semibold mb-0">⏰ NBA HALFTIME 2H</div>
+              <div className="text-3xl font-bold text-white leading-tight">{halftimeCount}</div>
             </div>
-            <div className="bg-slate-900 border-2 border-orange-700 p-6 hover:border-orange-500 transition-all">
-              <div className="text-base text-white font-bold tracking-wide mb-1">🔥 MOMENTUM SURGES</div>
-              <div className="text-3xl font-bold text-white">{momentumCount}</div>
+            <div className="bg-gradient-to-br from-orange-900/50 to-orange-800/30 border border-orange-700 rounded-lg p-1.5 transition-all hover:border-orange-500">
+              <div className="text-xs text-orange-400 font-semibold mb-0">🔥 MOMENTUM SURGES</div>
+              <div className="text-3xl font-bold text-white leading-tight">{momentumCount}</div>
             </div>
-            <div className="bg-slate-900 border-2 border-green-700 p-6 hover:border-green-500 transition-all">
-              <div className="text-base text-white font-bold tracking-wide mb-1">ARBITRAGE OPPORTUNITIES</div>
-              <div className="text-3xl font-bold text-white">{alertsData?.arbitrage.count || 0}</div>
+            <div className="bg-gradient-to-br from-green-900/50 to-green-800/30 border border-green-700 rounded-lg p-1.5 transition-all hover:border-green-500">
+              <div className="text-xs text-green-400 font-semibold mb-0">ARBITRAGE</div>
+              <div className="text-3xl font-bold text-white leading-tight">{alertsData?.arbitrage.count || 0}</div>
             </div>
-            <div className="bg-slate-900 border-2 border-blue-500 p-6 hover:border-blue-400 transition-all">
-              <div className="text-base text-white font-bold tracking-wide mb-1">STEAM MOVES</div>
-              <div className="text-3xl font-bold text-white">{alertsData?.steam_moves.count || 0}</div>
+            <div className="bg-gradient-to-br from-blue-900/50 to-blue-800/30 border border-blue-700 rounded-lg p-1.5 transition-all hover:border-blue-500">
+              <div className="text-xs text-blue-400 font-semibold mb-0">STEAM MOVES</div>
+              <div className="text-3xl font-bold text-white leading-tight">{alertsData?.steam_moves.count || 0}</div>
             </div>
-            <div className="bg-slate-900 border-2 border-slate-700 p-6 hover:border-slate-500 transition-all">
-              <div className="text-base text-white font-bold tracking-wide mb-1">MIDDLES</div>
-              <div className="text-3xl font-bold text-white">{alertsData?.middles.count || 0}</div>
+            <div className="bg-gradient-to-br from-slate-900/50 to-slate-800/30 border border-slate-700 rounded-lg p-1.5 transition-all hover:border-slate-500">
+              <div className="text-xs text-slate-400 font-semibold mb-0">MIDDLES</div>
+              <div className="text-3xl font-bold text-white leading-tight">{alertsData?.middles.count || 0}</div>
             </div>
-            <div className="bg-slate-900 border-2 border-purple-700 p-6 hover:border-purple-500 transition-all">
-              <div className="text-base text-white font-bold tracking-wide mb-1">💰 SHARP MONEY</div>
-              <div className="text-3xl font-bold text-white">{alertsData?.sharp_money.count || 0}</div>
+            <div className="bg-gradient-to-br from-purple-900/50 to-purple-800/30 border border-purple-700 rounded-lg p-1.5 transition-all hover:border-purple-500">
+              <div className="text-xs text-purple-400 font-semibold mb-0">💰 SHARP MONEY</div>
+              <div className="text-3xl font-bold text-white leading-tight">{alertsData?.sharp_money.count || 0}</div>
             </div>
           </div>
         </div>
