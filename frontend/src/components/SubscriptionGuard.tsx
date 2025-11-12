@@ -33,15 +33,16 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
       return;
     }
 
-    if (subscriptionTier === 'free' || subscriptionTier === 'trial') {
+    // Only redirect if user has NO subscription (free tier only, not free_trial)
+    if (subscriptionTier === 'free') {
       console.log(`User ${username} has tier ${subscriptionTier} - redirecting to pricing`);
       navigate('/pricing', { replace: true });
     }
   }, [subscriptionTier, navigate, username, role, location.pathname]);
 
-  // Allow access for admins OR paid users OR development mode
+  // Allow access for admins OR paid users OR trial users OR development mode
   const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-  if (isDev || role === 'admin' || (subscriptionTier !== 'free' && subscriptionTier !== 'trial')) {
+  if (isDev || role === 'admin' || subscriptionTier !== 'free') {
     return <>{children}</>;
   }
 
