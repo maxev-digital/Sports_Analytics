@@ -42,12 +42,14 @@ import { AdminDashboard } from './pages/AdminDashboard';
 import { MyFeedback } from './pages/MyFeedback';
 import { MaxEvEdges } from './pages/MaxEvEdges';
 import { ModelPerformance } from './pages/ModelPerformance';
+import Performance from './pages/Performance';
 import GoaliePull from './pages/GoaliePull';
 import { EdgeScannerAlertMonitor } from './components/EdgeScannerAlertMonitor';
 import { GlobalAlertMonitor } from './components/GlobalAlertMonitor';
 import { isElectron } from './utils/isElectron';
 import { MLAdvantage } from './pages/MLAdvantage';
 import { EvidenceArchitecture } from './pages/EvidenceArchitecture';
+import { Partners } from './pages/Partners';
 
 function AppContent() {
   const location = useLocation();
@@ -123,6 +125,16 @@ function AppContent() {
                 <Navigation />
                 <Pricing />
                 <Footer />
+              </div>
+            }
+          />
+
+          {/* Partners landing page - public for X ads */}
+          <Route
+            path="/partners"
+            element={
+              <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col">
+                <Partners />
               </div>
             }
           />
@@ -234,6 +246,7 @@ function AppContent() {
                       <Route path="/odds" element={<Odds />} />
                       <Route path="/max-ev-edges" element={<MaxEvEdges />} />
                       <Route path="/model-performance" element={<ModelPerformance />} />
+                      <Route path="/performance" element={<Performance />} />
                       <Route path="/goalie-pull" element={<GoaliePull />} />
                       <Route path="/handicapper-picks" element={<HandicapperPicks />} />
                       <Route path="/settings" element={<Settings />} />

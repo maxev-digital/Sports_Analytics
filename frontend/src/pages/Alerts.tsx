@@ -9,7 +9,7 @@ import { WeatherImpactAlerts } from '../components/WeatherImpactAlert';
 import { QuarterReversalAlerts } from '../components/QuarterReversalAlert';
 import { InjuryPropsAlerts } from '../components/InjuryPropsAlert';
 import { GenericStrategyAlert } from '../components/GenericStrategyAlert';
-import { BetTypePerformance } from '../components/BetTypePerformance';
+import { AlertsPerformance } from '../components/AlertsPerformance';
 import { BetAlertTestPanel } from '../components/BetAlertTestPanel';
 import { getApiUrl } from '../config';
 import { useSoundEffect } from '../hooks/useSoundEffect';
@@ -1032,9 +1032,9 @@ export function Alerts() {
           />
         ))}
 
-        {/* User Bet Type Performance Section */}
+        {/* Alerts Performance Section */}
         <div className="mt-8">
-          <BetTypePerformance sport="ALL" />
+          <AlertsPerformance />
         </div>
       </div>
     </div>
