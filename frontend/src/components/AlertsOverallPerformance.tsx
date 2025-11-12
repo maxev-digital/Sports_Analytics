@@ -13,14 +13,43 @@ interface OverallStats {
 export function AlertsOverallPerformance() {
   const [stats, setStats] = useState<OverallStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedBetType, setSelectedBetType] = useState<string>('all');
+  const [selectedSport, setSelectedSport] = useState<string>('all');
+
+  const betTypes = [
+    { key: 'all', name: 'ALL', emoji: '🎯' },
+    { key: 'totals', name: 'TOTALS', emoji: '📊' },
+    { key: 'spreads', name: 'SPREADS', emoji: '📈' },
+    { key: 'moneyline', name: 'MONEYLINE', emoji: '💰' },
+  ];
+
+  const sports = [
+    { key: 'all', name: 'ALL', emoji: '🎯' },
+    { key: 'NBA', name: 'NBA', emoji: '🏀' },
+    { key: 'NFL', name: 'NFL', emoji: '🏈' },
+    { key: 'NHL', name: 'NHL', emoji: '🏒' },
+    { key: 'NCAAB', name: 'NCAAB', emoji: '🏀' },
+    { key: 'NCAAF', name: 'NCAAF', emoji: '🏈' },
+  ];
 
   useEffect(() => {
     fetchOverallStats();
-  }, []);
+  }, [selectedBetType, selectedSport]);
 
   const fetchOverallStats = async () => {
     try {
-      const response = await fetch(getApiUrl('performance/summary?days=365'));
+      setLoading(true);
+      let url = 'performance/summary?days=365';
+
+      // Add filters if not 'all'
+      if (selectedBetType !== 'all') {
+        url += `&bet_type=${selectedBetType}`;
+      }
+      if (selectedSport !== 'all') {
+        url += `&sport=${selectedSport}`;
+      }
+
+      const response = await fetch(getApiUrl(url));
       if (response.ok) {
         const data = await response.json();
 
@@ -44,8 +73,8 @@ export function AlertsOverallPerformance() {
 
   if (loading) {
     return (
-      <div className="bg-slate-900 border-4 border-slate-700 rounded-lg p-8 mb-8">
-        <div className="text-white text-center">Loading overall performance...</div>
+      <div className="bg-slate-900 border border-slate-700 rounded-lg p-4 mb-3">
+        <div className="text-white text-center text-sm">Loading overall performance...</div>
       </div>
     );
   }
@@ -57,6 +86,49 @@ export function AlertsOverallPerformance() {
   return (
     <div className="mb-3">
       <h2 className="text-sm font-bold text-blue-300 mb-2">Overall Alerts Performance</h2>
+
+      {/* Filter Buttons */}
+      <div className="mb-3 space-y-2">
+        {/* Bet Type Filters */}
+        <div className="flex flex-wrap gap-2">
+          <span className="text-slate-400 text-xs font-semibold self-center mr-1">Bet Type:</span>
+          {betTypes.map((betType) => (
+            <button
+              key={betType.key}
+              onClick={() => setSelectedBetType(betType.key)}
+              className={`px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 rounded ${
+                selectedBetType === betType.key
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
+                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
+              }`}
+            >
+              <span className="text-sm">{betType.emoji}</span>
+              {betType.name}
+            </button>
+          ))}
+        </div>
+
+        {/* Sport Filters */}
+        <div className="flex flex-wrap gap-2">
+          <span className="text-slate-400 text-xs font-semibold self-center mr-1">Sport:</span>
+          {sports.map((sport) => (
+            <button
+              key={sport.key}
+              onClick={() => setSelectedSport(sport.key)}
+              className={`px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 rounded ${
+                selectedSport === sport.key
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
+                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
+              }`}
+            >
+              <span className="text-sm">{sport.emoji}</span>
+              {sport.name}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Performance Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
         {/* Win Rate */}
         <div className="bg-gradient-to-br from-green-900/50 to-green-800/30 border border-green-700 rounded-lg p-1.5">
