@@ -7,7 +7,6 @@ import { MomentumAlerts } from '../components/MomentumAlert';
 import { PaceMismatchAlerts } from '../components/PaceMismatchAlert';
 import { WeatherImpactAlerts } from '../components/WeatherImpactAlert';
 import { QuarterReversalAlerts } from '../components/QuarterReversalAlert';
-import { InjuryPropsAlerts } from '../components/InjuryPropsAlert';
 import { AlertsOverallPerformance } from '../components/AlertsOverallPerformance';
 import { GenericStrategyAlert } from '../components/GenericStrategyAlert';
 import { AlertsPerformance } from '../components/AlertsPerformance';
@@ -27,7 +26,6 @@ interface StrategyInfo {
 
 const ALL_STRATEGIES: StrategyInfo[] = [
   // LIVE STRATEGIES
-  { id: 'injury-props', name: 'Injury Props (60s Window)', description: 'ML-powered props arbitrage when star players ruled out via Twitter', sport: 'Multi-Sport', sportColor: 'bg-red-600', category: 'live', hasComponent: true },
   { id: 'comeback', name: 'NBA Favorite Comeback', description: 'Regression to mean when favorites trail underdogs after hot starts', sport: 'Basketball', sportColor: 'bg-orange-600', category: 'live', hasComponent: true },
   { id: 'quarter-reversal', name: 'Basketball Quarter Reversal', description: 'Teams winning 2 consecutive quarters lose the next (55-61%% hit rate, +8-35%% ROI) - NBA & NCAA', sport: 'Basketball', sportColor: 'bg-orange-600', category: 'live', hasComponent: true },
   { id: 'goalie', name: 'NHL Empty Net Goals', description: 'Predict empty net goal opportunities when goalies are pulled', sport: 'NHL', sportColor: 'bg-blue-600', category: 'live', hasComponent: true },
@@ -189,10 +187,9 @@ export function Alerts() {
   const [momentumCount, setMomentumCount] = useState(0);
   const [paceMismatchCount, setPaceMismatchCount] = useState(0);
   const [weatherCount, setWeatherCount] = useState(0);
-  const [injuryPropsCount, setInjuryPropsCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<string>('injury-props');
+  const [activeTab, setActiveTab] = useState<string>('comeback');
   const [categoryTab, setCategoryTab] = useState<'live' | 'pregame'>('live');
   const [autoRefresh, setAutoRefresh] = useState(true);
   const alertBellRef = useRef<HTMLAudioElement>(null);
@@ -218,15 +215,14 @@ export function Alerts() {
 
   const fetchAlerts = async () => {
     try {
-      const [alertsResponse, goalieResponse, comebackResponse, halftimeResponse, momentumResponse, paceResponse, weatherResponse, injuryPropsResponse] = await Promise.all([
+      const [alertsResponse, goalieResponse, comebackResponse, halftimeResponse, momentumResponse, paceResponse, weatherResponse] = await Promise.all([
         fetch(getApiUrl('alerts/all?user_id=default')),
         fetch(getApiUrl('goalie-pull-opportunities')),
         fetch(getApiUrl('favorite-comeback-opportunities')),
         fetch(getApiUrl('halftime-opportunities')),
         fetch(getApiUrl('momentum-opportunities')),
         fetch(getApiUrl('pace-mismatch-opportunities')),
-        fetch(getApiUrl('weather-opportunities')),
-        fetch(getApiUrl('injuries/props'))
+        fetch(getApiUrl('weather-opportunities'))
       ]);
 
       if (!alertsResponse.ok) throw new Error('Failed to fetch alerts');
@@ -262,11 +258,6 @@ export function Alerts() {
       if (weatherResponse.ok) {
         const weatherData = await weatherResponse.json();
         setWeatherCount(weatherData.count || 0);
-      }
-
-      if (injuryPropsResponse.ok) {
-        const injuryPropsData = await injuryPropsResponse.json();
-        setInjuryPropsCount(injuryPropsData.count || 0);
       }
 
       setError(null);
@@ -506,11 +497,7 @@ export function Alerts() {
 
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-            <div className="bg-slate-900 border-2 border-red-700 p-6 hover:border-red-500 transition-all animate-pulse">
-              <div className="text-base text-white font-bold tracking-wide mb-1">⚡ INJURY PROPS (60s)</div>
-              <div className="text-3xl font-bold text-white">{injuryPropsCount}</div>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <div className="bg-slate-900 border-2 border-orange-700 p-6 hover:border-orange-500 transition-all">
               <div className="text-base text-white font-bold tracking-wide mb-1">🔥 NBA COMEBACKS</div>
               <div className="text-3xl font-bold text-white">{favoriteComebackCount}</div>
@@ -583,7 +570,6 @@ export function Alerts() {
               }`}
             >
               {strategy.name}
-              {strategy.id === 'injury-props' && ` (${injuryPropsCount})`}
               {strategy.id === 'comeback' && ` (${favoriteComebackCount})`}
               {strategy.id === 'goalie' && ` (${goaliePullCount})`}
               {strategy.id === 'halftime' && ` (${halftimeCount})`}
@@ -599,13 +585,8 @@ export function Alerts() {
           ))}
         </div>
 
-        {/* Overall Performance Summary */}
-        {activeTab === 'injury-props' && (
-          <>
-            <AlertsOverallPerformance />
-            <InjuryPropsAlerts />
-          </>
-        )}
+        {/* Overall Performance Summary - Always Visible */}
+        <AlertsOverallPerformance />
 
         {/* Arbitrage Alerts */}
         {activeTab === 'arbitrage' && (
