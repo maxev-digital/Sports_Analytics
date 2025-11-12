@@ -30,7 +30,7 @@ export function AlertsPerformance() {
     setError(null);
 
     try {
-      const url = `${getApiUrl()}/api/performance/recent-predictions?limit=25`;
+      const url = `${getApiUrl('performance/recent-predictions')}?limit=25`;
       const response = await fetch(url);
 
       if (!response.ok) {
