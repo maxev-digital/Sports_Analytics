@@ -8,6 +8,7 @@ import { PaceMismatchAlerts } from '../components/PaceMismatchAlert';
 import { WeatherImpactAlerts } from '../components/WeatherImpactAlert';
 import { QuarterReversalAlerts } from '../components/QuarterReversalAlert';
 import { InjuryPropsAlerts } from '../components/InjuryPropsAlert';
+import { AlertsOverallPerformance } from '../components/AlertsOverallPerformance';
 import { GenericStrategyAlert } from '../components/GenericStrategyAlert';
 import { AlertsPerformance } from '../components/AlertsPerformance';
 import { getApiUrl } from '../config';
@@ -598,9 +599,12 @@ export function Alerts() {
           ))}
         </div>
 
-        {/* Injury Props Alerts */}
+        {/* Overall Performance Summary */}
         {activeTab === 'injury-props' && (
-          <InjuryPropsAlerts />
+          <>
+            <AlertsOverallPerformance />
+            <InjuryPropsAlerts />
+          </>
         )}
 
         {/* Arbitrage Alerts */}
