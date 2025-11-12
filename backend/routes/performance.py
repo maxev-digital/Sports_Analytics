@@ -49,8 +49,9 @@ async def get_performance_summary(
             df['game_date'] = pd.to_datetime(df['game_date'])
             df = df[df['game_date'] >= cutoff]
 
-        # Detect sport from prediction_id
-        def detect_sport(pred_id):
+        # Detect sport from prediction_id and team names
+        def detect_sport(pred_id, away_team='', home_team=''):
+            # Check prediction_id first
             if 'NBA' in pred_id:
                 return 'NBA'
             elif 'NFL' in pred_id:
@@ -61,13 +62,48 @@ async def get_performance_summary(
                 return 'NCAAB'
             elif 'NCAAF' in pred_id:
                 return 'NCAAF'
-            # Fallback: look in team names
-            home = pred_id.split('_')[2] if len(pred_id.split('_')) > 2 else ''
-            if any(x in home for x in ['Lakers', 'Warriors', 'Celtics', 'Heat', 'Knicks']):
+
+            # Check team names for NBA/NHL keywords
+            team_text = f"{away_team} {home_team}".lower()
+
+            # NBA teams have these patterns
+            nba_keywords = ['lakers', 'warriors', 'celtics', 'heat', 'knicks', 'bulls', 'nets', 'sixers',
+                           'raptors', 'bucks', 'pacers', 'pistons', 'cavaliers', 'wizards', 'hawks',
+                           'hornets', 'magic', 'mavericks', 'rockets', 'spurs', 'grizzlies', 'pelicans',
+                           'thunder', 'suns', 'kings', 'clippers', 'nuggets', 'timberwolves', 'blazers', 'jazz']
+
+            # NHL teams have these patterns
+            nhl_keywords = ['bruins', 'canadiens', 'senators', 'sabres', 'maple leafs', 'lightning',
+                          'panthers', 'red wings', 'blackhawks', 'blue jackets', 'penguins', 'flyers',
+                          'rangers', 'islanders', 'devils', 'capitals', 'hurricanes', 'predators',
+                          'blues', 'jets', 'wild', 'avalanche', 'stars', 'oilers', 'flames', 'canucks',
+                          'golden knights', 'kraken', 'ducks', 'sharks', 'kings']
+
+            # NFL teams have these patterns
+            nfl_keywords = ['patriots', 'dolphins', 'bills', 'jets', 'ravens', 'steelers', 'browns',
+                          'bengals', 'texans', 'colts', 'titans', 'jaguars', 'chiefs', 'raiders',
+                          'broncos', 'chargers', 'cowboys', 'giants', 'eagles', 'commanders',
+                          'packers', 'vikings', 'lions', 'bears', 'buccaneers', 'saints', 'falcons',
+                          'panthers', '49ers', 'seahawks', 'rams', 'cardinals']
+
+            if any(keyword in team_text for keyword in nba_keywords):
                 return 'NBA'
+            elif any(keyword in team_text for keyword in nhl_keywords):
+                return 'NHL'
+            elif any(keyword in team_text for keyword in nfl_keywords):
+                return 'NFL'
+
+            # Check for college keywords
+            if any(x in team_text for x in ['state', 'university', 'college', 'tech', 'wildcats', 'bulldogs', 'tigers']):
+                # Distinguish between NCAAB and NCAAF based on prediction_id structure
+                if 'totals' in pred_id.lower() or 'spreads' in pred_id.lower():
+                    # More likely basketball if using these bet types without explicit sport
+                    return 'NCAAB'
+                return 'NCAAF'
+
             return 'UNKNOWN'
 
-        df['sport'] = df['prediction_id'].apply(detect_sport)
+        df['sport'] = df.apply(lambda row: detect_sport(row['prediction_id'], row.get('away_team', ''), row.get('home_team', '')), axis=1)
 
         # Detect bet type from prediction_id
         def detect_bet_type(pred_id):
@@ -214,8 +250,8 @@ async def get_recent_predictions(
 
         df = pd.read_csv(RESULTS_LOG)
 
-        # Detect sport and bet type
-        def detect_sport(pred_id):
+        # Reuse the same sport detection logic from summary endpoint
+        def detect_sport_from_teams(pred_id, away_team='', home_team=''):
             if 'NBA' in pred_id:
                 return 'NBA'
             elif 'NFL' in pred_id:
@@ -225,6 +261,33 @@ async def get_recent_predictions(
             elif 'NCAAB' in pred_id:
                 return 'NCAAB'
             elif 'NCAAF' in pred_id:
+                return 'NCAAF'
+
+            team_text = f"{away_team} {home_team}".lower()
+            nba_keywords = ['lakers', 'warriors', 'celtics', 'heat', 'knicks', 'bulls', 'nets', 'sixers',
+                           'raptors', 'bucks', 'pacers', 'pistons', 'cavaliers', 'wizards', 'hawks',
+                           'hornets', 'magic', 'mavericks', 'rockets', 'spurs', 'grizzlies', 'pelicans',
+                           'thunder', 'suns', 'kings', 'clippers', 'nuggets', 'timberwolves', 'blazers', 'jazz']
+            nhl_keywords = ['bruins', 'canadiens', 'senators', 'sabres', 'maple leafs', 'lightning',
+                          'panthers', 'red wings', 'blackhawks', 'blue jackets', 'penguins', 'flyers',
+                          'rangers', 'islanders', 'devils', 'capitals', 'hurricanes', 'predators',
+                          'blues', 'jets', 'wild', 'avalanche', 'stars', 'oilers', 'flames', 'canucks',
+                          'golden knights', 'kraken', 'ducks', 'sharks', 'kings']
+            nfl_keywords = ['patriots', 'dolphins', 'bills', 'jets', 'ravens', 'steelers', 'browns',
+                          'bengals', 'texans', 'colts', 'titans', 'jaguars', 'chiefs', 'raiders',
+                          'broncos', 'chargers', 'cowboys', 'giants', 'eagles', 'commanders',
+                          'packers', 'vikings', 'lions', 'bears', 'buccaneers', 'saints', 'falcons',
+                          'panthers', '49ers', 'seahawks', 'rams', 'cardinals']
+
+            if any(keyword in team_text for keyword in nba_keywords):
+                return 'NBA'
+            elif any(keyword in team_text for keyword in nhl_keywords):
+                return 'NHL'
+            elif any(keyword in team_text for keyword in nfl_keywords):
+                return 'NFL'
+            if any(x in team_text for x in ['state', 'university', 'college', 'tech', 'wildcats', 'bulldogs', 'tigers']):
+                if 'totals' in pred_id.lower() or 'spreads' in pred_id.lower():
+                    return 'NCAAB'
                 return 'NCAAF'
             return 'UNKNOWN'
 
@@ -237,7 +300,7 @@ async def get_recent_predictions(
                 return 'moneyline'
             return 'unknown'
 
-        df['sport'] = df['prediction_id'].apply(detect_sport)
+        df['sport'] = df.apply(lambda row: detect_sport_from_teams(row['prediction_id'], row.get('away_team', ''), row.get('home_team', '')), axis=1)
         df['bet_type_detected'] = df['prediction_id'].apply(detect_bet_type)
 
         # Apply filters

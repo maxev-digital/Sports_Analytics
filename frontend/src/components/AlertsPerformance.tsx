@@ -12,6 +12,7 @@ interface Prediction {
   bet_type: string;
   recommendation: string;
   confidence: string;
+  market_total: number | null;
   result: string;
   profit_loss: number;
 }
@@ -50,6 +51,27 @@ export function AlertsPerformance() {
   const formatCurrency = (value: number) => {
     const sign = value >= 0 ? '+' : '';
     return `${sign}$${value.toFixed(2)}`;
+  };
+
+  const formatBettingLine = (betType: string, marketTotal: number | null) => {
+    if (marketTotal === null) return '-';
+
+    if (betType === 'TOTALS') {
+      return `O/U ${marketTotal.toFixed(1)}`;
+    } else if (betType === 'SPREADS') {
+      const sign = marketTotal >= 0 ? '+' : '';
+      return `${sign}${marketTotal.toFixed(1)}`;
+    } else if (betType === 'MONEYLINE') {
+      // Convert probability to American odds
+      if (marketTotal > 0 && marketTotal < 1) {
+        const odds = marketTotal >= 0.5
+          ? Math.round(-100 * marketTotal / (1 - marketTotal))
+          : Math.round(100 * (1 - marketTotal) / marketTotal);
+        return odds >= 0 ? `+${odds}` : `${odds}`;
+      }
+      return marketTotal.toFixed(0);
+    }
+    return marketTotal.toFixed(1);
   };
 
   const getResultBadge = (result: string) => {
@@ -105,6 +127,7 @@ export function AlertsPerformance() {
               <th className="text-left py-3 px-2">Game</th>
               <th className="text-left py-3 px-2">Type</th>
               <th className="text-left py-3 px-2">Pick</th>
+              <th className="text-center py-3 px-2">Line</th>
               <th className="text-center py-3 px-2">Conf</th>
               <th className="text-right py-3 px-2">Score</th>
               <th className="text-center py-3 px-2">Result</th>
@@ -135,6 +158,11 @@ export function AlertsPerformance() {
                 </td>
                 <td className="py-3 px-2 font-bold text-white">
                   {pred.recommendation}
+                </td>
+                <td className="text-center py-3 px-2">
+                  <span className="text-yellow-400 font-bold text-xs">
+                    {formatBettingLine(pred.bet_type, pred.market_total)}
+                  </span>
                 </td>
                 <td className="text-center py-3 px-2">
                   <span className={`px-2 py-1 rounded text-xs font-bold ${
