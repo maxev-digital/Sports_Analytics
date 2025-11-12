@@ -1333,7 +1333,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                     : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                 }`}
               >
-                Both
+                Baseline
               </button>
             </div>
           </div>
@@ -1622,7 +1622,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                     : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                 }`}
               >
-                Both
+                Baseline
               </button>
             </div>
           </div>
@@ -2544,7 +2544,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                     : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                 }`}
               >
-                Both
+                Baseline
               </button>
             </div>
           </div>
@@ -2599,87 +2599,58 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                     </>
                   )}
 
-                  {/* COMBINED VIEW */}
+                  {/* BASELINE VIEW - KenPom Stats Used for Projections */}
                   {statsView === 'combined' && (
                     <>
-                      <div className="flex items-center justify-between">
-                        <span className={`${textLabel}`}>PPG:</span>
-                        <span className={`${
-                          home_team_stats && away_team_stats.pts_per_game > home_team_stats.pts_per_game
-                            ? 'text-green-400'
-                            : `${textValue}`
-                        }`}>
-                          {away_team_stats.pts_per_game.toFixed(1)}
-                          <span className={`text-sm ml-1 ${getRankColor(away_team_stats.pts_per_game_rank || 30)}`}>
-                            (#{away_team_stats.pts_per_game_rank || 'N/A'})
-                          </span>
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className={`${textLabel}`}>OffRtg:</span>
-                        <span className={`${
-                          home_team_stats && away_team_stats.off_rating > home_team_stats.off_rating
-                            ? 'text-green-400'
-                            : `${textValue}`
-                        }`}>
-                          {away_team_stats.off_rating.toFixed(1)}
-                          <span className={`text-sm ml-1 ${getRankColor(away_team_stats.off_rating_rank || 30)}`}>
-                            (#{away_team_stats.off_rating_rank || 'N/A'})
-                          </span>
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className={`${textLabel}`}>DefRtg:</span>
-                        <span className={`${
-                          home_team_stats && away_team_stats.def_rating < home_team_stats.def_rating
-                            ? 'text-green-400'
-                            : `${textValue}`
-                        }`}>
-                          {away_team_stats.def_rating.toFixed(1)}
-                          <span className={`text-sm ml-1 ${getRankColor(away_team_stats.def_rating_rank || 30)}`}>
-                            (#{away_team_stats.def_rating_rank || 'N/A'})
-                          </span>
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className={`${textLabel}`}>NetRtg:</span>
-                        <span className={`${
-                          home_team_stats && away_team_stats.net_rating > home_team_stats.net_rating
-                            ? 'text-green-400'
-                            : `${textValue}`
-                        }`}>
-                          {away_team_stats.net_rating.toFixed(1)}
-                          <span className={`text-sm ml-1 ${getRankColor(away_team_stats.net_rating_rank || 30)}`}>
-                            (#{away_team_stats.net_rating_rank || 'N/A'})
-                          </span>
-                        </span>
+                      <div className="mb-2 px-2 py-1 bg-blue-900/30 rounded border border-blue-600/30">
+                        <div className={`text-xs ${textLabel} text-center`}>Season Baseline ({sportBadge === 'NCAAB' ? 'KenPom' : 'NBA Stats'})</div>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>Pace:</span>
-                        <span className={`${
-                          home_team_stats && away_team_stats.pace > home_team_stats.pace
-                            ? 'text-green-400'
-                            : `${textValue}`
-                        }`}>
-                          {away_team_stats.pace.toFixed(1)}
-                          <span className={`text-sm ml-1 ${getRankColor(away_team_stats.pace_rank || 30)}`}>
-                            (#{away_team_stats.pace_rank || 'N/A'})
+                        <div className="flex items-center gap-2">
+                          <span className={`font-bold ${textValue}`}>
+                            {away_team_stats.pace.toFixed(1)}
                           </span>
-                        </span>
+                          {state.status === 'live' && (
+                            <span className="text-xs text-slate-400">(tracking...)</span>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className={`${textLabel}`}>FG%:</span>
-                        <span className={`${
-                          home_team_stats && away_team_stats.fg_pct > home_team_stats.fg_pct
-                            ? 'text-green-400'
-                            : `${textValue}`
-                        }`}>
-                          {(away_team_stats.fg_pct * 100).toFixed(1)}%
-                          <span className={`text-sm ml-1 ${getRankColor(away_team_stats.fg_pct_rank || 30)}`}>
-                            (#{away_team_stats.fg_pct_rank || 'N/A'})
+                      <div className={`text-xs ${textMuted} pl-2`}>Expected possessions per 40 min</div>
+
+                      <div className="flex items-center justify-between mt-2">
+                        <span className={`${textLabel}`}>OffRtg:</span>
+                        <div className="flex items-center gap-2">
+                          <span className={`font-bold ${textValue}`}>
+                            {away_team_stats.off_rating.toFixed(1)}
                           </span>
-                        </span>
+                          {state.status === 'live' && (
+                            <span className="text-xs text-slate-400">(tracking...)</span>
+                          )}
+                        </div>
                       </div>
+                      <div className={`text-xs ${textMuted} pl-2`}>Expected points per 100 possessions</div>
+
+                      <div className="flex items-center justify-between mt-2">
+                        <span className={`${textLabel}`}>DefRtg:</span>
+                        <div className="flex items-center gap-2">
+                          <span className={`font-bold ${textValue}`}>
+                            {away_team_stats.def_rating.toFixed(1)}
+                          </span>
+                          {state.status === 'live' && (
+                            <span className="text-xs text-slate-400">(tracking...)</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className={`text-xs ${textMuted} pl-2`}>Expected points allowed per 100 poss</div>
+
+                      {state.status === 'live' && (
+                        <div className="mt-3 px-2 py-1.5 bg-slate-700/50 rounded border border-slate-600">
+                          <div className={`text-xs ${textLabel} text-center`}>
+                            🔬 Models analyzing live pace & shooting variance
+                          </div>
+                        </div>
+                      )}
                     </>
                   )}
 
@@ -2801,87 +2772,58 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                     </>
                   )}
 
-                  {/* COMBINED VIEW */}
+                  {/* BASELINE VIEW - KenPom Stats Used for Projections */}
                   {statsView === 'combined' && (
                     <>
-                      <div className="flex items-center justify-between">
-                        <span className={`${textLabel}`}>PPG:</span>
-                        <span className={`${
-                          away_team_stats && home_team_stats.pts_per_game > away_team_stats.pts_per_game
-                            ? 'text-green-400'
-                            : `${textValue}`
-                        }`}>
-                          {home_team_stats.pts_per_game.toFixed(1)}
-                          <span className={`text-sm ml-1 ${getRankColor(home_team_stats.pts_per_game_rank || 30)}`}>
-                            (#{home_team_stats.pts_per_game_rank || 'N/A'})
-                          </span>
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className={`${textLabel}`}>OffRtg:</span>
-                        <span className={`${
-                          away_team_stats && home_team_stats.off_rating > away_team_stats.off_rating
-                            ? 'text-green-400'
-                            : `${textValue}`
-                        }`}>
-                          {home_team_stats.off_rating.toFixed(1)}
-                          <span className={`text-sm ml-1 ${getRankColor(home_team_stats.off_rating_rank || 30)}`}>
-                            (#{home_team_stats.off_rating_rank || 'N/A'})
-                          </span>
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className={`${textLabel}`}>DefRtg:</span>
-                        <span className={`${
-                          away_team_stats && home_team_stats.def_rating < away_team_stats.def_rating
-                            ? 'text-green-400'
-                            : `${textValue}`
-                        }`}>
-                          {home_team_stats.def_rating.toFixed(1)}
-                          <span className={`text-sm ml-1 ${getRankColor(home_team_stats.def_rating_rank || 30)}`}>
-                            (#{home_team_stats.def_rating_rank || 'N/A'})
-                          </span>
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className={`${textLabel}`}>NetRtg:</span>
-                        <span className={`${
-                          away_team_stats && home_team_stats.net_rating > away_team_stats.net_rating
-                            ? 'text-green-400'
-                            : `${textValue}`
-                        }`}>
-                          {home_team_stats.net_rating.toFixed(1)}
-                          <span className={`text-sm ml-1 ${getRankColor(home_team_stats.net_rating_rank || 30)}`}>
-                            (#{home_team_stats.net_rating_rank || 'N/A'})
-                          </span>
-                        </span>
+                      <div className="mb-2 px-2 py-1 bg-blue-900/30 rounded border border-blue-600/30">
+                        <div className={`text-xs ${textLabel} text-center`}>Season Baseline ({sportBadge === 'NCAAB' ? 'KenPom' : 'NBA Stats'})</div>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>Pace:</span>
-                        <span className={`${
-                          away_team_stats && home_team_stats.pace > away_team_stats.pace
-                            ? 'text-green-400'
-                            : `${textValue}`
-                        }`}>
-                          {home_team_stats.pace.toFixed(1)}
-                          <span className={`text-sm ml-1 ${getRankColor(home_team_stats.pace_rank || 30)}`}>
-                            (#{home_team_stats.pace_rank || 'N/A'})
+                        <div className="flex items-center gap-2">
+                          <span className={`font-bold ${textValue}`}>
+                            {home_team_stats.pace.toFixed(1)}
                           </span>
-                        </span>
+                          {state.status === 'live' && (
+                            <span className="text-xs text-slate-400">(tracking...)</span>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className={`${textLabel}`}>FG%:</span>
-                        <span className={`${
-                          away_team_stats && home_team_stats.fg_pct > away_team_stats.fg_pct
-                            ? 'text-green-400'
-                            : `${textValue}`
-                        }`}>
-                          {(home_team_stats.fg_pct * 100).toFixed(1)}%
-                          <span className={`text-sm ml-1 ${getRankColor(home_team_stats.fg_pct_rank || 30)}`}>
-                            (#{home_team_stats.fg_pct_rank || 'N/A'})
+                      <div className={`text-xs ${textMuted} pl-2`}>Expected possessions per 40 min</div>
+
+                      <div className="flex items-center justify-between mt-2">
+                        <span className={`${textLabel}`}>OffRtg:</span>
+                        <div className="flex items-center gap-2">
+                          <span className={`font-bold ${textValue}`}>
+                            {home_team_stats.off_rating.toFixed(1)}
                           </span>
-                        </span>
+                          {state.status === 'live' && (
+                            <span className="text-xs text-slate-400">(tracking...)</span>
+                          )}
+                        </div>
                       </div>
+                      <div className={`text-xs ${textMuted} pl-2`}>Expected points per 100 possessions</div>
+
+                      <div className="flex items-center justify-between mt-2">
+                        <span className={`${textLabel}`}>DefRtg:</span>
+                        <div className="flex items-center gap-2">
+                          <span className={`font-bold ${textValue}`}>
+                            {home_team_stats.def_rating.toFixed(1)}
+                          </span>
+                          {state.status === 'live' && (
+                            <span className="text-xs text-slate-400">(tracking...)</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className={`text-xs ${textMuted} pl-2`}>Expected points allowed per 100 poss</div>
+
+                      {state.status === 'live' && (
+                        <div className="mt-3 px-2 py-1.5 bg-slate-700/50 rounded border border-slate-600">
+                          <div className={`text-xs ${textLabel} text-center`}>
+                            🔬 Models analyzing live pace & shooting variance
+                          </div>
+                        </div>
+                      )}
                     </>
                   )}
 

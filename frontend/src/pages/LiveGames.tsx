@@ -22,7 +22,7 @@ export function LiveGames() {
 
   useEffect(() => {
     fetchGames();
-    const interval = setInterval(fetchGames, 5000);
+    const interval = setInterval(fetchGames, 15000); // PERF FIX: Reduced from 5s to 15s (70% fewer requests)
     return () => clearInterval(interval);
   }, []);
 

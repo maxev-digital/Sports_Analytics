@@ -158,6 +158,30 @@ except Exception as e:
     import traceback
     traceback.print_exc()
 
+# Import and register Model Performance router
+try:
+    print("DEBUG: About to import model_performance router...")
+    from routes.model_performance import router as model_performance_router
+    print("DEBUG: Model Performance router imported successfully")
+    app.include_router(model_performance_router)
+    print(f"DEBUG: Model Performance router registered with prefix: {model_performance_router.prefix}")
+except Exception as e:
+    print(f"ERROR importing/registering model_performance router: {type(e).__name__}: {e}")
+    import traceback
+    traceback.print_exc()
+
+# Import and register Influencer router
+try:
+    print("DEBUG: About to import influencer router...")
+    from routes.influencer import router as influencer_router
+    print("DEBUG: Influencer router imported successfully")
+    app.include_router(influencer_router)
+    print(f"DEBUG: Influencer router registered with prefix: {influencer_router.prefix}")
+except Exception as e:
+    print(f"ERROR importing/registering influencer router: {type(e).__name__}: {e}")
+    import traceback
+    traceback.print_exc()
+
 # Game tracker instance
 tracker = GameTracker()
 
@@ -710,6 +734,7 @@ async def register(request: Request):
     """
     User registration endpoint
     Creates new user with 7-day free trial
+    Optional: accepts referral code for 50% discount on first 2 months
     """
     try:
         data = await request.json()
@@ -717,15 +742,32 @@ async def register(request: Request):
         email = data.get('email')
         username = data.get('username')
         password = data.get('password')
-        
+        referral_code = data.get('referral_code', '').strip()  # Optional referral code
+
         if not all([full_name, email, username, password]):
             raise HTTPException(status_code=400, detail="All fields required")
-        
+
         # Check if username already exists
         users = auth.load_users()
         if username in users:
             raise HTTPException(status_code=400, detail="Username already exists")
-        
+
+        # Validate referral code if provided
+        influencer_code_valid = False
+        influencer_username = None
+        if referral_code:
+            try:
+                from influencer_system import validate_referral_code, get_influencer_by_code
+                validation = validate_referral_code(referral_code)
+                if validation['valid']:
+                    influencer_code_valid = True
+                    influencer = get_influencer_by_code(referral_code)
+                    if influencer:
+                        influencer_username = influencer['username']
+                        logger.info(f"Valid referral code used: {referral_code} (influencer: {influencer_username})")
+            except Exception as ref_error:
+                logger.warning(f"Error validating referral code: {ref_error}")
+
         # Create user account
         users[username] = {
             "password_hash": auth.hash_password(password),
@@ -734,7 +776,9 @@ async def register(request: Request):
             "full_name": full_name,
             "email": email,
             "trial_start": datetime.now().isoformat(),
-            "trial_days": 7
+            "trial_days": 7,
+            "referral_code": referral_code if influencer_code_valid else None,
+            "has_referral_discount": influencer_code_valid
         }
         auth.save_users(users)
         
@@ -749,6 +793,22 @@ async def register(request: Request):
             tier="free_trial",
             status="trialing"
         )
+
+        # Track referral if valid code was used
+        if influencer_code_valid and influencer_username:
+            try:
+                from influencer_system import track_referral
+                success = track_referral(
+                    username=username,
+                    referral_code=referral_code,
+                    subscription_tier="free_trial"
+                )
+                if success:
+                    logger.info(f"Referral tracked: {username} referred by {influencer_username}")
+                else:
+                    logger.warning(f"Failed to track referral for {username}")
+            except Exception as track_error:
+                logger.error(f"Error tracking referral: {track_error}")
 
         # Sync new user signup to Brevo CRM
         try:
@@ -794,6 +854,56 @@ async def register(request: Request):
     except Exception as e:
         logger.error(f"Registration error: {str(e)}")
         raise HTTPException(status_code=500, detail="Registration failed")
+
+
+
+@app.post("/api/auth/signup")
+async def signup_email_only(request: Request):
+    """
+    Lightweight signup endpoint for Pricing page email capture
+    Validates email and checks if it already exists
+    Returns success so frontend can redirect to full signup page
+    """
+    try:
+        data = await request.json()
+        email = data.get('email', '').strip()
+        username = data.get('username', '').strip()
+
+        if not email:
+            raise HTTPException(status_code=400, detail="Email is required")
+
+        # Basic email validation
+        if '@' not in email or '.' not in email.split('@')[1]:
+            raise HTTPException(status_code=400, detail="Invalid email format")
+
+        # Check if email already exists
+        users = auth.load_users()
+        for existing_username, user_data in users.items():
+            if user_data.get('email', '').lower() == email.lower():
+                raise HTTPException(
+                    status_code=400,
+                    detail="Email already registered. Please log in instead."
+                )
+
+        # Check if username already exists (if provided)
+        if username and username in users:
+            raise HTTPException(
+                status_code=400,
+                detail="Username already exists. Please choose another."
+            )
+
+        # Success - email is valid and not yet registered
+        return {
+            "success": True,
+            "message": "Email validated successfully",
+            "email": email
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Email signup error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Signup validation failed")
 
 
 @app.post("/api/auth/login")

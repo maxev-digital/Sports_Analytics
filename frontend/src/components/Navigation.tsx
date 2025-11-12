@@ -5,11 +5,13 @@ import { uiEmojis } from '../utils/sportDetection';
 import { useSoundEffect } from '../hooks/useSoundEffect';
 import { isElectron } from '../utils/isElectron';
 import { getApiUrl } from '../config';
+import { useBetAlertNotification } from '../contexts/BetAlertNotificationContext';
 
 export function Navigation() {
   const location = useLocation();
   const navigate = useNavigate();
   const { username, role, token, logout } = useAuth();
+  const { isAudioMuted, toggleAudioMute } = useBetAlertNotification();
   const [strategyDropdownOpen, setStrategyDropdownOpen] = useState(false);
   const [strategyResultsDropdownOpen, setStrategyResultsDropdownOpen] = useState(false);
   const [edgesDropdownOpen, setEdgesDropdownOpen] = useState(false);
@@ -148,7 +150,7 @@ export function Navigation() {
           {/* Logo */}
           <Link to="/live-games" onClick={handleNavClick} className="hover:opacity-80 transition-opacity flex-shrink-0">
             <img
-              src="./logo.png"
+              src="/logo.png"
               alt="Max EV Sports"
               className="h-24 w-auto object-contain"
               style={{ minWidth: '120px', maxWidth: '200px' }}
@@ -446,6 +448,34 @@ export function Navigation() {
                       <span className="font-semibold text-base">Pricing</span>
                     </Link>
                   )}
+
+                  {/* Audio Toggle Button */}
+                  <button
+                    onClick={() => {
+                      toggleAudioMute();
+                    }}
+                    className={`w-full px-4 py-2.5 flex items-center gap-3 transition-all text-left ${
+                      isAudioMuted
+                        ? 'text-slate-400 hover:bg-slate-700 hover:text-slate-200'
+                        : 'text-green-400 hover:bg-green-900/30 hover:text-green-300'
+                    }`}
+                    title={isAudioMuted ? 'Click to unmute bet alert sounds' : 'Click to mute bet alert sounds'}
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      {isAudioMuted ? (
+                        // Muted icon - speaker with X
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+                      ) : (
+                        // Unmuted icon - speaker with sound waves
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                      )}
+                    </svg>
+                    <span className="font-semibold text-base">
+                      {isAudioMuted ? 'Alert Audio: OFF' : 'Alert Audio: ON'}
+                    </span>
+                  </button>
+
+                  {/* Logout Button */}
                   <button
                     onClick={() => {
                       /* Sound disabled */

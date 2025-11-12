@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
 import { StrategyAlert } from '../types';
 import { BetAlertToast } from '../components/BetAlertToast';
 
@@ -11,6 +11,8 @@ interface BetAlertNotificationContextType {
   showBetAlert: (alert: StrategyAlert) => void;
   dismissAlert: (id: string) => void;
   activeAlerts: BetAlertNotification[];
+  isAudioMuted: boolean;
+  toggleAudioMute: () => void;
 }
 
 const BetAlertNotificationContext = createContext<BetAlertNotificationContextType | undefined>(undefined);
@@ -25,6 +27,22 @@ export function useBetAlertNotification() {
 
 export function BetAlertNotificationProvider({ children }: { children: ReactNode }) {
   const [alerts, setAlerts] = useState<BetAlertNotification[]>([]);
+
+  // Audio mute state - load from localStorage
+  const [isAudioMuted, setIsAudioMuted] = useState<boolean>(() => {
+    const saved = localStorage.getItem('betAlertAudioMuted');
+    return saved === 'true';
+  });
+
+  // Save audio mute preference to localStorage
+  useEffect(() => {
+    localStorage.setItem('betAlertAudioMuted', isAudioMuted.toString());
+  }, [isAudioMuted]);
+
+  // Toggle audio mute
+  const toggleAudioMute = useCallback(() => {
+    setIsAudioMuted(prev => !prev);
+  }, []);
 
   // Show a new bet alert notification
   const showBetAlert = useCallback((alert: StrategyAlert) => {
@@ -44,11 +62,11 @@ export function BetAlertNotificationProvider({ children }: { children: ReactNode
       return updated;
     });
 
-    // Play audio alert if enabled
-    if (alert.sound_alert) {
+    // Play audio alert if enabled and not muted
+    if (alert.sound_alert && !isAudioMuted) {
       playAlertSound(alert.confidence);
     }
-  }, []);
+  }, [isAudioMuted]);
 
   // Dismiss a specific alert
   const dismissAlert = useCallback((id: string) => {
@@ -110,7 +128,7 @@ export function BetAlertNotificationProvider({ children }: { children: ReactNode
   };
 
   return (
-    <BetAlertNotificationContext.Provider value={{ showBetAlert, dismissAlert, activeAlerts: alerts }}>
+    <BetAlertNotificationContext.Provider value={{ showBetAlert, dismissAlert, activeAlerts: alerts, isAudioMuted, toggleAudioMute }}>
       {children}
 
       {/* Render toast notifications - stacked from bottom */}

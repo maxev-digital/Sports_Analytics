@@ -1,4 +1,4 @@
-import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Navigation } from './components/Navigation';
@@ -47,12 +47,18 @@ import { EdgeScannerAlertMonitor } from './components/EdgeScannerAlertMonitor';
 import { GlobalAlertMonitor } from './components/GlobalAlertMonitor';
 import { isElectron } from './utils/isElectron';
 
-function App() {
+function AppContent() {
+  const location = useLocation();
+
+  // PERF FIX: Only enable monitors on pages that need them (not pricing, login, etc.)
+  const needsAlerts = location.pathname.includes('/live-games') ||
+                      location.pathname.includes('/alerts') ||
+                      location.pathname.includes('/odds');
+
   // Check if running in desktop (Electron) mode
   const isDesktop = isElectron();
 
   return (
-    <Router>
       <AuthProvider>
         <ToastProvider>
           <BetSlipProvider>
@@ -62,15 +68,15 @@ function App() {
 
               {/* Edge Scanner Live Alert Monitor - runs in background */}
               <EdgeScannerAlertMonitor
-                enabled={true}
+                enabled={needsAlerts}
                 minEdge={3.5}
                 minConfidence={0.70}
-                pollInterval={20000}
+                pollInterval={30000}
               />
               {/* Global Alert Monitor - monitors for arbitrage, middles, steam moves, sharp money, fatigue */}
               <GlobalAlertMonitor
-                enabled={true}
-                pollInterval={10000}
+                enabled={needsAlerts}
+                pollInterval={30000}
               />
               <Routes>
           {/* Public routes - Login and SignUp pages */}
@@ -236,8 +242,16 @@ function App() {
         </BetSlipProvider>
         </ToastProvider>
       </AuthProvider>
-    </Router>
-  );
+    );
 }
 
 export default App;
+
+// Wrapper to provide Router context for useLocation
+function App() {
+  return (
+    <Router>
+      <AppContent />
+    </Router>
+  );
+}

@@ -72,34 +72,42 @@ export function BetAlertToast({ alert, onDismiss, position }: BetAlertToastProps
           glow: 'shadow-2xl shadow-red-500/50',
           pulse: 'animate-pulse',
           emoji: '🚨',
-          timerColor: 'text-red-200'
+          timerColor: 'text-red-200',
+          bookCardBg: 'bg-black/60 border-black',
+          bookCardHover: 'hover:bg-black/80 hover:border-red-500'
         };
       case 'HIGH':
         return {
-          bg: 'bg-gradient-to-br from-orange-600 via-orange-700 to-orange-900',
-          border: 'border-orange-500',
-          glow: 'shadow-xl shadow-orange-500/40',
+          bg: 'bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900',
+          border: 'border-blue-500',
+          glow: 'shadow-xl shadow-blue-500/40',
           pulse: '',
           emoji: '🔥',
-          timerColor: 'text-orange-200'
+          timerColor: 'text-blue-200',
+          bookCardBg: 'bg-green-900/40 border-green-700',
+          bookCardHover: 'hover:bg-green-900/60 hover:border-green-500'
         };
       case 'MEDIUM':
         return {
-          bg: 'bg-gradient-to-br from-yellow-600 via-yellow-700 to-yellow-900',
-          border: 'border-yellow-500',
-          glow: 'shadow-lg shadow-yellow-500/30',
+          bg: 'bg-gradient-to-br from-green-600 via-green-700 to-green-900',
+          border: 'border-green-500',
+          glow: 'shadow-lg shadow-green-500/30',
           pulse: '',
           emoji: '⚡',
-          timerColor: 'text-yellow-200'
+          timerColor: 'text-green-200',
+          bookCardBg: 'bg-blue-900/40 border-blue-700',
+          bookCardHover: 'hover:bg-blue-900/60 hover:border-blue-500'
         };
       default:
         return {
-          bg: 'bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900',
-          border: 'border-blue-500',
-          glow: 'shadow-lg shadow-blue-500/30',
+          bg: 'bg-gradient-to-br from-black via-slate-800 to-slate-900',
+          border: 'border-slate-600',
+          glow: 'shadow-lg shadow-slate-500/30',
           pulse: '',
           emoji: '💡',
-          timerColor: 'text-blue-200'
+          timerColor: 'text-slate-200',
+          bookCardBg: 'bg-red-900/40 border-red-700',
+          bookCardHover: 'hover:bg-red-900/60 hover:border-red-500'
         };
     }
   };
@@ -192,7 +200,7 @@ export function BetAlertToast({ alert, onDismiss, position }: BetAlertToastProps
                       strategy: alert.strategy_name
                     });
                   }}
-                  className="w-full bg-black/40 hover:bg-black/60 rounded-lg p-2 border border-white/20 hover:border-white/40 flex items-center justify-between transition-all cursor-pointer"
+                  className={`w-full rounded-lg p-2 border-2 flex items-center justify-between transition-all cursor-pointer ${styles.bookCardBg} ${styles.bookCardHover}`}
                 >
                   <div className="flex items-center gap-2">
                     {/* Bookmaker Logo */}

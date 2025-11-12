@@ -40,13 +40,57 @@ class StripeService:
     """Service class for handling Stripe operations"""
 
     @staticmethod
+    def create_or_get_influencer_coupon(referral_code: str) -> Optional[str]:
+        """
+        Create or retrieve a Stripe coupon for influencer referrals
+        50% OFF for first 2 months
+
+        Args:
+            referral_code: The influencer's referral code
+
+        Returns:
+            Coupon ID or None if error
+        """
+        try:
+            # Coupon ID format: REFERRAL_{CODE}
+            coupon_id = f"REFERRAL_{referral_code.upper()}"
+
+            # Try to retrieve existing coupon
+            try:
+                coupon = stripe.Coupon.retrieve(coupon_id)
+                return coupon.id
+            except stripe.error.InvalidRequestError:
+                # Coupon doesn't exist, create it
+                pass
+
+            # Create new coupon
+            coupon = stripe.Coupon.create(
+                id=coupon_id,
+                percent_off=50,
+                duration='repeating',
+                duration_in_months=2,
+                name=f"Influencer Referral: {referral_code}",
+                metadata={
+                    'type': 'influencer_referral',
+                    'referral_code': referral_code
+                }
+            )
+
+            return coupon.id
+
+        except stripe.StripeError as e:
+            print(f"Error creating influencer coupon: {str(e)}")
+            return None
+
+    @staticmethod
     def create_checkout_session(
         price_id: str,
         user_id: str,
         user_email: str,
         success_url: str = None,
         cancel_url: str = None,
-        apply_beta_discount: bool = False
+        apply_beta_discount: bool = False,
+        referral_code: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Create a Stripe Checkout Session for subscription
@@ -58,6 +102,7 @@ class StripeService:
             success_url: URL to redirect on successful payment
             cancel_url: URL to redirect on cancelled payment
             apply_beta_discount: If True, automatically apply beta promo code
+            referral_code: Optional influencer referral code for 50% discount (2 months)
 
         Returns:
             Dictionary with session_id and checkout URL
@@ -95,8 +140,18 @@ class StripeService:
                 'billing_address_collection': 'required',
             }
 
-            # Apply beta promo code if requested
-            if apply_beta_discount and STRIPE_BETA_PROMO_CODE:
+            # Apply discounts
+            if referral_code:
+                # Influencer referral discount takes priority
+                coupon_id = StripeService.create_or_get_influencer_coupon(referral_code)
+                if coupon_id:
+                    session_params['discounts'] = [{
+                        'coupon': coupon_id
+                    }]
+                    session_params['subscription_data']['metadata']['referral_code'] = referral_code
+                    print(f"Applying influencer referral discount: {referral_code}")
+            elif apply_beta_discount and STRIPE_BETA_PROMO_CODE:
+                # Beta promo code as fallback
                 session_params['discounts'] = [{
                     'promotion_code': STRIPE_BETA_PROMO_CODE
                 }]
