@@ -257,8 +257,6 @@ function AppContent() {
     );
 }
 
-export default App;
-
 // Wrapper to provide Router context for useLocation
 function App() {
   return (
@@ -267,3 +265,5 @@ function App() {
     </Router>
   );
 }
+
+export default App;

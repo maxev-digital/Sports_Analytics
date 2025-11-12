@@ -10,6 +10,9 @@ from nba_live_client import NBALiveClient
 # from nba_momentum_client import NBAMomentumClient
 from espn_nba_client import ESPNnbaClient  # ESPN NBA stats client (fallback only)
 from scrapers.teamrankings_nba_scraper import TeamRankingsNBAScraper  # Primary NBA stats source
+from scrapers.teamrankings_nfl_scraper import TeamRankingsNFLScraper  # NFL stats source
+from scrapers.teamrankings_ncaaf_scraper import TeamRankingsNCAAFScraper  # NCAAF stats source
+from scrapers.teamrankings_mlb_scraper import TeamRankingsMLBScraper  # MLB stats source
 from config import POLL_INTERVAL, ENABLE_ESPN_STATS, QUIET_HOURS_ENABLED, QUIET_HOURS_START, QUIET_HOURS_END
 # Conditionally import ESPN clients based on feature flag
 if ENABLE_ESPN_STATS:
@@ -42,6 +45,9 @@ class GameTracker:
         self.nba_live_client = NBALiveClient()
         # self.nba_momentum_client = NBAMomentumClient()
         self.teamrankings_scraper = TeamRankingsNBAScraper()  # Primary NBA stats source (free, reliable)
+        self.teamrankings_nfl_scraper = TeamRankingsNFLScraper()  # NFL stats source
+        self.teamrankings_ncaaf_scraper = TeamRankingsNCAAFScraper()  # NCAAF stats source
+        self.teamrankings_mlb_scraper = TeamRankingsMLBScraper()  # MLB stats source
         self.espn_nba_client = ESPNnbaClient()  # ESPN NBA stats client (fallback only)
         # Conditionally initialize ESPN clients based on feature flag
         if ENABLE_ESPN_STATS:
@@ -870,6 +876,108 @@ class GameTracker:
             logger.error(f"Error fetching NBA stats for {team_name}: {e}")
             return None
 
+    def _get_nfl_teamrankings_stats(self, team_name: str, is_ncaaf: bool = False) -> Optional[NFLTeamStats]:
+        """Get NFL/NCAAF team stats from TeamRankings"""
+        # Use appropriate cache and scraper
+        cache_key = f"{'ncaaf' if is_ncaaf else 'nfl'}_{team_name}"
+
+        try:
+            # Fetch from appropriate scraper
+            if is_ncaaf:
+                teamrankings_data = self.teamrankings_ncaaf_scraper.fetch_all_team_stats()
+            else:
+                teamrankings_data = self.teamrankings_nfl_scraper.fetch_all_team_stats()
+
+            # Try to find team in TeamRankings data (flexible matching)
+            tr_stats = None
+            for team_key, stats in teamrankings_data.items():
+                if team_name.lower() in team_key.lower() or team_key.lower() in team_name.lower():
+                    tr_stats = stats
+                    break
+
+            if not tr_stats:
+                logger.warning(f"TeamRankings data not found for {team_name} ({'NCAAF' if is_ncaaf else 'NFL'})")
+                return None
+
+            # Map to NFLTeamStats model
+            team_stats = NFLTeamStats(
+                team_id=str(tr_stats.get('team_name', '')),
+                team_name=team_name,
+                games_played=int(tr_stats.get('games_played', 0)),
+                wins=int(tr_stats.get('wins', 0)),
+                losses=int(tr_stats.get('losses', 0)),
+                ties=0,  # TeamRankings doesn't track ties separately
+                win_pct=float(tr_stats.get('win_pct', 0.0)),
+                points_per_game=float(tr_stats.get('pts_per_game', 20.0)),
+                points_allowed_per_game=float(tr_stats.get('pts_allowed', 20.0)),
+                point_differential=float(tr_stats.get('point_diff', 0.0)),
+                total_yards_per_game=float(tr_stats.get('yards_per_game', 320.0)),
+                yards_allowed_per_game=float(tr_stats.get('yards_allowed', 320.0)),
+                passing_yards_per_game=float(tr_stats.get('passing_yards_per_game', 220.0)),
+                rushing_yards_per_game=float(tr_stats.get('rushing_yards_per_game', 100.0)),
+                passing_yards_allowed_per_game=float(tr_stats.get('opponent_passing_yards_per_game', 220.0)),
+                rushing_yards_allowed_per_game=float(tr_stats.get('opponent_rushing_yards_per_game', 100.0)),
+                third_down_conversion_pct=float(tr_stats.get('third_down_conversion_pct', 40.0)),
+                red_zone_scoring_pct=float(tr_stats.get('red_zone_scoring_pct', 55.0)),
+                sacks_per_game=float(tr_stats.get('sacks_per_game', 2.5)),
+                turnovers_lost=int(tr_stats.get('turnovers_lost', 0)),
+                turnovers_gained=int(tr_stats.get('turnovers_gained', 0)),
+                turnover_differential=int(tr_stats.get('turnover_diff', 0))
+            )
+
+            logger.info(f"✅ Fetched TeamRankings {'NCAAF' if is_ncaaf else 'NFL'} stats for {team_name}")
+            return team_stats
+
+        except Exception as e:
+            logger.error(f"Error fetching {'NCAAF' if is_ncaaf else 'NFL'} TeamRankings stats for {team_name}: {e}")
+            return None
+
+    def _get_mlb_teamrankings_stats(self, team_name: str) -> Optional[MLBTeamStats]:
+        """Get MLB team stats from TeamRankings"""
+        try:
+            teamrankings_data = self.teamrankings_mlb_scraper.fetch_all_team_stats()
+
+            # Try to find team in TeamRankings data (flexible matching)
+            tr_stats = None
+            for team_key, stats in teamrankings_data.items():
+                if team_name.lower() in team_key.lower() or team_key.lower() in team_name.lower():
+                    tr_stats = stats
+                    break
+
+            if not tr_stats:
+                logger.warning(f"TeamRankings data not found for {team_name} (MLB)")
+                return None
+
+            # Map to MLBTeamStats model
+            team_stats = MLBTeamStats(
+                team_id=str(tr_stats.get('team_name', '')),
+                team_name=team_name,
+                games_played=int(tr_stats.get('games_played', 0)),
+                wins=int(tr_stats.get('wins', 0)),
+                losses=int(tr_stats.get('losses', 0)),
+                win_pct=float(tr_stats.get('win_pct', 0.0)),
+                runs_per_game=float(tr_stats.get('runs_per_game', 4.5)),
+                batting_avg=float(tr_stats.get('batting_average', 0.250)),
+                on_base_pct=float(tr_stats.get('on_base_pct', 0.320)),
+                slugging_pct=float(tr_stats.get('slugging_pct', 0.400)),
+                ops=float(tr_stats.get('ops', 0.720)),
+                home_runs_per_game=float(tr_stats.get('home_runs_per_game', 1.0)),
+                hits_per_game=float(tr_stats.get('hits_per_game', 8.5)),
+                walks_per_game=float(tr_stats.get('walks_per_game', 3.0)),
+                strikeouts_per_game=float(tr_stats.get('strikeouts_per_game', 8.5)),
+                runs_allowed_per_game=float(tr_stats.get('opponent_runs_per_game', 4.5)),
+                era=float(tr_stats.get('earned_run_average', 4.00)),
+                whip=float(tr_stats.get('whip', 1.30)),
+                errors_per_game=float(tr_stats.get('errors_per_game', 0.5))
+            )
+
+            logger.info(f"✅ Fetched TeamRankings MLB stats for {team_name}")
+            return team_stats
+
+        except Exception as e:
+            logger.error(f"Error fetching MLB TeamRankings stats for {team_name}: {e}")
+            return None
+
     def _nba_team_name_to_abbr(self, team_name: str) -> Optional[str]:
         """Convert NBA team name to ESPN abbreviation"""
         # Normalize team name for matching
@@ -1266,6 +1374,23 @@ class GameTracker:
                     home_stats = self._get_ncaab_team_stats(game_state.home_team.name)
                     away_stats = self._get_ncaab_team_stats(game_state.away_team.name)
 
+                # Get NFL/NCAAF stats from TeamRankings
+                home_nfl_stats_tr = None
+                away_nfl_stats_tr = None
+                if sport_key == 'americanfootball_nfl':
+                    home_nfl_stats_tr = self._get_nfl_teamrankings_stats(game_state.home_team.name, is_ncaaf=False)
+                    away_nfl_stats_tr = self._get_nfl_teamrankings_stats(game_state.away_team.name, is_ncaaf=False)
+                elif sport_key == 'americanfootball_ncaaf':
+                    home_nfl_stats_tr = self._get_nfl_teamrankings_stats(game_state.home_team.name, is_ncaaf=True)
+                    away_nfl_stats_tr = self._get_nfl_teamrankings_stats(game_state.away_team.name, is_ncaaf=True)
+
+                # Get MLB stats from TeamRankings
+                home_mlb_stats_tr = None
+                away_mlb_stats_tr = None
+                if sport_key == 'baseball_mlb':
+                    home_mlb_stats_tr = self._get_mlb_teamrankings_stats(game_state.home_team.name)
+                    away_mlb_stats_tr = self._get_mlb_teamrankings_stats(game_state.away_team.name)
+
                 # Calculate projection
                 if game_state.status == 'live' and game_state.quarter and game_state.time_remaining:
                     current_score = (game_state.home_team.score or 0) + (game_state.away_team.score or 0)
@@ -1631,11 +1756,22 @@ class GameTracker:
                 
 
                 if game_state.sport_key.startswith('baseball'):
-                    # Fetch MLB season stats
-                    logger.info(f"Fetching MLB stats for {game_state.away_team.name} @ {game_state.home_team.name}")
-                    home_mlb_stats = await self._get_mlb_team_stats(game_state.home_team.name)
-                    away_mlb_stats = await self._get_mlb_team_stats(game_state.away_team.name)
-                    logger.info(f"MLB stats fetched - Home: {home_mlb_stats is not None}, Away: {away_mlb_stats is not None}")
+                    # Fetch ESPN MLB season stats if TeamRankings failed
+                    if not home_mlb_stats_tr or not away_mlb_stats_tr:
+                        logger.info(f"Fetching ESPN MLB stats (fallback) for {game_state.away_team.name} @ {game_state.home_team.name}")
+                        home_mlb_stats = await self._get_mlb_team_stats(game_state.home_team.name)
+                        away_mlb_stats = await self._get_mlb_team_stats(game_state.away_team.name)
+                        logger.info(f"MLB stats fetched - Home: {home_mlb_stats is not None}, Away: {away_mlb_stats is not None}")
+                    else:
+                        # Use TeamRankings stats
+                        home_mlb_stats = home_mlb_stats_tr
+                        away_mlb_stats = away_mlb_stats_tr
+
+                # Use TeamRankings stats for NFL/NCAAF if available, otherwise use ESPN stats
+                if home_nfl_stats_tr:
+                    home_nfl_stats = home_nfl_stats_tr
+                if away_nfl_stats_tr:
+                    away_nfl_stats = away_nfl_stats_tr
 
                 # Team stats already fetched earlier
                 new_games[game_id] = LiveGame(
