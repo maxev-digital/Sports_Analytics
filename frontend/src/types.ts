@@ -188,6 +188,16 @@ export interface NHLTeamStats {
   shooting_pct_rank?: number | null;
   save_pct_rank?: number | null;
   pdo_rank?: number | null;
+  // Empty Net Statistics (courtesy of MoreHockeyStats.com)
+  en_goals_for?: number | null;  // Empty net goals scored
+  en_goals_against?: number | null;  // Empty net goals allowed
+  en_differential?: number | null;  // EN goals for - against
+  en_situations?: number | null;  // Count of EN situations
+  en_success_rate?: number | null;  // Success rate when pulling goalie
+  // Empty Net Rankings (1-32)
+  en_goals_for_rank?: number | null;
+  en_goals_against_rank?: number | null;
+  en_differential_rank?: number | null;
 }
 
 export interface NFLTeamStats {
@@ -354,6 +364,8 @@ export interface LiveGame {
   away_nfl_live_stats: NFLLiveStats | null;
   home_nfl_stats: NFLTeamStats | null;
   away_nfl_stats: NFLTeamStats | null;
+  home_ncaaf_stats: NFLTeamStats | null;
+  away_ncaaf_stats: NFLTeamStats | null;
   home_nhl_momentum: NHLMomentumStats | null;
   away_nhl_momentum: NHLMomentumStats | null;
   home_nhl_stats: NHLTeamStats | null;
