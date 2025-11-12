@@ -29,6 +29,7 @@ from strategies.momentum_detector import MomentumDetector
 from strategies.nba_quarter_reversal import QuarterReversalDetector
 from ml.nba_regression_analyzer import NBARegressionAnalyzer
 from ml.ncaab_regression_analyzer import NCAABRegressionAnalyzer
+from simple_nhl_stats import get_nhl_team_stats  # Simple CSV loader - no API calls
 from typing import Dict, List, Optional
 import asyncio
 import logging
@@ -54,16 +55,16 @@ class GameTracker:
             self.espn_nfl_client = ESPNNFLClient()
             self.nfl_stats_client = NFLStatsClient()
             self.nfl_momentum_client = NFLMomentumClient()
-            self.nhl_stats_client = NHLStatsClient()
             self.espn_ncaab_client = ESPNNCAABClient()
             self.mlb_stats_client = MLBStatsClient()
         else:
             self.espn_nfl_client = None
             self.nfl_stats_client = None
             self.nfl_momentum_client = None
-            self.nhl_stats_client = None
             self.espn_ncaab_client = None
             self.mlb_stats_client = None
+
+        # NHL stats loaded from CSV on module import - no client initialization needed
         self.games: Dict[str, LiveGame] = {}
         self.running = False
         self.team_stats_cache: Dict[str, TeamStats] = {}  # Cache NBA team stats
@@ -577,36 +578,22 @@ class GameTracker:
                 return None
 
     async def _get_nhl_team_stats(self, team_name: str) -> Optional[NHLTeamStats]:
-        """Get NHL team stats with caching"""
-        # Check if ESPN stats are enabled
-        if self.nhl_stats_client is None:
-            return None
-
-        # Check if we have cached stats
+        """Get NHL team stats - dead simple CSV lookup (loaded once on import)"""
+        # Check cache first
         if team_name in self.nhl_team_stats_cache:
             return self.nhl_team_stats_cache[team_name]
 
-        # Map team name to abbreviation
-        team_abbr = self._map_nhl_team_name(team_name)
-        if not team_abbr:
-            logger.warning(f"Could not map NHL team name: {team_name}")
-            return None
-
         try:
-            # Fetch season stats from NHL API with rankings
-            nhl_stats = await self.nhl_stats_client.get_team_stats_with_rankings(team_abbr)
-            if not nhl_stats:
-                return None
-
-            # Update the team_name to use the proper display name (not just abbreviation)
-            nhl_stats.team_name = team_name
-
-            # Cache the stats
-            self.nhl_team_stats_cache[team_name] = nhl_stats
+            # Get from pre-loaded CSV cache (synchronous, no async needed)
+            nhl_stats = get_nhl_team_stats(team_name)
+            if nhl_stats:
+                # Cache it
+                self.nhl_team_stats_cache[team_name] = nhl_stats
+                logger.info(f"✅ Loaded NHL stats for {team_name} (EN goals: {nhl_stats.en_goals_for})")
             return nhl_stats
 
         except Exception as e:
-            logger.warning(f"Error fetching NHL stats for {team_name}: {e}")
+            logger.error(f"Error getting NHL stats for {team_name}: {e}")
             return None
 
     async def _get_mlb_team_stats(self, team_name: str) -> Optional[MLBTeamStats]:
@@ -882,18 +869,11 @@ class GameTracker:
         cache_key = f"{'ncaaf' if is_ncaaf else 'nfl'}_{team_name}"
 
         try:
-            # Fetch from appropriate scraper
+            # Use the scraper's get_team_stats method with improved fuzzy matching
             if is_ncaaf:
-                teamrankings_data = self.teamrankings_ncaaf_scraper.fetch_all_team_stats()
+                tr_stats = self.teamrankings_ncaaf_scraper.get_team_stats(team_name)
             else:
-                teamrankings_data = self.teamrankings_nfl_scraper.fetch_all_team_stats()
-
-            # Try to find team in TeamRankings data (flexible matching)
-            tr_stats = None
-            for team_key, stats in teamrankings_data.items():
-                if team_name.lower() in team_key.lower() or team_key.lower() in team_name.lower():
-                    tr_stats = stats
-                    break
+                tr_stats = self.teamrankings_nfl_scraper.get_team_stats(team_name)
 
             if not tr_stats:
                 logger.warning(f"TeamRankings data not found for {team_name} ({'NCAAF' if is_ncaaf else 'NFL'})")
@@ -922,7 +902,20 @@ class GameTracker:
                 turnover_differential=float(tr_stats.get('turnover_diff', 0.0)),
                 third_down_pct=float(tr_stats.get('third_down_conversion_pct', 40.0)),
                 red_zone_pct=float(tr_stats.get('red_zone_scoring_pct', 55.0)),
-                sacks_per_game=float(tr_stats.get('sacks_per_game', 2.5))
+                sacks_per_game=float(tr_stats.get('sacks_per_game', 2.5)),
+                # Rankings
+                points_per_game_rank=tr_stats.get('points_per_game_rank'),
+                points_allowed_per_game_rank=tr_stats.get('points_allowed_per_game_rank'),
+                total_yards_per_game_rank=tr_stats.get('total_yards_per_game_rank'),
+                yards_allowed_per_game_rank=tr_stats.get('yards_allowed_per_game_rank'),
+                passing_yards_per_game_rank=tr_stats.get('passing_yards_per_game_rank'),
+                rushing_yards_per_game_rank=tr_stats.get('rushing_yards_per_game_rank'),
+                passing_yards_allowed_rank=tr_stats.get('passing_yards_allowed_rank'),
+                rushing_yards_allowed_rank=tr_stats.get('rushing_yards_allowed_rank'),
+                third_down_pct_rank=tr_stats.get('third_down_pct_rank'),
+                red_zone_pct_rank=tr_stats.get('red_zone_pct_rank'),
+                sacks_rank=tr_stats.get('sacks_rank'),
+                turnover_differential_rank=tr_stats.get('turnover_differential_rank')
             )
 
             logger.info(f"✅ Fetched TeamRankings {'NCAAF' if is_ncaaf else 'NFL'} stats for {team_name}")
@@ -1044,23 +1037,22 @@ class GameTracker:
             sport_key = game.get('sport_key', '')
 
             # Check if game is in scores data
-            if game_id not in scores_data:
-                continue
+            if game_id in scores_data:
+                score_info = scores_data[game_id]
+                is_completed = score_info.get('completed') == True
+                has_scores = score_info.get('scores') is not None
 
-            score_info = scores_data[game_id]
-            is_completed = score_info.get('completed') == True
-            has_scores = score_info.get('scores') is not None
+                # Skip completed games
+                if is_completed:
+                    continue
 
-            # Skip completed games
-            if is_completed:
-                continue
+                # Include live games (all sports)
+                if has_scores:
+                    filtered_odds.append(game)
+                    logger.info(f"Including live {sport_key} game: {game['away_team']} @ {game['home_team']}")
+                    continue
 
-            # Include live games (all sports)
-            if has_scores:
-                filtered_odds.append(game)
-                continue
-
-            # Include upcoming games for NBA, NHL, NCAAF, NCAAB, NFL, and MLB
+            # Include upcoming games for NBA, NHL, NCAAF, NCAAB, NFL, and MLB (even if not in scores_data yet)
             if sport_key in ['basketball_nba', 'icehockey_nhl', 'americanfootball_ncaaf', 'basketball_ncaab', 'americanfootball_nfl', 'baseball_mlb']:
                 filtered_odds.append(game)
                 logger.info(f"Including upcoming {sport_key} game: {game['away_team']} @ {game['home_team']}")
@@ -1377,12 +1369,14 @@ class GameTracker:
                 # Get NFL/NCAAF stats from TeamRankings
                 home_nfl_stats_tr = None
                 away_nfl_stats_tr = None
+                home_ncaaf_stats_tr = None
+                away_ncaaf_stats_tr = None
                 if sport_key == 'americanfootball_nfl':
                     home_nfl_stats_tr = self._get_nfl_teamrankings_stats(game_state.home_team.name, is_ncaaf=False)
                     away_nfl_stats_tr = self._get_nfl_teamrankings_stats(game_state.away_team.name, is_ncaaf=False)
                 elif sport_key == 'americanfootball_ncaaf':
-                    home_nfl_stats_tr = self._get_nfl_teamrankings_stats(game_state.home_team.name, is_ncaaf=True)
-                    away_nfl_stats_tr = self._get_nfl_teamrankings_stats(game_state.away_team.name, is_ncaaf=True)
+                    home_ncaaf_stats_tr = self._get_nfl_teamrankings_stats(game_state.home_team.name, is_ncaaf=True)
+                    away_ncaaf_stats_tr = self._get_nfl_teamrankings_stats(game_state.away_team.name, is_ncaaf=True)
 
                 # Get MLB stats from TeamRankings
                 home_mlb_stats_tr = None
@@ -1488,6 +1482,8 @@ class GameTracker:
                 away_nfl_live_stats = None
                 home_nfl_stats = None
                 away_nfl_stats = None
+                home_ncaaf_stats = None
+                away_ncaaf_stats = None
 
                 if game_state.sport_key.startswith('americanfootball'):
                     # Determine if this is NFL or NCAAF
@@ -1772,6 +1768,10 @@ class GameTracker:
                     home_nfl_stats = home_nfl_stats_tr
                 if away_nfl_stats_tr:
                     away_nfl_stats = away_nfl_stats_tr
+                if home_ncaaf_stats_tr:
+                    home_ncaaf_stats = home_ncaaf_stats_tr
+                if away_ncaaf_stats_tr:
+                    away_ncaaf_stats = away_ncaaf_stats_tr
 
                 # Team stats already fetched earlier
                 new_games[game_id] = LiveGame(
@@ -1784,6 +1784,8 @@ class GameTracker:
                     away_nfl_live_stats=away_nfl_live_stats,
                     home_nfl_stats=home_nfl_stats,
                     away_nfl_stats=away_nfl_stats,
+                    home_ncaaf_stats=home_ncaaf_stats,
+                    away_ncaaf_stats=away_ncaaf_stats,
                     home_nhl_momentum=home_nhl_momentum,
                     away_nhl_momentum=away_nhl_momentum,
                     home_nhl_stats=home_nhl_stats,

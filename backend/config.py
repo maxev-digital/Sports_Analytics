@@ -29,7 +29,9 @@ REGION = "us,us2,uk,au,eu"  # Fetch from all regions for maximum bookmaker cover
 MARKETS = "h2h,spreads,totals"  # Fetch money lines, spreads, and totals
 
 # Polling
-POLL_INTERVAL = 5  # seconds (5 seconds - fastest recommended rate)
+POLL_INTERVAL = 30  # seconds (30s = good balance, reduce to 15s when games are live)
+# NOTE: Team season stats are cached and only scraped ONCE per day
+# Only live game data (scores, odds, time) needs frequent polling
 
 # Quiet Hours - Stop Odds API calls during low-traffic hours to save costs
 QUIET_HOURS_ENABLED = False  # ❌ DISABLED - User is in CST timezone, quiet hours were blocking prime betting time

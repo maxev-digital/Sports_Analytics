@@ -1,0 +1,33 @@
+team_name,team_abbr,games_played,wins,losses,points,goals_per_game,goals_against_per_game,shots_per_game,power_play_pct,penalty_kill_pct,en_goals_for,en_goals_against,en_differential
+Anaheim Ducks,ANA,16,6,8,15,2.8,3.5,28.5,18.2,76.5,2.0,1.0,1.0
+Boston Bruins,BOS,16,9,7,19,3.1,2.9,30.2,22.5,82.1,3.0,2.0,1.0
+Buffalo Sabres,BUF,16,8,8,16,2.9,3.1,29.8,19.8,78.9,2.0,2.0,0.0
+Calgary Flames,CGY,16,9,6,20,3.2,2.8,31.5,23.1,81.5,4.0,1.0,3.0
+Carolina Hurricanes,CAR,16,10,5,22,3.4,2.6,32.8,24.5,83.2,3.0,1.0,2.0
+Chicago Blackhawks,CHI,16,6,10,13,2.6,3.6,27.2,17.5,75.8,1.0,3.0,-2.0
+Colorado Avalanche,COL,16,10,6,21,3.3,2.7,31.9,23.8,82.5,1.0,0.0,1.0
+Columbus Blue Jackets,CBJ,16,7,8,16,2.9,3.2,29.1,20.1,77.9,2.0,2.0,0.0
+Dallas Stars,DAL,16,11,5,24,3.5,2.5,33.2,25.2,84.1,5.0,1.0,4.0
+Detroit Red Wings,DET,16,7,8,16,2.8,3.1,28.9,19.5,78.2,3.0,2.0,1.0
+Edmonton Oilers,EDM,16,9,7,19,3.2,2.9,31.1,22.8,81.8,4.0,2.0,2.0
+Florida Panthers,FLA,16,10,5,22,3.4,2.6,32.5,24.2,83.5,4.0,1.0,3.0
+Los Angeles Kings,LAK,16,8,7,18,3.0,2.9,30.5,21.5,80.2,4.0,2.0,2.0
+Minnesota Wild,MIN,16,8,7,17,3.0,3.0,30.1,20.8,79.5,3.0,2.0,1.0
+Montreal Canadiens,MTL,16,7,9,15,2.7,3.2,28.5,18.9,77.2,2.0,2.0,0.0
+Nashville Predators,NSH,16,6,9,14,2.7,3.3,28.2,18.5,76.8,2.0,3.0,-1.0
+New Jersey Devils,NJD,16,10,6,21,3.3,2.7,31.8,23.5,82.8,3.0,1.0,2.0
+New York Islanders,NYI,16,7,8,16,2.9,3.1,29.5,20.2,78.5,2.0,2.0,0.0
+New York Rangers,NYR,16,9,6,20,3.2,2.8,31.2,22.9,81.9,4.0,1.0,3.0
+Ottawa Senators,OTT,16,7,8,16,2.8,3.2,29.0,19.8,77.8,2.0,2.0,0.0
+Philadelphia Flyers,PHI,16,8,8,17,2.9,3.0,29.8,20.5,79.1,3.0,2.0,1.0
+Pittsburgh Penguins,PIT,16,8,8,17,3.0,3.0,30.2,21.1,79.8,3.0,2.0,1.0
+San Jose Sharks,SJS,16,5,10,12,2.5,3.7,26.8,16.8,74.5,2.0,1.0,1.0
+Seattle Kraken,SEA,16,8,8,17,2.9,3.0,29.6,20.3,78.9,2.0,1.0,1.0
+St. Louis Blues,STL,16,7,9,15,2.8,3.2,28.7,19.2,77.5,2.0,2.0,0.0
+Tampa Bay Lightning,TBL,16,9,7,19,3.1,2.9,30.8,22.2,80.9,4.0,2.0,2.0
+Toronto Maple Leafs,TOR,16,10,6,21,3.3,2.7,31.6,23.6,82.6,4.0,1.0,3.0
+Utah Mammoth,UTA,16,7,8,16,2.8,3.1,29.2,19.9,78.3,2.0,2.0,0.0
+Vancouver Canucks,VAN,16,8,7,18,3.0,2.9,30.3,21.3,80.1,3.0,2.0,1.0
+Vegas Golden Knights,VGK,16,10,5,22,3.4,2.6,32.6,24.3,83.3,5.0,1.0,4.0
+Washington Capitals,WSH,16,11,4,24,3.5,2.5,33.1,25.1,84.0,4.0,1.0,3.0
+Winnipeg Jets,WPG,16,12,3,26,3.6,2.4,33.8,25.8,85.2,5.0,0.0,5.0
