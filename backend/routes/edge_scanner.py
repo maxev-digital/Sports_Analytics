@@ -151,12 +151,12 @@ def load_edge_lab_predictions(bet_type_filter: Optional[str] = None, model_filte
                     logger.warning(f"Skipping unrealistic NHL spread prediction: {predicted_value} for {away_team} @ {home_team}")
                     continue
 
-            if sport_raw.upper() == 'NHL' and bet_type.lower() == 'totals':
-                # NHL totals typically range from 5.5 to 7.5
-                # Predictions outside 4-10 range are unrealistic
-                if predicted_value < 4 or predicted_value > 10:
-                    logger.warning(f"Skipping unrealistic NHL totals prediction: {predicted_value} for {away_team} @ {home_team}")
-                    continue
+            # REMOVED: This filter was too strict and removed high-value opportunities
+            # NHL models can legitimately predict high-scoring or low-scoring games
+            # if sport_raw.upper() == 'NHL' and bet_type.lower() == 'totals':
+            #     if predicted_value < 4 or predicted_value > 10:
+            #         logger.warning(f"Skipping unrealistic NHL totals prediction: {predicted_value}")
+            #         continue
 
             # Calculate confidence based on CSV confidence level with modest adjustments
             confidence_base = {'HIGH': 0.72, 'MEDIUM': 0.64, 'LOW': 0.56, 'NONE': 0.50}
