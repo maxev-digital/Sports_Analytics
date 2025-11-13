@@ -362,7 +362,7 @@ export function MaxEvEdges() {
         <div className="mb-4">
           <h1 className="text-4xl font-bold italic text-slate-100 mb-2" style={{ fontStyle: 'italic', textTransform: 'uppercase' }}>MAX EV MODEL EDGES</h1>
           <p className="text-slate-400 text-base">
-            Pre-game betting opportunities across <span className="text-blue-400 font-semibold">{totalModels || 61} trained ML models</span> • Auto-refresh every 30s
+            Pre-game betting opportunities across <span className="text-blue-400 font-semibold">{totalModels || 61} trained MAX-EV models</span> • Auto-refresh every 30s
           </p>
         </div>
 
@@ -548,7 +548,7 @@ export function MaxEvEdges() {
                           </Tooltip>
                         </th>
                         <th className="text-center py-2 px-3 text-slate-300 font-bold text-xs uppercase tracking-wider border-r border-b-2 border-slate-600">
-                          <Tooltip text="ML model used for prediction">
+                          <Tooltip text="MAX-EV model used for prediction">
                             <span className="cursor-help">Model</span>
                           </Tooltip>
                         </th>
@@ -572,7 +572,7 @@ export function MaxEvEdges() {
                               {searchQuery ? (
                                 <>No plays match your search "{searchQuery}"</>
                               ) : (
-                                <>Awaiting predictions from {totalModels} ML models across 5 sports...</>
+                                <>Awaiting predictions from {totalModels} MAX-EV models across 5 sports...</>
                               )}
                             </div>
                             <div className="text-slate-600 text-sm">
