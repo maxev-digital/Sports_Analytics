@@ -12,7 +12,7 @@ import { GenericStrategyAlert } from '../components/GenericStrategyAlert';
 import { AlertsPerformance } from '../components/AlertsPerformance';
 import { getApiUrl } from '../config';
 import { useSoundEffect } from '../hooks/useSoundEffect';
-import { useToast } from '../components/Toast';
+// Toast notifications removed - no longer needed
 
 interface StrategyInfo {
   id: string;
@@ -196,9 +196,7 @@ export function Alerts() {
   const sirenRef = useRef<HTMLAudioElement>(null);
   const previousCountRef = useRef({ arbitrage: -1, steam: -1, lines: -1, goaliePull: -1, sharpMoney: -1, scheduleFatigue: -1 });
   const isInitialLoadRef = useRef(true);
-  const { showToast } = useToast();
-
-  // Handle navigation state from toast clicks (when user clicks toast on other pages)
+  // Handle navigation state from clicks (when user clicks on other pages)
   useEffect(() => {
     const state = location.state as { category?: 'live' | 'pregame'; tab?: string } | null;
     if (state?.category && state?.tab) {
@@ -304,22 +302,13 @@ export function Alerts() {
     }
 
     if (currentCount > previousCountRef.current.arbitrage && previousCountRef.current.arbitrage >= 0) {
-      console.log('[ARBITRAGE ALERT] New alert detected! Playing sound and showing toast...');
+      console.log('[ARBITRAGE ALERT] New alert detected! Playing sound...');
       playArbitrageSound();
-      const newAlerts = currentCount - previousCountRef.current.arbitrage;
-      showToast(
-        `🚨 ${newAlerts} NEW ARBITRAGE OPPORTUNIT${newAlerts > 1 ? 'IES' : 'Y'} - Risk-Free Profit!`,
-        'success',
-        () => {
-          setCategoryTab('pregame');
-          setActiveTab('arbitrage');
-        }
-      );
     }
     previousCountRef.current.arbitrage = currentCount;
-  }, [alertsData?.arbitrage.count, playArbitrageSound, showToast]);
+  }, [alertsData?.arbitrage.count, playArbitrageSound]);
 
-  // Play sound and show toast when new middle alerts arrive
+  // Play sound when new middle alerts arrive
   useEffect(() => {
     const currentCount = alertsData?.middles.count || 0;
 
@@ -330,22 +319,13 @@ export function Alerts() {
     }
 
     if (currentCount > previousCountRef.current.lines && previousCountRef.current.lines >= 0) {
-      console.log('[MIDDLE ALERT] New alert detected! Playing sound and showing toast...');
+      console.log('[MIDDLE ALERT] New alert detected! Playing sound...');
       playMiddleSound();
-      const newAlerts = currentCount - previousCountRef.current.lines;
-      showToast(
-        `💎 ${newAlerts} NEW MIDDLE OPPORTUNIT${newAlerts > 1 ? 'IES' : 'Y'} - Bet Both Sides!`,
-        'info',
-        () => {
-          setCategoryTab('pregame');
-          setActiveTab('lines');
-        }
-      );
     }
     previousCountRef.current.lines = currentCount;
-  }, [alertsData?.middles.count, playMiddleSound, showToast]);
+  }, [alertsData?.middles.count, playMiddleSound]);
 
-  // Play sound and show toast when new steam move alerts arrive
+  // Play sound when new steam move alerts arrive
   useEffect(() => {
     const currentCount = alertsData?.steam_moves.count || 0;
 
@@ -356,22 +336,13 @@ export function Alerts() {
     }
 
     if (currentCount > previousCountRef.current.steam && previousCountRef.current.steam >= 0) {
-      console.log('[STEAM MOVE ALERT] New alert detected! Playing sound and showing toast...');
+      console.log('[STEAM MOVE ALERT] New alert detected! Playing sound...');
       playSteamMoveSound();
-      const newAlerts = currentCount - previousCountRef.current.steam;
-      showToast(
-        `⚡ ${newAlerts} NEW STEAM MOVE${newAlerts > 1 ? 'S' : ''} - Sharp Money Alert!`,
-        'warning',
-        () => {
-          setCategoryTab('pregame');
-          setActiveTab('steam');
-        }
-      );
     }
     previousCountRef.current.steam = currentCount;
-  }, [alertsData?.steam_moves.count, playSteamMoveSound, showToast]);
+  }, [alertsData?.steam_moves.count, playSteamMoveSound]);
 
-  // Play sound and show toast when new sharp money alerts arrive
+  // Play sound when new sharp money alerts arrive
   useEffect(() => {
     const currentCount = alertsData?.sharp_money.count || 0;
 
@@ -382,22 +353,13 @@ export function Alerts() {
     }
 
     if (currentCount > previousCountRef.current.sharpMoney && previousCountRef.current.sharpMoney >= 0) {
-      console.log('[SHARP MONEY ALERT] New alert detected! Playing sound and showing toast...');
+      console.log('[SHARP MONEY ALERT] New alert detected! Playing sound...');
       playSteamMoveSound(); // Reuse steam move sound
-      const newAlerts = currentCount - previousCountRef.current.sharpMoney;
-      showToast(
-        `💰 ${newAlerts} NEW SHARP MONEY ALERT${newAlerts > 1 ? 'S' : ''} - Pro Bettors Active!`,
-        'info',
-        () => {
-          setCategoryTab('pregame');
-          setActiveTab('sharp-money');
-        }
-      );
     }
     previousCountRef.current.sharpMoney = currentCount;
-  }, [alertsData?.sharp_money.count, playSteamMoveSound, showToast]);
+  }, [alertsData?.sharp_money.count, playSteamMoveSound]);
 
-  // Play sound and show toast when new schedule fatigue alerts arrive
+  // Play sound when new schedule fatigue alerts arrive
   useEffect(() => {
     const currentCount = alertsData?.schedule_fatigue.count || 0;
 
@@ -408,20 +370,11 @@ export function Alerts() {
     }
 
     if (currentCount > previousCountRef.current.scheduleFatigue && previousCountRef.current.scheduleFatigue >= 0) {
-      console.log('[SCHEDULE FATIGUE ALERT] New alert detected! Playing sound and showing toast...');
+      console.log('[SCHEDULE FATIGUE ALERT] New alert detected! Playing sound...');
       playSteamMoveSound(); // Reuse steam move sound
-      const newAlerts = currentCount - previousCountRef.current.scheduleFatigue;
-      showToast(
-        `😴 ${newAlerts} NEW SCHEDULE FATIGUE ALERT${newAlerts > 1 ? 'S' : ''} - Rest Advantage Detected!`,
-        'warning',
-        () => {
-          setCategoryTab('pregame');
-          setActiveTab('fatigue');
-        }
-      );
     }
     previousCountRef.current.scheduleFatigue = currentCount;
-  }, [alertsData?.schedule_fatigue.count, playSteamMoveSound, showToast]);
+  }, [alertsData?.schedule_fatigue.count, playSteamMoveSound]);
 
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
