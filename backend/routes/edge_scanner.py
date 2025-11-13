@@ -6,6 +6,8 @@ Uses REAL data from autonomous systems:
 1. Edge Lab predictions (predictions_log.csv)
 2. Monte Carlo simulations (monte_carlo simulations logs)
 3. Regression to Mean alerts (regression alerts logs)
+
+Sport-specific validation and sport code mapping added.
 """
 from fastapi import APIRouter, HTTPException
 from typing import List, Dict, Any, Optional
@@ -74,9 +76,41 @@ def load_edge_lab_predictions(bet_type_filter: Optional[str] = None, model_filte
         cutoff = pd.Timestamp.now() - pd.Timedelta(days=7)
         df = df[df['date_predicted'] >= cutoff]
 
-        # Parse game dates to check if still upcoming
+        # Parse game dates and filter by sport-specific windows
         df['game_date_parsed'] = pd.to_datetime(df['game_date'], format='mixed', errors='coerce')
-        df = df[df['game_date_parsed'] >= pd.Timestamp.now().normalize()]
+        now = pd.Timestamp.now(tz='UTC')
+
+        # Filter based on sport:
+        # - NBA, NHL, NCAAB: Next 24 hours (daily sports - timezone safe)
+        # - NFL, NCAAF: Next 7 days (weekly sports)
+        def should_include_game(row):
+            game_date = row['game_date_parsed']
+            if pd.isna(game_date):
+                return False
+
+            # Make game_date timezone-aware if it isn't already
+            if game_date.tz is None:
+                game_date = game_date.tz_localize('UTC')
+            else:
+                game_date = game_date.tz_convert('UTC')
+
+            # Get sport from CSV column
+            sport_code = str(row.get('sport', '')).upper()
+
+            # Daily sports: next 24 hours (captures all of "today" regardless of timezone)
+            if sport_code in ['NBA', 'NHL', 'NCAAB']:
+                hours_until_game = (game_date - now).total_seconds() / 3600
+                return -2 <= hours_until_game <= 24  # Include games that started up to 2 hours ago, and games within next 24 hours
+            # Weekly sports: next 7 days
+            elif sport_code in ['NFL', 'NCAAF']:
+                days_until_game = (game_date - now).total_seconds() / 86400
+                return -0.5 <= days_until_game <= 7  # Include games that started up to 12 hours ago, and games within next 7 days
+            else:
+                # Default: next 24 hours
+                hours_until_game = (game_date - now).total_seconds() / 3600
+                return -2 <= hours_until_game <= 24
+
+        df = df[df.apply(should_include_game, axis=1)]
 
         # Apply filters
         if bet_type_filter:
@@ -91,8 +125,8 @@ def load_edge_lab_predictions(bet_type_filter: Optional[str] = None, model_filte
             home_team = row['home_team']
             away_team = row['away_team']
 
-            # Detect sport and convert to API key format (NBA -> basketball_nba)
-            sport_raw = detect_sport(home_team, away_team)
+            # Get sport directly from CSV (more reliable than team name detection)
+            sport_raw = str(row.get('sport', 'UNKNOWN')).strip().upper()
             sport_map = {
                 'NBA': 'basketball_nba',
                 'NCAAB': 'basketball_ncaab',
@@ -108,6 +142,21 @@ def load_edge_lab_predictions(bet_type_filter: Optional[str] = None, model_filte
             market_value = float(row['market_value'])
             bet_type = row['bet_type']
             model = row['model']
+
+            # Sport-specific validation - filter out unrealistic predictions
+            if sport_raw.upper() == 'NHL' and bet_type.lower() == 'spreads':
+                # NHL puck lines are almost always -1.5/+1.5
+                # Predictions beyond -3/+3 are unrealistic (would mean 4+ goal differential)
+                if abs(predicted_value) > 3.5:
+                    logger.warning(f"Skipping unrealistic NHL spread prediction: {predicted_value} for {away_team} @ {home_team}")
+                    continue
+
+            if sport_raw.upper() == 'NHL' and bet_type.lower() == 'totals':
+                # NHL totals typically range from 5.5 to 7.5
+                # Predictions outside 4-10 range are unrealistic
+                if predicted_value < 4 or predicted_value > 10:
+                    logger.warning(f"Skipping unrealistic NHL totals prediction: {predicted_value} for {away_team} @ {home_team}")
+                    continue
 
             # Calculate confidence based on CSV confidence level with modest adjustments
             confidence_base = {'HIGH': 0.72, 'MEDIUM': 0.64, 'LOW': 0.56, 'NONE': 0.50}
@@ -171,7 +220,7 @@ def load_edge_lab_predictions(bet_type_filter: Optional[str] = None, model_filte
                 "model_name": model_display,
                 "model_confidence": confidence,
                 "edge": edge,
-                "edge_percentage": (abs(edge) / market_value) * 100 if market_value != 0 else 0,
+                "edge_percentage": (abs(edge) / abs(market_value)) * 100 if market_value != 0 else 0,
                 "recommendation": row['recommendation'],
                 "kelly_fraction": kelly,
                 "suggested_bet_size": f"{kelly*100:.1f}% of bankroll",
@@ -595,7 +644,18 @@ async def get_best_plays(
 
         # Filter by sport if specified
         if sport:
-            all_plays = [p for p in all_plays if p['sport'].lower() == sport.lower()]
+            # Map short sport codes to full API codes
+            sport_code_map = {
+                'nba': 'basketball_nba',
+                'ncaab': 'basketball_ncaab',
+                'nfl': 'americanfootball_nfl',
+                'ncaaf': 'americanfootball_ncaaf',
+                'nhl': 'icehockey_nhl',
+                'mlb': 'baseball_mlb'
+            }
+            # Convert short code to full code if needed
+            sport_filter = sport_code_map.get(sport.lower(), sport.lower())
+            all_plays = [p for p in all_plays if p['sport'].lower() == sport_filter.lower()]
             logger.info(f"After sport filter ({sport}): {len(all_plays)} plays")
 
         # Filter by minimum edge and confidence

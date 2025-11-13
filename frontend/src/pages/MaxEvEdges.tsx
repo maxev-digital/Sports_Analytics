@@ -95,23 +95,23 @@ export function MaxEvEdges() {
   const [selectedBetType, setSelectedBetType] = useState<string>('all');
   const [selectedModel, setSelectedModel] = useState<string>('all');
   const [loading, setLoading] = useState(true);
-  const [minEdge, setMinEdge] = useState(2.0);
-  const [minConfidence, setMinConfidence] = useState(0.60);
-  const [debouncedMinEdge, setDebouncedMinEdge] = useState(2.0);
-  const [debouncedMinConfidence, setDebouncedMinConfidence] = useState(0.60);
+  const [minEdge, setMinEdge] = useState(0.5);
+  const [minConfidence, setMinConfidence] = useState(0.40);
+  const [debouncedMinEdge, setDebouncedMinEdge] = useState(0.5);
+  const [debouncedMinConfidence, setDebouncedMinConfidence] = useState(0.40);
   const [sortField, setSortField] = useState<SortField>('edge');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [searchQuery, setSearchQuery] = useState('');
   const [showingMockData, setShowingMockData] = useState(false);
 
   const sports = [
-    { key: 'all', name: 'ALL', emoji: '🎯' },
-    { key: 'nba', name: 'NBA', emoji: '🏀' },
-    { key: 'ncaab', name: 'NCAAB', emoji: '🏀' },
-    { key: 'nfl', name: 'NFL', emoji: '🏈' },
-    { key: 'nhl', name: 'NHL', emoji: '🏒' },
-    { key: 'mlb', name: 'MLB', emoji: '⚾' },
-    { key: 'ncaaf', name: 'NCAAF', emoji: '🏈' },
+    { key: 'all', name: 'ALL', emoji: '🎯', apiKey: 'all' },
+    { key: 'nba', name: 'NBA', emoji: '🏀', apiKey: 'basketball_nba' },
+    { key: 'ncaab', name: 'NCAAB', emoji: '🏀', apiKey: 'basketball_ncaab' },
+    { key: 'nfl', name: 'NFL', emoji: '🏈', apiKey: 'americanfootball_nfl' },
+    { key: 'nhl', name: 'NHL', emoji: '🏒', apiKey: 'icehockey_nhl' },
+    { key: 'mlb', name: 'MLB', emoji: '⚾', apiKey: 'baseball_mlb' },
+    { key: 'ncaaf', name: 'NCAAF', emoji: '🏈', apiKey: 'americanfootball_ncaaf' },
   ];
 
   // Debounce minEdge and minConfidence inputs (wait 800ms after user stops typing)
@@ -157,7 +157,10 @@ export function MaxEvEdges() {
         });
 
         if (selectedSport !== 'all') {
-          params.append('sport', selectedSport.toLowerCase());
+          const sportConfig = sports.find(s => s.key === selectedSport);
+          if (sportConfig && sportConfig.apiKey !== 'all') {
+            params.append('sport', sportConfig.apiKey);
+          }
         }
         if (selectedBetType !== 'all') {
           params.append('bet_type', selectedBetType);
