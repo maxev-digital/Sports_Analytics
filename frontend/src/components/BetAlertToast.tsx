@@ -75,6 +75,7 @@ export function BetAlertToast({ alert, onDismiss, position }: BetAlertToastProps
         pulse: 'animate-pulse',
         emoji: '🚨',
         timerColor: 'text-white',
+        infoBg: 'bg-black/40',
         bookCardBg: 'bg-red-600/80 border-white',
         bookCardHover: 'hover:bg-red-500/90 hover:border-white'
       };
@@ -90,12 +91,13 @@ export function BetAlertToast({ alert, onDismiss, position }: BetAlertToastProps
         pulse: '',
         emoji: '🔥',
         timerColor: 'text-white',
+        infoBg: 'bg-black/40',
         bookCardBg: 'bg-blue-600/80 border-white',
         bookCardHover: 'hover:bg-blue-500/90 hover:border-white'
       };
     }
 
-    // Middle Opportunity = Black background with GREEN inner windows
+    // Middle Opportunity = Black background, RED info windows, GREEN book cards
     // Bet both sides with gap - chance to win both or push one
     if (strategyName.includes('middle')) {
       return {
@@ -105,6 +107,7 @@ export function BetAlertToast({ alert, onDismiss, position }: BetAlertToastProps
         pulse: '',
         emoji: '⚡',
         timerColor: 'text-white',
+        infoBg: 'bg-gradient-to-r from-red-900 to-red-800',
         bookCardBg: 'bg-green-600/80 border-white',
         bookCardHover: 'hover:bg-green-500/90 hover:border-white'
       };
@@ -118,6 +121,7 @@ export function BetAlertToast({ alert, onDismiss, position }: BetAlertToastProps
       pulse: '',
       emoji: '💡',
       timerColor: 'text-white',
+      infoBg: 'bg-black/40',
       bookCardBg: 'bg-orange-600/80 border-white',
       bookCardHover: 'hover:bg-orange-500/90 hover:border-white'
     };
@@ -165,7 +169,7 @@ export function BetAlertToast({ alert, onDismiss, position }: BetAlertToastProps
       {/* Alert Body */}
       <div className="p-4 space-y-3">
         {/* Trigger */}
-        <div className="bg-black/40 rounded-lg p-3 border border-white/20">
+        <div className={`${styles.infoBg} rounded-lg p-3 border border-white/20`}>
           <div className="text-xs font-semibold text-white/70 mb-1">TRIGGER</div>
           <div className="text-sm text-white font-medium leading-tight">
             {alert.trigger}
@@ -173,7 +177,7 @@ export function BetAlertToast({ alert, onDismiss, position }: BetAlertToastProps
         </div>
 
         {/* Recommendation */}
-        <div className="bg-black/40 rounded-lg p-3 border border-white/20">
+        <div className={`${styles.infoBg} rounded-lg p-3 border border-white/20`}>
           <div className="text-xs font-semibold text-white/70 mb-1">RECOMMENDATION</div>
           <div className="text-sm text-white font-bold">
             {alert.recommendation}
@@ -261,7 +265,7 @@ export function BetAlertToast({ alert, onDismiss, position }: BetAlertToastProps
         </div>
 
         {/* Win Probability */}
-        <div className="bg-black/40 rounded-lg p-2 border border-white/20">
+        <div className={`${styles.infoBg} rounded-lg p-2 border border-white/20`}>
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-white/70">Win Probability</span>
             <span className="text-white font-bold">{(alert.win_probability * 100).toFixed(1)}%</span>
