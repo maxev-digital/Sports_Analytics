@@ -425,7 +425,7 @@ export function Alerts() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-4xl font-bold text-slate-100 mb-2">Live Alerts</h1>
+              <h1 className="text-4xl font-bold italic text-slate-100 mb-2" style={{ fontStyle: 'italic', textTransform: 'uppercase' }}>LIVE ALERTS</h1>
               <p className="text-slate-400">Real-time betting opportunities detected every 10 seconds</p>
             </div>
             <div className="flex items-center gap-4">

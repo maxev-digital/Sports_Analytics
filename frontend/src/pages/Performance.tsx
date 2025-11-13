@@ -150,7 +150,7 @@ export default function Performance() {
 
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">Model Performance</h1>
+          <h1 className="text-4xl font-bold italic text-white mb-2" style={{ fontStyle: 'italic', textTransform: 'uppercase' }}>MODEL PERFORMANCE</h1>
           <p className="text-slate-300">Historical prediction results with complete win/loss tracking</p>
           <p className="text-slate-400 text-sm mt-2">All profits calculated on $100 flat bets</p>
         </div>

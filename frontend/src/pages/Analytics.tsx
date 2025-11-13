@@ -323,7 +323,7 @@ export function Analytics() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-white mb-3">Analytics Dashboard</h1>
+          <h1 className="text-4xl font-bold italic text-white mb-3" style={{ fontStyle: 'italic', textTransform: 'uppercase' }}>ANALYTICS DASHBOARD</h1>
           <p className="text-lg text-slate-400">
             Real-time performance metrics and insights from live alert monitoring
           </p>

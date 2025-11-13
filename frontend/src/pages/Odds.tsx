@@ -268,7 +268,7 @@ export function Odds() {
         {/* Header with Bet Type Selector */}
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-slate-100 mb-2">Odds Comparison</h1>
+            <h1 className="text-3xl font-bold italic text-slate-100 mb-2" style={{ fontStyle: 'italic', textTransform: 'uppercase' }}>ODDS COMPARISON</h1>
             <p className="text-slate-400 text-sm">Real-time betting lines across top sportsbooks</p>
           </div>
 

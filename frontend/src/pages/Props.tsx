@@ -367,7 +367,7 @@ export function Props() {
         {/* Header with Prop Type Selector and View Mode */}
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-slate-100 mb-2">Player Props</h1>
+            <h1 className="text-3xl font-bold italic text-slate-100 mb-2" style={{ fontStyle: 'italic', textTransform: 'uppercase' }}>PLAYER PROPS</h1>
             <p className="text-slate-400 text-sm">
               {viewMode === 'all'
                 ? 'Compare player prop odds across multiple sportsbooks'
