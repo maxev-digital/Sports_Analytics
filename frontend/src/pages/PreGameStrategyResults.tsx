@@ -566,7 +566,7 @@ export function PreGameStrategyResults() {
       <div className="w-full mx-auto">
         {/* Header */}
         <div className="mb-4">
-          <h1 className="text-4xl font-bold text-slate-100 mb-2">Pre-Game Betting Strategy Results</h1>
+          <h1 className="text-4xl font-bold italic text-slate-100 mb-2" style={{ fontStyle: 'italic', textTransform: 'uppercase' }}>PRE-GAME BETTING STRATEGY RESULTS</h1>
           <p className="text-slate-400 text-base">
             Historical backtest performance for pre-game betting strategies
           </p>

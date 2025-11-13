@@ -329,7 +329,7 @@ export function Learn() {
       <div className="max-w-7xl mx-auto px-4">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold text-white mb-4">Sports Betting Education</h1>
+          <h1 className="text-5xl font-bold italic text-white mb-4" style={{ fontStyle: 'italic', textTransform: 'uppercase' }}>SPORTS BETTING EDUCATION</h1>
           <p className="text-xl text-slate-300 max-w-3xl mx-auto">
             Master live betting with our comprehensive educational resources. From fundamentals to advanced strategies,
             learn everything you need to become a successful sports bettor.

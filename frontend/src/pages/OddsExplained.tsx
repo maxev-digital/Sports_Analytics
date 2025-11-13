@@ -12,8 +12,8 @@ export function OddsExplained() {
           <div className="inline-block px-4 py-1 bg-blue-600/20 border border-blue-500/50 rounded-full mb-4">
             <span className="text-sm font-semibold text-blue-400 uppercase tracking-wider">Betting Education</span>
           </div>
-          <h1 className="text-5xl font-bold text-slate-100 mb-4">
-            Understanding Sports Betting Odds
+          <h1 className="text-5xl font-bold italic text-slate-100 mb-4" style={{ fontStyle: 'italic', textTransform: 'uppercase' }}>
+            UNDERSTANDING SPORTS BETTING ODDS
           </h1>
           <p className="text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed">
             A comprehensive guide to all betting markets tracked by MAX-EV Sports.

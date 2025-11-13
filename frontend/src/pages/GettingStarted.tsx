@@ -4,8 +4,8 @@ export function GettingStarted() {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold text-slate-100 mb-4">
-            Getting Started Guide
+          <h1 className="text-5xl font-bold italic text-slate-100 mb-4" style={{ fontStyle: 'italic', textTransform: 'uppercase' }}>
+            GETTING STARTED GUIDE
           </h1>
           <p className="text-xl text-slate-300">
             Your complete roadmap to profitable sports betting

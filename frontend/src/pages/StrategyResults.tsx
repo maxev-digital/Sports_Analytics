@@ -565,7 +565,7 @@ export function StrategyResults() {
       <div className="w-full mx-auto">
         {/* Header */}
         <div className="mb-4">
-          <h1 className="text-4xl font-bold text-slate-100 mb-2">Live Betting Strategy Results</h1>
+          <h1 className="text-4xl font-bold italic text-slate-100 mb-2" style={{ fontStyle: 'italic', textTransform: 'uppercase' }}>LIVE BETTING STRATEGY RESULTS</h1>
           <p className="text-slate-400 text-base">
             Historical backtest performance across 25+ betting strategies
           </p>
