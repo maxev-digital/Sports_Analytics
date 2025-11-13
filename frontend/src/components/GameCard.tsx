@@ -211,11 +211,11 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
     });
   };
 
-  // Helper function to get rank color (green for top 10, yellow for 11-20, white for 21+)
-  const getRankColor = (rank: number) => {
-    if (rank <= 10) return 'text-green-400';
-    if (rank <= 20) return 'text-yellow-400';
-    return '${textSecondary}';
+  // Helper function to get rank color (blue for top 10, red for 11-20, black for 21+)
+  const getRankColor = (isNHL: boolean, rank: number) => {
+    if (rank <= 10) return isNHL ? 'text-blue-600 font-bold' : 'text-green-400';
+    if (rank <= 20) return isNHL ? 'text-red-600 font-bold' : 'text-yellow-400';
+    return isNHL ? 'text-black font-bold' : '${textSecondary}';
   };
 
   // Determine sport type from sport_key
@@ -1442,35 +1442,35 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                     <>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>GF/G Rank:</span>
-                        <span className={`font-bold ${getRankColor(away_nhl_stats.goals_per_game_rank || 32)}`}>#{away_nhl_stats.goals_per_game_rank || 'N/A'}</span>
+                        <span className={`font-bold ${getRankColor(isNHL, away_nhl_stats.goals_per_game_rank || 32)}`}>#{away_nhl_stats.goals_per_game_rank || 'N/A'}</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>GA/G Rank:</span>
-                        <span className={`font-bold ${getRankColor(away_nhl_stats.goals_against_per_game_rank || 32)}`}>#{away_nhl_stats.goals_against_per_game_rank || 'N/A'}</span>
+                        <span className={`font-bold ${getRankColor(isNHL, away_nhl_stats.goals_against_per_game_rank || 32)}`}>#{away_nhl_stats.goals_against_per_game_rank || 'N/A'}</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>Shots/G Rank:</span>
-                        <span className={`font-bold ${getRankColor(away_nhl_stats.shots_per_game_rank || 32)}`}>#{away_nhl_stats.shots_per_game_rank || 'N/A'}</span>
+                        <span className={`font-bold ${getRankColor(isNHL, away_nhl_stats.shots_per_game_rank || 32)}`}>#{away_nhl_stats.shots_per_game_rank || 'N/A'}</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>SA/G Rank:</span>
-                        <span className={`font-bold ${getRankColor(away_nhl_stats.shots_against_per_game_rank || 32)}`}>#{away_nhl_stats.shots_against_per_game_rank || 'N/A'}</span>
+                        <span className={`font-bold ${getRankColor(isNHL, away_nhl_stats.shots_against_per_game_rank || 32)}`}>#{away_nhl_stats.shots_against_per_game_rank || 'N/A'}</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>PP% Rank:</span>
-                        <span className={`font-bold ${getRankColor(away_nhl_stats.power_play_pct_rank || 32)}`}>#{away_nhl_stats.power_play_pct_rank || 'N/A'}</span>
+                        <span className={`font-bold ${getRankColor(isNHL, away_nhl_stats.power_play_pct_rank || 32)}`}>#{away_nhl_stats.power_play_pct_rank || 'N/A'}</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>PK% Rank:</span>
-                        <span className={`font-bold ${getRankColor(away_nhl_stats.penalty_kill_pct_rank || 32)}`}>#{away_nhl_stats.penalty_kill_pct_rank || 'N/A'}</span>
+                        <span className={`font-bold ${getRankColor(isNHL, away_nhl_stats.penalty_kill_pct_rank || 32)}`}>#{away_nhl_stats.penalty_kill_pct_rank || 'N/A'}</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>SV% Rank:</span>
-                        <span className={`font-bold ${getRankColor(away_nhl_stats.save_pct_rank || 32)}`}>#{away_nhl_stats.save_pct_rank || 'N/A'}</span>
+                        <span className={`font-bold ${getRankColor(isNHL, away_nhl_stats.save_pct_rank || 32)}`}>#{away_nhl_stats.save_pct_rank || 'N/A'}</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>PDO Rank:</span>
-                        <span className={`font-bold ${getRankColor(away_nhl_stats.pdo_rank || 32)}`}>#{away_nhl_stats.pdo_rank || 'N/A'}</span>
+                        <span className={`font-bold ${getRankColor(isNHL, away_nhl_stats.pdo_rank || 32)}`}>#{away_nhl_stats.pdo_rank || 'N/A'}</span>
                       </div>
                     </>
                   )}
@@ -1486,7 +1486,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>ENGF Rank:</span>
-                        <span className={`font-bold ${getRankColor(away_nhl_stats.en_goals_for_rank || 32)}`}>#{away_nhl_stats.en_goals_for_rank || 'N/A'}</span>
+                        <span className={`font-bold ${getRankColor(isNHL, away_nhl_stats.en_goals_for_rank || 32)}`}>#{away_nhl_stats.en_goals_for_rank || 'N/A'}</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>EN Goals Against:</span>
@@ -1498,7 +1498,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>ENGA Rank:</span>
-                        <span className={`font-bold ${getRankColor(away_nhl_stats.en_goals_against_rank || 32)}`}>#{away_nhl_stats.en_goals_against_rank || 'N/A'}</span>
+                        <span className={`font-bold ${getRankColor(isNHL, away_nhl_stats.en_goals_against_rank || 32)}`}>#{away_nhl_stats.en_goals_against_rank || 'N/A'}</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>EN Differential:</span>
@@ -1510,7 +1510,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>EN Diff Rank:</span>
-                        <span className={`font-bold ${getRankColor(away_nhl_stats.en_differential_rank || 32)}`}>#{away_nhl_stats.en_differential_rank || 'N/A'}</span>
+                        <span className={`font-bold ${getRankColor(isNHL, away_nhl_stats.en_differential_rank || 32)}`}>#{away_nhl_stats.en_differential_rank || 'N/A'}</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>EN Success Rate:</span>
@@ -1617,35 +1617,35 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                     <>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>GF/G Rank:</span>
-                        <span className={`font-bold ${getRankColor(home_nhl_stats.goals_per_game_rank || 32)}`}>#{home_nhl_stats.goals_per_game_rank || 'N/A'}</span>
+                        <span className={`font-bold ${getRankColor(isNHL, home_nhl_stats.goals_per_game_rank || 32)}`}>#{home_nhl_stats.goals_per_game_rank || 'N/A'}</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>GA/G Rank:</span>
-                        <span className={`font-bold ${getRankColor(home_nhl_stats.goals_against_per_game_rank || 32)}`}>#{home_nhl_stats.goals_against_per_game_rank || 'N/A'}</span>
+                        <span className={`font-bold ${getRankColor(isNHL, home_nhl_stats.goals_against_per_game_rank || 32)}`}>#{home_nhl_stats.goals_against_per_game_rank || 'N/A'}</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>Shots/G Rank:</span>
-                        <span className={`font-bold ${getRankColor(home_nhl_stats.shots_per_game_rank || 32)}`}>#{home_nhl_stats.shots_per_game_rank || 'N/A'}</span>
+                        <span className={`font-bold ${getRankColor(isNHL, home_nhl_stats.shots_per_game_rank || 32)}`}>#{home_nhl_stats.shots_per_game_rank || 'N/A'}</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>SA/G Rank:</span>
-                        <span className={`font-bold ${getRankColor(home_nhl_stats.shots_against_per_game_rank || 32)}`}>#{home_nhl_stats.shots_against_per_game_rank || 'N/A'}</span>
+                        <span className={`font-bold ${getRankColor(isNHL, home_nhl_stats.shots_against_per_game_rank || 32)}`}>#{home_nhl_stats.shots_against_per_game_rank || 'N/A'}</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>PP% Rank:</span>
-                        <span className={`font-bold ${getRankColor(home_nhl_stats.power_play_pct_rank || 32)}`}>#{home_nhl_stats.power_play_pct_rank || 'N/A'}</span>
+                        <span className={`font-bold ${getRankColor(isNHL, home_nhl_stats.power_play_pct_rank || 32)}`}>#{home_nhl_stats.power_play_pct_rank || 'N/A'}</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>PK% Rank:</span>
-                        <span className={`font-bold ${getRankColor(home_nhl_stats.penalty_kill_pct_rank || 32)}`}>#{home_nhl_stats.penalty_kill_pct_rank || 'N/A'}</span>
+                        <span className={`font-bold ${getRankColor(isNHL, home_nhl_stats.penalty_kill_pct_rank || 32)}`}>#{home_nhl_stats.penalty_kill_pct_rank || 'N/A'}</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>SV% Rank:</span>
-                        <span className={`font-bold ${getRankColor(home_nhl_stats.save_pct_rank || 32)}`}>#{home_nhl_stats.save_pct_rank || 'N/A'}</span>
+                        <span className={`font-bold ${getRankColor(isNHL, home_nhl_stats.save_pct_rank || 32)}`}>#{home_nhl_stats.save_pct_rank || 'N/A'}</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>PDO Rank:</span>
-                        <span className={`font-bold ${getRankColor(home_nhl_stats.pdo_rank || 32)}`}>#{home_nhl_stats.pdo_rank || 'N/A'}</span>
+                        <span className={`font-bold ${getRankColor(isNHL, home_nhl_stats.pdo_rank || 32)}`}>#{home_nhl_stats.pdo_rank || 'N/A'}</span>
                       </div>
                     </>
                   )}
@@ -1661,7 +1661,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>ENGF Rank:</span>
-                        <span className={`font-bold ${getRankColor(home_nhl_stats.en_goals_for_rank || 32)}`}>#{home_nhl_stats.en_goals_for_rank || 'N/A'}</span>
+                        <span className={`font-bold ${getRankColor(isNHL, home_nhl_stats.en_goals_for_rank || 32)}`}>#{home_nhl_stats.en_goals_for_rank || 'N/A'}</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>EN Goals Against:</span>
@@ -1673,7 +1673,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>ENGA Rank:</span>
-                        <span className={`font-bold ${getRankColor(home_nhl_stats.en_goals_against_rank || 32)}`}>#{home_nhl_stats.en_goals_against_rank || 'N/A'}</span>
+                        <span className={`font-bold ${getRankColor(isNHL, home_nhl_stats.en_goals_against_rank || 32)}`}>#{home_nhl_stats.en_goals_against_rank || 'N/A'}</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>EN Differential:</span>
@@ -1685,7 +1685,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>EN Diff Rank:</span>
-                        <span className={`font-bold ${getRankColor(home_nhl_stats.en_differential_rank || 32)}`}>#{home_nhl_stats.en_differential_rank || 'N/A'}</span>
+                        <span className={`font-bold ${getRankColor(isNHL, home_nhl_stats.en_differential_rank || 32)}`}>#{home_nhl_stats.en_differential_rank || 'N/A'}</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>EN Success Rate:</span>
@@ -1758,31 +1758,31 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                     <>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>Off Rank:</span>
-                        <span className={`font-bold ${getRankColor(displayAwayFootballStats.points_per_game_rank || 32)}`}>
+                        <span className={`font-bold ${getRankColor(isNHL, displayAwayFootballStats.points_per_game_rank || 32)}`}>
                           #{displayAwayFootballStats.points_per_game_rank || 'N/A'}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>Def Rank:</span>
-                        <span className={`font-bold ${getRankColor(displayAwayFootballStats.points_allowed_per_game_rank || 32)}`}>
+                        <span className={`font-bold ${getRankColor(isNHL, displayAwayFootballStats.points_allowed_per_game_rank || 32)}`}>
                           #{displayAwayFootballStats.points_allowed_per_game_rank || 'N/A'}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>Pass Off:</span>
-                        <span className={`font-bold ${getRankColor(displayAwayFootballStats.passing_yards_per_game_rank || 32)}`}>
+                        <span className={`font-bold ${getRankColor(isNHL, displayAwayFootballStats.passing_yards_per_game_rank || 32)}`}>
                           #{displayAwayFootballStats.passing_yards_per_game_rank || 'N/A'}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>Rush Off:</span>
-                        <span className={`font-bold ${getRankColor(displayAwayFootballStats.rushing_yards_per_game_rank || 32)}`}>
+                        <span className={`font-bold ${getRankColor(isNHL, displayAwayFootballStats.rushing_yards_per_game_rank || 32)}`}>
                           #{displayAwayFootballStats.rushing_yards_per_game_rank || 'N/A'}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>TO Margin:</span>
-                        <span className={`font-bold ${getRankColor(displayAwayFootballStats.turnover_differential_rank || 32)}`}>
+                        <span className={`font-bold ${getRankColor(isNHL, displayAwayFootballStats.turnover_differential_rank || 32)}`}>
                           #{displayAwayFootballStats.turnover_differential_rank || 'N/A'}
                         </span>
                       </div>
@@ -1803,7 +1803,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                             : `${textValue}`
                         }`}>
                           {displayAwayFootballStats.points_per_game.toFixed(1)}
-                          <span className={`text-sm ml-1 ${getRankColor(displayAwayFootballStats.points_per_game_rank || 32)}`}>
+                          <span className={`text-sm ml-1 ${getRankColor(isNHL, displayAwayFootballStats.points_per_game_rank || 32)}`}>
                             (#{displayAwayFootballStats.points_per_game_rank || 'N/A'})
                           </span>
                         </span>
@@ -1817,7 +1817,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                             : `${textValue}`
                         }`}>
                           {displayAwayFootballStats.points_allowed_per_game.toFixed(1)}
-                          <span className={`text-sm ml-1 ${getRankColor(displayAwayFootballStats.points_allowed_per_game_rank || 32)}`}>
+                          <span className={`text-sm ml-1 ${getRankColor(isNHL, displayAwayFootballStats.points_allowed_per_game_rank || 32)}`}>
                             (#{displayAwayFootballStats.points_allowed_per_game_rank || 'N/A'})
                           </span>
                         </span>
@@ -1832,7 +1832,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                             : `${textValue}`
                         }`}>
                           {displayAwayFootballStats.passing_yards_per_game.toFixed(0)}
-                          <span className={`text-sm ml-1 ${getRankColor(displayAwayFootballStats.passing_yards_per_game_rank || 32)}`}>
+                          <span className={`text-sm ml-1 ${getRankColor(isNHL, displayAwayFootballStats.passing_yards_per_game_rank || 32)}`}>
                             (#{displayAwayFootballStats.passing_yards_per_game_rank || 'N/A'})
                           </span>
                         </span>
@@ -1847,7 +1847,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                             : `${textValue}`
                         }`}>
                           {displayAwayFootballStats.rushing_yards_per_game.toFixed(0)}
-                          <span className={`text-sm ml-1 ${getRankColor(displayAwayFootballStats.rushing_yards_per_game_rank || 32)}`}>
+                          <span className={`text-sm ml-1 ${getRankColor(isNHL, displayAwayFootballStats.rushing_yards_per_game_rank || 32)}`}>
                             (#{displayAwayFootballStats.rushing_yards_per_game_rank || 'N/A'})
                           </span>
                         </span>
@@ -1861,7 +1861,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                           displayAwayFootballStats.turnover_differential < 0 ? 'text-red-400' : `${textValue}`
                         }`}>
                           {displayAwayFootballStats.turnover_differential > 0 ? '+' : ''}{displayAwayFootballStats.turnover_differential.toFixed(1)}
-                          <span className={`text-sm ml-1 ${getRankColor(displayAwayFootballStats.turnover_differential_rank || 32)}`}>
+                          <span className={`text-sm ml-1 ${getRankColor(isNHL, displayAwayFootballStats.turnover_differential_rank || 32)}`}>
                             (#{displayAwayFootballStats.turnover_differential_rank || 'N/A'})
                           </span>
                         </span>
@@ -1970,31 +1970,31 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                     <>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>Off Rank:</span>
-                        <span className={`font-bold ${getRankColor(displayHomeFootballStats.points_per_game_rank || 32)}`}>
+                        <span className={`font-bold ${getRankColor(isNHL, displayHomeFootballStats.points_per_game_rank || 32)}`}>
                           #{displayHomeFootballStats.points_per_game_rank || 'N/A'}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>Def Rank:</span>
-                        <span className={`font-bold ${getRankColor(displayHomeFootballStats.points_allowed_per_game_rank || 32)}`}>
+                        <span className={`font-bold ${getRankColor(isNHL, displayHomeFootballStats.points_allowed_per_game_rank || 32)}`}>
                           #{displayHomeFootballStats.points_allowed_per_game_rank || 'N/A'}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>Pass Off:</span>
-                        <span className={`font-bold ${getRankColor(displayHomeFootballStats.passing_yards_per_game_rank || 32)}`}>
+                        <span className={`font-bold ${getRankColor(isNHL, displayHomeFootballStats.passing_yards_per_game_rank || 32)}`}>
                           #{displayHomeFootballStats.passing_yards_per_game_rank || 'N/A'}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>Rush Off:</span>
-                        <span className={`font-bold ${getRankColor(displayHomeFootballStats.rushing_yards_per_game_rank || 32)}`}>
+                        <span className={`font-bold ${getRankColor(isNHL, displayHomeFootballStats.rushing_yards_per_game_rank || 32)}`}>
                           #{displayHomeFootballStats.rushing_yards_per_game_rank || 'N/A'}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>TO Margin:</span>
-                        <span className={`font-bold ${getRankColor(displayHomeFootballStats.turnover_differential_rank || 32)}`}>
+                        <span className={`font-bold ${getRankColor(isNHL, displayHomeFootballStats.turnover_differential_rank || 32)}`}>
                           #{displayHomeFootballStats.turnover_differential_rank || 'N/A'}
                         </span>
                       </div>
@@ -2015,7 +2015,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                             : `${textValue}`
                         }`}>
                           {displayHomeFootballStats.points_per_game.toFixed(1)}
-                          <span className={`text-sm ml-1 ${getRankColor(displayHomeFootballStats.points_per_game_rank || 32)}`}>
+                          <span className={`text-sm ml-1 ${getRankColor(isNHL, displayHomeFootballStats.points_per_game_rank || 32)}`}>
                             (#{displayHomeFootballStats.points_per_game_rank || 'N/A'})
                           </span>
                         </span>
@@ -2030,7 +2030,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                             : `${textValue}`
                         }`}>
                           {displayHomeFootballStats.points_allowed_per_game.toFixed(1)}
-                          <span className={`text-sm ml-1 ${getRankColor(displayHomeFootballStats.points_allowed_per_game_rank || 32)}`}>
+                          <span className={`text-sm ml-1 ${getRankColor(isNHL, displayHomeFootballStats.points_allowed_per_game_rank || 32)}`}>
                             (#{displayHomeFootballStats.points_allowed_per_game_rank || 'N/A'})
                           </span>
                         </span>
@@ -2045,7 +2045,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                             : `${textValue}`
                         }`}>
                           {displayHomeFootballStats.passing_yards_per_game.toFixed(0)}
-                          <span className={`text-sm ml-1 ${getRankColor(displayHomeFootballStats.passing_yards_per_game_rank || 32)}`}>
+                          <span className={`text-sm ml-1 ${getRankColor(isNHL, displayHomeFootballStats.passing_yards_per_game_rank || 32)}`}>
                             (#{displayHomeFootballStats.passing_yards_per_game_rank || 'N/A'})
                           </span>
                         </span>
@@ -2060,7 +2060,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                             : `${textValue}`
                         }`}>
                           {displayHomeFootballStats.rushing_yards_per_game.toFixed(0)}
-                          <span className={`text-sm ml-1 ${getRankColor(displayHomeFootballStats.rushing_yards_per_game_rank || 32)}`}>
+                          <span className={`text-sm ml-1 ${getRankColor(isNHL, displayHomeFootballStats.rushing_yards_per_game_rank || 32)}`}>
                             (#{displayHomeFootballStats.rushing_yards_per_game_rank || 'N/A'})
                           </span>
                         </span>
@@ -2074,7 +2074,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                           displayHomeFootballStats.turnover_differential < 0 ? 'text-red-400' : `${textValue}`
                         }`}>
                           {displayHomeFootballStats.turnover_differential > 0 ? '+' : ''}{displayHomeFootballStats.turnover_differential.toFixed(1)}
-                          <span className={`text-sm ml-1 ${getRankColor(displayHomeFootballStats.turnover_differential_rank || 32)}`}>
+                          <span className={`text-sm ml-1 ${getRankColor(isNHL, displayHomeFootballStats.turnover_differential_rank || 32)}`}>
                             (#{displayHomeFootballStats.turnover_differential_rank || 'N/A'})
                           </span>
                         </span>
@@ -2706,37 +2706,37 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                     <>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>PPG Rank:</span>
-                        <span className={`font-bold ${getRankColor(away_team_stats.pts_per_game_rank || 30)}`}>
+                        <span className={`font-bold ${getRankColor(isNHL, away_team_stats.pts_per_game_rank || 30)}`}>
                           #{away_team_stats.pts_per_game_rank || 'N/A'}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>OffRtg:</span>
-                        <span className={`font-bold ${getRankColor(away_team_stats.off_rating_rank || 30)}`}>
+                        <span className={`font-bold ${getRankColor(isNHL, away_team_stats.off_rating_rank || 30)}`}>
                           #{away_team_stats.off_rating_rank || 'N/A'}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>DefRtg:</span>
-                        <span className={`font-bold ${getRankColor(away_team_stats.def_rating_rank || 30)}`}>
+                        <span className={`font-bold ${getRankColor(isNHL, away_team_stats.def_rating_rank || 30)}`}>
                           #{away_team_stats.def_rating_rank || 'N/A'}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>NetRtg:</span>
-                        <span className={`font-bold ${getRankColor(away_team_stats.net_rating_rank || 30)}`}>
+                        <span className={`font-bold ${getRankColor(isNHL, away_team_stats.net_rating_rank || 30)}`}>
                           #{away_team_stats.net_rating_rank || 'N/A'}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>Pace:</span>
-                        <span className={`font-bold ${getRankColor(away_team_stats.pace_rank || 30)}`}>
+                        <span className={`font-bold ${getRankColor(isNHL, away_team_stats.pace_rank || 30)}`}>
                           #{away_team_stats.pace_rank || 'N/A'}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>FG%:</span>
-                        <span className={`font-bold ${getRankColor(away_team_stats.fg_pct_rank || 30)}`}>
+                        <span className={`font-bold ${getRankColor(isNHL, away_team_stats.fg_pct_rank || 30)}`}>
                           #{away_team_stats.fg_pct_rank || 'N/A'}
                         </span>
                       </div>
@@ -2879,37 +2879,37 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                     <>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>PPG Rank:</span>
-                        <span className={`font-bold ${getRankColor(home_team_stats.pts_per_game_rank || 30)}`}>
+                        <span className={`font-bold ${getRankColor(isNHL, home_team_stats.pts_per_game_rank || 30)}`}>
                           #{home_team_stats.pts_per_game_rank || 'N/A'}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>OffRtg:</span>
-                        <span className={`font-bold ${getRankColor(home_team_stats.off_rating_rank || 30)}`}>
+                        <span className={`font-bold ${getRankColor(isNHL, home_team_stats.off_rating_rank || 30)}`}>
                           #{home_team_stats.off_rating_rank || 'N/A'}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>DefRtg:</span>
-                        <span className={`font-bold ${getRankColor(home_team_stats.def_rating_rank || 30)}`}>
+                        <span className={`font-bold ${getRankColor(isNHL, home_team_stats.def_rating_rank || 30)}`}>
                           #{home_team_stats.def_rating_rank || 'N/A'}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>NetRtg:</span>
-                        <span className={`font-bold ${getRankColor(home_team_stats.net_rating_rank || 30)}`}>
+                        <span className={`font-bold ${getRankColor(isNHL, home_team_stats.net_rating_rank || 30)}`}>
                           #{home_team_stats.net_rating_rank || 'N/A'}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>Pace:</span>
-                        <span className={`font-bold ${getRankColor(home_team_stats.pace_rank || 30)}`}>
+                        <span className={`font-bold ${getRankColor(isNHL, home_team_stats.pace_rank || 30)}`}>
                           #{home_team_stats.pace_rank || 'N/A'}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>FG%:</span>
-                        <span className={`font-bold ${getRankColor(home_team_stats.fg_pct_rank || 30)}`}>
+                        <span className={`font-bold ${getRankColor(isNHL, home_team_stats.fg_pct_rank || 30)}`}>
                           #{home_team_stats.fg_pct_rank || 'N/A'}
                         </span>
                       </div>
