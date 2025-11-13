@@ -151,34 +151,48 @@ class TeamRankingsNCAAFScraper:
             records = {}
 
             # Parse each table (conferences)
+            # Each table may have multiple tbody elements
             for table in tables:
-                tbody = table.find('tbody') if table.find('tbody') else table
-                for row in tbody.find_all('tr'):
-                    cols = row.find_all('td')
-                    if len(cols) < 2:
-                        continue
+                tbody_elements = table.find_all('tbody')
 
-                    # Get all text from the row
-                    row_text = ' '.join([c.text.strip() for c in cols])
+                # Process each tbody (could be multiple per conference table)
+                for tbody in tbody_elements:
+                    for row in tbody.find_all('tr'):
+                        cols = row.find_all('td')
+                        if len(cols) < 3:
+                            continue
 
-                    # Skip conference headers
-                    if 'Conference' in row_text:
-                        continue
+                        # Get all text from the row
+                        row_text = ' '.join([c.text.strip() for c in cols])
 
-                    # Extract team name (first column) - may include record like "Ohio St (9-0)"
-                    team_name_full = cols[0].text.strip()
-                    if not team_name_full:
-                        continue
+                        # Skip conference headers
+                        if 'Conference' in row_text:
+                            continue
 
-                    # Remove record from team name if present: "Ohio St (9-0)" -> "Ohio St"
-                    team_name = re.sub(r'\s*\(\d+-\d+\)\s*$', '', team_name_full).strip()
+                        # Extract team name from column 2
+                        # Column 0 is ranking, column 1 is a stat, column 2 is team name
+                        # Structure: <div class="table-team-logo-text"><a>Team Name</a><small>(record)</small></div>
+                        text_wrapper = cols[2].find('div', {'class': 'table-team-logo-text'})
+                        if not text_wrapper:
+                            logger.debug(f"No text wrapper found in column 2")
+                            continue
 
-                    # Find W-L record in format "9-0" or "10-2" anywhere in the row
-                    record_match = re.search(r'(\d+)-(\d+)', row_text)
-                    if record_match:
-                        wins = int(record_match.group(1))
-                        losses = int(record_match.group(2))
-                        records[team_name] = {'wins': wins, 'losses': losses}
+                        team_link = text_wrapper.find('a')
+                        if not team_link:
+                            logger.debug(f"No link found in text wrapper")
+                            continue
+
+                        team_name = team_link.text.strip()
+                        if not team_name:
+                            logger.debug(f"Empty team name from link")
+                            continue
+
+                        # Find W-L record in format "9-0" or "10-2" anywhere in the row
+                        record_match = re.search(r'(\d+)-(\d+)', row_text)
+                        if record_match:
+                            wins = int(record_match.group(1))
+                            losses = int(record_match.group(2))
+                            records[team_name] = {'wins': wins, 'losses': losses}
 
             logger.info(f"Scraped records for {len(records)} teams from standings")
             return records
@@ -291,6 +305,9 @@ class TeamRankingsNCAAFScraper:
                 'last_updated': datetime.now().isoformat()
             }
 
+        # Calculate rankings for each stat
+        self._calculate_rankings(team_stats)
+
         # Save to cache
         self._save_cache(team_stats)
         self.cache = team_stats
@@ -298,12 +315,68 @@ class TeamRankingsNCAAFScraper:
         logger.info(f"Fetched stats for {len(team_stats)} NCAAF teams from TeamRankings")
         return team_stats
 
+    def _calculate_rankings(self, team_stats: Dict[str, Dict]):
+        """
+        Calculate rankings for all stats
+
+        Higher is better (rank 1 = best):
+        - points_per_game (offensive)
+        - passing_yards_per_game
+        - rushing_yards_per_game
+        - third_down_conversion_pct
+        - red_zone_scoring_pct
+        - sacks_per_game
+        - takeaways_per_game
+
+        Lower is better (rank 1 = best):
+        - points_allowed_per_game (defensive)
+        - yards_allowed_per_game
+        """
+        if not team_stats:
+            return
+
+        # Offensive stats (higher is better)
+        offensive_stats = [
+            ('pts_per_game', 'points_per_game_rank'),
+            ('passing_yards_per_game', 'passing_yards_per_game_rank'),
+            ('rushing_yards_per_game', 'rushing_yards_per_game_rank'),
+            ('third_down_conversion_pct', 'third_down_pct_rank'),
+            ('red_zone_scoring_pct', 'red_zone_pct_rank'),
+            ('sacks_per_game', 'sacks_rank'),
+            ('takeaways_per_game', 'takeaways_rank'),
+            ('yards_per_game', 'total_yards_per_game_rank'),
+        ]
+
+        # Defensive stats (lower is better)
+        defensive_stats = [
+            ('pts_allowed', 'points_allowed_per_game_rank'),
+            ('yards_allowed', 'yards_allowed_per_game_rank'),
+        ]
+
+        # Calculate ranks for offensive stats (higher = better)
+        for stat_key, rank_key in offensive_stats:
+            teams_with_stat = [(team, stats[stat_key]) for team, stats in team_stats.items() if stat_key in stats]
+            # Sort descending (highest value = rank 1)
+            teams_with_stat.sort(key=lambda x: x[1], reverse=True)
+            for rank, (team, _) in enumerate(teams_with_stat, start=1):
+                team_stats[team][rank_key] = rank
+
+        # Calculate ranks for defensive stats (lower = better)
+        for stat_key, rank_key in defensive_stats:
+            teams_with_stat = [(team, stats[stat_key]) for team, stats in team_stats.items() if stat_key in stats]
+            # Sort ascending (lowest value = rank 1)
+            teams_with_stat.sort(key=lambda x: x[1])
+            for rank, (team, _) in enumerate(teams_with_stat, start=1):
+                team_stats[team][rank_key] = rank
+
+        logger.info(f"Calculated rankings for {len(team_stats)} NCAAF teams")
+
     def get_team_stats(self, team_name: str, force_refresh: bool = False) -> Optional[Dict]:
         """
         Get stats for a specific team
 
         Args:
-            team_name: Full team name (e.g., 'Alabama', 'Ohio State')
+            team_name: Full team name (e.g., 'Alabama Crimson Tide', 'Ohio State Buckeyes')
             force_refresh: Bypass cache
 
         Returns:
@@ -315,10 +388,51 @@ class TeamRankingsNCAAFScraper:
         if team_name in all_stats:
             return all_stats[team_name]
 
-        # Try partial match (e.g., "Buckeyes" might match "Ohio State")
+        # Try fuzzy match - find best match by counting matching words
+        # This handles cases like "Ohio State Buckeyes" -> "Ohio St"
+        team_name_lower = team_name.lower()
+        team_words = set(team_name_lower.split())
+
+        # Handle common abbreviations
+        if 'state' in team_words:
+            team_words.add('st')
+        if 'st' in team_words:
+            team_words.add('state')
+
+        best_match = None
+        best_score = 0
+        best_name = None
+
         for full_name, stats in all_stats.items():
-            if team_name.lower() in full_name.lower() or full_name.lower() in team_name.lower():
-                return stats
+            full_name_lower = full_name.lower()
+            full_words = set(full_name_lower.split())
+
+            # Handle abbreviations in scraped data too
+            if 'st' in full_words:
+                full_words.add('state')
+
+            # Calculate match score (number of common words)
+            common_words = team_words & full_words
+            score = len(common_words)
+
+            # Bonus for matching more words from the TeamRankings name
+            # Prefer "Ohio St" (2 words matched) over "Ohio" (1 word matched)
+            teamrankings_words = set(full_name_lower.split())
+            score += len(common_words & teamrankings_words) * 0.1
+
+            # Bonus for exact substring match
+            if full_name_lower in team_name_lower:
+                score += 0.5
+
+            if score > best_score:
+                best_score = score
+                best_match = stats
+                best_name = full_name
+
+        # Only return if we have a reasonable match (at least 1 word in common)
+        if best_match and best_score >= 1:
+            logger.debug(f"Matched '{team_name}' -> '{best_name}' (score: {best_score:.2f})")
+            return best_match
 
         logger.warning(f"Team not found in TeamRankings NCAAF data: {team_name}")
         return None
