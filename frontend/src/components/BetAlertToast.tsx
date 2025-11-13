@@ -61,65 +61,65 @@ export function BetAlertToast({ alert, onDismiss, position }: BetAlertToastProps
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  // Alert type-specific styling (each alert type gets unique color)
+  // Alert type-specific styling (BLACK backgrounds with WHITE borders, colored inner windows)
   const getConfidenceStyles = () => {
     const strategyName = alert.strategy_name.toLowerCase();
 
-    // Arbitrage = Red with Black windows (CRITICAL urgency)
+    // Arbitrage = Black background with RED inner windows (CRITICAL urgency)
     // Risk-free profit by betting both sides
     if (strategyName.includes('arbitrage')) {
       return {
-        bg: 'bg-gradient-to-br from-red-600 via-red-700 to-red-900',
-        border: 'border-red-500',
-        glow: 'shadow-2xl shadow-red-500/50',
+        bg: 'bg-gradient-to-br from-black via-gray-900 to-slate-900',
+        border: 'border-white',
+        glow: 'shadow-2xl shadow-white/30',
         pulse: 'animate-pulse',
         emoji: '🚨',
-        timerColor: 'text-red-200',
-        bookCardBg: 'bg-black/70 border-red-700',
-        bookCardHover: 'hover:bg-black/90 hover:border-red-500'
+        timerColor: 'text-white',
+        bookCardBg: 'bg-red-600/80 border-white',
+        bookCardHover: 'hover:bg-red-500/90 hover:border-white'
       };
     }
 
-    // Steam Move = Blue with Green windows
+    // Steam Move = Black background with BLUE inner windows
     // Multiple books moving lines within minutes - bet stale numbers at books that haven't moved yet
     if (strategyName.includes('steam')) {
       return {
-        bg: 'bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900',
-        border: 'border-blue-500',
-        glow: 'shadow-xl shadow-blue-500/40',
+        bg: 'bg-gradient-to-br from-black via-gray-900 to-slate-900',
+        border: 'border-white',
+        glow: 'shadow-xl shadow-white/25',
         pulse: '',
         emoji: '🔥',
-        timerColor: 'text-blue-200',
-        bookCardBg: 'bg-green-900/50 border-green-600',
-        bookCardHover: 'hover:bg-green-800/70 hover:border-green-400'
+        timerColor: 'text-white',
+        bookCardBg: 'bg-blue-600/80 border-white',
+        bookCardHover: 'hover:bg-blue-500/90 hover:border-white'
       };
     }
 
-    // Middle Opportunity = Green with Blue windows
+    // Middle Opportunity = Black background with GREEN inner windows
     // Bet both sides with gap - chance to win both or push one
     if (strategyName.includes('middle')) {
       return {
-        bg: 'bg-gradient-to-br from-green-600 via-green-700 to-green-900',
-        border: 'border-green-500',
-        glow: 'shadow-lg shadow-green-500/30',
+        bg: 'bg-gradient-to-br from-black via-gray-900 to-slate-900',
+        border: 'border-white',
+        glow: 'shadow-lg shadow-white/20',
         pulse: '',
         emoji: '⚡',
-        timerColor: 'text-green-200',
-        bookCardBg: 'bg-blue-900/50 border-blue-600',
-        bookCardHover: 'hover:bg-blue-800/70 hover:border-blue-400'
+        timerColor: 'text-white',
+        bookCardBg: 'bg-green-600/80 border-white',
+        bookCardHover: 'hover:bg-green-500/90 hover:border-white'
       };
     }
 
-    // All other strategies = Black with Red windows
+    // All other strategies = Black background with ORANGE inner windows
     return {
-      bg: 'bg-gradient-to-br from-black via-slate-800 to-slate-900',
-      border: 'border-slate-600',
-      glow: 'shadow-lg shadow-slate-500/30',
+      bg: 'bg-gradient-to-br from-black via-gray-900 to-slate-900',
+      border: 'border-white',
+      glow: 'shadow-lg shadow-white/20',
       pulse: '',
       emoji: '💡',
-      timerColor: 'text-slate-200',
-      bookCardBg: 'bg-red-900/50 border-red-600',
-      bookCardHover: 'hover:bg-red-800/70 hover:border-red-400'
+      timerColor: 'text-white',
+      bookCardBg: 'bg-orange-600/80 border-white',
+      bookCardHover: 'hover:bg-orange-500/90 hover:border-white'
     };
   };
 
@@ -219,7 +219,7 @@ export function BetAlertToast({ alert, onDismiss, position }: BetAlertToastProps
                       <img
                         src={option.bookmaker_logo}
                         alt={option.bookmaker_title || option.bookmaker}
-                        className="w-5 h-5 rounded"
+                        className="w-8 h-8 rounded"
                         onError={(e) => {
                           // Hide image if it fails to load
                           (e.target as HTMLImageElement).style.display = 'none';
