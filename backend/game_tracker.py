@@ -14,12 +14,15 @@ from scrapers.teamrankings_nfl_scraper import TeamRankingsNFLScraper  # NFL stat
 from scrapers.teamrankings_ncaaf_scraper import TeamRankingsNCAAFScraper  # NCAAF stats source
 from scrapers.teamrankings_mlb_scraper import TeamRankingsMLBScraper  # MLB stats source
 from config import POLL_INTERVAL, ENABLE_ESPN_STATS, QUIET_HOURS_ENABLED, QUIET_HOURS_START, QUIET_HOURS_END
+# NHL stats client (always enabled - fetches live data from NHL API)
+from nhl_stats_client import NHLStatsClient
+# BallDontLie clients (always enabled - primary NBA/NHL advanced stats source)
+from balldontlie_nba_client import BallDontLieNBAClient
 # Conditionally import ESPN clients based on feature flag
 if ENABLE_ESPN_STATS:
     from espn_nfl_client import ESPNNFLClient
     from nfl_stats_client import NFLStatsClient
     from nfl_momentum_client import NFLMomentumClient
-    from nhl_stats_client import NHLStatsClient
     from mlb_stats_client import MLBStatsClient
     from espn_ncaab_client import ESPNNCAABClient
 from nhl_goalie_pull_predictor import GoaliePullPredictor
@@ -29,7 +32,6 @@ from strategies.momentum_detector import MomentumDetector
 from strategies.nba_quarter_reversal import QuarterReversalDetector
 from ml.nba_regression_analyzer import NBARegressionAnalyzer
 from ml.ncaab_regression_analyzer import NCAABRegressionAnalyzer
-from simple_nhl_stats import get_nhl_team_stats  # Simple CSV loader - no API calls
 from typing import Dict, List, Optional
 import asyncio
 import logging
@@ -45,11 +47,18 @@ class GameTracker:
         # self.nba_stats_client = NBAStatsClient()
         self.nba_live_client = NBALiveClient()
         # self.nba_momentum_client = NBAMomentumClient()
-        self.teamrankings_scraper = TeamRankingsNBAScraper()  # Primary NBA stats source (free, reliable)
+        # BallDontLie NBA client - Used for accurate records and player injuries
+        try:
+            self.balldontlie_nba_client = BallDontLieNBAClient()
+            logger.info("✅ BallDontLie NBA client initialized")
+        except Exception as e:
+            logger.warning(f"BallDontLie NBA client unavailable: {e}")
+            self.balldontlie_nba_client = None
+        self.teamrankings_scraper = TeamRankingsNBAScraper()  # Primary NBA stats source (pace, ratings, rankings)
         self.teamrankings_nfl_scraper = TeamRankingsNFLScraper()  # NFL stats source
         self.teamrankings_ncaaf_scraper = TeamRankingsNCAAFScraper()  # NCAAF stats source
         self.teamrankings_mlb_scraper = TeamRankingsMLBScraper()  # MLB stats source
-        self.espn_nba_client = ESPNnbaClient()  # ESPN NBA stats client (fallback only)
+        self.espn_nba_client = ESPNnbaClient()  # ESPN NBA stats client (fallback)
         # Conditionally initialize ESPN clients based on feature flag
         if ENABLE_ESPN_STATS:
             self.espn_nfl_client = ESPNNFLClient()
@@ -64,7 +73,8 @@ class GameTracker:
             self.espn_ncaab_client = None
             self.mlb_stats_client = None
 
-        # NHL stats loaded from CSV on module import - no client initialization needed
+        # NHL stats client - fetches live data from NHL API
+        self.nhl_stats_client = NHLStatsClient()
         self.games: Dict[str, LiveGame] = {}
         self.running = False
         self.team_stats_cache: Dict[str, TeamStats] = {}  # Cache NBA team stats
@@ -553,44 +563,108 @@ class GameTracker:
                 logger.warning(f"Error fetching NCAAF stats for {team_name} (mapped to {mapped_team_name}): {e}")
                 return None
         else:
-            # Check if ESPN stats are enabled
-            if self.nfl_stats_client is None:
-                return None
-
-            # For NFL, map team name to abbreviation
-            team_abbr = self._map_nfl_team_name(team_name)
-            if not team_abbr:
-                logger.warning(f"Could not map NFL team name: {team_name}")
-                return None
-
+            # For NFL, use TeamRankings (always available, no rate limits, current 2024 season)
             try:
-                # Fetch season stats from ESPN API with rankings
-                nfl_stats = await self.nfl_stats_client.get_team_stats_with_rankings(team_abbr, is_ncaaf=False)
-                if not nfl_stats:
+                # PRIMARY: TeamRankings (most reliable for current season data)
+                teamrankings_data = self.teamrankings_nfl_scraper.fetch_all_team_stats()
+
+                # Map full team name to TeamRankings abbreviated name
+                tr_team_name = self.teamrankings_nfl_scraper.TEAM_NAME_MAP.get(team_name)
+                if not tr_team_name:
+                    # Try partial match
+                    for full_name, abbrev in self.teamrankings_nfl_scraper.TEAM_NAME_MAP.items():
+                        if team_name.lower() in full_name.lower() or full_name.lower() in team_name.lower():
+                            tr_team_name = abbrev
+                            break
+
+                if tr_team_name and tr_team_name in teamrankings_data:
+                    tr_stats = teamrankings_data[tr_team_name]
+
+                    # Convert TeamRankings data to NFLTeamStats format
+                    nfl_stats = NFLTeamStats(
+                        team_id=team_name,
+                        team_name=team_name,
+                        games_played=int(tr_stats.get('games_played', 0)),
+                        wins=int(tr_stats.get('wins', 0)),
+                        losses=int(tr_stats.get('losses', 0)),
+                        ties=0,  # TeamRankings doesn't include ties separately
+                        win_pct=float(tr_stats.get('win_pct', 0.0)),
+                        points_per_game=float(tr_stats.get('pts_per_game', 0.0)),
+                        points_allowed_per_game=float(tr_stats.get('pts_allowed', 0.0)),
+                        point_differential=float(tr_stats.get('point_diff', 0.0)),
+                        total_yards_per_game=float(tr_stats.get('yards_per_game', 0.0)),
+                        yards_allowed_per_game=float(tr_stats.get('yards_allowed', 0.0)),
+                        passing_yards_per_game=float(tr_stats.get('passing_yards_per_game', 0.0)),
+                        rushing_yards_per_game=float(tr_stats.get('rushing_yards_per_game', 0.0)),
+                        turnovers_per_game=float(tr_stats.get('turnovers_lost', 0.0)),
+                        takeaways_per_game=float(tr_stats.get('turnovers_gained', 0.0)),
+                        turnover_differential=float(tr_stats.get('turnover_diff', 0.0)),
+                        third_down_pct=float(tr_stats.get('third_down_conversion_pct', 0.0)) / 100.0,  # Convert to decimal
+                        red_zone_pct=float(tr_stats.get('red_zone_scoring_pct', 0.0)) / 100.0,  # Convert to decimal
+                        sacks_per_game=float(tr_stats.get('sacks_per_game', 0.0)),
+                        # Rankings from TeamRankings
+                        points_per_game_rank=tr_stats.get('points_per_game_rank'),
+                        points_allowed_per_game_rank=tr_stats.get('points_allowed_per_game_rank'),
+                        total_yards_per_game_rank=tr_stats.get('total_yards_per_game_rank'),
+                        yards_allowed_per_game_rank=tr_stats.get('yards_allowed_per_game_rank'),
+                        passing_yards_per_game_rank=tr_stats.get('passing_yards_per_game_rank'),
+                        rushing_yards_per_game_rank=tr_stats.get('rushing_yards_per_game_rank'),
+                        passing_yards_allowed_rank=tr_stats.get('passing_yards_allowed_rank'),
+                        rushing_yards_allowed_rank=tr_stats.get('rushing_yards_allowed_rank'),
+                        third_down_pct_rank=tr_stats.get('third_down_pct_rank'),
+                        opponent_third_down_pct_rank=tr_stats.get('opponent_third_down_pct_rank'),
+                        red_zone_pct_rank=tr_stats.get('red_zone_pct_rank'),
+                        opponent_red_zone_pct_rank=tr_stats.get('opponent_red_zone_pct_rank'),
+                        sacks_rank=tr_stats.get('sacks_rank'),
+                        turnover_differential_rank=tr_stats.get('turnover_differential_rank'),
+                        penalties_rank=tr_stats.get('penalties_rank'),
+                        first_downs_rank=tr_stats.get('first_downs_rank'),
+                        # Optional fields
+                        last_5_record=None,
+                        form_trend=None,
+                        home_record=None,
+                        away_record=None,
+                        division_record=None,
+                        conference_record=None
+                    )
+
+                    # Cache the stats
+                    self.nfl_team_stats_cache[team_name] = nfl_stats
+                    logger.info(f"✅ Loaded NFL stats from TeamRankings for {team_name} (Record: {nfl_stats.wins}-{nfl_stats.losses}, {nfl_stats.games_played} GP)")
+                    return nfl_stats
+                else:
+                    logger.warning(f"Could not find NFL team in TeamRankings: {team_name}")
                     return None
 
-                # Cache the stats
-                self.nfl_team_stats_cache[team_name] = nfl_stats
-                return nfl_stats
-
             except Exception as e:
-                logger.warning(f"Error fetching NFL stats for {team_name}: {e}")
+                logger.error(f"Error fetching NFL stats for {team_name}: {e}")
                 return None
 
     async def _get_nhl_team_stats(self, team_name: str) -> Optional[NHLTeamStats]:
-        """Get NHL team stats - dead simple CSV lookup (loaded once on import)"""
+        """Get NHL team stats from live NHL API with rankings and empty net stats"""
         # Check cache first
         if team_name in self.nhl_team_stats_cache:
             return self.nhl_team_stats_cache[team_name]
 
+        # Map team name to abbreviation
+        team_abbr = self._map_nhl_team_name(team_name)
+        if not team_abbr:
+            logger.warning(f"Could not map NHL team name: {team_name}")
+            return None
+
         try:
-            # Get from pre-loaded CSV cache (synchronous, no async needed)
-            nhl_stats = get_nhl_team_stats(team_name)
+            # Fetch from NHL API with rankings and empty net stats
+            nhl_stats = await self.nhl_stats_client.get_team_stats_with_rankings(team_abbr)
             if nhl_stats:
-                # Cache it
+                # Update the team_name to use the proper display name (not just abbreviation)
+                nhl_stats.team_name = team_name
+                # Cache the stats
                 self.nhl_team_stats_cache[team_name] = nhl_stats
-                logger.info(f"✅ Loaded NHL stats for {team_name} (EN goals: {nhl_stats.en_goals_for})")
-            return nhl_stats
+                logger.info(f"✅ Loaded NHL stats for {team_name} (Record: {nhl_stats.wins}-{nhl_stats.losses}-{nhl_stats.ot_losses}, EN goals: {nhl_stats.en_goals_for})")
+                return nhl_stats
+            else:
+                logger.warning(f"No NHL stats returned for {team_name} ({team_abbr})")
+                return None
 
         except Exception as e:
             logger.error(f"Error getting NHL stats for {team_name}: {e}")
@@ -740,14 +814,14 @@ class GameTracker:
         logger.info(f"✅ Fetched KenPom NCAAB stats for {team_name}: Pace={team_stats.pace:.1f}, OffEff={team_stats.off_rating:.1f}")
         return team_stats
 
-    def _get_team_stats(self, team_name: str) -> Optional[TeamStats]:
-        """Get NBA team stats from TeamRankings (PRIMARY) with ESPN fallback"""
+    async def _get_team_stats(self, team_name: str) -> Optional[TeamStats]:
+        """Get NBA team stats from TeamRankings (PRIMARY) enhanced with BallDontLie"""
         # Check cache first
         if team_name in self.team_stats_cache:
             return self.team_stats_cache[team_name]
 
         try:
-            # PRIMARY: Try TeamRankings first (has real pace data)
+            # PRIMARY: Try TeamRankings first (has real pace data, ratings, and rankings)
             teamrankings_data = self.teamrankings_scraper.fetch_all_team_stats()
 
             # Normalize team name for better matching (handle LA vs Los Angeles)
@@ -770,14 +844,36 @@ class GameTracker:
                     break
 
             if tr_stats:
-                # Use TeamRankings data (has REAL pace!)
+                # Start with TeamRankings data (has REAL pace!)
+                wins = int(tr_stats.get('wins', 0))
+                losses = int(tr_stats.get('losses', 0))
+                win_pct = float(tr_stats.get('win_pct', 0.0))
+                games_played = int(tr_stats.get('games_played', 0))
+
+                # ENHANCE: Try to get more accurate record from BallDontLie
+                if self.balldontlie_nba_client:
+                    bdl_team_id = self.balldontlie_nba_client.get_team_id_by_name(team_name)
+                    if bdl_team_id:
+                        try:
+                            bdl_standing = await self.balldontlie_nba_client.get_team_from_standings(bdl_team_id, season=2025)
+                            if bdl_standing:
+                                # Override with BallDontLie's more accurate record
+                                wins = int(bdl_standing.get('wins', wins))
+                                losses = int(bdl_standing.get('losses', losses))
+                                games_played = wins + losses
+                                # Calculate win_pct from wins/losses
+                                win_pct = round(wins / games_played, 3) if games_played > 0 else 0.0
+                                logger.info(f"✅ Enhanced {team_name} with BallDontLie record: {wins}-{losses} ({win_pct:.3f})")
+                        except Exception as e:
+                            logger.debug(f"Could not enhance {team_name} with BallDontLie: {e}")
+
                 team_stats = TeamStats(
                     team_id=str(tr_stats.get('team_id', '')),
                     team_name=team_name,
-                    games_played=int(tr_stats.get('games_played', 0)),
-                    wins=int(tr_stats.get('wins', 0)),
-                    losses=int(tr_stats.get('losses', 0)),
-                    win_pct=float(tr_stats.get('win_pct', 0.0)),
+                    games_played=games_played,  # Potentially enhanced by BallDontLie
+                    wins=wins,  # Potentially enhanced by BallDontLie
+                    losses=losses,  # Potentially enhanced by BallDontLie
+                    win_pct=win_pct,  # Potentially enhanced by BallDontLie
                     off_rating=float(tr_stats.get('off_rating', 110.0)),
                     def_rating=float(tr_stats.get('def_rating', 110.0)),
                     net_rating=float(tr_stats.get('net_rating', 0.0)),
@@ -802,7 +898,7 @@ class GameTracker:
                 )
 
                 self.team_stats_cache[team_name] = team_stats
-                logger.info(f"✅ Fetched TeamRankings NBA stats for {team_name}: {team_stats.pts_per_game} PPG, {team_stats.pace} pace")
+                logger.info(f"✅ Fetched TeamRankings NBA stats for {team_name}: {team_stats.pts_per_game} PPG, {team_stats.pace} pace, {team_stats.wins}-{team_stats.losses}")
                 return team_stats
 
             # FALLBACK: Use ESPN if TeamRankings failed
@@ -900,8 +996,8 @@ class GameTracker:
                 turnovers_per_game=float(tr_stats.get('turnovers_lost', 1.0)),  # Per game turnovers given
                 takeaways_per_game=float(tr_stats.get('turnovers_gained', 1.0)),  # Per game turnovers taken
                 turnover_differential=float(tr_stats.get('turnover_diff', 0.0)),
-                third_down_pct=float(tr_stats.get('third_down_conversion_pct', 40.0)),
-                red_zone_pct=float(tr_stats.get('red_zone_scoring_pct', 55.0)),
+                third_down_pct=float(tr_stats.get('third_down_conversion_pct', 40.0)) / 100.0,  # Convert to decimal (40.0 -> 0.40)
+                red_zone_pct=float(tr_stats.get('red_zone_scoring_pct', 55.0)) / 100.0,  # Convert to decimal (55.0 -> 0.55)
                 sacks_per_game=float(tr_stats.get('sacks_per_game', 2.5)),
                 # Rankings
                 points_per_game_rank=tr_stats.get('points_per_game_rank'),
@@ -1358,9 +1454,9 @@ class GameTracker:
                 home_stats = None
                 away_stats = None
                 if sport_key == 'basketball_nba':
-                    # Use TeamRankings NBA data (pace ~100)
-                    home_stats = self._get_team_stats(game_state.home_team.name)
-                    away_stats = self._get_team_stats(game_state.away_team.name)
+                    # Use BallDontLie NBA data (comprehensive, fast)
+                    home_stats = await self._get_team_stats(game_state.home_team.name)
+                    away_stats = await self._get_team_stats(game_state.away_team.name)
                 elif sport_key == 'basketball_ncaab':
                     # Use KenPom NCAAB data (pace ~70)
                     home_stats = self._get_ncaab_team_stats(game_state.home_team.name)
