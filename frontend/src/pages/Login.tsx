@@ -28,7 +28,7 @@ export function Login() {
       // Redirect after bull sound finishes (giving it time to play)
       setTimeout(() => {
         navigate('/live-games');
-      }, 100); // PERF FIX: Instant redirect (was 5000ms)
+      }, 3000); // Give users 3 seconds to experience sound and animation
     }
   };
 
