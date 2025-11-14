@@ -196,30 +196,32 @@ async def get_performance_history(
         predictions_df = pd.read_csv(PREDICTIONS_LOG)
         results_df = pd.read_csv(RESULTS_LOG)
 
-        # Filter by date
-        cutoff_date = pd.Timestamp.now() - pd.Timedelta(days=days)
-        predictions_df['date_predicted'] = pd.to_datetime(predictions_df['date_predicted'], format='mixed', errors='coerce')
+        # Convert dates
         predictions_df['game_date_dt'] = pd.to_datetime(predictions_df['game_date'], format='mixed', errors='coerce')
-        predictions_df = predictions_df[predictions_df['date_predicted'] >= cutoff_date]
-
-        # Apply filters
-        if sport:
-            predictions_df = predictions_df[predictions_df['sport'].str.lower() == sport.lower()]
-        if model:
-            predictions_df = predictions_df[predictions_df['model'].str.lower() == model.lower()]
-        if bet_type:
-            predictions_df = predictions_df[predictions_df['bet_type'].str.lower() == bet_type.lower()]
 
         # Drop duplicate columns from results before merging
         results_cols_to_keep = ['prediction_id', 'away_score', 'home_score', 'actual_total', 'result', 'profit_loss']
         results_df_clean = results_df[results_cols_to_keep]
 
-        # Merge with results
+        # Merge with results FIRST
         merged_df = predictions_df.merge(
             results_df_clean,
             on='prediction_id',
             how='inner'
         )
+
+        # Filter by game_date (not prediction date)
+        if days > 0:
+            cutoff_date = pd.Timestamp.now() - pd.Timedelta(days=days)
+            merged_df = merged_df[merged_df['game_date_dt'] >= cutoff_date]
+
+        # Apply sport/model/bet_type filters
+        if sport:
+            merged_df = merged_df[merged_df['sport'].str.lower() == sport.lower()]
+        if model:
+            merged_df = merged_df[merged_df['model'].str.lower() == model.lower()]
+        if bet_type:
+            merged_df = merged_df[merged_df['bet_type'].str.lower() == bet_type.lower()]
 
         if len(merged_df) == 0:
             return {
@@ -227,24 +229,41 @@ async def get_performance_history(
                 "history": []
             }
 
-        # Group by week
-        merged_df['week'] = merged_df['game_date_dt'].dt.to_period('W').astype(str)
+        # Group by day for better chart granularity
+        # Convert game_date to date string for grouping
+        merged_df['date'] = merged_df['game_date_dt'].dt.date
 
         history_data = []
-        for week in sorted(merged_df['week'].unique()):
-            week_df = merged_df[merged_df['week'] == week]
-            week_wins = len(week_df[week_df['result'] == 'WIN'])
-            week_total = len(week_df[week_df['result'].isin(['WIN', 'LOSS'])])
-            week_win_rate = week_wins / week_total if week_total > 0 else 0
-            week_profit = week_df['profit_loss'].sum() if 'profit_loss' in week_df.columns else 0
+        cumulative_wins = 0
+        cumulative_total = 0
+        cumulative_profit = 0
+
+        for date in sorted(merged_df['date'].unique()):
+            day_df = merged_df[merged_df['date'] == date]
+            day_wins = len(day_df[day_df['result'] == 'WIN'])
+            day_losses = len(day_df[day_df['result'] == 'LOSS'])
+            day_total = day_wins + day_losses
+            day_win_rate = day_wins / day_total if day_total > 0 else 0
+            day_profit = day_df['profit_loss'].sum() if 'profit_loss' in day_df.columns else 0
+
+            # Update cumulative stats
+            cumulative_wins += day_wins
+            cumulative_total += day_total
+            cumulative_profit += day_profit
+
+            # Calculate cumulative win rate
+            cumulative_win_rate = cumulative_wins / cumulative_total if cumulative_total > 0 else 0
 
             history_data.append({
-                "period": week,
-                "predictions": len(week_df),
-                "wins": week_wins,
-                "win_rate": round(week_win_rate, 4),
-                "roi": round((week_profit / len(week_df)) * 100, 2) if len(week_df) > 0 else 0,
-                "units_won": round(week_profit, 2)
+                "period": str(date),
+                "predictions": len(day_df),
+                "wins": day_wins,
+                "losses": day_losses,
+                "win_rate": round(cumulative_win_rate, 4),  # Use cumulative for trend
+                "daily_win_rate": round(day_win_rate, 4),  # Daily for reference
+                "roi": round((cumulative_profit / (cumulative_wins + cumulative_total - cumulative_wins)) * 100, 2) if cumulative_total > 0 else 0,
+                "daily_roi": round((day_profit / len(day_df)) * 100, 2) if len(day_df) > 0 else 0,
+                "units_won": round(cumulative_profit, 2)
             })
 
         return {
