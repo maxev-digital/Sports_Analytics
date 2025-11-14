@@ -53,51 +53,30 @@ export function BetAlertToast({ alert, onDismiss, position }: BetAlertToastProps
                        '/alerts/alert_low.mp3');
       }
 
-      // 2. Bet action + teams for first bet option
+      // 2. Team name + sportsbook for first bet option
       if (alert.bet_options && alert.bet_options.length > 0) {
         const firstBet = alert.bet_options[0];
 
-        // Bet action phrase
-        if (firstBet.market_type === 'totals') {
-          audioChain.push(firstBet.bet_side === 'over' ? '/alerts/bet_the_over.mp3' : '/alerts/bet_the_under.mp3');
-        } else if (firstBet.market_type === 'spreads') {
-          // Determine if home or away based on bet_side
-          if (alert.home_team && alert.away_team) {
-            const isHome = firstBet.bet_side?.toLowerCase().includes(alert.home_team.toLowerCase());
-            audioChain.push(isHome ? '/alerts/bet_home_spread.mp3' : '/alerts/bet_away_spread.mp3');
-
-            // Team name for spreads
-            const teamToSay = isHome ? alert.home_team : alert.away_team;
-            const teamFileName = teamToSay.toLowerCase().replace(/ /g, '_').replace(/\./g, '').replace(/&/g, 'and').replace(/\(/g, '').replace(/\)/g, '').replace(/é/g, 'e');
-            audioChain.push(`/alerts/team_${teamFileName}.mp3`);
-          }
-        } else if (firstBet.market_type === 'h2h') {
-          if (alert.home_team && alert.away_team) {
-            const isHome = firstBet.bet_side?.toLowerCase().includes(alert.home_team.toLowerCase());
-            audioChain.push(isHome ? '/alerts/bet_home_moneyline.mp3' : '/alerts/bet_away_moneyline.mp3');
-
-            // Team name for moneyline
-            const teamToSay = isHome ? alert.home_team : alert.away_team;
-            const teamFileName = teamToSay.toLowerCase().replace(/ /g, '_').replace(/\./g, '').replace(/&/g, 'and').replace(/\(/g, '').replace(/\)/g, '').replace(/é/g, 'e');
-            audioChain.push(`/alerts/team_${teamFileName}.mp3`);
-          }
+        // Team name (for spreads and moneylines, not totals)
+        if (firstBet.market_type !== 'totals' && alert.home_team && alert.away_team) {
+          const isHome = firstBet.bet_side?.toLowerCase().includes(alert.home_team.toLowerCase());
+          const teamToSay = isHome ? alert.home_team : alert.away_team;
+          const teamFileName = teamToSay.toLowerCase().replace(/ /g, '_').replace(/\./g, '').replace(/&/g, 'and').replace(/\(/g, '').replace(/\)/g, '').replace(/é/g, 'e');
+          audioChain.push(`/alerts/team_${teamFileName}.mp3`);
         }
 
-        // 3. Sportsbook for first bet
+        // Sportsbook for first bet
         const bookFileName = firstBet.bookmaker.toLowerCase().replace(/_/g, '').replace(/-/g, '');
         audioChain.push(`/alerts/${bookFileName}_alert.mp3`);
 
-        // 4. For middles/arbitrage, add second bet option
+        // 3. For middles/arbitrage, add second bet option
         if (strategyName.includes('middle') || strategyName.includes('arbitrage')) {
           if (alert.bet_options.length > 1) {
             const secondBet = alert.bet_options[1];
 
-            // Second bet action
-            if (secondBet.market_type === 'spreads' && alert.home_team && alert.away_team) {
+            // Second team name
+            if (secondBet.market_type !== 'totals' && alert.home_team && alert.away_team) {
               const isHome = secondBet.bet_side?.toLowerCase().includes(alert.home_team.toLowerCase());
-              audioChain.push(isHome ? '/alerts/bet_home_spread.mp3' : '/alerts/bet_away_spread.mp3');
-
-              // Second team name
               const teamToSay = isHome ? alert.home_team : alert.away_team;
               const teamFileName = teamToSay.toLowerCase().replace(/ /g, '_').replace(/\./g, '').replace(/&/g, 'and').replace(/\(/g, '').replace(/\)/g, '').replace(/é/g, 'e');
               audioChain.push(`/alerts/team_${teamFileName}.mp3`);
