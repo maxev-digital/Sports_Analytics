@@ -45,9 +45,9 @@ export function GlobalAlertMonitor({
       const alert = alertQueueRef.current.shift();
       if (alert) {
         showBetAlert(alert);
-        // Wait 10 seconds before showing next alert
+        // Wait 15 seconds before showing next alert
         // This gives audio chain time to complete and user time to read/act
-        await new Promise(resolve => setTimeout(resolve, 10000));
+        await new Promise(resolve => setTimeout(resolve, 15000));
       }
     }
 

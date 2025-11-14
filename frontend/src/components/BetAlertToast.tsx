@@ -8,9 +8,10 @@ interface BetAlertToastProps {
   alert: StrategyAlert;
   onDismiss: () => void;
   position: number; // 0 = bottom, 1 = second from bottom, etc.
+  isAudioMuted: boolean; // Whether audio is muted globally
 }
 
-export function BetAlertToast({ alert, onDismiss, position }: BetAlertToastProps) {
+export function BetAlertToast({ alert, onDismiss, position, isAudioMuted }: BetAlertToastProps) {
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [isExiting, setIsExiting] = useState(false);
   const { openBetSlip } = useBetSlip();
@@ -26,6 +27,12 @@ export function BetAlertToast({ alert, onDismiss, position }: BetAlertToastProps
 
   // Play chained audio sequence when toast appears
   useEffect(() => {
+    // Skip audio if muted
+    if (isAudioMuted) {
+      console.log('🔇 Audio muted - skipping audio chain');
+      return;
+    }
+
     const playAudioChain = async () => {
       const audioChain: string[] = [];
       const strategyName = alert.strategy_name.toLowerCase();
@@ -127,7 +134,7 @@ export function BetAlertToast({ alert, onDismiss, position }: BetAlertToastProps
     };
 
     playAudioChain();
-  }, []); // Only run once when component mounts
+  }, [isAudioMuted]); // Run when component mounts or audio mute state changes
 
   // Auto-dismiss based on urgency
   useEffect(() => {

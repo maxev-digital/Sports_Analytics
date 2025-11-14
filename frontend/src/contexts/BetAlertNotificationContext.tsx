@@ -140,6 +140,7 @@ export function BetAlertNotificationProvider({ children }: { children: ReactNode
                 alert={alert}
                 onDismiss={() => dismissAlert(alert.id)}
                 position={index}
+                isAudioMuted={isAudioMuted}
               />
             </div>
           ))}
