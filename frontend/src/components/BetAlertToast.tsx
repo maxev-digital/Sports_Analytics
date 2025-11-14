@@ -14,6 +14,7 @@ interface BetAlertToastProps {
 export function BetAlertToast({ alert, onDismiss, position, isAudioMuted }: BetAlertToastProps) {
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [isExiting, setIsExiting] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const { openBetSlip } = useBetSlip();
 
   // Update timer every second
@@ -242,59 +243,130 @@ export function BetAlertToast({ alert, onDismiss, position, isAudioMuted }: BetA
   const styles = getConfidenceStyles();
 
   // Calculate bottom position based on index (stack them up)
-  const bottomPosition = position * 180 + 16; // 180px per notification + 16px base
+  // Collapsed: ~80px, Expanded: ~180px per notification
+  const bottomPosition = position * (isExpanded ? 180 : 80) + 16;
 
   return (
     <div
       className={`
         ${styles.bg} ${styles.border} ${styles.glow} ${styles.pulse}
         fixed right-4 z-50 w-96 border-4 rounded-xl overflow-hidden
-        transition-all duration-300 ease-out
+        transition-all duration-300 ease-out cursor-pointer
         ${isExiting ? 'opacity-0 translate-x-full' : 'opacity-100 translate-x-0'}
       `}
       style={{ bottom: `${bottomPosition}px` }}
+      onClick={() => setIsExpanded(!isExpanded)}
     >
       {/* Header - Strategy Name & Timer */}
-      <div className="flex items-center justify-between bg-black/30 px-4 py-2 border-b-2 border-white/20">
-        <div className="flex items-center gap-2">
-          <span className="text-2xl">{styles.emoji}</span>
-          <div>
-            <div className="font-bold text-white text-sm">{alert.strategy_name}</div>
-            {alert.home_team && alert.away_team && (
+      <div className="flex items-center justify-between bg-black/30 px-3 py-2 border-b-2 border-white/20">
+        <div className="flex items-center gap-2 flex-1">
+          <span className="text-xl">{styles.emoji}</span>
+          <div className="flex-1">
+            <div className="font-bold text-white text-xs">{alert.strategy_name}</div>
+            {isExpanded && alert.home_team && alert.away_team && (
               <div className="text-xs text-white/80 font-semibold mt-0.5">
                 {alert.away_team} @ {alert.home_team}
               </div>
             )}
-            <div className="text-xs text-white/70 uppercase">{alert.confidence} Confidence</div>
+            {!isExpanded && (
+              <div className="text-xs text-white/70 uppercase">{alert.confidence}</div>
+            )}
           </div>
         </div>
 
-        {/* Time Decay Counter */}
-        <div className="text-right">
-          <div className={`font-mono font-bold text-lg ${styles.timerColor}`}>
-            {formatTimeElapsed()}
+        {/* Time & Expand Indicator */}
+        <div className="text-right flex items-center gap-2">
+          <div>
+            <div className={`font-mono font-bold text-sm ${styles.timerColor}`}>
+              {formatTimeElapsed()}
+            </div>
           </div>
-          <div className="text-xs text-white/60">Age</div>
+          <div className="text-white text-lg">
+            {isExpanded ? '▼' : '▶'}
+          </div>
         </div>
       </div>
 
       {/* Alert Body */}
-      <div className="p-4 space-y-3">
-        {/* Trigger */}
-        <div className={`${styles.infoBg} rounded-lg p-3 border border-white/20`}>
-          <div className="text-xs font-semibold text-white/70 mb-1">TRIGGER</div>
-          <div className="text-sm text-white font-medium leading-tight">
-            {alert.trigger}
-          </div>
-        </div>
+      <div className={`${isExpanded ? 'p-4 space-y-3' : 'p-2'}`}>
+        {/* COLLAPSED VIEW - Show only essentials */}
+        {!isExpanded && (
+          <div className="space-y-2">
+            {/* Condensed Recommendation */}
+            <div className="text-xs text-white font-bold leading-tight">
+              {alert.recommendation.length > 100 ? alert.recommendation.substring(0, 100) + '...' : alert.recommendation}
+            </div>
 
-        {/* Recommendation */}
-        <div className={`${styles.infoBg} rounded-lg p-3 border border-white/20`}>
-          <div className="text-xs font-semibold text-white/70 mb-1">RECOMMENDATION</div>
-          <div className="text-sm text-white font-bold">
-            {alert.recommendation}
+            {/* Best Bet Option */}
+            {alert.bet_options && alert.bet_options.length > 0 && (
+              <div
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const option = alert.bet_options[0];
+                  const bookmakerInfo = getBookmaker(option.bookmaker);
+                  openSportsbook(`https://${bookmakerInfo.domain}`, bookmakerInfo.name);
+                  openBetSlip({
+                    sport: alert.sport,
+                    homeTeam: alert.home_team,
+                    awayTeam: alert.away_team,
+                    gameId: alert.game_id,
+                    betType: option.market_type === 'totals' ? 'total' :
+                             option.market_type === 'spreads' ? 'spread' :
+                             option.market_type === 'h2h' ? 'moneyline' : 'total',
+                    betSide: option.bet_side,
+                    line: option.line,
+                    odds: option.odds,
+                    bookmaker: option.bookmaker,
+                    confidence: alert.confidence,
+                    edgePercent: alert.edge_percentage,
+                    strategy: alert.strategy_name
+                  });
+                }}
+                className={`rounded-lg p-2 border-2 flex items-center justify-between transition-all cursor-pointer ${styles.bookCardBg} ${styles.bookCardHover}`}
+              >
+                <div className="flex items-center gap-2">
+                  {alert.bet_options[0].bookmaker_logo && (
+                    <img
+                      src={alert.bet_options[0].bookmaker_logo}
+                      alt={alert.bet_options[0].bookmaker_title || alert.bet_options[0].bookmaker}
+                      className="w-6 h-6 rounded"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  )}
+                  <div className="text-white font-semibold text-xs">
+                    {alert.bet_options[0].label}
+                  </div>
+                </div>
+                <div className="text-white font-bold text-sm">
+                  {typeof alert.bet_options[0].odds === 'number'
+                    ? (alert.bet_options[0].odds > 0 ? `+${Math.round(alert.bet_options[0].odds)}` : Math.round(alert.bet_options[0].odds))
+                    : alert.bet_options[0].odds}
+                </div>
+              </div>
+            )}
           </div>
-        </div>
+        )}
+
+        {/* EXPANDED VIEW - Show everything */}
+        {isExpanded && (
+          <>
+            {/* Trigger */}
+            <div className={`${styles.infoBg} rounded-lg p-3 border border-white/20`}>
+              <div className="text-xs font-semibold text-white/70 mb-1">TRIGGER</div>
+              <div className="text-sm text-white font-medium leading-tight">
+                {alert.trigger}
+              </div>
+            </div>
+
+            {/* Recommendation */}
+            <div className={`${styles.infoBg} rounded-lg p-3 border border-white/20`}>
+              <div className="text-xs font-semibold text-white/70 mb-1">RECOMMENDATION</div>
+              <div className="text-sm text-white font-bold">
+                {alert.recommendation}
+              </div>
+            </div>
 
         {/* Bet Options - Books with Icons (CLICKABLE) */}
         {alert.bet_options && alert.bet_options.length > 0 && (
@@ -390,20 +462,25 @@ export function BetAlertToast({ alert, onDismiss, position, isAudioMuted }: BetA
           </div>
         </div>
 
-        {/* Expiration Warning */}
-        {alert.expires_in && alert.expires_in < 300 && (
-          <div className="bg-red-500/20 border border-red-400 rounded-lg p-2 text-center">
-            <div className="text-red-200 text-xs font-bold">
-              ⏱️ Expires in {Math.floor(alert.expires_in / 60)}:{(alert.expires_in % 60).toString().padStart(2, '0')}
-            </div>
-          </div>
+            {/* Expiration Warning */}
+            {alert.expires_in && alert.expires_in < 300 && (
+              <div className="bg-red-500/20 border border-red-400 rounded-lg p-2 text-center">
+                <div className="text-red-200 text-xs font-bold">
+                  ⏱️ Expires in {Math.floor(alert.expires_in / 60)}:{(alert.expires_in % 60).toString().padStart(2, '0')}
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 
       {/* Close Button */}
       <button
-        onClick={handleDismiss}
-        className="absolute top-2 right-2 text-white/60 hover:text-white transition-colors text-xl font-bold w-6 h-6 flex items-center justify-between"
+        onClick={(e) => {
+          e.stopPropagation();
+          handleDismiss();
+        }}
+        className="absolute top-2 right-2 text-white/60 hover:text-white transition-colors text-xl font-bold w-6 h-6 flex items-center justify-center"
       >
         ×
       </button>
