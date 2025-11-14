@@ -18,8 +18,8 @@ load_dotenv()
 ELEVEN_LABS_API_KEY = os.getenv('ELEVEN_LABS_API_KEY')
 ELEVEN_LABS_API_URL = "https://api.elevenlabs.io/v1/text-to-speech"
 
-# Use professional voice (Adam - deep, confident)
-VOICE_ID = "pNInz6obpgDQGcFmaJgB"
+# Use Brian voice (authoritative, clear, professional)
+VOICE_ID = "nPczCjzI2devNBz1zQrb"
 
 # All toast alert audio files to generate
 TOAST_ALERTS = {
@@ -56,6 +56,81 @@ TOAST_ALERTS = {
     "new_alert.mp3": "New alert",
     "opportunity.mp3": "Opportunity",
     "bet_now.mp3": "Place bet now!",
+
+    # ========== SPORTSBOOK ALERTS (25 books) ==========
+    "draftkings_alert.mp3": "DraftKings opportunity detected!",
+    "fanduel_alert.mp3": "FanDuel opportunity detected!",
+    "betmgm_alert.mp3": "BetMGM opportunity detected!",
+    "betrivers_alert.mp3": "BetRivers opportunity detected!",
+    "williamhill_alert.mp3": "William Hill opportunity detected!",
+    "fanatics_alert.mp3": "Fanatics opportunity detected!",
+    "espnbet_alert.mp3": "ESPN BET opportunity detected!",
+    "caesars_alert.mp3": "Caesars opportunity detected!",
+    "pointsbet_alert.mp3": "PointsBet opportunity detected!",
+    "ballybet_alert.mp3": "Bally Bet opportunity detected!",
+    "betonline_alert.mp3": "BetOnline opportunity detected!",
+    "bovada_alert.mp3": "Bovada opportunity detected!",
+    "mybookie_alert.mp3": "MyBookie opportunity detected!",
+    "lowvig_alert.mp3": "LowVig opportunity detected!",
+    "betway_alert.mp3": "Betway opportunity detected!",
+    "betus_alert.mp3": "BetUS opportunity detected!",
+    "superbook_alert.mp3": "SuperBook opportunity detected!",
+    "wynnbet_alert.mp3": "WynnBet opportunity detected!",
+    "unibet_alert.mp3": "Unibet opportunity detected!",
+    "twinspires_alert.mp3": "TwinSpires opportunity detected!",
+    "sugarhouse_alert.mp3": "SugarHouse opportunity detected!",
+    "betfred_alert.mp3": "Betfred opportunity detected!",
+    "hardrock_alert.mp3": "Hard Rock opportunity detected!",
+    "sisportsbook_alert.mp3": "S I Sportsbook opportunity detected!",
+    "barstool_alert.mp3": "Barstool opportunity detected!",
+
+    # ========== BETTING STRATEGY ALERTS (40+ strategies) ==========
+    "b2b_rested_alert.mp3": "Back-to-back versus rested team opportunity!",
+    "clv_tracker_alert.mp3": "Closing line value detected!",
+    "divisional_rivalry_alert.mp3": "Divisional rivalry edge found!",
+    "fatigue_detector_alert.mp3": "Team fatigue opportunity detected!",
+    "fatigue_strategy_alert.mp3": "Fatigue-based betting edge!",
+    "favorite_comeback_alert.mp3": "Favorite comeback opportunity!",
+    "goalie_pull_alert.mp3": "Goalie pull predictor alert!",
+    "halftime_tracker_alert.mp3": "Halftime adjustment opportunity!",
+    "home_away_split_alert.mp3": "Home away split edge detected!",
+    "injury_cascade_alert.mp3": "Injury cascade opportunity!",
+    "kelly_sizing_alert.mp3": "Kelly criterion sizing recommendation!",
+    "key_numbers_alert.mp3": "Key number edge detected!",
+    "live_betting_alert.mp3": "Live betting opportunity!",
+    "low_hold_alert.mp3": "Low hold opportunity found!",
+    "matchup_history_alert.mp3": "Historical matchup edge!",
+    "momentum_detector_alert.mp3": "Momentum shift detected!",
+    "moneyline_alert.mp3": "Moneyline value found!",
+    "multi_sport_ensemble_alert.mp3": "Multi-sport ensemble prediction!",
+    "nba_quarter_reversal_alert.mp3": "N B A quarter reversal opportunity!",
+    "pace_based_alert.mp3": "Pace-based edge detected!",
+    "player_props_alert.mp3": "Player prop opportunity!",
+    "regression_alert.mp3": "Regression to mean opportunity!",
+    "schedule_fatigue_alert.mp3": "Schedule fatigue edge detected!",
+    "sharp_money_alert.mp3": "Sharp money movement detected!",
+    "sharp_money_tracker_alert.mp3": "Sharp money tracking alert!",
+    "weather_integration_alert.mp3": "Weather impact opportunity!",
+    "weather_strategy_alert.mp3": "Weather-based edge detected!",
+    "line_movement_alert.mp3": "Significant line movement!",
+    "reverse_line_movement_alert.mp3": "Reverse line movement detected!",
+    "public_fade_alert.mp3": "Public fade opportunity!",
+    "contrarian_alert.mp3": "Contrarian betting edge!",
+    "steam_chase_alert.mp3": "Steam chase opportunity!",
+    "opening_line_alert.mp3": "Opening line value detected!",
+    "closing_line_alert.mp3": "Closing line opportunity!",
+    "correlated_parlay_alert.mp3": "Correlated parlay edge!",
+    "live_hedging_alert.mp3": "Live hedging opportunity!",
+    "arbitrage_detector_alert.mp3": "Arbitrage detected!",
+    "middle_finder_alert.mp3": "Middle opportunity found!",
+    "betting_against_public_alert.mp3": "Betting against public edge!",
+    "home_underdog_alert.mp3": "Home underdog value!",
+    "road_favorite_alert.mp3": "Road favorite edge detected!",
+    "divisional_underdog_alert.mp3": "Divisional underdog opportunity!",
+    "conference_matchup_alert.mp3": "Conference matchup edge!",
+    "playoff_intensity_alert.mp3": "Playoff intensity factor detected!",
+    "revenge_game_alert.mp3": "Revenge game opportunity!",
+    "lookahead_spot_alert.mp3": "Lookahead spot edge detected!",
 }
 
 def generate_alert_sound(filename: str, text: str):
@@ -121,8 +196,11 @@ def main():
     print("🎙️  TOAST ALERT SOUND GENERATOR - ElevenLabs API")
     print("="*80)
     print(f"\n📊 Total alerts to generate: {len(TOAST_ALERTS)}")
+    print(f"   - Core alerts: 20")
+    print(f"   - Sportsbook alerts: 25")
+    print(f"   - Strategy alerts: 45")
     print(f"📁 Output directory: frontend/public/alerts/")
-    print(f"🎤 Voice: Adam (Professional)")
+    print(f"🎤 Voice: Brian (Authoritative, Professional)")
     print("\n" + "-"*80 + "\n")
 
     success_count = 0
