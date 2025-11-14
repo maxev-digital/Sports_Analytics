@@ -202,6 +202,20 @@ class NHLTeamStats(BaseModel):
     en_goals_against_rank: Optional[int] = None  # Empty net goals allowed rank
     en_differential_rank: Optional[int] = None  # Empty net differential rank
 
+    # ⚠️ CRITICAL: DO NOT REMOVE THE 6 FIELDS BELOW ⚠️
+    # These empty net split fields are loaded from CSV and displayed on frontend GameCard
+    # Removing them will cause silent data loss (Pydantic drops undefined fields)
+    # Validated on startup in nhl_stats_client.py __init__
+
+    # Empty Net Offensive (WITH Empty Net - we pulled goalie)
+    en_goals_for_offensive: Optional[float] = None  # Goals scored when we pulled goalie
+    en_goals_against_offensive: Optional[float] = None  # Goals allowed when we pulled goalie
+    en_situations_offensive: Optional[float] = None  # Situations when we pulled goalie
+    # Empty Net Defensive (AGAINST Empty Net - opponent pulled goalie)
+    en_goals_for_defensive: Optional[float] = None  # Goals scored when opponent pulled goalie
+    en_goals_against_defensive: Optional[float] = None  # Goals allowed when opponent pulled goalie
+    en_situations_defensive: Optional[float] = None  # Situations when opponent pulled goalie
+
 class NFLTeamStats(BaseModel):
     """Season statistics for NFL teams"""
     team_id: str

@@ -6,6 +6,7 @@ from datetime import datetime
 from pathlib import Path
 import pandas as pd
 from live_models import NHLTeamStats
+from balldontlie_nhl_client import BallDontLieNHLClient
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +18,28 @@ class NHLStatsClient:
         self.all_team_stats_cache = {}  # Cache all team stats for ranking calculation
         self.cache_timestamp = None
         self.en_stats_cache = None  # Cache empty net stats
+
+        # CRITICAL: Validate NHLTeamStats model has required empty net split fields
+        # These fields are loaded from CSV and MUST be preserved in the Pydantic model
+        required_en_fields = [
+            'en_goals_for_offensive', 'en_goals_against_offensive', 'en_situations_offensive',
+            'en_goals_for_defensive', 'en_goals_against_defensive', 'en_situations_defensive'
+        ]
+        model_fields = set(NHLTeamStats.model_fields.keys())
+        missing_fields = [f for f in required_en_fields if f not in model_fields]
+        if missing_fields:
+            error_msg = f"❌ CRITICAL: NHLTeamStats model missing required empty net fields: {missing_fields}"
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+        logger.info("✅ NHLTeamStats model validation passed - all EN split fields present")
+
+        # BallDontLie client for advanced stats
+        try:
+            self.balldontlie_client = BallDontLieNHLClient()
+            logger.info("✅ BallDontLie NHL client initialized")
+        except Exception as e:
+            logger.warning(f"BallDontLie NHL client unavailable: {e}")
+            self.balldontlie_client = None
 
     def load_empty_net_stats(self) -> Dict[str, Dict]:
         """
@@ -45,6 +68,14 @@ class NHLStatsClient:
                     'en_differential': float(row['en_differential']) if pd.notna(row['en_differential']) else 0.0,
                     'en_situations': float(row['en_situations']) if pd.notna(row['en_situations']) else 0.0,
                     'en_success_rate': float(row['en_success_rate']) if pd.notna(row['en_success_rate']) else 0.0,
+                    # Offensive (WITH Empty Net - we pulled goalie)
+                    'en_goals_for_offensive': float(row['en_goals_for_offensive']) if pd.notna(row['en_goals_for_offensive']) else 0.0,
+                    'en_goals_against_offensive': float(row['en_goals_against_offensive']) if pd.notna(row['en_goals_against_offensive']) else 0.0,
+                    'en_situations_offensive': float(row['en_situations_offensive']) if pd.notna(row['en_situations_offensive']) else 0.0,
+                    # Defensive (AGAINST Empty Net - opponent pulled goalie)
+                    'en_goals_for_defensive': float(row['en_goals_for_defensive']) if pd.notna(row['en_goals_for_defensive']) else 0.0,
+                    'en_goals_against_defensive': float(row['en_goals_against_defensive']) if pd.notna(row['en_goals_against_defensive']) else 0.0,
+                    'en_situations_defensive': float(row['en_situations_defensive']) if pd.notna(row['en_situations_defensive']) else 0.0,
                 }
 
             self.en_stats_cache = en_dict
@@ -505,19 +536,73 @@ class NHLStatsClient:
                     l10_ot_losses = team_standing.get('l10OtLosses', 0)
                     last_10_record = f"{l10_wins}-{l10_losses}-{l10_ot_losses}"
 
-                    # NOTE: The /standings endpoint doesn't include advanced stats like shots, PP%, PK%, etc.
-                    # For now, we'll use placeholder values. Could fetch from /club-stats if needed.
-                    shots_per_game = 0.0  # TODO: Fetch from club-stats if needed
+                    # Fetch advanced stats from BallDontLie API
+                    shots_per_game = 0.0
                     shots_against_per_game = 0.0
                     power_play_pct = 0.0
                     penalty_kill_pct = 0.0
                     faceoff_win_pct = 0.0
                     shooting_pct = 0.0
                     save_pct = 0.0
-                    pdo = 100.0  # Neutral PDO
+                    pdo = 100.0
+
+                    if self.balldontlie_client:
+                        try:
+                            bdl_team_id = self.balldontlie_client.get_team_id_by_abbr(team_abbr)
+                            if bdl_team_id:
+                                bdl_stats = await self.balldontlie_client.get_team_season_stats(bdl_team_id)
+                                if bdl_stats and 'data' in bdl_stats and bdl_stats['data']:
+                                    # Convert array of {name, value} objects to dict
+                                    stats_dict = {item['name']: item['value'] for item in bdl_stats['data']}
+
+                                    # Extract advanced stats (convert percentages from decimals to %)
+                                    power_play_pct = float(stats_dict.get('power_play_percentage', 0.0)) * 100
+                                    penalty_kill_pct = float(stats_dict.get('penalty_kill_percentage', 0.0)) * 100
+                                    shots_per_game = float(stats_dict.get('shots_for_per_game', 0.0))
+                                    shots_against_per_game = float(stats_dict.get('shots_against_per_game', 0.0))
+                                    faceoff_win_pct = float(stats_dict.get('faceoff_win_percentage', 0.0)) * 100
+
+                                    # Calculate shooting% and save% from goals and shots
+                                    if 'goals_for' in stats_dict and shots_per_game > 0:
+                                        games = stats_dict.get('games_played', 1)
+                                        total_shots = shots_per_game * games
+                                        shooting_pct = (stats_dict['goals_for'] / total_shots) * 100 if total_shots > 0 else 0.0
+
+                                    if 'goals_against' in stats_dict and shots_against_per_game > 0:
+                                        games = stats_dict.get('games_played', 1)
+                                        total_shots_against = shots_against_per_game * games
+                                        saves = total_shots_against - stats_dict['goals_against']
+                                        save_pct = (saves / total_shots_against) * 100 if total_shots_against > 0 else 0.0
+
+                                    # Calculate PDO (shooting% + save%)
+                                    if shooting_pct > 0 and save_pct > 0:
+                                        pdo = shooting_pct + save_pct
+
+                                    logger.info(f"✅ BallDontLie stats for {team_abbr}: PP%={power_play_pct:.1f}, PK%={penalty_kill_pct:.1f}, Shots/G={shots_per_game:.1f}")
+                        except Exception as e:
+                            logger.warning(f"Failed to fetch BallDontLie stats for {team_abbr}: {e}")
 
                     # Get empty net stats for this team
                     team_en_stats = en_stats.get(team_abbr, {})
+
+                    # Ensure all EN fields exist with defaults
+                    en_defaults = {
+                        'en_goals_for': 0.0,
+                        'en_goals_against': 0.0,
+                        'en_differential': 0.0,
+                        'en_situations': 0.0,
+                        'en_success_rate': 0.0,
+                        'en_goals_for_offensive': 0.0,
+                        'en_goals_against_offensive': 0.0,
+                        'en_situations_offensive': 0.0,
+                        'en_goals_for_defensive': 0.0,
+                        'en_goals_against_defensive': 0.0,
+                        'en_situations_defensive': 0.0,
+                    }
+                    # Merge with actual stats, preferring actual values
+                    for key in en_defaults:
+                        if key not in team_en_stats or team_en_stats[key] is None:
+                            team_en_stats[key] = en_defaults[key]
 
                     # Add to list as dict (rankings will be added later)
                     team_dict = {
@@ -549,6 +634,14 @@ class NHLStatsClient:
                         'en_differential': team_en_stats.get('en_differential', 0.0),
                         'en_situations': team_en_stats.get('en_situations', 0.0),
                         'en_success_rate': team_en_stats.get('en_success_rate', 0.0),
+                        # Empty net offensive (WITH Empty Net - we pulled goalie)
+                        'en_goals_for_offensive': team_en_stats.get('en_goals_for_offensive') or 0.0,
+                        'en_goals_against_offensive': team_en_stats.get('en_goals_against_offensive') or 0.0,
+                        'en_situations_offensive': team_en_stats.get('en_situations_offensive') or 0.0,
+                        # Empty net defensive (AGAINST Empty Net - opponent pulled goalie)
+                        'en_goals_for_defensive': team_en_stats.get('en_goals_for_defensive') or 0.0,
+                        'en_goals_against_defensive': team_en_stats.get('en_goals_against_defensive') or 0.0,
+                        'en_situations_defensive': team_en_stats.get('en_situations_defensive') or 0.0,
                     }
                     all_teams_list.append(team_dict)
 
@@ -642,4 +735,6 @@ class NHLStatsClient:
 
     async def close(self):
         await self.client.aclose()
+        if self.balldontlie_client:
+            await self.balldontlie_client.close()
 
