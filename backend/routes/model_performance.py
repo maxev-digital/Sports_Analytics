@@ -353,3 +353,113 @@ async def get_models_info():
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/predictions")
+async def get_individual_predictions(
+    days: int = 30,
+    limit: int = 50,
+    sport: Optional[str] = None,
+    model: Optional[str] = None,
+    bet_type: Optional[str] = None
+):
+    """
+    Get individual predictions with results for detailed analysis
+    
+    Args:
+        days: Number of days to look back
+        limit: Maximum number of predictions to return  
+        sport: Filter by sport (nba, ncaab, nhl, etc.)
+        model: Filter by model (ensemble, xgboost, etc.)
+        bet_type: Filter by bet type (totals, spreads, moneyline)
+        
+    Returns:
+        Individual predictions with game details and results
+    """
+    try:
+        # Load predictions log
+        predictions_file = TRACKING_DIR / "predictions_log_multi_bet.csv"
+        results_file = TRACKING_DIR / "results_log.csv"
+        
+        if not predictions_file.exists():
+            return {
+                "predictions": [],
+                "total": 0,
+                "message": "No predictions data available"
+            }
+        
+        # Load data
+        predictions_df = pd.read_csv(predictions_file)
+        
+        # Convert date columns
+        if 'date_predicted' in predictions_df.columns:
+            predictions_df['date_predicted'] = pd.to_datetime(predictions_df['date_predicted'])
+        if 'game_date' in predictions_df.columns:
+            predictions_df['game_date'] = pd.to_datetime(predictions_df['game_date'])
+        
+        # Filter by date range
+        cutoff_date = datetime.now() - timedelta(days=days)
+        if 'game_date' in predictions_df.columns:
+            predictions_df = predictions_df[predictions_df['game_date'] >= cutoff_date]
+        
+        # Apply filters
+        if sport:
+            predictions_df = predictions_df[predictions_df['sport'].str.lower() == sport.lower()]
+        if model:
+            predictions_df = predictions_df[predictions_df['model'].str.lower() == model.lower()]
+        if bet_type:
+            predictions_df = predictions_df[predictions_df['bet_type'].str.lower() == bet_type.lower()]
+        
+        # Load results for merging
+        results_df = None
+        if results_file.exists():
+            results_df = pd.read_csv(results_file)
+            # Merge results
+            predictions_df = pd.merge(
+                predictions_df,
+                results_df[['prediction_id', 'actual_total', 'away_score', 'home_score', 'result', 'profit_loss']],
+                on='prediction_id',
+                how='left'
+            )
+        
+        # Sort by date descending
+        predictions_df = predictions_df.sort_values('game_date', ascending=False)
+        
+        # Limit results
+        total_count = len(predictions_df)
+        predictions_df = predictions_df.head(limit)
+        
+        # Convert to list of dicts
+        predictions = []
+        for _, row in predictions_df.iterrows():
+            pred = {
+                'prediction_id': row.get('prediction_id'),
+                'game_date': row.get('game_date').strftime('%Y-%m-%d') if pd.notna(row.get('game_date')) else None,
+                'game_time': row.get('game_time'),
+                'sport': row.get('sport'),
+                'away_team': row.get('away_team'),
+                'home_team': row.get('home_team'),
+                'bet_type': row.get('bet_type'),
+                'model': row.get('model'),
+                'predicted_value': float(row['predicted_value']) if pd.notna(row.get('predicted_value')) else None,
+                'market_value': float(row['market_value']) if pd.notna(row.get('market_value')) else None,
+                'edge': float(row['edge']) if pd.notna(row.get('edge')) else None,
+                'recommendation': row.get('recommendation'),
+                'confidence': row.get('confidence'),
+                'bet_placed': row.get('bet_placed'),
+                'actual_total': float(row['actual_total']) if pd.notna(row.get('actual_total')) else None,
+                'away_score': float(row['away_score']) if pd.notna(row.get('away_score')) else None,
+                'home_score': float(row['home_score']) if pd.notna(row.get('home_score')) else None,
+                'result': row.get('result'),
+                'profit_loss': float(row['profit_loss']) if pd.notna(row.get('profit_loss')) else 0
+            }
+            predictions.append(pred)
+        
+        return {
+            "predictions": predictions,
+            "total": total_count
+        }
+    
+    except Exception as e:
+        logger.error(f"Error getting predictions: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))

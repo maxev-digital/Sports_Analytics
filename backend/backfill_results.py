@@ -58,7 +58,8 @@ def fetch_scores_from_odds_api(sport_key: str, days_ago: int = 30) -> List[Dict]
 
     params = {
         'apiKey': ODDS_API_KEY,
-        'daysFrom': days_ago
+        'daysFrom': days_ago,
+        'dateFormat': 'iso'
     }
 
     try:

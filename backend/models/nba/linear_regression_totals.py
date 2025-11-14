@@ -79,6 +79,22 @@ class LinearRegressionTotalsModel:
         # Get prediction from Linear Regression
         prediction = self.model.predict(features)[0]
 
+        # VALIDATION: Check for unreasonable predictions (corrupt model detection)
+        if prediction < 100 or prediction > 400:
+            # Model appears corrupt, use pace-based estimate
+            home_pace = game_data.get('home_stats', {}).get('pace', 98.0)
+            away_pace = game_data.get('away_stats', {}).get('pace', 98.0)
+            avg_pace = (home_pace + away_pace) / 2
+            home_off = game_data.get('home_stats', {}).get('off_rating', 110.0)
+            away_off = game_data.get('away_stats', {}).get('off_rating', 110.0)
+            home_def = game_data.get('home_stats', {}).get('def_rating', 110.0)
+            away_def = game_data.get('away_stats', {}).get('def_rating', 110.0)
+
+            # Calculate expected points for each team
+            home_points = (home_off - (away_def - 110) + 2.5) * avg_pace / 100
+            away_points = (away_off - (home_def - 110)) * avg_pace / 100
+            prediction = home_points + away_points
+
         # Linear regression has constant variance
         confidence = 0.70  # Base confidence for linear model
         std_dev = 5.0  # Based on RMSE from training

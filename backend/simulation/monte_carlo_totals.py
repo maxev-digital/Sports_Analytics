@@ -86,20 +86,21 @@ class PossessionMonteCarloSimulator:
 
         Args:
             remaining_minutes: Minutes left in game
-            home_pace: Home team pace (possessions per 48 min)
-            away_pace: Away team pace (possessions per 48 min)
+            home_pace: Home team pace (possessions per 48 min PER TEAM)
+            away_pace: Away team pace (possessions per 48 min PER TEAM)
 
         Returns:
-            Estimated possessions remaining for each team
+            Total possessions remaining (will be split between teams in simulation)
         """
-        # Average the two team paces
+        # Average the two team paces (possessions per team per 48 min)
         avg_pace = (home_pace + away_pace) / 2.0
 
-        # Possessions per minute
-        possessions_per_minute = avg_pace / 48.0
+        # Possessions per minute per team
+        possessions_per_minute_per_team = avg_pace / 48.0
 
-        # Total possessions remaining (each team gets roughly equal)
-        total_possessions = possessions_per_minute * remaining_minutes
+        # Total possessions remaining for BOTH teams combined
+        # Since pace is per team, we need to multiply by 2 for game total
+        total_possessions = possessions_per_minute_per_team * remaining_minutes * 2.0
 
         return total_possessions
 

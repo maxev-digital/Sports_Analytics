@@ -32,6 +32,7 @@ from strategies.momentum_detector import MomentumDetector
 from strategies.nba_quarter_reversal import QuarterReversalDetector
 from ml.nba_regression_analyzer import NBARegressionAnalyzer
 from ml.ncaab_regression_analyzer import NCAABRegressionAnalyzer
+from fast_clock_fetcher import FastClockFetcher
 from typing import Dict, List, Optional
 import asyncio
 import logging
@@ -75,6 +76,8 @@ class GameTracker:
 
         # NHL stats client - fetches live data from NHL API
         self.nhl_stats_client = NHLStatsClient()
+        # Fast clock fetcher - uses ESPN scoreboards (1 call per sport, cached for 10s)
+        self.fast_clock_fetcher = FastClockFetcher()
         self.games: Dict[str, LiveGame] = {}
         self.running = False
         self.team_stats_cache: Dict[str, TeamStats] = {}  # Cache NBA team stats
@@ -1361,47 +1364,25 @@ class GameTracker:
 
                 is_live = score_info.get('completed') == False and scores is not None and home_score is not None
 
-                # Get real-time quarter and time data
+                # Get real-time quarter and time data using FAST clock fetcher
                 quarter = None
                 time_remaining = None
                 nfl_game_id = None
-                from config import ENABLE_ESPN_STATS
-                if is_live and ENABLE_ESPN_STATS:
-                    # For NFL games, use ESPN API
-                    if game_data.get('sport_key', '').startswith('americanfootball'):
-                        espn_live_info = self.espn_nfl_client.get_live_game_info(
-                            game_data['home_team'],
-                            self.espn_scoreboard_cache
-                        )
-                        if espn_live_info and espn_live_info['is_live']:
-                            quarter = espn_live_info['period']
-                            time_remaining = espn_live_info['clock']
-                            nfl_game_id = espn_live_info['game_id']
-                            logger.info(f"ESPN NFL data: {game_data['home_team']} vs {game_data['away_team']} - Q{quarter} {time_remaining}")
-                        else:
-                            logger.warning(f"No ESPN NFL data for {game_data['home_team']} vs {game_data['away_team']}")
-                    elif game_data.get('sport_key', '') == 'basketball_ncaab':
-                        # For NCAAB games, use ESPN NCAAB client
-                        ncaab_live_info = self.espn_ncaab_client.get_live_game_info(game_data['home_team'])
-                        if not ncaab_live_info:
-                            ncaab_live_info = self.espn_ncaab_client.get_live_game_info(game_data['away_team'])
-                        
-                        if ncaab_live_info and ncaab_live_info['is_live']:
-                            quarter = ncaab_live_info['period']
-                            time_remaining = ncaab_live_info['clock']
-                            logger.info(f"ESPN NCAAB data: {game_data['home_team']} vs {game_data['away_team']} - Period {quarter} {time_remaining}")
-                        else:
-                            logger.warning(f"No ESPN NCAAB data for {game_data['home_team']} vs {game_data['away_team']}")
-                    else:
-                        # For NBA/other sports, use existing NBA client
-                        live_info = self.nba_live_client.get_game_info(game_data['home_team'])
-                        if not live_info:
-                            live_info = self.nba_live_client.get_game_info(game_data['away_team'])
 
-                        if live_info and live_info['is_live']:
-                            quarter = live_info['period']
-                            time_remaining = live_info['time_remaining']
-                            logger.info(f"Live game data: {game_data['home_team']} vs {game_data['away_team']} - Q{quarter} {time_remaining}")
+                if is_live:
+                    # Use fast clock fetcher for ALL sports (1 API call per sport, cached for 10s)
+                    clock_data = self.fast_clock_fetcher.get_clock(
+                        game_data.get('sport_key', ''),
+                        game_data['home_team'],
+                        game_data['away_team']
+                    )
+
+                    if clock_data:
+                        quarter = clock_data['period']
+                        time_remaining = clock_data['clock']
+                        logger.info(f"✅ Clock data: {game_data['away_team']} @ {game_data['home_team']} - Period {quarter} {time_remaining}")
+                    else:
+                        logger.debug(f"No clock data for {game_data['away_team']} @ {game_data['home_team']}")
 
                 # Calculate momentum for ALL LIVE games using MomentumCalculator
                 home_momentum = None

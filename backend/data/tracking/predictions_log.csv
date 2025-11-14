@@ -1,19 +1,35 @@
-prediction_id,date_predicted,game_date,game_time,away_team,home_team,predicted_total,market_total,edge,recommendation,confidence,bet_placed
-2025-10-21_Houston_Rockets_Oklahoma_City_Thunder,2025-10-09 14:31:22,2025-10-21,07:30 PM,Houston Rockets,Oklahoma City Thunder,244.9,227.0,17.9,OVER,HIGH,YES
-2025-10-21_Golden_State_Warriors_Los_Angeles_Lakers,2025-10-09 14:31:22,2025-10-21,10:00 PM,Golden State Warriors,Los Angeles Lakers,231.6,225.5,6.1,OVER,HIGH,YES
-2025-10-22_Miami_Heat_Orlando_Magic,2025-10-09 14:31:22,2025-10-22,07:10 PM,Miami Heat,Orlando Magic,223.5,211.0,12.5,OVER,HIGH,YES
-2025-10-22_Brooklyn_Nets_Charlotte_Hornets,2025-10-09 14:31:22,2025-10-22,07:10 PM,Brooklyn Nets,Charlotte Hornets,209.9,221.5,11.6,UNDER,HIGH,YES
-2025-10-22_Minnesota_Timberwolves_Portland_Trail_Blazers,2025-10-09 14:31:22,2025-10-22,10:10 PM,Minnesota Timberwolves,Portland Trail Blazers,229.2,218.5,10.7,OVER,HIGH,YES
-2025-10-22_Cleveland_Cavaliers_New_York_Knicks,2025-10-09 14:31:22,2025-10-22,07:10 PM,Cleveland Cavaliers,New York Knicks,239.4,229.5,9.9,OVER,HIGH,YES
-2025-10-22_New_Orleans_Pelicans_Memphis_Grizzlies,2025-10-09 14:31:22,2025-10-22,08:10 PM,New Orleans Pelicans,Memphis Grizzlies,227.8,234.0,6.2,UNDER,HIGH,YES
-2025-10-22_Toronto_Raptors_Atlanta_Hawks,2025-10-09 14:31:22,2025-10-22,07:40 PM,Toronto Raptors,Atlanta Hawks,227.8,233.5,5.7,UNDER,HIGH,YES
-2025-10-22_Washington_Wizards_Milwaukee_Bucks,2025-10-09 14:31:22,2025-10-22,08:10 PM,Washington Wizards,Milwaukee Bucks,220.7,226.0,5.3,UNDER,HIGH,YES
-2025-10-22_Sacramento_Kings_Phoenix_Suns,2025-10-09 14:31:22,2025-10-22,10:10 PM,Sacramento Kings,Phoenix Suns,223.8,228.5,4.7,UNDER,MEDIUM,YES
-2025-10-22_Philadelphia_76ers_Boston_Celtics,2025-10-09 14:31:22,2025-10-22,07:40 PM,Philadelphia 76ers,Boston Celtics,226.6,222.5,4.1,OVER,MEDIUM,YES
-2025-10-22_San_Antonio_Spurs_Dallas_Mavericks,2025-10-09 14:31:22,2025-10-22,09:40 PM,San Antonio Spurs,Dallas Mavericks,224.6,225.5,0.9,UNDER,NONE,NO
-2025-10-22_Detroit_Pistons_Chicago_Bulls,2025-10-09 14:31:22,2025-10-22,08:10 PM,Detroit Pistons,Chicago Bulls,233.4,233.5,0.1,UNDER,NONE,NO
-2025-10-23_Oklahoma_City_Thunder_Indiana_Pacers,2025-10-17 17:21:38,2025-10-23,07:40 PM,Oklahoma City Thunder,Indiana Pacers,244.2,226.5,17.7,OVER,HIGH,YES
-2025-10-23_Denver_Nuggets_Golden_State_Warriors,2025-10-17 17:21:38,2025-10-23,10:10 PM,Denver Nuggets,Golden State Warriors,236.7,233.5,3.2,OVER,MEDIUM,YES
-2025-10-24_Boston_Celtics_New_York_Knicks,2025-10-17 17:21:38,2025-10-24,07:30 PM,Boston Celtics,New York Knicks,234.8,226.5,8.3,OVER,HIGH,YES
-2025-10-27_Cleveland_Cavaliers_Detroit_Pistons,2025-10-17 17:21:38,2025-10-27,07:00 PM,Cleveland Cavaliers,Detroit Pistons,240.6,228.5,12.1,OVER,HIGH,YES
-2025-10-27_Denver_Nuggets_Minnesota_Timberwolves,2025-10-17 17:21:38,2025-10-27,09:30 PM,Denver Nuggets,Minnesota Timberwolves,236.1,229.5,6.6,OVER,HIGH,YES
+prediction_id,date_predicted,game_date,game_time,away_team,home_team,predicted_total,market_total,edge,recommendation,confidence,bet_placed,over_probability,under_probability,expected_value,kelly_pct,std_dev,percentile_5,percentile_25,percentile_50,percentile_75,percentile_95
+NBA_20251110_Los_Angeles_Lakers_Boston_Celtics,2025-11-09 15:52:41,2025-11-10 00:00:00,07:00 PM,Los Angeles Lakers,Boston Celtics,233.0,228.5,4.5,OVER,MEDIUM,YES,,,,,,,,,,
+NBA_20251110_Golden_State_Warriors_Phoenix_Suns,2025-11-09 15:52:41,2025-11-10 00:00:00,07:30 PM,Golden State Warriors,Phoenix Suns,222.0,225.5,-3.5,UNDER,MEDIUM,YES,,,,,,,,,,
+NBA_20251110_Miami_Heat_Milwaukee_Bucks,2025-11-09 15:52:41,2025-11-10 00:00:00,07:30 PM,Miami Heat,Milwaukee Bucks,212.7,221.0,-8.3,UNDER,HIGH,YES,,,,,,,,,,
+NBA_20251110_Dallas_Mavericks_Denver_Nuggets,2025-11-09 15:52:41,2025-11-10 00:00:00,10:00 PM,Dallas Mavericks,Denver Nuggets,229.8,230.0,-0.2,UNDER,NONE,NO,,,,,,,,,,
+NCAAB_20251110_Duke_North_Carolina,2025-11-09 15:52:41,2025-11-10 00:00:00,08:00 PM,Duke,North Carolina,146.1,145.5,0.6,OVER,NONE,NO,,,,,,,,,,
+NCAAB_20251110_Kansas_Kentucky,2025-11-09 15:52:41,2025-11-10 00:00:00,08:00 PM,Kansas,Kentucky,160.0,152.0,8.0,OVER,HIGH,YES,,,,,,,,,,
+NCAAB_20251110_Gonzaga_UCLA,2025-11-09 15:52:41,2025-11-10 00:00:00,10:00 PM,Gonzaga,UCLA,154.6,148.5,6.1,OVER,HIGH,YES,,,,,,,,,,
+NCAAB_20251110_Villanova_Georgetown,2025-11-09 15:52:41,2025-11-10 00:00:00,08:00 PM,Villanova,Georgetown,134.1,141.0,-6.9,UNDER,HIGH,YES,,,,,,,,,,
+NFL_20251110_Kansas_City_Chiefs_Buffalo_Bills,2025-11-09 15:52:41,2025-11-10 00:00:00,08:00 PM,Kansas City Chiefs,Buffalo Bills,57.9,52.5,5.4,OVER,HIGH,YES,,,,,,,,,,
+NFL_20251110_Philadelphia_Eagles_Dallas_Cowboys,2025-11-09 15:52:41,2025-11-10 00:00:00,08:00 PM,Philadelphia Eagles,Dallas Cowboys,43.9,48.5,-4.6,UNDER,MEDIUM,YES,,,,,,,,,,
+NFL_20251110_San_Francisco_49ers_Seattle_Seahawks,2025-11-09 15:52:41,2025-11-10 00:00:00,08:00 PM,San Francisco 49ers,Seattle Seahawks,46.4,45.0,1.4,OVER,NONE,NO,,,,,,,,,,
+NCAAF_20251110_Alabama_Georgia,2025-11-09 15:52:41,2025-11-10 00:00:00,10:00 PM,Alabama,Georgia,50.0,56.5,-6.5,UNDER,HIGH,YES,,,,,,,,,,
+NCAAF_20251110_Ohio_State_Michigan,2025-11-09 15:52:41,2025-11-10 00:00:00,07:30 PM,Ohio State,Michigan,59.0,54.0,5.0,OVER,HIGH,YES,,,,,,,,,,
+NCAAF_20251110_Clemson_Florida_State,2025-11-09 15:52:41,2025-11-10 00:00:00,10:00 PM,Clemson,Florida State,54.5,51.5,3.0,OVER,MEDIUM,YES,,,,,,,,,,
+NHL_20251110_Toronto_Maple_Leafs_Montreal_Canadiens,2025-11-09 15:52:41,2025-11-10 00:00:00,07:00 PM,Toronto Maple Leafs,Montreal Canadiens,-3.4,6.5,-9.9,UNDER,HIGH,YES,,,,,,,,,,
+NHL_20251110_Boston_Bruins_New_York_Rangers,2025-11-09 15:52:41,2025-11-10 00:00:00,07:00 PM,Boston Bruins,New York Rangers,13.2,6.0,7.2,OVER,HIGH,YES,,,,,,,,,,
+NHL_20251110_Colorado_Avalanche_Vegas_Golden_Knights,2025-11-09 15:52:41,2025-11-10 00:00:00,10:00 PM,Colorado Avalanche,Vegas Golden Knights,12.8,6.5,6.3,OVER,HIGH,YES,,,,,,,,,,
+NBA_20251111_Los_Angeles_Lakers_Boston_Celtics,2025-11-10 09:17:26,2025-11-11,07:00 PM,Los Angeles Lakers,Boston Celtics,115.5,228.5,-113.0,UNDER,HIGH,YES,0.0,1.0,0.909,5.0,11.5,96.0,107.9,115.7,123.2,134.4
+NBA_20251111_Golden_State_Warriors_Phoenix_Suns,2025-11-10 09:17:26,2025-11-11,07:00 PM,Golden State Warriors,Phoenix Suns,116.1,225.5,-109.4,UNDER,HIGH,YES,0.0,1.0,0.909,5.0,11.7,96.8,108.2,116.2,123.9,135.2
+NBA_20251111_Miami_Heat_Milwaukee_Bucks,2025-11-10 09:17:26,2025-11-11,08:00 PM,Miami Heat,Milwaukee Bucks,112.2,221.0,-108.8,UNDER,HIGH,YES,0.0,1.0,0.909,5.0,11.4,93.8,104.3,112.1,120.1,130.8
+NBA_20251111_Dallas_Mavericks_Denver_Nuggets,2025-11-10 09:17:26,2025-11-11,08:00 PM,Dallas Mavericks,Denver Nuggets,117.7,230.0,-112.3,UNDER,HIGH,YES,0.0,1.0,0.909,5.0,11.6,98.7,109.9,117.5,125.5,136.9
+NCAAB_20251111_Duke_North_Carolina,2025-11-10 09:17:26,2025-11-11,08:00 PM,Duke,North Carolina,99.9,145.5,-45.6,UNDER,HIGH,YES,0.0,1.0,0.909,5.0,9.9,83.7,93.1,99.9,106.6,115.9
+NCAAB_20251111_Kansas_Kentucky,2025-11-10 09:17:26,2025-11-11,10:00 PM,Kansas,Kentucky,99.3,152.0,-52.7,UNDER,HIGH,YES,0.0,1.0,0.909,5.0,10.1,82.8,92.6,99.2,106.0,116.2
+NCAAB_20251111_Gonzaga_UCLA,2025-11-10 09:17:26,2025-11-11,08:00 PM,Gonzaga,UCLA,101.6,148.5,-46.9,UNDER,HIGH,YES,0.0,1.0,0.909,5.0,10.2,84.6,94.8,101.6,108.4,118.3
+NCAAB_20251111_Villanova_Georgetown,2025-11-10 09:17:26,2025-11-11,08:00 PM,Villanova,Georgetown,90.4,141.0,-50.6,UNDER,HIGH,YES,0.0,1.0,0.909,5.0,9.2,75.2,84.3,90.3,96.6,105.2
+NFL_20251111_Kansas_City_Chiefs_Buffalo_Bills,2025-11-10 09:17:26,2025-11-11,10:00 PM,Kansas City Chiefs,Buffalo Bills,85.0,52.5,32.5,OVER,HIGH,YES,1.0,0.0,0.909,5.0,8.6,70.7,79.0,85.1,90.8,99.0
+NFL_20251111_Philadelphia_Eagles_Dallas_Cowboys,2025-11-10 09:17:26,2025-11-11,07:30 PM,Philadelphia Eagles,Dallas Cowboys,77.5,48.5,29.0,OVER,HIGH,YES,1.0,0.0,0.909,5.0,8.0,64.4,72.0,77.5,82.9,90.6
+NFL_20251111_San_Francisco_49ers_Seattle_Seahawks,2025-11-10 09:17:26,2025-11-11,07:30 PM,San Francisco 49ers,Seattle Seahawks,69.9,45.0,24.9,OVER,HIGH,YES,0.999,0.001,0.908,5.0,7.0,58.4,65.1,69.8,74.5,81.3
+NCAAF_20251111_Alabama_Georgia,2025-11-10 09:17:26,2025-11-11,07:30 PM,Alabama,Georgia,105.5,56.5,49.0,OVER,HIGH,YES,1.0,0.0,0.909,5.0,10.6,87.8,98.6,105.4,112.5,123.0
+NCAAF_20251111_Ohio_State_Michigan,2025-11-10 09:17:26,2025-11-11,08:00 PM,Ohio State,Michigan,99.5,54.0,45.5,OVER,HIGH,YES,1.0,0.0,0.909,5.0,10.2,83.1,92.6,99.4,106.4,116.3
+NCAAF_20251111_Clemson_Florida_State,2025-11-10 09:17:26,2025-11-11,08:00 PM,Clemson,Florida State,92.7,51.5,41.2,OVER,HIGH,YES,1.0,0.0,0.909,5.0,9.4,77.3,86.5,92.7,99.0,108.3
+NHL_20251111_Toronto_Maple_Leafs_Montreal_Canadiens,2025-11-10 09:17:26,2025-11-11,08:00 PM,Toronto Maple Leafs,Montreal Canadiens,78.8,6.5,72.3,OVER,HIGH,YES,1.0,0.0,0.909,5.0,8.1,66.0,73.2,78.6,84.2,92.4
+NHL_20251111_Boston_Bruins_New_York_Rangers,2025-11-10 09:17:26,2025-11-11,10:00 PM,Boston Bruins,New York Rangers,75.4,6.0,69.4,OVER,HIGH,YES,1.0,0.0,0.909,5.0,7.7,62.9,70.3,75.4,80.5,88.1
+NHL_20251111_Colorado_Avalanche_Vegas_Golden_Knights,2025-11-10 09:17:26,2025-11-11,07:30 PM,Colorado Avalanche,Vegas Golden Knights,81.3,6.5,74.8,OVER,HIGH,YES,1.0,0.0,0.909,5.0,8.3,67.7,75.8,81.3,86.8,94.9

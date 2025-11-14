@@ -94,9 +94,49 @@ class NHLDataLoader:
             logger.error(f"Error fetching season {season}: {e}")
             return pd.DataFrame()
 
+    def load_enhanced_stats(self, season: str) -> pd.DataFrame:
+        """
+        Load enhanced team statistics from MoneyPuck + MoreHockeyStats
+
+        UPGRADED 2025-11-11: Now uses REAL data instead of placeholders
+        - MoneyPuck.com: xG, shot quality, possession metrics, REAL shots/faceoffs
+        - MoreHockeyStats.com: Empty net statistics
+
+        Args:
+            season: Season string like "20232024"
+
+        Returns:
+            DataFrame with 54 enhanced features per team
+        """
+        enhanced_file = self.data_dir / "moneypuck" / "team_stats_with_empty_net.csv"
+
+        if not enhanced_file.exists():
+            logger.warning(f"Enhanced stats file not found: {enhanced_file}")
+            logger.warning("Falling back to basic NHL API stats with placeholders")
+            return pd.DataFrame()
+
+        df = pd.read_csv(enhanced_file)
+
+        # Convert season to int for filtering
+        season_int = int(season)
+        df_season = df[df['season'] == season_int].copy()
+
+        if df_season.empty:
+            logger.warning(f"No enhanced stats for season {season}")
+            logger.info(f"Available seasons: {sorted(df['season'].unique())}")
+            return pd.DataFrame()
+
+        logger.info(f"✅ Loaded ENHANCED stats for {len(df_season)} teams ({len(df_season.columns)} features)")
+        logger.info(f"   Includes: xG, shot quality, possession, empty net data")
+
+        return df_season
+
     async def fetch_team_stats(self, season: str) -> pd.DataFrame:
         """
-        Fetch team statistics for a season
+        Fetch team statistics for a season (FALLBACK METHOD)
+
+        NOTE: This method uses placeholders for many stats.
+        Prefer load_enhanced_stats() which has REAL data from MoneyPuck.
 
         Returns:
             DataFrame with team stats (GPG, GAPG, PP%, PK%, etc.)
@@ -136,7 +176,7 @@ class NHLDataLoader:
                     'goals_per_game': team.get('goalFor', 0) / games_played,
                     'goals_against_per_game': team.get('goalAgainst', 0) / games_played,
                     'win_pct': team.get('wins', 0) / games_played,
-                    # These would need additional API calls to get:
+                    # PLACEHOLDERS (replaced by load_enhanced_stats()):
                     'shots_per_game': 30.0,  # Placeholder
                     'shots_against_per_game': 30.0,
                     'power_play_pct': 20.0,
@@ -191,6 +231,9 @@ class NHLDataLoader:
         """
         Merge games with team stats to create training dataset
 
+        UPGRADED 2025-11-11: Attempts to use enhanced stats (xG, shot quality, etc.)
+        Falls back to basic stats if enhanced not available.
+
         Returns:
             DataFrame ready for model training with features and targets
         """
@@ -198,14 +241,32 @@ class NHLDataLoader:
 
         training_data = []
 
+        # Try to load enhanced stats for seasons in games_df
+        seasons = games_df['season'].unique()
+        enhanced_stats_dict = {}
+
+        for season in seasons:
+            enhanced = self.load_enhanced_stats(season)
+            if not enhanced.empty:
+                enhanced_stats_dict[season] = enhanced
+                logger.info(f"✅ Using ENHANCED stats for {season}")
+            else:
+                logger.info(f"⚠️  Using basic stats for {season} (enhanced not available)")
+
         for _, game in games_df.iterrows():
             # Get team stats for this game's season
             season = game['season']
             home_team = game['home_team']
             away_team = game['away_team']
 
-            home_stats = stats_df[(stats_df['season'] == season) & (stats_df['team'] == home_team)]
-            away_stats = stats_df[(stats_df['season'] == season) & (stats_df['team'] == away_team)]
+            # Try enhanced stats first, fall back to basic stats
+            if season in enhanced_stats_dict:
+                enhanced_df = enhanced_stats_dict[season]
+                home_stats = enhanced_df[enhanced_df['team'] == home_team.lower()]
+                away_stats = enhanced_df[enhanced_df['team'] == away_team.lower()]
+            else:
+                home_stats = stats_df[(stats_df['season'] == season) & (stats_df['team'] == home_team)]
+                away_stats = stats_df[(stats_df['season'] == season) & (stats_df['team'] == away_team)]
 
             if home_stats.empty or away_stats.empty:
                 continue
@@ -243,6 +304,35 @@ class NHLDataLoader:
                 'away_save_pct': away_stats.iloc[0]['save_pct'],
                 'away_pdo': away_stats.iloc[0]['pdo'],
                 'away_win_pct': away_stats.iloc[0]['win_pct'],
+
+                # === ENHANCED FEATURES (2025-11-11) ===
+                # Expected Goals
+                'home_xgoals_per_game': home_stats.iloc[0].get('xgoals_per_game', home_stats.iloc[0]['goals_per_game']),
+                'away_xgoals_per_game': away_stats.iloc[0].get('xgoals_per_game', away_stats.iloc[0]['goals_per_game']),
+                'home_xgoals_against_per_game': home_stats.iloc[0].get('xgoals_against_per_game', home_stats.iloc[0]['goals_against_per_game']),
+                'away_xgoals_against_per_game': away_stats.iloc[0].get('xgoals_against_per_game', away_stats.iloc[0]['goals_against_per_game']),
+                'home_goals_above_expected': home_stats.iloc[0].get('goals_above_expected', 0),
+                'away_goals_above_expected': away_stats.iloc[0].get('goals_above_expected', 0),
+
+                # Shot Quality
+                'home_hd_shooting_pct': home_stats.iloc[0].get('hd_shooting_pct', 25.0),
+                'away_hd_shooting_pct': away_stats.iloc[0].get('hd_shooting_pct', 25.0),
+                'home_hd_save_pct': home_stats.iloc[0].get('hd_save_pct', 0.70),
+                'away_hd_save_pct': away_stats.iloc[0].get('hd_save_pct', 0.70),
+
+                # Possession Metrics
+                'home_corsi_for_pct': home_stats.iloc[0].get('corsi_for_pct', 50.0),
+                'away_corsi_for_pct': away_stats.iloc[0].get('corsi_for_pct', 50.0),
+                'home_fenwick_for_pct': home_stats.iloc[0].get('fenwick_for_pct', 50.0),
+                'away_fenwick_for_pct': away_stats.iloc[0].get('fenwick_for_pct', 50.0),
+
+                # Empty Net Stats
+                'home_en_goals_for_per_game': home_stats.iloc[0].get('en_goals_for_per_game', 0),
+                'away_en_goals_for_per_game': away_stats.iloc[0].get('en_goals_for_per_game', 0),
+                'home_en_goals_against_per_game': home_stats.iloc[0].get('en_goals_against_per_game', 0),
+                'away_en_goals_against_per_game': away_stats.iloc[0].get('en_goals_against_per_game', 0),
+                'home_en_success_rate': home_stats.iloc[0].get('en_success_rate', 0),
+                'away_en_success_rate': away_stats.iloc[0].get('en_success_rate', 0),
 
                 # Target variables
                 'home_score': game['home_score'],

@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 import sys
 from pathlib import Path
 import asyncio
+import numpy as np
 
 # Add models directories to path
 models_path = Path(__file__).parent.parent / "models"
@@ -40,6 +41,36 @@ from nhl.lightgbm_totals import get_nhl_lightgbm_totals_model
 from nhl.linear_regression_totals import get_nhl_linear_regression_totals_model
 
 router = APIRouter(prefix="/api/models", tags=["models"])
+
+# ========== HELPER FUNCTIONS ==========
+
+def round_floats(obj, decimals=2):
+    """Recursively round all float values in dicts/lists to specified decimals"""
+    if isinstance(obj, float):
+        return round(obj, decimals)
+    elif isinstance(obj, dict):
+        return {k: round_floats(v, decimals) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [round_floats(item, decimals) for item in obj]
+    else:
+        return obj
+
+def convert_numpy_types(obj):
+    """Recursively convert numpy types to Python native types for JSON serialization"""
+    if isinstance(obj, dict):
+        return {k: convert_numpy_types(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_numpy_types(item) for item in obj]
+    elif isinstance(obj, (np.integer, np.int64, np.int32)):
+        return int(obj)
+    elif isinstance(obj, (np.floating, np.float64, np.float32)):
+        return float(obj)
+    elif isinstance(obj, np.ndarray):
+        return obj.tolist()
+    elif hasattr(obj, 'dict'):  # Pydantic model
+        return convert_numpy_types(obj.dict())
+    else:
+        return obj
 
 # ========== REQUEST/RESPONSE MODELS ==========
 
@@ -215,6 +246,7 @@ async def predict_random_forest(request: PredictionRequest):
         }
 
         result = model.predict(game_data, request.market_total)
+        result = round_floats(result, decimals=2)
 
         return PredictionResponse(**result)
 
@@ -260,6 +292,7 @@ async def predict_xgboost(request: PredictionRequest):
         }
 
         result = model.predict(game_data, request.market_total)
+        result = round_floats(result, decimals=2)
 
         return PredictionResponse(**result)
 
@@ -307,6 +340,7 @@ async def predict_lightgbm(request: PredictionRequest):
         }
 
         result = model.predict(game_data, request.market_total)
+        result = round_floats(result, decimals=2)
 
         return PredictionResponse(**result)
 
@@ -354,6 +388,7 @@ async def predict_linear_regression(request: PredictionRequest):
         }
 
         result = model.predict(game_data, request.market_total)
+        result = round_floats(result, decimals=2)
 
         return PredictionResponse(**result)
 
@@ -408,6 +443,8 @@ async def compare_all_models(request: ComparisonRequest):
             else:
                 # Convert Pydantic model to dict if necessary
                 result_dict = result.dict() if hasattr(result, 'dict') else result
+                # Convert numpy types to native Python types for JSON serialization
+                result_dict = convert_numpy_types(result_dict)
                 # Store the full model result, not just a subset of fields
                 models_data[model_names[idx]] = result_dict
 
@@ -476,25 +513,29 @@ async def compare_all_models(request: ComparisonRequest):
                 best_model_id = max(best_candidates, key=lambda x: x[1]['prediction']['confidence'])[0]
                 best_model_reason = "Highest confidence with strong edge"
 
-        return {
+        response_data = {
             "game_id": request.game_id,
-            "market_line": round(request.market_total, 1),
+            "market_line": round(request.market_total, 2),
             "models": models_data,
             "ensemble": {
-                "weighted_average": round(weighted_avg, 1) if weighted_avg else None,
+                "weighted_average": round(weighted_avg, 2) if weighted_avg else None,
                 "confidence": round(ensemble_confidence, 2),
                 "recommendation": ensemble_recommendation,
                 "consensus_strength": consensus_strength,
                 "agreement_count": agreement_count,
                 "disagreement_count": disagreement_count,
-                "edge": round(ensemble_edge, 1),
-                "kelly_fraction": round(kelly_fraction, 3)
+                "edge": round(ensemble_edge, 2),
+                "kelly_fraction": round(kelly_fraction, 2)
             },
             "best_model": {
                 "id": best_model_id,
                 "reason": best_model_reason
             } if best_model_id else None
         }
+
+        # Round all floats in models_data to 2 decimals
+        response_data = round_floats(response_data, decimals=2)
+        return response_data
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Comparison error: {str(e)}")

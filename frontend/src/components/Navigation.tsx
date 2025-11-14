@@ -78,6 +78,7 @@ export function Navigation() {
   const edgesItems = [
     { path: '/max-ev-edges', label: 'ML EDGES', emoji: uiEmojis.star },
     { path: '/model-performance', label: 'MODEL PERFORMANCE', emoji: uiEmojis.chart },
+    { path: '/ml-models-explained', label: 'ML MODELS EXPLAINED', emoji: uiEmojis.book },
   ];
 
   // Strategy Results dropdown items (Live vs Pre-Game)
@@ -161,8 +162,8 @@ export function Navigation() {
 
           {/* Navigation Links */}
           <div className="hidden md:flex items-center gap-1">
-            {/* Main Nav Items - First 5 items (Game Cards through Player Props) */}
-            {mainNavItems.slice(0, 5).map((item) => (
+            {/* Main Nav Items - First 2 items (Game Cards, Odds) */}
+            {mainNavItems.slice(0, 2).map((item) => (
               <Link
                 key={item.path}
                 to={item.path}
@@ -171,6 +172,70 @@ export function Navigation() {
                     ? item.path === '/live-games'
                       ? 'bg-black text-white border-2 border-yellow-500 shadow-lg shadow-yellow-500/30'
                       : 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+                    : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
+                }`}
+              >
+                {/* item.emoji && (
+                  <img
+                    src={item.emoji}
+                    alt={item.label || 'Home'}
+                    className={item.label ? "w-5 h-5" : "w-8 h-8"}
+                    style={{ imageRendering: 'crisp-edges' }}
+                  />
+                ) */}
+                {item.label}
+              </Link>
+            ))}
+
+            {/* Edges Dropdown - ML Model Edges & Performance */}
+            <div className="relative" ref={edgesRef}>
+              <button
+                onClick={() => handleDropdownToggle(setEdgesDropdownOpen, edgesDropdownOpen)}
+                className={`px-5 py-2.5 rounded-lg font-bold transition-all text-base flex items-center gap-2 italic ${
+                  isDropdownActive(edgesItems)
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+                    : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
+                }`}
+              >
+                {/* <img src={uiEmojis.star} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} /> */}
+                <div className="flex flex-col leading-tight">
+                  <span className="whitespace-nowrap">MAX-EV</span>
+                  <span className="whitespace-nowrap">EDGE</span>
+                </div>
+                <svg className={`w-5 h-5 transition-transform ${edgesDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {edgesDropdownOpen && (
+                <div className="absolute top-full mt-1 left-0 bg-slate-800 border border-slate-700 rounded-lg shadow-xl min-w-[220px] py-2 z-50">
+                  {edgesItems.map((item) => (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      onClick={() => { /* Sound disabled */ setEdgesDropdownOpen(false); }}
+                      className={`px-4 py-2.5 flex items-center gap-3 transition-all ${
+                        isActive(item.path)
+                          ? 'bg-blue-600 text-white'
+                          : 'text-slate-300 hover:bg-slate-700 hover:text-slate-100'
+                      }`}
+                    >
+                      {/* <img src={item.emoji} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} /> */}
+                      <span className="font-semibold text-base italic">{item.label}</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Main Nav Items - Remaining items (Performance, Alerts, Player Props) */}
+            {mainNavItems.slice(2, 5).map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`px-5 py-2.5 rounded-lg font-bold transition-all text-base flex items-center gap-2 italic whitespace-nowrap ${
+                  isActive(item.path)
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
                     : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
                 }`}
               >
@@ -223,67 +288,6 @@ export function Navigation() {
                 </div>
               )}
             </div>
-
-            {/* Edges Dropdown - ML Model Edges & Performance */}
-            <div className="relative" ref={edgesRef}>
-              <button
-                onClick={() => handleDropdownToggle(setEdgesDropdownOpen, edgesDropdownOpen)}
-                className={`px-5 py-2.5 rounded-lg font-bold transition-all text-base flex items-center gap-2 italic ${
-                  isDropdownActive(edgesItems)
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
-                    : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
-                }`}
-              >
-                {/* <img src={uiEmojis.star} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} /> */}
-                MAX EV EDGES
-                <svg className={`w-5 h-5 transition-transform ${edgesDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-
-              {edgesDropdownOpen && (
-                <div className="absolute top-full mt-1 left-0 bg-slate-800 border border-slate-700 rounded-lg shadow-xl min-w-[220px] py-2 z-50">
-                  {edgesItems.map((item) => (
-                    <Link
-                      key={item.path}
-                      to={item.path}
-                      onClick={() => { /* Sound disabled */ setEdgesDropdownOpen(false); }}
-                      className={`px-4 py-2.5 flex items-center gap-3 transition-all ${
-                        isActive(item.path)
-                          ? 'bg-blue-600 text-white'
-                          : 'text-slate-300 hover:bg-slate-700 hover:text-slate-100'
-                      }`}
-                    >
-                      {/* <img src={item.emoji} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} /> */}
-                      <span className="font-semibold text-base italic">{item.label}</span>
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Main Nav Items - Remaining items */}
-            {mainNavItems.slice(5).map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`px-5 py-2.5 rounded-lg font-bold transition-all text-base flex items-center gap-2 italic whitespace-nowrap ${
-                  isActive(item.path)
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
-                    : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
-                }`}
-              >
-                {/* item.emoji && (
-                  <img
-                    src={item.emoji}
-                    alt={item.label || 'Home'}
-                    className={item.label ? "w-5 h-5" : "w-8 h-8"}
-                    style={{ imageRendering: 'crisp-edges' }}
-                  />
-                ) */}
-                {item.label}
-              </Link>
-            ))}
 
             {/* Strategies Dropdown - Strategy Settings */}
             <div className="relative" ref={strategyRef}>

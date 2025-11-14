@@ -53,6 +53,15 @@ class UpdateInfluencerStatusRequest(BaseModel):
     status: str  # active, paused, suspended
 
 
+class PartnerApplicationRequest(BaseModel):
+    name: str
+    email: EmailStr
+    handle: str
+    followers: int
+    platform: str
+    niche: str
+
+
 # ==================== AUTH HELPERS ====================
 
 def get_influencer_from_token(authorization: Optional[str] = Header(None)) -> str:
@@ -186,6 +195,44 @@ async def validate_code(request: ReferralCodeValidationRequest):
             "valid": False,
             "message": f"Error validating code: {str(e)}"
         }
+
+
+@router.post("/apply")
+async def partner_apply(request: PartnerApplicationRequest):
+    """Quick partner application (auto-generates account and referral code)"""
+    try:
+        # Generate username from email
+        username = request.email.split('@')[0].lower().replace('.', '_')
+
+        # Generate temporary password (user will reset via email)
+        temp_password = secrets.token_urlsafe(16)
+
+        # Register influencer
+        influencer_data = register_influencer(
+            username=username,
+            email=request.email,
+            password=temp_password,
+            full_name=request.name,
+            social_media_handle=request.handle,
+            platform=request.platform,
+            follower_count=request.followers,
+            custom_code=None,  # Auto-generate
+            payment_email=request.email
+        )
+
+        # TODO: Send welcome email with login info and referral code
+
+        return {
+            "success": True,
+            "message": "Partner application received! Check your email for login details.",
+            "referral_code": influencer_data['referral_code'],
+            "username": username
+        }
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Application failed: {str(e)}")
 
 
 # ==================== PROTECTED ENDPOINTS (Influencer) ====================

@@ -1,5 +1,6 @@
 /**
  * API Configuration for Development and Production
+ * UPDATED: 2025-11-13 - Always use VPS backend (no localhost)
  */
 
 // Detect if we're in development or production
@@ -7,10 +8,8 @@ const isDevelopment =
   window.location.hostname === 'localhost' ||
   window.location.hostname === '127.0.0.1';
 
-// Use local backend in development, production in prod
-export const API_BASE_URL = isDevelopment
-  ? 'http://localhost:8000/api'
-  : 'https://max-ev-sports.com/api';
+// ALWAYS use production VPS backend - predictions/data live on VPS only
+export const API_BASE_URL = 'https://max-ev-sports.com/api';
 
 // Helper function to build API URLs
 export function getApiUrl(endpoint: string): string {
@@ -23,9 +22,9 @@ export function getApiUrl(endpoint: string): string {
 
 // Debug logging
 console.log('🔧 API Config:', {
-  isDevelopment,
+  isDevelopment: isDevelopment ? 'true (but using VPS backend)' : 'false',
   hostname: window.location.hostname,
   protocol: window.location.protocol,
   API_BASE_URL,
-  note: isDevelopment ? 'Using LOCAL backend' : 'Using PRODUCTION backend'
+  note: 'ALWAYS using VPS backend - All predictions/data on VPS'
 });

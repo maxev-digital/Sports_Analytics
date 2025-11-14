@@ -36,14 +36,14 @@ LAST_NAMES = [
     "Watson", "Brooks", "Chavez", "Wood", "James", "Bennett", "Gray", "Mendoza"
 ]
 
-# Subscription tiers and their commissions (50% of price)
+# Subscription tiers and their commissions (25% of price)
 TIERS = {
-    "beta": {"commission": 2.0, "weight": 0.10},      # 10%
-    "starter": {"commission": 6.0, "weight": 0.25},   # 25%
-    "semipro": {"commission": 10.0, "weight": 0.20},  # 20%
-    "professional": {"commission": 20.0, "weight": 0.25},  # 25%
-    "elite": {"commission": 40.0, "weight": 0.15},    # 15%
-    "elitepro": {"commission": 60.0, "weight": 0.05}  # 5%
+    "beta": {"commission": 2.0, "weight": 0.10},      # 10% - $8/mo tier
+    "starter": {"commission": 7.25, "weight": 0.30},   # 30% - $29/mo
+    "semipro": {"commission": 19.75, "weight": 0.25},  # 25% - $79/mo
+    "professional": {"commission": 37.25, "weight": 0.20},  # 20% - $149/mo
+    "elite": {"commission": 74.75, "weight": 0.10},    # 10% - $299/mo
+    "elitepro": {"commission": 199.75, "weight": 0.05}  # 5% - $799/mo
 }
 
 REFERRALS_FILE = Path("referrals.json")

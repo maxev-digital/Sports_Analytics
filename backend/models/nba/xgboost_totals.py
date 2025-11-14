@@ -102,12 +102,17 @@ class XGBoostTotalsModel:
         # Add market analysis if market total provided
         if market_total:
             edge = prediction - market_total
+
+            # Calculate probabilities with clamping (must be between 0 and 1)
+            prob_over = max(0.0, min(1.0, 0.5 + (edge / 20.0)))
+            prob_under = 1.0 - prob_over  # Ensure they sum to 1.0
+
             result['market_analysis'] = {
                 'market_line': round(market_total, 1),
                 'edge': round(edge, 1),
                 'recommendation': 'OVER' if edge > 0 else 'UNDER' if edge < 0 else 'PASS',
-                'probability_over': round(0.5 + (edge / 20.0), 2),  # Simple heuristic
-                'probability_under': round(0.5 - (edge / 20.0), 2),
+                'probability_over': round(prob_over, 2),
+                'probability_under': round(prob_under, 2),
                 'kelly_fraction': round(abs(edge) / 100.0, 3) if abs(edge) >= 2.0 else 0.0
             }
 

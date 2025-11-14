@@ -129,12 +129,13 @@ class StripeService:
                 'metadata': {
                     'user_id': user_id,
                 },
-                # Enable customer portal access
+                # Enable customer portal access with 14-day free trial
                 'subscription_data': {
                     'metadata': {
                         'user_id': user_id,
                     },
-                    # No trial - immediate payment with 50% discount
+                    # 14-DAY FREE TRIAL for all new signups
+                    'trial_period_days': 14,
                 },
                 # Collect billing address
                 'billing_address_collection': 'required',

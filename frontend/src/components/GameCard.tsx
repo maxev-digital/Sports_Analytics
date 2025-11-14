@@ -1314,43 +1314,43 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
             <div className="flex gap-2">
               <button
                 onClick={() => setStatsView('stats')}
-                className={`flex-1 px-3 py-2 rounded-lg text-lg font-semibold transition-all ${
+                className={`flex-1 px-3 py-2 rounded-lg text-lg font-semibold italic uppercase transition-all ${
                   statsView === 'stats'
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
                     : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                 }`}
               >
-                Stats
+                STATS
               </button>
               <button
                 onClick={() => setStatsView('rankings')}
-                className={`flex-1 px-3 py-2 rounded-lg text-lg font-semibold transition-all ${
+                className={`flex-1 px-3 py-2 rounded-lg text-lg font-semibold italic uppercase transition-all ${
                   statsView === 'rankings'
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
                     : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                 }`}
               >
-                Ranks
+                RANKS
               </button>
               <button
                 onClick={() => setStatsView('combined')}
-                className={`flex-1 px-3 py-2 rounded-lg text-lg font-semibold transition-all ${
+                className={`flex-1 px-3 py-2 rounded-lg text-lg font-semibold italic uppercase transition-all ${
                   statsView === 'combined'
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
                     : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                 }`}
               >
-                Baseline
+                BASELINE
               </button>
               <button
                 onClick={() => setStatsView('emptynet')}
-                className={`flex-1 px-3 py-2 rounded-lg text-lg font-semibold transition-all ${
+                className={`flex-1 px-3 py-2 rounded-lg text-lg font-semibold italic uppercase transition-all ${
                   statsView === 'emptynet'
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
                     : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                 }`}
               >
-                Empty Net 🥅
+                EMPTY NET
               </button>
             </div>
           </div>
@@ -1366,7 +1366,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                         <span className={`${textLabel}`}>Record:</span>
                         <span className={`font-semibold ${
                           home_nhl_stats && away_nhl_stats.win_pct > home_nhl_stats.win_pct
-                            ? 'text-green-400'
+                            ? 'text-blue-600'
                             : `${textValue}`
                         }`}>{away_nhl_stats.wins}-{away_nhl_stats.losses}-{away_nhl_stats.ot_losses}</span>
                       </div>
@@ -1374,7 +1374,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                         <span className={`${textLabel}`}>Points:</span>
                         <span className={
                           home_nhl_stats && away_nhl_stats.points > home_nhl_stats.points
-                            ? 'text-green-400'
+                            ? 'text-blue-600'
                             : `${textValue}`
                         }>{away_nhl_stats.points}</span>
                       </div>
@@ -1382,7 +1382,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                         <span className={`${textLabel}`}>GF/G:</span>
                         <span className={
                           home_nhl_stats && away_nhl_stats.goals_per_game > home_nhl_stats.goals_per_game
-                            ? 'text-green-400'
+                            ? 'text-blue-600'
                             : `${textValue}`
                         }>{away_nhl_stats.goals_per_game.toFixed(2)}</span>
                       </div>
@@ -1390,7 +1390,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                         <span className={`${textLabel}`}>GA/G:</span>
                         <span className={
                           home_nhl_stats && away_nhl_stats.goals_against_per_game < home_nhl_stats.goals_against_per_game
-                            ? 'text-green-400'
+                            ? 'text-blue-600'
                             : `${textValue}`
                         }>{away_nhl_stats.goals_against_per_game.toFixed(2)}</span>
                       </div>
@@ -1398,7 +1398,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                         <span className={`${textLabel}`}>PP%:</span>
                         <span className={
                           home_nhl_stats && away_nhl_stats.power_play_pct > home_nhl_stats.power_play_pct
-                            ? 'text-green-400'
+                            ? 'text-blue-600'
                             : `${textValue}`
                         }>{(away_nhl_stats.power_play_pct * 100).toFixed(1)}%</span>
                       </div>
@@ -1406,7 +1406,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                         <span className={`${textLabel}`}>PK%:</span>
                         <span className={
                           home_nhl_stats && away_nhl_stats.penalty_kill_pct > home_nhl_stats.penalty_kill_pct
-                            ? 'text-green-400'
+                            ? 'text-blue-600'
                             : `${textValue}`
                         }>{(away_nhl_stats.penalty_kill_pct * 100).toFixed(1)}%</span>
                       </div>
@@ -1414,7 +1414,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                         <span className={`${textLabel}`}>SV%:</span>
                         <span className={
                           home_nhl_stats && away_nhl_stats.save_pct > home_nhl_stats.save_pct
-                            ? 'text-green-400'
+                            ? 'text-blue-600'
                             : `${textValue}`
                         }>{(away_nhl_stats.save_pct * 100).toFixed(1)}%</span>
                       </div>
@@ -1422,7 +1422,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                         <span className={`${textLabel}`}>Shots/G:</span>
                         <span className={
                           home_nhl_stats && away_nhl_stats.shots_per_game > home_nhl_stats.shots_per_game
-                            ? 'text-green-400'
+                            ? 'text-blue-600'
                             : `${textValue}`
                         }>{away_nhl_stats.shots_per_game.toFixed(1)}</span>
                       </div>
@@ -1430,7 +1430,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                         <div className="flex items-center justify-between">
                           <span className={`${textLabel}`}>Form:</span>
                           <span className={`px-1 py-0.5 rounded text-sm ${
-                            away_nhl_stats.form_trend === 'HOT' ? 'bg-green-900 text-green-200' :
+                            away_nhl_stats.form_trend === 'HOT' ? 'bg-blue-900 text-blue-200' :
                             away_nhl_stats.form_trend === 'COLD' ? 'bg-red-900 text-red-200' :
                             'bg-slate-700 ${textSecondary}'
                           }`}>{away_nhl_stats.form_trend}</span>
@@ -1476,53 +1476,32 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                   )}
                   {statsView === 'emptynet' && (
                     <>
+                      {/* Empty Net Stats - Split by Offensive/Defensive */}
+                      <div className={`text-xs ${textLabel} font-bold mb-1 uppercase border-b border-slate-700 pb-1`}>EN Offensive (Pull Goalie)</div>
                       <div className="flex items-center justify-between">
-                        <span className={`${textLabel}`}>EN Goals For:</span>
-                        <span className={
-                          home_nhl_stats && away_nhl_stats.en_goals_for > home_nhl_stats.en_goals_for
-                            ? 'text-green-400 font-bold'
-                            : `${textValue}`
-                        }>{away_nhl_stats.en_goals_for?.toFixed(0) || '0'}</span>
+                        <span className={`${textLabel}`}>Goals For:</span>
+                        <span className={`${textValue}`}>{away_nhl_stats.en_goals_for_offensive?.toFixed(0) || '0'}</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className={`${textLabel}`}>ENGF Rank:</span>
-                        <span className={`font-bold ${getRankColor(isNHL, away_nhl_stats.en_goals_for_rank || 32)}`}>#{away_nhl_stats.en_goals_for_rank || 'N/A'}</span>
+                        <span className={`${textLabel}`}>Goals Against:</span>
+                        <span className={`${textValue}`}>{away_nhl_stats.en_goals_against_offensive?.toFixed(0) || '0'}</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className={`${textLabel}`}>EN Goals Against:</span>
-                        <span className={
-                          home_nhl_stats && away_nhl_stats.en_goals_against < home_nhl_stats.en_goals_against
-                            ? 'text-green-400 font-bold'
-                            : `${textValue}`
-                        }>{away_nhl_stats.en_goals_against?.toFixed(0) || '0'}</span>
+                        <span className={`${textLabel}`}>Situations:</span>
+                        <span className={`${textValue}`}>{away_nhl_stats.en_situations_offensive?.toFixed(0) || '0'}</span>
+                      </div>
+                      <div className={`text-xs ${textLabel} font-bold mb-1 mt-2 uppercase border-b border-slate-700 pb-1`}>EN Defensive (vs Empty)</div>
+                      <div className="flex items-center justify-between">
+                        <span className={`${textLabel}`}>Goals For:</span>
+                        <span className={`${textValue}`}>{away_nhl_stats.en_goals_for_defensive?.toFixed(0) || '0'}</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className={`${textLabel}`}>ENGA Rank:</span>
-                        <span className={`font-bold ${getRankColor(isNHL, away_nhl_stats.en_goals_against_rank || 32)}`}>#{away_nhl_stats.en_goals_against_rank || 'N/A'}</span>
+                        <span className={`${textLabel}`}>Goals Against:</span>
+                        <span className={`${textValue}`}>{away_nhl_stats.en_goals_against_defensive?.toFixed(0) || '0'}</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className={`${textLabel}`}>EN Differential:</span>
-                        <span className={
-                          home_nhl_stats && away_nhl_stats.en_differential > home_nhl_stats.en_differential
-                            ? 'text-green-400 font-bold'
-                            : `${textValue}`
-                        }>{away_nhl_stats.en_differential > 0 ? '+' : ''}{away_nhl_stats.en_differential?.toFixed(0) || '0'}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className={`${textLabel}`}>EN Diff Rank:</span>
-                        <span className={`font-bold ${getRankColor(isNHL, away_nhl_stats.en_differential_rank || 32)}`}>#{away_nhl_stats.en_differential_rank || 'N/A'}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className={`${textLabel}`}>EN Success Rate:</span>
-                        <span className={
-                          home_nhl_stats && away_nhl_stats.en_success_rate > home_nhl_stats.en_success_rate
-                            ? 'text-green-400 font-bold'
-                            : `${textValue}`
-                        }>{(away_nhl_stats.en_success_rate * 100).toFixed(1)}%</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className={`${textLabel}`}>EN Situations:</span>
-                        <span className={`${textValue}`}>{away_nhl_stats.en_situations?.toFixed(0) || '0'}</span>
+                        <span className={`${textLabel}`}>Situations:</span>
+                        <span className={`${textValue}`}>{away_nhl_stats.en_situations_defensive?.toFixed(0) || '0'}</span>
                       </div>
                     </>
                   )}
@@ -1541,7 +1520,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                         <span className={`${textLabel}`}>Record:</span>
                         <span className={`font-semibold ${
                           away_nhl_stats && home_nhl_stats.win_pct > away_nhl_stats.win_pct
-                            ? 'text-green-400'
+                            ? 'text-blue-600'
                             : `${textValue}`
                         }`}>{home_nhl_stats.wins}-{home_nhl_stats.losses}-{home_nhl_stats.ot_losses}</span>
                       </div>
@@ -1549,7 +1528,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                         <span className={`${textLabel}`}>Points:</span>
                         <span className={
                           away_nhl_stats && home_nhl_stats.points > away_nhl_stats.points
-                            ? 'text-green-400'
+                            ? 'text-blue-600'
                             : `${textValue}`
                         }>{home_nhl_stats.points}</span>
                       </div>
@@ -1557,7 +1536,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                         <span className={`${textLabel}`}>GF/G:</span>
                         <span className={
                           away_nhl_stats && home_nhl_stats.goals_per_game > away_nhl_stats.goals_per_game
-                            ? 'text-green-400'
+                            ? 'text-blue-600'
                             : `${textValue}`
                         }>{home_nhl_stats.goals_per_game.toFixed(2)}</span>
                       </div>
@@ -1565,7 +1544,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                         <span className={`${textLabel}`}>GA/G:</span>
                         <span className={
                           away_nhl_stats && home_nhl_stats.goals_against_per_game < away_nhl_stats.goals_against_per_game
-                            ? 'text-green-400'
+                            ? 'text-blue-600'
                             : `${textValue}`
                         }>{home_nhl_stats.goals_against_per_game.toFixed(2)}</span>
                       </div>
@@ -1573,7 +1552,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                         <span className={`${textLabel}`}>PP%:</span>
                         <span className={
                           away_nhl_stats && home_nhl_stats.power_play_pct > away_nhl_stats.power_play_pct
-                            ? 'text-green-400'
+                            ? 'text-blue-600'
                             : `${textValue}`
                         }>{(home_nhl_stats.power_play_pct * 100).toFixed(1)}%</span>
                       </div>
@@ -1581,7 +1560,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                         <span className={`${textLabel}`}>PK%:</span>
                         <span className={
                           away_nhl_stats && home_nhl_stats.penalty_kill_pct > away_nhl_stats.penalty_kill_pct
-                            ? 'text-green-400'
+                            ? 'text-blue-600'
                             : `${textValue}`
                         }>{(home_nhl_stats.penalty_kill_pct * 100).toFixed(1)}%</span>
                       </div>
@@ -1589,7 +1568,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                         <span className={`${textLabel}`}>SV%:</span>
                         <span className={
                           away_nhl_stats && home_nhl_stats.save_pct > away_nhl_stats.save_pct
-                            ? 'text-green-400'
+                            ? 'text-blue-600'
                             : `${textValue}`
                         }>{(home_nhl_stats.save_pct * 100).toFixed(1)}%</span>
                       </div>
@@ -1597,7 +1576,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                         <span className={`${textLabel}`}>Shots/G:</span>
                         <span className={
                           away_nhl_stats && home_nhl_stats.shots_per_game > away_nhl_stats.shots_per_game
-                            ? 'text-green-400'
+                            ? 'text-blue-600'
                             : `${textValue}`
                         }>{home_nhl_stats.shots_per_game.toFixed(1)}</span>
                       </div>
@@ -1605,7 +1584,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                         <div className="flex items-center justify-between">
                           <span className={`${textLabel}`}>Form:</span>
                           <span className={`px-1 py-0.5 rounded text-sm ${
-                            home_nhl_stats.form_trend === 'HOT' ? 'bg-green-900 text-green-200' :
+                            home_nhl_stats.form_trend === 'HOT' ? 'bg-blue-900 text-blue-200' :
                             home_nhl_stats.form_trend === 'COLD' ? 'bg-red-900 text-red-200' :
                             'bg-slate-700 ${textSecondary}'
                           }`}>{home_nhl_stats.form_trend}</span>
@@ -1651,53 +1630,32 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                   )}
                   {statsView === 'emptynet' && (
                     <>
+                      {/* Empty Net Stats - Split by Offensive/Defensive */}
+                      <div className={`text-xs ${textLabel} font-bold mb-1 uppercase border-b border-slate-700 pb-1`}>EN Offensive (Pull Goalie)</div>
                       <div className="flex items-center justify-between">
-                        <span className={`${textLabel}`}>EN Goals For:</span>
-                        <span className={
-                          away_nhl_stats && home_nhl_stats.en_goals_for > away_nhl_stats.en_goals_for
-                            ? 'text-green-400 font-bold'
-                            : `${textValue}`
-                        }>{home_nhl_stats.en_goals_for?.toFixed(0) || '0'}</span>
+                        <span className={`${textLabel}`}>Goals For:</span>
+                        <span className={`${textValue}`}>{home_nhl_stats.en_goals_for_offensive?.toFixed(0) || '0'}</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className={`${textLabel}`}>ENGF Rank:</span>
-                        <span className={`font-bold ${getRankColor(isNHL, home_nhl_stats.en_goals_for_rank || 32)}`}>#{home_nhl_stats.en_goals_for_rank || 'N/A'}</span>
+                        <span className={`${textLabel}`}>Goals Against:</span>
+                        <span className={`${textValue}`}>{home_nhl_stats.en_goals_against_offensive?.toFixed(0) || '0'}</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className={`${textLabel}`}>EN Goals Against:</span>
-                        <span className={
-                          away_nhl_stats && home_nhl_stats.en_goals_against < away_nhl_stats.en_goals_against
-                            ? 'text-green-400 font-bold'
-                            : `${textValue}`
-                        }>{home_nhl_stats.en_goals_against?.toFixed(0) || '0'}</span>
+                        <span className={`${textLabel}`}>Situations:</span>
+                        <span className={`${textValue}`}>{home_nhl_stats.en_situations_offensive?.toFixed(0) || '0'}</span>
+                      </div>
+                      <div className={`text-xs ${textLabel} font-bold mb-1 mt-2 uppercase border-b border-slate-700 pb-1`}>EN Defensive (vs Empty)</div>
+                      <div className="flex items-center justify-between">
+                        <span className={`${textLabel}`}>Goals For:</span>
+                        <span className={`${textValue}`}>{home_nhl_stats.en_goals_for_defensive?.toFixed(0) || '0'}</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className={`${textLabel}`}>ENGA Rank:</span>
-                        <span className={`font-bold ${getRankColor(isNHL, home_nhl_stats.en_goals_against_rank || 32)}`}>#{home_nhl_stats.en_goals_against_rank || 'N/A'}</span>
+                        <span className={`${textLabel}`}>Goals Against:</span>
+                        <span className={`${textValue}`}>{home_nhl_stats.en_goals_against_defensive?.toFixed(0) || '0'}</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className={`${textLabel}`}>EN Differential:</span>
-                        <span className={
-                          away_nhl_stats && home_nhl_stats.en_differential > away_nhl_stats.en_differential
-                            ? 'text-green-400 font-bold'
-                            : `${textValue}`
-                        }>{home_nhl_stats.en_differential > 0 ? '+' : ''}{home_nhl_stats.en_differential?.toFixed(0) || '0'}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className={`${textLabel}`}>EN Diff Rank:</span>
-                        <span className={`font-bold ${getRankColor(isNHL, home_nhl_stats.en_differential_rank || 32)}`}>#{home_nhl_stats.en_differential_rank || 'N/A'}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className={`${textLabel}`}>EN Success Rate:</span>
-                        <span className={
-                          away_nhl_stats && home_nhl_stats.en_success_rate > away_nhl_stats.en_success_rate
-                            ? 'text-green-400 font-bold'
-                            : `${textValue}`
-                        }>{(home_nhl_stats.en_success_rate * 100).toFixed(1)}%</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className={`${textLabel}`}>EN Situations:</span>
-                        <span className={`${textValue}`}>{home_nhl_stats.en_situations?.toFixed(0) || '0'}</span>
+                        <span className={`${textLabel}`}>Situations:</span>
+                        <span className={`${textValue}`}>{home_nhl_stats.en_situations_defensive?.toFixed(0) || '0'}</span>
                       </div>
                     </>
                   )}
@@ -1717,33 +1675,33 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
             <div className="flex gap-2">
               <button
                 onClick={() => setStatsView('stats')}
-                className={`flex-1 px-3 py-2 rounded-lg text-lg font-semibold transition-all ${
+                className={`flex-1 px-3 py-2 rounded-lg text-lg font-semibold italic uppercase transition-all ${
                   statsView === 'stats'
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
                     : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                 }`}
               >
-                Stats
+                STATS
               </button>
               <button
                 onClick={() => setStatsView('rankings')}
-                className={`flex-1 px-3 py-2 rounded-lg text-lg font-semibold transition-all ${
+                className={`flex-1 px-3 py-2 rounded-lg text-lg font-semibold italic uppercase transition-all ${
                   statsView === 'rankings'
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
                     : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                 }`}
               >
-                Ranks
+                RANKS
               </button>
               <button
                 onClick={() => setStatsView('combined')}
-                className={`flex-1 px-3 py-2 rounded-lg text-lg font-semibold transition-all ${
+                className={`flex-1 px-3 py-2 rounded-lg text-lg font-semibold italic uppercase transition-all ${
                   statsView === 'combined'
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
                     : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                 }`}
               >
-                Baseline
+                BASELINE
               </button>
             </div>
           </div>
@@ -2282,38 +2240,38 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
           <div className="flex gap-2 mb-3">
             <button
               onClick={() => setSelectedMarket('spread')}
-              className={`flex-1 px-3 py-2 rounded-lg text-sm font-bold uppercase transition-all ${
+              className={`flex-1 px-3 py-2 rounded-lg text-sm font-bold italic uppercase transition-all ${
                 selectedMarket === 'spread'
                   ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
                   : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
               }`}
             >
-              Spread
+              SPREAD
             </button>
             <button
               onClick={() => setSelectedMarket('totals')}
-              className={`flex-1 px-3 py-2 rounded-lg text-sm font-bold uppercase transition-all ${
+              className={`flex-1 px-3 py-2 rounded-lg text-sm font-bold italic uppercase transition-all ${
                 selectedMarket === 'totals'
                   ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
                   : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
               }`}
             >
-              Totals
+              TOTALS
             </button>
             <button
               onClick={() => setSelectedMarket('moneyline')}
-              className={`flex-1 px-3 py-2 rounded-lg text-sm font-bold uppercase transition-all ${
+              className={`flex-1 px-3 py-2 rounded-lg text-sm font-bold italic uppercase transition-all ${
                 selectedMarket === 'moneyline'
                   ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
                   : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
               }`}
             >
-              Moneyline
+              MONEYLINE
             </button>
             {alternate_lines && alternate_lines.length > 0 && (
               <button
                 onClick={() => setSelectedMarket('halves')}
-                className={`flex-1 px-3 py-2 rounded-lg text-sm font-bold uppercase transition-all ${
+                className={`flex-1 px-3 py-2 rounded-lg text-sm font-bold italic uppercase transition-all ${
                   selectedMarket === 'halves'
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
                     : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
@@ -2662,33 +2620,33 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
             <div className="flex gap-2">
               <button
                 onClick={() => setStatsView('stats')}
-                className={`flex-1 px-3 py-2 rounded-lg text-lg font-semibold transition-all ${
+                className={`flex-1 px-3 py-2 rounded-lg text-lg font-semibold italic uppercase transition-all ${
                   statsView === 'stats'
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
                     : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                 }`}
               >
-                Stats
+                STATS
               </button>
               <button
                 onClick={() => setStatsView('rankings')}
-                className={`flex-1 px-3 py-2 rounded-lg text-lg font-semibold transition-all ${
+                className={`flex-1 px-3 py-2 rounded-lg text-lg font-semibold italic uppercase transition-all ${
                   statsView === 'rankings'
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
                     : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                 }`}
               >
-                Ranks
+                RANKS
               </button>
               <button
                 onClick={() => setStatsView('combined')}
-                className={`flex-1 px-3 py-2 rounded-lg text-lg font-semibold transition-all ${
+                className={`flex-1 px-3 py-2 rounded-lg text-lg font-semibold italic uppercase transition-all ${
                   statsView === 'combined'
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
                     : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                 }`}
               >
-                Baseline
+                BASELINE
               </button>
             </div>
           </div>

@@ -15,75 +15,33 @@ interface PlayerProp {
   last_update: string;
 }
 
-// Advanced Props with Edges interfaces
-interface BookmakerOdds {
-  bookmaker: string;
-  over_odds: number | null;
-  under_odds: number | null;
-}
-
-interface PlayerPropOdds {
-  player_name: string;
-  prop_type: string;
-  line: number;
-  bookmakers: BookmakerOdds[];
-  best_over_odds: number | null;
-  best_under_odds: number | null;
-  best_over_book: string | null;
-  best_under_book: string | null;
-}
-
-interface ProjectionFactors {
-  baseline: number;
-  recent_avg: number;
-  trend: string;
-  matchup_adjustment: number;
-  pace_adjustment: number;
-  total_adjustment: number;
-}
-
-interface PlayerPropProjection {
-  prop_type: string;
-  projection: number;
-  confidence: string;
-  confidence_score: number;
-  factors: ProjectionFactors;
-  reasoning: string;
-}
-
-interface PlayerPropEdge {
-  edge: number;
-  edge_pct: number;
-  recommendation: string | null;
-  bet_strength: string | null;
-}
-
-interface PlayerPropWithEdge {
+// ML Props API Response (simpler structure)
+interface MLPlayerProp {
   player_name: string;
   team: string;
-  opponent: string | null;
-  game_time: string;
+  opponent: string;
+  home_away: string;
   prop_type: string;
-  market_odds: PlayerPropOdds;
-  projection: PlayerPropProjection;
-  edge: PlayerPropEdge;
+  market_line: number;
+  predicted_value: number;
+  edge: number;
+  edge_pct: number;
+  recommendation: 'OVER' | 'UNDER';
+  confidence: number;
+  over_odds: number | null;
+  under_odds: number | null;
+  bookmaker: string;
+  models_used: string[];
+  date: string;
 }
 
-interface PlayerPropsGame {
-  event_id: string;
-  sport_key: string;
-  home_team: string;
-  away_team: string;
-  commence_time: string;
-  props: PlayerPropWithEdge[];
-}
-
-interface PlayerPropsResponse {
-  games: PlayerPropsGame[];
-  total_props: number;
-  total_strong_bets: number;
-  total_moderate_bets: number;
-  last_updated: string;
+interface MLPropsResponse {
+  date: string;
+  time_generated: string;
+  total_props_analyzed: number;
+  props_with_edge: number;
+  min_edge_pct: number;
+  props: MLPlayerProp[];
 }
 
 interface GroupedProp {
@@ -109,7 +67,7 @@ export function Props() {
   const [selectedSport, setSelectedSport] = useState<string>('nba');
   const [props, setProps] = useState<PlayerProp[]>([]);
   const [groupedProps, setGroupedProps] = useState<GroupedProp[]>([]);
-  const [edgeProps, setEdgeProps] = useState<PlayerPropsResponse | null>(null);
+  const [edgeProps, setEdgeProps] = useState<MLPropsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPropType, setSelectedPropType] = useState<string>('all');
@@ -159,7 +117,7 @@ export function Props() {
       try {
         const response = await fetch(`/api/player-props/nba/edges?min_edge_pct=${minEdge}`);
         if (response.ok) {
-          const data: PlayerPropsResponse = await response.json();
+          const data: MLPropsResponse = await response.json();
           setEdgeProps(data);
         }
       } catch (error) {
@@ -500,7 +458,7 @@ export function Props() {
               <div className="text-center text-white text-xl py-12">
                 Loading edge analysis...
               </div>
-            ) : !edgeProps || edgeProps.total_props === 0 ? (
+            ) : !edgeProps || edgeProps.props_with_edge === 0 ? (
               <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-lg p-12 text-center">
                 <div className="text-slate-400 text-lg mb-2">No props with edges found</div>
                 <div className="text-slate-500 text-sm">
@@ -512,169 +470,141 @@ export function Props() {
                 {/* Stats Summary */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                   <div className="bg-gradient-to-br from-blue-900/50 to-blue-800/30 border border-blue-700 rounded-lg p-4">
-                    <div className="text-blue-400 text-sm font-medium mb-1">Total Props</div>
-                    <div className="text-white text-3xl font-bold">{edgeProps.total_props}</div>
+                    <div className="text-blue-400 text-sm font-medium mb-1">Total Props Analyzed</div>
+                    <div className="text-white text-3xl font-bold">{edgeProps.total_props_analyzed}</div>
                   </div>
                   <div className="bg-gradient-to-br from-green-900/50 to-green-800/30 border border-green-700 rounded-lg p-4">
-                    <div className="text-green-400 text-sm font-medium mb-1">Strong Bets</div>
-                    <div className="text-white text-3xl font-bold">{edgeProps.total_strong_bets}</div>
+                    <div className="text-green-400 text-sm font-medium mb-1">Props with Edge</div>
+                    <div className="text-white text-3xl font-bold">{edgeProps.props_with_edge}</div>
                   </div>
                   <div className="bg-gradient-to-br from-yellow-900/50 to-yellow-800/30 border border-yellow-700 rounded-lg p-4">
-                    <div className="text-yellow-400 text-sm font-medium mb-1">Moderate Bets</div>
-                    <div className="text-white text-3xl font-bold">{edgeProps.total_moderate_bets}</div>
+                    <div className="text-yellow-400 text-sm font-medium mb-1">Min Edge</div>
+                    <div className="text-white text-3xl font-bold">{edgeProps.min_edge_pct}%</div>
                   </div>
                   <div className="bg-gradient-to-br from-purple-900/50 to-purple-800/30 border border-purple-700 rounded-lg p-4">
-                    <div className="text-purple-400 text-sm font-medium mb-1">Games Analyzed</div>
-                    <div className="text-white text-3xl font-bold">{edgeProps.games.length}</div>
+                    <div className="text-purple-400 text-sm font-medium mb-1">Unique Players</div>
+                    <div className="text-white text-3xl font-bold">{new Set(edgeProps.props.map(p => p.player_name)).size}</div>
                   </div>
                 </div>
 
-                {/* Props with Edges */}
-                <div className="space-y-6">
-                  {edgeProps.games.map((game) => (
-                    <div key={game.event_id} className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-lg overflow-hidden">
-                      {/* Game Header */}
-                      <div className="bg-slate-900/80 px-6 py-3 border-b border-slate-700">
-                        <div className="flex items-center justify-between">
-                          <div className="text-white font-bold text-lg">{game.away_team} @ {game.home_team}</div>
-                          <div className="text-slate-400 text-sm">{new Date(game.commence_time).toLocaleString()}</div>
-                        </div>
-                      </div>
-
-                      {/* Props */}
-                      <div className="divide-y divide-slate-700/50">
-                        {game.props.map((prop, idx) => (
-                          <div key={idx} className="p-6 hover:bg-slate-700/20 transition-colors">
-                            {/* Player Info */}
-                            <div className="flex items-start justify-between mb-4">
-                              <div>
-                                <h3 className="text-white font-bold text-xl mb-1">{prop.player_name}</h3>
-                                <div className="flex items-center gap-3 text-slate-400 text-sm">
-                                  <span>{prop.team}</span>
-                                  {prop.opponent && <span>vs {prop.opponent}</span>}
-                                  <span>•</span>
-                                  <span className="font-semibold text-white">{formatPropType(prop.prop_type)}</span>
-                                </div>
+                {/* Props with Edges - Table View */}
+                <div className="bg-slate-900 overflow-hidden border-2 border-slate-700 shadow-2xl">
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse">
+                      <thead className="bg-slate-800">
+                        <tr>
+                          <th className="text-left py-3 px-4 text-slate-300 font-bold text-xs uppercase tracking-wider border-r border-b-2 border-slate-600">
+                            Player
+                          </th>
+                          <th className="text-left py-3 px-4 text-slate-300 font-bold text-xs uppercase tracking-wider border-r border-b-2 border-slate-600">
+                            Matchup
+                          </th>
+                          <th className="text-left py-3 px-4 text-slate-300 font-bold text-xs uppercase tracking-wider border-r border-b-2 border-slate-600">
+                            Prop Type
+                          </th>
+                          <th className="text-center py-3 px-4 text-slate-300 font-bold text-xs uppercase tracking-wider border-r border-b-2 border-slate-600">
+                            Market Line
+                          </th>
+                          <th className="text-center py-3 px-4 text-slate-300 font-bold text-xs uppercase tracking-wider border-r border-b-2 border-slate-600">
+                            ML Prediction
+                          </th>
+                          <th className="text-center py-3 px-4 text-slate-300 font-bold text-xs uppercase tracking-wider border-r border-b-2 border-slate-600">
+                            Edge
+                          </th>
+                          <th className="text-center py-3 px-4 text-slate-300 font-bold text-xs uppercase tracking-wider border-r border-b-2 border-slate-600">
+                            Recommendation
+                          </th>
+                          <th className="text-center py-3 px-4 text-slate-300 font-bold text-xs uppercase tracking-wider border-r border-b-2 border-slate-600">
+                            Confidence
+                          </th>
+                          <th className="text-center py-3 px-4 text-slate-300 font-bold text-xs uppercase tracking-wider border-b-2 border-slate-600">
+                            Best Odds
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {edgeProps.props.map((prop, idx) => (
+                          <tr
+                            key={idx}
+                            className={`hover:bg-slate-800/50 transition-colors ${
+                              idx < edgeProps.props.length - 1 ? 'border-b border-slate-700' : ''
+                            }`}
+                          >
+                            <td className="py-3 px-4 border-r border-slate-600">
+                              <div className="text-white font-semibold">{prop.player_name}</div>
+                              <div className="text-slate-500 text-xs">{prop.team}</div>
+                            </td>
+                            <td className="py-3 px-4 border-r border-slate-600">
+                              <div className="text-slate-300 text-sm">vs {prop.opponent}</div>
+                              <div className="text-slate-500 text-xs">{prop.home_away}</div>
+                            </td>
+                            <td className="py-3 px-4 border-r border-slate-600">
+                              <span className="text-slate-300 font-medium">{formatPropType(prop.prop_type)}</span>
+                            </td>
+                            <td className="py-3 px-4 text-center border-r border-slate-600">
+                              <span className="text-white font-bold text-lg">{prop.market_line}</span>
+                            </td>
+                            <td className="py-3 px-4 text-center border-r border-slate-600">
+                              <span className="text-blue-400 font-bold text-lg">{prop.predicted_value.toFixed(1)}</span>
+                            </td>
+                            <td className="py-3 px-4 text-center border-r border-slate-600">
+                              <div className={`font-bold ${prop.edge > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                {prop.edge > 0 ? '+' : ''}{prop.edge.toFixed(1)}
                               </div>
-
-                              {/* Recommendation Badge */}
-                              {prop.edge.recommendation && (
-                                <div className={`px-4 py-2 rounded-lg font-bold text-sm ${
-                                  prop.edge.bet_strength === 'STRONG'
-                                    ? 'bg-green-900/50 text-green-400 border-2 border-green-700 shadow-lg shadow-green-900/50'
-                                    : prop.edge.bet_strength === 'MODERATE'
-                                    ? 'bg-yellow-900/50 text-yellow-400 border-2 border-yellow-700'
-                                    : 'bg-blue-900/50 text-blue-400 border-2 border-blue-700'
-                                }`}>
-                                  {prop.edge.bet_strength} {prop.edge.recommendation}
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Key Stats Row */}
-                            <div className="grid grid-cols-4 gap-4 mb-4">
-                              <div className="bg-slate-900/50 rounded-lg p-3">
-                                <div className="text-slate-500 text-xs mb-1">Market Line</div>
-                                <div className="text-white font-bold text-2xl">{prop.market_odds.line}</div>
+                              <div className="text-slate-400 text-xs">
+                                ({prop.edge_pct.toFixed(1)}%)
                               </div>
-                              <div className="bg-slate-900/50 rounded-lg p-3">
-                                <div className="text-slate-500 text-xs mb-1">Our Projection</div>
-                                <div className="text-blue-400 font-bold text-2xl">{prop.projection.projection}</div>
+                            </td>
+                            <td className="py-3 px-4 text-center border-r border-slate-600">
+                              <div className={`inline-block px-3 py-1 rounded-lg font-bold text-sm ${
+                                prop.edge_pct >= 10
+                                  ? 'bg-green-900/50 text-green-400 border border-green-700'
+                                  : 'bg-yellow-900/50 text-yellow-400 border border-yellow-700'
+                              }`}>
+                                {prop.recommendation}
                               </div>
-                              <div className="bg-slate-900/50 rounded-lg p-3">
-                                <div className="text-slate-500 text-xs mb-1">Edge</div>
-                                <div className={`font-bold text-2xl ${prop.edge.edge > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                  {prop.edge.edge > 0 ? '+' : ''}{prop.edge.edge} ({prop.edge.edge_pct > 0 ? '+' : ''}{prop.edge.edge_pct.toFixed(1)}%)
-                                </div>
+                            </td>
+                            <td className="py-3 px-4 text-center border-r border-slate-600">
+                              <div className={`font-semibold ${
+                                prop.confidence >= 0.7 ? 'text-green-400' :
+                                prop.confidence >= 0.5 ? 'text-yellow-400' : 'text-slate-400'
+                              }`}>
+                                {(prop.confidence * 100).toFixed(0)}%
                               </div>
-                              <div className="bg-slate-900/50 rounded-lg p-3">
-                                <div className="text-slate-500 text-xs mb-1">Confidence</div>
-                                <div className={`font-bold text-xl ${
-                                  prop.projection.confidence === 'HIGH' ? 'text-green-400' :
-                                  prop.projection.confidence === 'MEDIUM' ? 'text-yellow-400' : 'text-slate-400'
-                                }`}>
-                                  {prop.projection.confidence} ({(prop.projection.confidence_score * 100).toFixed(0)}%)
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Projection Factors */}
-                            <div className="bg-slate-900/30 rounded-lg p-4 mb-4">
-                              <div className="text-slate-400 text-xs font-semibold mb-2 uppercase">Projection Breakdown</div>
-                              <div className="grid grid-cols-3 gap-3 text-sm">
-                                <div>
-                                  <span className="text-slate-500">Baseline:</span>
-                                  <span className="text-white ml-2 font-semibold">{prop.projection.factors.baseline}</span>
-                                </div>
-                                <div>
-                                  <span className="text-slate-500">Recent Avg:</span>
-                                  <span className="text-white ml-2 font-semibold">{prop.projection.factors.recent_avg}</span>
-                                </div>
-                                <div>
-                                  <span className="text-slate-500">Trend:</span>
-                                  <span className={`ml-2 font-semibold ${
-                                    prop.projection.factors.trend === 'increasing' ? 'text-green-400' :
-                                    prop.projection.factors.trend === 'decreasing' ? 'text-red-400' : 'text-slate-400'
+                            </td>
+                            <td className="py-3 px-4 text-center">
+                              <div className="space-y-1">
+                                {prop.over_odds && (
+                                  <div className={`text-xs font-semibold px-2 py-1 rounded ${
+                                    prop.recommendation === 'OVER'
+                                      ? 'bg-green-900/40 text-green-400'
+                                      : 'text-slate-400'
                                   }`}>
-                                    {prop.projection.factors.trend === 'increasing' ? '↗️ UP' :
-                                     prop.projection.factors.trend === 'decreasing' ? '↘️ DOWN' : '→ STABLE'}
-                                  </span>
-                                </div>
-                                <div>
-                                  <span className="text-slate-500">Matchup Adj:</span>
-                                  <span className="text-white ml-2 font-semibold">
-                                    {prop.projection.factors.matchup_adjustment > 0 ? '+' : ''}{prop.projection.factors.matchup_adjustment.toFixed(2)}
-                                  </span>
-                                </div>
-                                <div>
-                                  <span className="text-slate-500">Pace Adj:</span>
-                                  <span className="text-white ml-2 font-semibold">
-                                    {prop.projection.factors.pace_adjustment > 0 ? '+' : ''}{prop.projection.factors.pace_adjustment.toFixed(2)}
-                                  </span>
-                                </div>
-                                <div>
-                                  <span className="text-slate-500">Total Adj:</span>
-                                  <span className="text-white ml-2 font-semibold">
-                                    {prop.projection.factors.total_adjustment > 0 ? '+' : ''}{prop.projection.factors.total_adjustment.toFixed(2)}
-                                  </span>
-                                </div>
+                                    O {formatOdds(prop.over_odds)}
+                                  </div>
+                                )}
+                                {prop.under_odds && (
+                                  <div className={`text-xs font-semibold px-2 py-1 rounded ${
+                                    prop.recommendation === 'UNDER'
+                                      ? 'bg-blue-900/40 text-blue-400'
+                                      : 'text-slate-400'
+                                  }`}>
+                                    U {formatOdds(prop.under_odds)}
+                                  </div>
+                                )}
+                                <div className="text-slate-500 text-[9px]">{prop.bookmaker}</div>
                               </div>
-                            </div>
-
-                            {/* Reasoning */}
-                            <div className="bg-blue-900/20 border border-blue-700/50 rounded-lg p-3 mb-4">
-                              <div className="text-blue-400 text-xs font-semibold mb-1">💡 Analysis</div>
-                              <div className="text-slate-300 text-sm">{prop.projection.reasoning}</div>
-                            </div>
-
-                            {/* Best Odds */}
-                            <div className="flex items-center gap-3">
-                              <div className="text-slate-500 text-sm font-medium">Best Odds:</div>
-                              {prop.market_odds.best_over_odds && (
-                                <div className="bg-green-900/30 border border-green-700 rounded-lg px-3 py-1">
-                                  <span className="text-green-400 text-sm font-semibold">
-                                    Over {formatOdds(prop.market_odds.best_over_odds)} @ {prop.market_odds.best_over_book}
-                                  </span>
-                                </div>
-                              )}
-                              {prop.market_odds.best_under_odds && (
-                                <div className="bg-blue-900/30 border border-blue-700 rounded-lg px-3 py-1">
-                                  <span className="text-blue-400 text-sm font-semibold">
-                                    Under {formatOdds(prop.market_odds.best_under_odds)} @ {prop.market_odds.best_under_book}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
+                            </td>
+                          </tr>
                         ))}
-                      </div>
-                    </div>
-                  ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
 
                 {/* Last Updated */}
                 <div className="mt-6 text-center text-slate-500 text-sm">
-                  Last updated: {new Date(edgeProps.last_updated).toLocaleString()}
+                  Last updated: {edgeProps.time_generated}
                 </div>
               </>
             )}

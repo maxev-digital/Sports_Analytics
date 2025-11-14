@@ -212,6 +212,18 @@ except Exception as e:
     import traceback
     traceback.print_exc()
 
+# Import and register Player Props router
+try:
+    print("DEBUG: About to import player_props router...")
+    from routes.player_props import router as player_props_router
+    print("DEBUG: Player props router imported successfully")
+    app.include_router(player_props_router)
+    print("DEBUG: Player props router registered - NBA props ML system ready")
+except Exception as e:
+    print(f"ERROR importing/registering player_props router: {type(e).__name__}: {e}")
+    import traceback
+    traceback.print_exc()
+
 # Game tracker instance
 tracker = GameTracker()
 

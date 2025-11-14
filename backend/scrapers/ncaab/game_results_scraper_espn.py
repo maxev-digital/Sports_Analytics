@@ -314,5 +314,106 @@ def main():
         print("   Try using a smaller sample of games manually")
 
 
+def fetch_ncaab_results(game_dates):
+    """
+    Fetch actual NCAAB game results for autonomous learning system
+
+    Args:
+        game_dates: List of date strings in YYYY-MM-DD format
+
+    Returns:
+        DataFrame with: prediction_id, game_date, home_team, away_team,
+                       home_score, away_score, actual_total
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+
+    results = []
+
+    for date_str in game_dates:
+        try:
+            # Convert to ESPN API format (YYYYMMDD)
+            date_obj = datetime.strptime(date_str, '%Y-%m-%d')
+            espn_date = date_obj.strftime('%Y%m%d')
+
+            # ESPN scoreboard API
+            url = f"http://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?dates={espn_date}"
+
+            logger.info(f"Fetching NCAAB results for {date_str}...")
+            response = requests.get(url, timeout=10)
+
+            if response.status_code != 200:
+                logger.warning(f"Failed to fetch results for {date_str}: {response.status_code}")
+                continue
+
+            data = response.json()
+
+            if 'events' not in data:
+                logger.warning(f"No events found for {date_str}")
+                continue
+
+            # Parse completed games
+            for event in data['events']:
+                status = event.get('status', {})
+
+                # Only process completed games
+                if status.get('type', {}).get('completed') != True:
+                    continue
+
+                competitions = event.get('competitions', [])
+                if not competitions:
+                    continue
+
+                comp = competitions[0]
+                competitors = comp.get('competitors', [])
+
+                if len(competitors) != 2:
+                    continue
+
+                # ESPN has home/away in specific order
+                home_team = None
+                away_team = None
+                home_score = None
+                away_score = None
+
+                for team in competitors:
+                    team_name = team.get('team', {}).get('displayName', '')
+                    score = int(team.get('score', 0))
+
+                    if team.get('homeAway') == 'home':
+                        home_team = team_name
+                        home_score = score
+                    else:
+                        away_team = team_name
+                        away_score = score
+
+                if home_team and away_team and home_score is not None and away_score is not None:
+                    actual_total = home_score + away_score
+
+                    # Create prediction_id format: NCAAB_YYYYMMDD_AWAY_HOME
+                    pred_id = f"NCAAB_{espn_date}_{away_team.replace(' ', '_')}_{home_team.replace(' ', '_')}"
+
+                    results.append({
+                        'prediction_id': pred_id,
+                        'game_date': date_str,
+                        'home_team': home_team,
+                        'away_team': away_team,
+                        'home_score': home_score,
+                        'away_score': away_score,
+                        'actual_total': actual_total
+                    })
+
+                    logger.info(f"  {away_team} @ {home_team}: {actual_total} ({away_score}-{home_score})")
+
+        except Exception as e:
+            logger.error(f"Error fetching results for {date_str}: {e}")
+            continue
+
+    df = pd.DataFrame(results)
+    logger.info(f"Fetched {len(df)} completed NCAAB games")
+
+    return df
+
+
 if __name__ == "__main__":
     main()

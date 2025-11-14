@@ -7,6 +7,9 @@ Adapted for Edge Lab multi-model system
 import numpy as np
 from typing import Dict, Optional
 from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class NCAABLinearRegressionModel:
@@ -54,7 +57,7 @@ class NCAABLinearRegressionModel:
         # Calculate full game total (40 minutes)
         full_game_total = home_expected_points + away_expected_points
 
-        # Handle live games - project remaining time
+        # Handle live games - project remaining time with ESPN stats integration
         is_live = game_data.get('is_live', False)
         current_score = game_data.get('current_score', 0)
         quarter = game_data.get('quarter')
@@ -70,19 +73,63 @@ class NCAABLinearRegressionModel:
 
                 # NCAAB: 2 halves of 20 minutes each = 40 minutes total = 2400 seconds
                 total_game_seconds = 2400
+                seconds_elapsed = total_game_seconds - total_seconds_remaining
+                minutes_elapsed = seconds_elapsed / 60.0
 
-                # Calculate points per second based on full game projection
-                points_per_second = full_game_total / total_game_seconds
+                # Try to fetch ESPN stats for smart pace analysis
+                from utils.espn_stats import fetch_espn_game_stats, analyze_live_game_factors
 
-                # Project remaining points
-                projected_remaining_points = points_per_second * total_seconds_remaining
+                espn_stats = fetch_espn_game_stats(
+                    home_team=game_data.get('home_team'),
+                    away_team=game_data.get('away_team')
+                )
 
-                # Final prediction = current score + projected remaining
-                prediction = current_score + projected_remaining_points
+                if espn_stats:
+                    # Use smart pace analysis
+                    season_stats = {
+                        'home': {'pace': home_pace},
+                        'away': {'pace': away_pace}
+                    }
 
-            except (ValueError, IndexError):
+                    analysis = analyze_live_game_factors(
+                        espn_stats=espn_stats,
+                        season_stats=season_stats,
+                        minutes_elapsed=minutes_elapsed
+                    )
+
+                    # Blend live and season pace based on projection weight
+                    weight = analysis['projection_weight']
+                    live_pace = analysis['live_pace']
+                    effective_pace = (weight * live_pace) + ((1 - weight) * expected_pace)
+
+                    # Project remaining points using blended pace
+                    # Points = (effective_pace possessions) × (efficiency / 100)
+                    effective_home_eff = (home_expected_eff / expected_pace) * effective_pace
+                    effective_away_eff = (away_expected_eff / expected_pace) * effective_pace
+                    effective_total = (effective_home_eff + effective_away_eff) / 100.0 * effective_pace
+
+                    points_per_second = effective_total / total_game_seconds
+                    projected_remaining_points = points_per_second * total_seconds_remaining
+
+                    prediction = current_score + projected_remaining_points
+
+                    logger.info(f"Linear Regression live projection: {analysis['explanation']}")
+                else:
+                    # Fallback to simple linear projection
+                    points_per_second = full_game_total / total_game_seconds
+                    projected_remaining_points = points_per_second * total_seconds_remaining
+                    prediction = current_score + projected_remaining_points
+
+            except (ValueError, IndexError) as e:
+                logger.warning(f"Time parsing error: {e}")
                 # If time parsing fails, use full game total
                 prediction = full_game_total
+            except Exception as e:
+                logger.error(f"ESPN stats error: {e}")
+                # If ESPN fetch fails, fallback to simple projection
+                points_per_second = full_game_total / total_game_seconds
+                projected_remaining_points = points_per_second * total_seconds_remaining
+                prediction = current_score + projected_remaining_points
         else:
             # Pregame - use full game total
             prediction = full_game_total

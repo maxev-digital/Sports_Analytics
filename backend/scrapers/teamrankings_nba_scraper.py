@@ -105,7 +105,7 @@ class TeamRankingsNBAScraper:
         except Exception as e:
             logger.error(f"Could not save cache: {e}")
 
-    def scrape_stat_page(self, stat_name: str) -> Dict[str, float]:
+    def scrape_stat_page(self, stat_name: str) -> Dict[str, Dict]:
         """
         Scrape a single stat page from TeamRankings
 
@@ -113,7 +113,7 @@ class TeamRankingsNBAScraper:
             stat_name: URL slug (e.g., 'points-per-game', 'opponent-points-per-game')
 
         Returns:
-            Dict mapping team name -> stat value
+            Dict mapping team name -> {'value': float, 'rank': int}
         """
         url = f"{self.BASE_URL}/stat/{stat_name}"
 
@@ -137,6 +137,13 @@ class TeamRankingsNBAScraper:
                 if len(cols) < 3:
                     continue
 
+                # Column 0: Rank
+                rank_text = cols[0].text.strip()
+                try:
+                    rank = int(rank_text)
+                except ValueError:
+                    rank = None
+
                 # Column 1: Team name
                 team_link = cols[1].find('a')
                 if not team_link:
@@ -149,7 +156,10 @@ class TeamRankingsNBAScraper:
                     # Handle percentage values (remove % symbol)
                     if '%' in stat_value:
                         stat_value = stat_value.replace('%', '')
-                    stats[team_name] = float(stat_value)
+                    stats[team_name] = {
+                        'value': float(stat_value),
+                        'rank': rank
+                    }
                 except ValueError:
                     logger.warning(f"Could not parse stat value: {stat_value}")
 
@@ -235,42 +245,98 @@ class TeamRankingsNBAScraper:
         paint_pts = self.scrape_stat_page('points-in-paint-per-game')
         time.sleep(1)
 
+        # Shooting percentages
+        fg_pct = self.scrape_stat_page('field-goal-pct')
+        time.sleep(1)
+
+        fg3_pct = self.scrape_stat_page('three-point-pct')
+        time.sleep(1)
+
+        ft_pct = self.scrape_stat_page('free-throw-pct')
+        time.sleep(1)
+
         # Combine all stats
         all_teams = set(ppg.keys()) | set(opp_ppg.keys()) | set(point_diff.keys())
 
         team_stats = {}
         for team in all_teams:
-            w = wins.get(team, 0)
-            l = losses.get(team, 0)
+            # Extract values and ranks
+            ppg_data = ppg.get(team, {'value': 110.0, 'rank': None})
+            opp_ppg_data = opp_ppg.get(team, {'value': 110.0, 'rank': None})
+            point_diff_data = point_diff.get(team, {'value': 0.0, 'rank': None})
+            wins_data = wins.get(team, {'value': 0, 'rank': None})
+            losses_data = losses.get(team, {'value': 0, 'rank': None})
+            pace_data = pace.get(team, {'value': 100.0, 'rank': None})
+            off_reb_data = off_rebounds.get(team, {'value': 10.0, 'rank': None})
+            def_reb_data = def_rebounds.get(team, {'value': 35.0, 'rank': None})
+            assists_data = assists.get(team, {'value': 25.0, 'rank': None})
+            turnovers_data = turnovers.get(team, {'value': 14.0, 'rank': None})
+            steals_data = steals.get(team, {'value': 7.5, 'rank': None})
+            blocks_data = blocks.get(team, {'value': 5.0, 'rank': None})
+            ts_pct_data = ts_pct.get(team, {'value': 57.0, 'rank': None})
+            fouls_data = fouls.get(team, {'value': 20.0, 'rank': None})
+            paint_pts_data = paint_pts.get(team, {'value': 50.0, 'rank': None})
+            fg_pct_data = fg_pct.get(team, {'value': 45.0, 'rank': None})
+            fg3_pct_data = fg3_pct.get(team, {'value': 35.0, 'rank': None})
+            ft_pct_data = ft_pct.get(team, {'value': 75.0, 'rank': None})
+
+            w = wins_data.get('value', 0)
+            l = losses_data.get('value', 0)
             games_played = w + l
+
+            ppg_val = ppg_data.get('value', 110.0)
+            opp_ppg_val = opp_ppg_data.get('value', 110.0)
+            pace_val = pace_data.get('value', 100.0)
+            assists_val = assists_data.get('value', 25.0)
+            turnovers_val = turnovers_data.get('value', 14.0)
 
             team_stats[team] = {
                 'team_name': team,
                 # Basic stats
-                'pts_per_game': ppg.get(team, 110.0),
-                'pts_allowed': opp_ppg.get(team, 110.0),
-                'point_diff': point_diff.get(team, 0.0),
+                'pts_per_game': ppg_val,
+                'pts_allowed': opp_ppg_val,
+                'point_diff': point_diff_data.get('value', 0.0),
                 'wins': int(w),
                 'losses': int(l),
                 'games_played': int(games_played),
                 'win_pct': round(w / games_played, 3) if games_played > 0 else 0.0,
                 # Advanced stats (NEW for ML)
-                'pace': pace.get(team, 100.0),  # Possessions per game - CRITICAL for totals
-                'offensive_rebounds': off_rebounds.get(team, 10.0),
-                'defensive_rebounds': def_rebounds.get(team, 35.0),
-                'total_rebounds': off_rebounds.get(team, 10.0) + def_rebounds.get(team, 35.0),
-                'assists': assists.get(team, 25.0),
-                'turnovers': turnovers.get(team, 14.0),
-                'steals': steals.get(team, 7.5),
-                'blocks': blocks.get(team, 5.0),
-                'true_shooting_pct': ts_pct.get(team, 57.0),  # True shooting %
-                'personal_fouls': fouls.get(team, 20.0),
-                'points_in_paint': paint_pts.get(team, 50.0),
+                'pace': pace_val,  # Possessions per game - CRITICAL for totals
+                'offensive_rebounds': off_reb_data.get('value', 10.0),
+                'defensive_rebounds': def_reb_data.get('value', 35.0),
+                'total_rebounds': off_reb_data.get('value', 10.0) + def_reb_data.get('value', 35.0),
+                'assists': assists_val,
+                'turnovers': turnovers_val,
+                'steals': steals_data.get('value', 7.5),
+                'blocks': blocks_data.get('value', 5.0),
+                'true_shooting_pct': ts_pct_data.get('value', 57.0),  # True shooting %
+                'personal_fouls': fouls_data.get('value', 20.0),
+                'points_in_paint': paint_pts_data.get('value', 50.0),
+                # Shooting percentages as decimals (not percentages) for frontend compatibility
+                'fg_pct': fg_pct_data.get('value', 45.0) / 100.0,  # Convert 45.0 to 0.45
+                'fg3_pct': fg3_pct_data.get('value', 35.0) / 100.0,  # Convert 35.0 to 0.35
+                'ft_pct': ft_pct_data.get('value', 75.0) / 100.0,  # Convert 75.0 to 0.75
                 # Calculated stats
-                'net_rating': point_diff.get(team, 0.0),
-                'off_rating': ppg.get(team, 110.0),  # Simplified
-                'def_rating': opp_ppg.get(team, 110.0),  # Simplified
-                'assist_turnover_ratio': round(assists.get(team, 25.0) / turnovers.get(team, 14.0), 2) if turnovers.get(team, 14.0) > 0 else 0.0,
+                'net_rating': point_diff_data.get('value', 0.0),
+                'off_rating': ppg_val,  # Simplified
+                'def_rating': opp_ppg_val,  # Simplified
+                'assist_turnover_ratio': round(assists_val / turnovers_val, 2) if turnovers_val > 0 else 0.0,
+                # RANKS (NEW!)
+                'pts_per_game_rank': ppg_data.get('rank'),
+                'pts_allowed_rank': opp_ppg_data.get('rank'),
+                'point_diff_rank': point_diff_data.get('rank'),
+                'pace_rank': pace_data.get('rank'),
+                'off_rating_rank': ppg_data.get('rank'),  # Same as PPG rank
+                'def_rating_rank': opp_ppg_data.get('rank'),  # Same as opp PPG rank
+                'net_rating_rank': point_diff_data.get('rank'),  # Same as point diff rank
+                'assists_rank': assists_data.get('rank'),
+                'turnovers_rank': turnovers_data.get('rank'),
+                'steals_rank': steals_data.get('rank'),
+                'blocks_rank': blocks_data.get('rank'),
+                'ts_pct_rank': ts_pct_data.get('rank'),
+                'fg_pct_rank': fg_pct_data.get('rank'),
+                'fg3_pct_rank': fg3_pct_data.get('rank'),
+                'ft_pct_rank': ft_pct_data.get('rank'),
                 'source': 'teamrankings',
                 'last_updated': datetime.now().isoformat()
             }

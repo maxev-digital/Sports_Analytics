@@ -15,8 +15,14 @@ class NHLFeatureEngineer:
 
     @staticmethod
     def get_totals_features(row: pd.Series) -> np.ndarray:
-        """Extract features for totals prediction (24 features)"""
+        """
+        Extract features for totals prediction
+
+        UPGRADED 2025-11-11: Now 44 features (was 24)
+        Added: xG (6), shot quality (4), possession (4), empty net (6)
+        """
         features = np.array([
+            # === ORIGINAL 24 FEATURES ===
             # Offensive stats
             row['home_goals_per_game'],
             row['away_goals_per_game'],
@@ -43,18 +49,53 @@ class NHLFeatureEngineer:
             row['home_faceoff_win_pct'],
             row['away_faceoff_win_pct'],
 
-            # Goalie stats (placeholders if not available)
+            # Goalie stats
             row.get('home_goalie_save_pct', row['home_save_pct']),
             row.get('away_goalie_save_pct', row['away_save_pct']),
             row.get('home_goalie_gaa', row['home_goals_against_per_game']),
-            row.get('away_goalie_gaa', row['away_goals_against_per_game'])
+            row.get('away_goalie_gaa', row['away_goals_against_per_game']),
+
+            # === NEW 20 FEATURES (2025-11-11) ===
+            # Expected Goals (6 features)
+            row.get('home_xgoals_per_game', row['home_goals_per_game']),
+            row.get('away_xgoals_per_game', row['away_goals_per_game']),
+            row.get('home_xgoals_against_per_game', row['home_goals_against_per_game']),
+            row.get('away_xgoals_against_per_game', row['away_goals_against_per_game']),
+            row.get('home_goals_above_expected', 0),
+            row.get('away_goals_above_expected', 0),
+
+            # Shot Quality (4 features)
+            row.get('home_hd_shooting_pct', 25.0),
+            row.get('away_hd_shooting_pct', 25.0),
+            row.get('home_hd_save_pct', 0.70),
+            row.get('away_hd_save_pct', 0.70),
+
+            # Possession (4 features)
+            row.get('home_corsi_for_pct', 50.0),
+            row.get('away_corsi_for_pct', 50.0),
+            row.get('home_fenwick_for_pct', 50.0),
+            row.get('away_fenwick_for_pct', 50.0),
+
+            # Empty Net (6 features)
+            row.get('home_en_goals_for_per_game', 0),
+            row.get('away_en_goals_for_per_game', 0),
+            row.get('home_en_goals_against_per_game', 0),
+            row.get('away_en_goals_against_per_game', 0),
+            row.get('home_en_success_rate', 0),
+            row.get('away_en_success_rate', 0),
         ])
         return features
 
     @staticmethod
     def get_spreads_features(row: pd.Series) -> np.ndarray:
-        """Extract features for spreads prediction (29 features)"""
+        """
+        Extract features for spreads prediction
+
+        UPGRADED 2025-11-11: Now 49 features (was 29)
+        Added: xG (6), shot quality (4), possession (4), empty net (6)
+        """
         features = np.array([
+            # === ORIGINAL 29 FEATURES ===
             # Team strength differential
             row['home_goals_per_game'] - row['away_goals_per_game'],
             row['home_goals_against_per_game'] - row['away_goals_against_per_game'],
@@ -94,14 +135,49 @@ class NHLFeatureEngineer:
             row.get('away_goalie_gaa', row['away_goals_against_per_game']),
 
             # Home ice advantage
-            1.0
+            1.0,
+
+            # === NEW 20 FEATURES (2025-11-11) ===
+            # Expected Goals (6 features)
+            row.get('home_xgoals_per_game', row['home_goals_per_game']),
+            row.get('away_xgoals_per_game', row['away_goals_per_game']),
+            row.get('home_xgoals_against_per_game', row['home_goals_against_per_game']),
+            row.get('away_xgoals_against_per_game', row['away_goals_against_per_game']),
+            row.get('home_goals_above_expected', 0),
+            row.get('away_goals_above_expected', 0),
+
+            # Shot Quality (4 features)
+            row.get('home_hd_shooting_pct', 25.0),
+            row.get('away_hd_shooting_pct', 25.0),
+            row.get('home_hd_save_pct', 0.70),
+            row.get('away_hd_save_pct', 0.70),
+
+            # Possession (4 features)
+            row.get('home_corsi_for_pct', 50.0),
+            row.get('away_corsi_for_pct', 50.0),
+            row.get('home_fenwick_for_pct', 50.0),
+            row.get('away_fenwick_for_pct', 50.0),
+
+            # Empty Net (6 features)
+            row.get('home_en_goals_for_per_game', 0),
+            row.get('away_en_goals_for_per_game', 0),
+            row.get('home_en_goals_against_per_game', 0),
+            row.get('away_en_goals_against_per_game', 0),
+            row.get('home_en_success_rate', 0),
+            row.get('away_en_success_rate', 0),
         ])
         return features
 
     @staticmethod
     def get_moneyline_features(row: pd.Series) -> np.ndarray:
-        """Extract features for moneyline prediction (34 features)"""
+        """
+        Extract features for moneyline prediction
+
+        UPGRADED 2025-11-11: Now 54 features (was 34)
+        Added: xG (6), shot quality (4), possession (4), empty net (6)
+        """
         features = np.array([
+            # === ORIGINAL 34 FEATURES ===
             # Team strength differential
             row['home_goals_per_game'] - row['away_goals_per_game'],
             row['home_goals_against_per_game'] - row['away_goals_against_per_game'],
@@ -148,7 +224,36 @@ class NHLFeatureEngineer:
             row.get('away_goalie_win_pct', row['away_win_pct']),
 
             # Home ice advantage
-            1.0
+            1.0,
+
+            # === NEW 20 FEATURES (2025-11-11) ===
+            # Expected Goals (6 features)
+            row.get('home_xgoals_per_game', row['home_goals_per_game']),
+            row.get('away_xgoals_per_game', row['away_goals_per_game']),
+            row.get('home_xgoals_against_per_game', row['home_goals_against_per_game']),
+            row.get('away_xgoals_against_per_game', row['away_goals_against_per_game']),
+            row.get('home_goals_above_expected', 0),
+            row.get('away_goals_above_expected', 0),
+
+            # Shot Quality (4 features)
+            row.get('home_hd_shooting_pct', 25.0),
+            row.get('away_hd_shooting_pct', 25.0),
+            row.get('home_hd_save_pct', 0.70),
+            row.get('away_hd_save_pct', 0.70),
+
+            # Possession (4 features)
+            row.get('home_corsi_for_pct', 50.0),
+            row.get('away_corsi_for_pct', 50.0),
+            row.get('home_fenwick_for_pct', 50.0),
+            row.get('away_fenwick_for_pct', 50.0),
+
+            # Empty Net (6 features)
+            row.get('home_en_goals_for_per_game', 0),
+            row.get('away_en_goals_for_per_game', 0),
+            row.get('home_en_goals_against_per_game', 0),
+            row.get('away_en_goals_against_per_game', 0),
+            row.get('home_en_success_rate', 0),
+            row.get('away_en_success_rate', 0),
         ])
         return features
 
