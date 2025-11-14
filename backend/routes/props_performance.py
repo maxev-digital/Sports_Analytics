@@ -13,7 +13,8 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/props-performance", tags=["props-performance"])
 
-DB_PATH = Path("D:/backend/data/player_props.db")
+# Use relative path from backend directory
+DB_PATH = Path(__file__).parent.parent / "data" / "player_props.db"
 
 
 @router.get("/overview")
