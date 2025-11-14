@@ -24,41 +24,113 @@ export function BetAlertToast({ alert, onDismiss, position }: BetAlertToastProps
     return () => clearInterval(interval);
   }, []);
 
-  // Play alert sound when toast appears
+  // Play chained audio sequence when toast appears
   useEffect(() => {
-    const strategyName = alert.strategy_name.toLowerCase();
-    const confidence = alert.urgency || alert.confidence;
-    let audioFile = '';
+    const playAudioChain = async () => {
+      const audioChain: string[] = [];
+      const strategyName = alert.strategy_name.toLowerCase();
+      const confidence = alert.urgency || alert.confidence;
 
-    // Select audio file based on strategy type and confidence
-    if (strategyName.includes('arbitrage')) {
-      audioFile = confidence === 'CRITICAL' ? '/alerts/arbitrage_critical.mp3' :
-                  confidence === 'HIGH' ? '/alerts/arbitrage_high.mp3' :
-                  '/alerts/arbitrage_found.mp3';
-    } else if (strategyName.includes('steam')) {
-      audioFile = confidence === 'CRITICAL' ? '/alerts/steam_critical.mp3' :
-                  confidence === 'HIGH' ? '/alerts/steam_high.mp3' :
-                  '/alerts/steam_medium.mp3';
-    } else if (strategyName.includes('middle')) {
-      audioFile = confidence === 'CRITICAL' ? '/alerts/middle_critical.mp3' :
-                  confidence === 'HIGH' ? '/alerts/middle_high.mp3' :
-                  '/alerts/middle_medium.mp3';
-    } else if (strategyName.includes('goalie')) {
-      audioFile = confidence === 'CRITICAL' ? '/alerts/goalie_pull_critical.mp3' :
-                  '/alerts/goalie_pull_warning.mp3';
-    } else {
-      // General alerts
-      audioFile = confidence === 'HIGH' ? '/alerts/alert_high.mp3' :
-                  confidence === 'MEDIUM' ? '/alerts/alert_medium.mp3' :
-                  '/alerts/alert_low.mp3';
-    }
+      // 1. Strategy alert
+      if (strategyName.includes('arbitrage')) {
+        audioChain.push(confidence === 'CRITICAL' ? '/alerts/arbitrage_critical.mp3' :
+                       confidence === 'HIGH' ? '/alerts/arbitrage_high.mp3' :
+                       '/alerts/arbitrage_found.mp3');
+      } else if (strategyName.includes('steam')) {
+        audioChain.push(confidence === 'CRITICAL' ? '/alerts/steam_critical.mp3' :
+                       confidence === 'HIGH' ? '/alerts/steam_high.mp3' :
+                       '/alerts/steam_medium.mp3');
+      } else if (strategyName.includes('middle')) {
+        audioChain.push(confidence === 'CRITICAL' ? '/alerts/middle_critical.mp3' :
+                       confidence === 'HIGH' ? '/alerts/middle_high.mp3' :
+                       '/alerts/middle_medium.mp3');
+      } else if (strategyName.includes('goalie')) {
+        audioChain.push(confidence === 'CRITICAL' ? '/alerts/goalie_pull_critical.mp3' :
+                       '/alerts/goalie_pull_warning.mp3');
+      } else {
+        audioChain.push(confidence === 'HIGH' ? '/alerts/alert_high.mp3' :
+                       confidence === 'MEDIUM' ? '/alerts/alert_medium.mp3' :
+                       '/alerts/alert_low.mp3');
+      }
 
-    // Play the audio
-    if (audioFile) {
-      const audio = new Audio(audioFile);
-      audio.volume = 0.7; // 70% volume
-      audio.play().catch(err => console.log('Audio play failed:', err));
-    }
+      // 2. Bet action + teams for first bet option
+      if (alert.bet_options && alert.bet_options.length > 0) {
+        const firstBet = alert.bet_options[0];
+
+        // Bet action phrase
+        if (firstBet.market_type === 'totals') {
+          audioChain.push(firstBet.bet_side === 'over' ? '/alerts/bet_the_over.mp3' : '/alerts/bet_the_under.mp3');
+        } else if (firstBet.market_type === 'spreads') {
+          // Determine if home or away based on bet_side
+          if (alert.home_team && alert.away_team) {
+            const isHome = firstBet.bet_side?.toLowerCase().includes(alert.home_team.toLowerCase());
+            audioChain.push(isHome ? '/alerts/bet_home_spread.mp3' : '/alerts/bet_away_spread.mp3');
+          }
+        } else if (firstBet.market_type === 'h2h') {
+          if (alert.home_team && alert.away_team) {
+            const isHome = firstBet.bet_side?.toLowerCase().includes(alert.home_team.toLowerCase());
+            audioChain.push(isHome ? '/alerts/bet_home_moneyline.mp3' : '/alerts/bet_away_moneyline.mp3');
+          }
+        }
+
+        // Team names (if not totals)
+        if (firstBet.market_type !== 'totals' && alert.home_team && alert.away_team) {
+          const teamToSay = firstBet.bet_side?.toLowerCase().includes(alert.home_team.toLowerCase()) ? alert.home_team : alert.away_team;
+          const teamFileName = teamToSay.toLowerCase().replace(/ /g, '_').replace(/\./g, '').replace(/&/g, 'and').replace(/\(/g, '').replace(/\)/g, '');
+          audioChain.push(`/alerts/team_${teamFileName}.mp3`);
+        }
+
+        // 3. Sportsbook for first bet
+        const bookFileName = firstBet.bookmaker.toLowerCase().replace(/_/g, '');
+        audioChain.push(`/alerts/${bookFileName}_alert.mp3`);
+
+        // 4. For middles/arbitrage, add second bet option
+        if (strategyName.includes('middle') || strategyName.includes('arbitrage')) {
+          if (alert.bet_options.length > 1) {
+            const secondBet = alert.bet_options[1];
+
+            // "and"
+            audioChain.push('/alerts/and.mp3');
+
+            // Second bet action
+            if (secondBet.market_type === 'spreads' && alert.home_team && alert.away_team) {
+              const isHome = secondBet.bet_side?.toLowerCase().includes(alert.home_team.toLowerCase());
+              audioChain.push(isHome ? '/alerts/bet_home_spread.mp3' : '/alerts/bet_away_spread.mp3');
+
+              // Second team name
+              const teamToSay = isHome ? alert.home_team : alert.away_team;
+              const teamFileName = teamToSay.toLowerCase().replace(/ /g, '_').replace(/\./g, '').replace(/&/g, 'and').replace(/\(/g, '').replace(/\)/g, '');
+              audioChain.push(`/alerts/team_${teamFileName}.mp3`);
+            }
+
+            // Second sportsbook
+            const book2FileName = secondBet.bookmaker.toLowerCase().replace(/_/g, '');
+            audioChain.push(`/alerts/${book2FileName}_alert.mp3`);
+          }
+        }
+      }
+
+      // Play audio chain sequentially
+      for (const audioFile of audioChain) {
+        try {
+          const audio = new Audio(audioFile);
+          audio.volume = 0.7;
+
+          await new Promise<void>((resolve, reject) => {
+            audio.onended = () => resolve();
+            audio.onerror = () => reject();
+            audio.play().catch(() => reject());
+          });
+
+          // Small pause between audio clips
+          await new Promise(resolve => setTimeout(resolve, 200));
+        } catch (err) {
+          console.log('Audio play failed:', audioFile, err);
+        }
+      }
+    };
+
+    playAudioChain();
   }, []); // Only run once when component mounts
 
   // Auto-dismiss based on urgency
