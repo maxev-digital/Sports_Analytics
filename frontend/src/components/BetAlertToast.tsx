@@ -83,8 +83,7 @@ export function BetAlertToast({ alert, onDismiss, position }: BetAlertToastProps
           }
         }
 
-        // 3. Sportsbook for first bet - "at"
-        audioChain.push('/alerts/at.mp3');
+        // 3. Sportsbook for first bet
         const bookFileName = firstBet.bookmaker.toLowerCase().replace(/_/g, '').replace(/-/g, '');
         audioChain.push(`/alerts/${bookFileName}_alert.mp3`);
 
@@ -92,9 +91,6 @@ export function BetAlertToast({ alert, onDismiss, position }: BetAlertToastProps
         if (strategyName.includes('middle') || strategyName.includes('arbitrage')) {
           if (alert.bet_options.length > 1) {
             const secondBet = alert.bet_options[1];
-
-            // "and"
-            audioChain.push('/alerts/and.mp3');
 
             // Second bet action
             if (secondBet.market_type === 'spreads' && alert.home_team && alert.away_team) {
@@ -107,8 +103,7 @@ export function BetAlertToast({ alert, onDismiss, position }: BetAlertToastProps
               audioChain.push(`/alerts/team_${teamFileName}.mp3`);
             }
 
-            // "at" + second sportsbook
-            audioChain.push('/alerts/at.mp3');
+            // Second sportsbook
             const book2FileName = secondBet.bookmaker.toLowerCase().replace(/_/g, '').replace(/-/g, '');
             audioChain.push(`/alerts/${book2FileName}_alert.mp3`);
           }
