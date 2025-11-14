@@ -24,6 +24,43 @@ export function BetAlertToast({ alert, onDismiss, position }: BetAlertToastProps
     return () => clearInterval(interval);
   }, []);
 
+  // Play alert sound when toast appears
+  useEffect(() => {
+    const strategyName = alert.strategy_name.toLowerCase();
+    const confidence = alert.urgency || alert.confidence;
+    let audioFile = '';
+
+    // Select audio file based on strategy type and confidence
+    if (strategyName.includes('arbitrage')) {
+      audioFile = confidence === 'CRITICAL' ? '/alerts/arbitrage_critical.mp3' :
+                  confidence === 'HIGH' ? '/alerts/arbitrage_high.mp3' :
+                  '/alerts/arbitrage_found.mp3';
+    } else if (strategyName.includes('steam')) {
+      audioFile = confidence === 'CRITICAL' ? '/alerts/steam_critical.mp3' :
+                  confidence === 'HIGH' ? '/alerts/steam_high.mp3' :
+                  '/alerts/steam_medium.mp3';
+    } else if (strategyName.includes('middle')) {
+      audioFile = confidence === 'CRITICAL' ? '/alerts/middle_critical.mp3' :
+                  confidence === 'HIGH' ? '/alerts/middle_high.mp3' :
+                  '/alerts/middle_medium.mp3';
+    } else if (strategyName.includes('goalie')) {
+      audioFile = confidence === 'CRITICAL' ? '/alerts/goalie_pull_critical.mp3' :
+                  '/alerts/goalie_pull_warning.mp3';
+    } else {
+      // General alerts
+      audioFile = confidence === 'HIGH' ? '/alerts/alert_high.mp3' :
+                  confidence === 'MEDIUM' ? '/alerts/alert_medium.mp3' :
+                  '/alerts/alert_low.mp3';
+    }
+
+    // Play the audio
+    if (audioFile) {
+      const audio = new Audio(audioFile);
+      audio.volume = 0.7; // 70% volume
+      audio.play().catch(err => console.log('Audio play failed:', err));
+    }
+  }, []); // Only run once when component mounts
+
   // Auto-dismiss based on urgency
   useEffect(() => {
     let dismissTime: number;
