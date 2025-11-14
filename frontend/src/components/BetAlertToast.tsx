@@ -65,23 +65,27 @@ export function BetAlertToast({ alert, onDismiss, position }: BetAlertToastProps
           if (alert.home_team && alert.away_team) {
             const isHome = firstBet.bet_side?.toLowerCase().includes(alert.home_team.toLowerCase());
             audioChain.push(isHome ? '/alerts/bet_home_spread.mp3' : '/alerts/bet_away_spread.mp3');
+
+            // Team name for spreads
+            const teamToSay = isHome ? alert.home_team : alert.away_team;
+            const teamFileName = teamToSay.toLowerCase().replace(/ /g, '_').replace(/\./g, '').replace(/&/g, 'and').replace(/\(/g, '').replace(/\)/g, '').replace(/é/g, 'e');
+            audioChain.push(`/alerts/team_${teamFileName}.mp3`);
           }
         } else if (firstBet.market_type === 'h2h') {
           if (alert.home_team && alert.away_team) {
             const isHome = firstBet.bet_side?.toLowerCase().includes(alert.home_team.toLowerCase());
             audioChain.push(isHome ? '/alerts/bet_home_moneyline.mp3' : '/alerts/bet_away_moneyline.mp3');
+
+            // Team name for moneyline
+            const teamToSay = isHome ? alert.home_team : alert.away_team;
+            const teamFileName = teamToSay.toLowerCase().replace(/ /g, '_').replace(/\./g, '').replace(/&/g, 'and').replace(/\(/g, '').replace(/\)/g, '').replace(/é/g, 'e');
+            audioChain.push(`/alerts/team_${teamFileName}.mp3`);
           }
         }
 
-        // Team names (if not totals)
-        if (firstBet.market_type !== 'totals' && alert.home_team && alert.away_team) {
-          const teamToSay = firstBet.bet_side?.toLowerCase().includes(alert.home_team.toLowerCase()) ? alert.home_team : alert.away_team;
-          const teamFileName = teamToSay.toLowerCase().replace(/ /g, '_').replace(/\./g, '').replace(/&/g, 'and').replace(/\(/g, '').replace(/\)/g, '');
-          audioChain.push(`/alerts/team_${teamFileName}.mp3`);
-        }
-
-        // 3. Sportsbook for first bet
-        const bookFileName = firstBet.bookmaker.toLowerCase().replace(/_/g, '');
+        // 3. Sportsbook for first bet - "at"
+        audioChain.push('/alerts/at.mp3');
+        const bookFileName = firstBet.bookmaker.toLowerCase().replace(/_/g, '').replace(/-/g, '');
         audioChain.push(`/alerts/${bookFileName}_alert.mp3`);
 
         // 4. For middles/arbitrage, add second bet option
@@ -99,35 +103,53 @@ export function BetAlertToast({ alert, onDismiss, position }: BetAlertToastProps
 
               // Second team name
               const teamToSay = isHome ? alert.home_team : alert.away_team;
-              const teamFileName = teamToSay.toLowerCase().replace(/ /g, '_').replace(/\./g, '').replace(/&/g, 'and').replace(/\(/g, '').replace(/\)/g, '');
+              const teamFileName = teamToSay.toLowerCase().replace(/ /g, '_').replace(/\./g, '').replace(/&/g, 'and').replace(/\(/g, '').replace(/\)/g, '').replace(/é/g, 'e');
               audioChain.push(`/alerts/team_${teamFileName}.mp3`);
             }
 
-            // Second sportsbook
-            const book2FileName = secondBet.bookmaker.toLowerCase().replace(/_/g, '');
+            // "at" + second sportsbook
+            audioChain.push('/alerts/at.mp3');
+            const book2FileName = secondBet.bookmaker.toLowerCase().replace(/_/g, '').replace(/-/g, '');
             audioChain.push(`/alerts/${book2FileName}_alert.mp3`);
           }
         }
       }
 
+      console.log('🔊 Audio chain:', audioChain);
+
       // Play audio chain sequentially
-      for (const audioFile of audioChain) {
+      for (let i = 0; i < audioChain.length; i++) {
+        const audioFile = audioChain[i];
         try {
+          console.log(`Playing ${i + 1}/${audioChain.length}:`, audioFile);
+
           const audio = new Audio(audioFile);
           audio.volume = 0.7;
 
           await new Promise<void>((resolve, reject) => {
-            audio.onended = () => resolve();
-            audio.onerror = () => reject();
-            audio.play().catch(() => reject());
+            audio.onended = () => {
+              console.log('✅ Finished:', audioFile);
+              resolve();
+            };
+            audio.onerror = (e) => {
+              console.error('❌ Error loading audio:', audioFile, e);
+              reject();
+            };
+            audio.play().catch((e) => {
+              console.error('❌ Error playing audio:', audioFile, e);
+              reject();
+            });
           });
 
           // Small pause between audio clips
-          await new Promise(resolve => setTimeout(resolve, 200));
+          await new Promise(resolve => setTimeout(resolve, 300));
         } catch (err) {
-          console.log('Audio play failed:', audioFile, err);
+          console.error('Audio play failed:', audioFile, err);
+          // Continue to next audio file even if one fails
         }
       }
+
+      console.log('🎵 Audio chain complete!');
     };
 
     playAudioChain();
