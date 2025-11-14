@@ -42,10 +42,12 @@ import { AdminDashboard } from './pages/AdminDashboard';
 import { MyFeedback } from './pages/MyFeedback';
 import { MaxEvEdges } from './pages/MaxEvEdges';
 import { ModelPerformance } from './pages/ModelPerformance';
+import { MLModelsExplained } from './pages/MLModelsExplained';
 import Performance from './pages/Performance';
 import GoaliePull from './pages/GoaliePull';
 import { EdgeScannerAlertMonitor } from './components/EdgeScannerAlertMonitor';
 import { GlobalAlertMonitor } from './components/GlobalAlertMonitor';
+import { GoaliePullMonitor } from './components/GoaliePullMonitor';
 import { isElectron } from './utils/isElectron';
 import { MLAdvantage } from './pages/MLAdvantage';
 import { EvidenceArchitecture } from './pages/EvidenceArchitecture';
@@ -55,9 +57,9 @@ function AppContent() {
   const location = useLocation();
 
   // PERF FIX: Only enable monitors on pages that need them (not pricing, login, etc.)
-  const needsAlerts = location.pathname.includes('/live-games') ||
-                      location.pathname.includes('/alerts') ||
-                      location.pathname.includes('/odds');
+  // Enable alerts on main app pages where users view games
+  const excludedPaths = ['/login', '/signup', '/pricing', '/evidence-architecture', '/ml-advantage'];
+  const needsAlerts = !excludedPaths.some(path => location.pathname.includes(path));
 
   // Check if running in desktop (Electron) mode
   const isDesktop = isElectron();
@@ -70,17 +72,22 @@ function AppContent() {
               {/* Bet Slip Toast - Lower Left Corner */}
               <BetSlipToast />
 
-              {/* Edge Scanner Live Alert Monitor - runs in background */}
+              {/* Edge Scanner Live Alert Monitor - DISABLED for goalie pull testing */}
               <EdgeScannerAlertMonitor
-                enabled={needsAlerts}
+                enabled={false}
                 minEdge={3.5}
                 minConfidence={0.70}
                 pollInterval={30000}
               />
-              {/* Global Alert Monitor - monitors for arbitrage, middles, steam moves, sharp money, fatigue */}
+              {/* Global Alert Monitor - DISABLED for goalie pull testing */}
               <GlobalAlertMonitor
-                enabled={needsAlerts}
+                enabled={false}
                 pollInterval={30000}
+              />
+              {/* Goalie Pull Monitor - alerts for NHL goalie pull opportunities in 3rd period - ACTIVE */}
+              <GoaliePullMonitor
+                enabled={needsAlerts}
+                pollInterval={3000}
               />
               <Routes>
           {/* Public routes - Login and SignUp pages */}
@@ -246,6 +253,7 @@ function AppContent() {
                       <Route path="/odds" element={<Odds />} />
                       <Route path="/max-ev-edges" element={<MaxEvEdges />} />
                       <Route path="/model-performance" element={<ModelPerformance />} />
+                      <Route path="/ml-models-explained" element={<MLModelsExplained />} />
                       <Route path="/performance" element={<Performance />} />
                       <Route path="/goalie-pull" element={<GoaliePull />} />
                       <Route path="/handicapper-picks" element={<HandicapperPicks />} />

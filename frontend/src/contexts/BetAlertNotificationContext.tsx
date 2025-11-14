@@ -64,7 +64,7 @@ export function BetAlertNotificationProvider({ children }: { children: ReactNode
 
     // Play audio alert if enabled and not muted
     if (alert.sound_alert && !isAudioMuted) {
-      playAlertSound(alert.confidence);
+      playAlertSound(alert.confidence, alert.custom_audio_url);
     }
   }, [isAudioMuted]);
 
@@ -73,8 +73,30 @@ export function BetAlertNotificationProvider({ children }: { children: ReactNode
     setAlerts(prev => prev.filter(alert => alert.id !== id));
   }, []);
 
-  // Play sound based on confidence level
-  const playAlertSound = (confidence: string) => {
+  // Play sound based on confidence level (or custom audio if provided)
+  const playAlertSound = (confidence: string, customAudioUrl?: string) => {
+    try {
+      // If custom audio URL provided, play that instead of synthetic tones
+      if (customAudioUrl) {
+        const audio = new Audio(customAudioUrl);
+        audio.volume = 0.8; // 80% volume for detailed voice alerts
+        audio.play().catch(err => {
+          console.error('Failed to play custom audio alert:', err);
+          // Fall back to synthetic tones if custom audio fails
+          playSyntheticSound(confidence);
+        });
+        return;
+      }
+
+      // Otherwise use synthetic tones
+      playSyntheticSound(confidence);
+    } catch (error) {
+      console.error('Failed to play alert sound:', error);
+    }
+  };
+
+  // Play synthetic sound based on confidence level
+  const playSyntheticSound = (confidence: string) => {
     try {
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       const oscillator = audioContext.createOscillator();
@@ -123,7 +145,7 @@ export function BetAlertNotificationProvider({ children }: { children: ReactNode
         }, 1000);
       }
     } catch (error) {
-      console.error('Failed to play alert sound:', error);
+      console.error('Failed to play synthetic sound:', error);
     }
   };
 

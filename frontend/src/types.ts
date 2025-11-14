@@ -194,6 +194,14 @@ export interface NHLTeamStats {
   en_differential?: number | null;  // EN goals for - against
   en_situations?: number | null;  // Count of EN situations
   en_success_rate?: number | null;  // Success rate when pulling goalie
+  // Empty Net Offensive (WITH Empty Net - we pulled goalie)
+  en_goals_for_offensive?: number | null;  // Goals scored when we pulled goalie
+  en_goals_against_offensive?: number | null;  // Goals allowed when we pulled goalie
+  en_situations_offensive?: number | null;  // Situations when we pulled goalie
+  // Empty Net Defensive (AGAINST Empty Net - opponent pulled goalie)
+  en_goals_for_defensive?: number | null;  // Goals scored when opponent pulled goalie
+  en_goals_against_defensive?: number | null;  // Goals allowed when opponent pulled goalie
+  en_situations_defensive?: number | null;  // Situations when opponent pulled goalie
   // Empty Net Rankings (1-32)
   en_goals_for_rank?: number | null;
   en_goals_against_rank?: number | null;
@@ -302,6 +310,7 @@ export interface StrategyAlert {
   urgency?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';  // How urgent
   expires_in?: number;  // Seconds until alert expires
   sound_alert?: boolean;  // Play audio alert?
+  custom_audio_url?: string;  // Custom audio file URL (overrides default alert sounds)
   timestamp: string;  // When alert was generated
 }
 

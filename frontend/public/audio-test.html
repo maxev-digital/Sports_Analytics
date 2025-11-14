@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Goalie Pull Audio Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to bottom right, #1e293b, #334155, #1e293b);
+            color: white;
+            padding: 40px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #10b981;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            background: rgba(30, 41, 59, 0.8);
+            border: 2px solid #10b981;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+        .test-section h2 {
+            color: #10b981;
+            margin-top: 0;
+            font-size: 20px;
+        }
+        button {
+            background: linear-gradient(to bottom right, #10b981, #059669);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px 10px 10px 0;
+            transition: all 0.3s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        .stop-btn {
+            background: linear-gradient(to bottom right, #ef4444, #dc2626);
+        }
+        .info {
+            background: rgba(59, 130, 246, 0.2);
+            border-left: 4px solid #3b82f6;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .status {
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .success {
+            color: #10b981;
+        }
+        .error {
+            color: #ef4444;
+        }
+    </style>
+</head>
+<body>
+    <h1>🏒 Goalie Pull Audio Test</h1>
+
+    <div class="info">
+        <strong>ℹ️ Instructions:</strong>
+        <ul>
+            <li>Click the buttons below to test each audio alert</li>
+            <li>Volume is set to 80% (same as live alerts)</li>
+            <li>Make sure your system volume is up and browser isn't muted</li>
+            <li>Each audio is ~60-90 seconds of detailed betting instructions</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>📈 OVER Alert (2-Goal Deficit)</h2>
+        <p>Plays when trailing team is down 2 goals and leading team is GOOD at scoring into empty nets</p>
+        <button onclick="playOverAlert()">▶️ Play OVER Alert</button>
+        <button class="stop-btn" onclick="stopAudio()">⏹️ Stop</button>
+        <div class="status" id="over-status">Ready to test...</div>
+    </div>
+
+    <div class="test-section">
+        <h2>📉 UNDER Alert (1-Goal Deficit)</h2>
+        <p>Plays when trailing team is down 1 goal and leading team STRUGGLES to score into empty nets</p>
+        <button onclick="playUnderAlert()">▶️ Play UNDER Alert</button>
+        <button class="stop-btn" onclick="stopAudio()">⏹️ Stop</button>
+        <div class="status" id="under-status">Ready to test...</div>
+    </div>
+
+    <div class="test-section">
+        <h2>🔧 Diagnostic Test</h2>
+        <p>Test if browser can access the audio files at all</p>
+        <button onclick="checkFiles()">🔍 Check Audio Files</button>
+        <div class="status" id="diag-status">Click to check file accessibility...</div>
+    </div>
+
+    <script>
+        let currentAudio = null;
+
+        function playOverAlert() {
+            stopAudio();
+            const status = document.getElementById('over-status');
+            status.innerHTML = '<span class="success">▶️ Playing OVER alert...</span>';
+
+            try {
+                currentAudio = new Audio('/alerts/goalie_pull_over_detailed.mp3');
+                currentAudio.volume = 0.8; // 80% volume
+
+                currentAudio.onended = () => {
+                    status.innerHTML = '<span class="success">✅ OVER alert completed!</span>';
+                };
+
+                currentAudio.onerror = (e) => {
+                    status.innerHTML = '<span class="error">❌ Error loading OVER alert: ' + e.message + '</span>';
+                };
+
+                currentAudio.play().catch(err => {
+                    status.innerHTML = '<span class="error">❌ Failed to play: ' + err.message + '</span>';
+                });
+            } catch (error) {
+                status.innerHTML = '<span class="error">❌ Exception: ' + error.message + '</span>';
+            }
+        }
+
+        function playUnderAlert() {
+            stopAudio();
+            const status = document.getElementById('under-status');
+            status.innerHTML = '<span class="success">▶️ Playing UNDER alert...</span>';
+
+            try {
+                currentAudio = new Audio('/alerts/goalie_pull_under_detailed.mp3');
+                currentAudio.volume = 0.8; // 80% volume
+
+                currentAudio.onended = () => {
+                    status.innerHTML = '<span class="success">✅ UNDER alert completed!</span>';
+                };
+
+                currentAudio.onerror = (e) => {
+                    status.innerHTML = '<span class="error">❌ Error loading UNDER alert: ' + e.message + '</span>';
+                };
+
+                currentAudio.play().catch(err => {
+                    status.innerHTML = '<span class="error">❌ Failed to play: ' + err.message + '</span>';
+                });
+            } catch (error) {
+                status.innerHTML = '<span class="error">❌ Exception: ' + error.message + '</span>';
+            }
+        }
+
+        function stopAudio() {
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+                currentAudio = null;
+            }
+        }
+
+        async function checkFiles() {
+            const status = document.getElementById('diag-status');
+            status.innerHTML = '🔍 Checking audio files...';
+
+            const files = [
+                { name: 'OVER (2-goal)', url: '/alerts/goalie_pull_over_detailed.mp3' },
+                { name: 'UNDER (1-goal)', url: '/alerts/goalie_pull_under_detailed.mp3' }
+            ];
+
+            let results = '<br><br>';
+
+            for (const file of files) {
+                try {
+                    const response = await fetch(file.url, { method: 'HEAD' });
+                    if (response.ok) {
+                        const size = response.headers.get('content-length');
+                        const sizeMB = size ? (parseInt(size) / 1024 / 1024).toFixed(2) : 'unknown';
+                        results += `<span class="success">✅ ${file.name}: Accessible (${sizeMB} MB)</span><br>`;
+                    } else {
+                        results += `<span class="error">❌ ${file.name}: HTTP ${response.status}</span><br>`;
+                    }
+                } catch (error) {
+                    results += `<span class="error">❌ ${file.name}: ${error.message}</span><br>`;
+                }
+            }
+
+            status.innerHTML = 'Diagnostic Results:' + results;
+        }
+    </script>
+</body>
+</html>
