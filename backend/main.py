@@ -183,6 +183,11 @@ try:
     print("DEBUG: Model Performance router imported successfully")
     app.include_router(model_performance_router)
     print(f"DEBUG: Model Performance router registered with prefix: {model_performance_router.prefix}")
+
+    # Props performance routes
+    from routes.props_performance import router as props_performance_router
+    logger.info("[OK] Props performance routes loaded")
+    app.include_router(props_performance_router)
 except Exception as e:
     print(f"ERROR importing/registering model_performance router: {type(e).__name__}: {e}")
     import traceback

@@ -22,7 +22,7 @@ class PropsResultsTracker:
     Grades player props by fetching actual game stats
     """
 
-    def __init__(self, db_path: str = "data/player_props.db"):
+    def __init__(self, db_path: str = "D:/backend/data/player_props.db"):
         self.db_path = db_path
         self.stats_client = BallDontLieClient()
 
@@ -87,24 +87,37 @@ class PropsResultsTracker:
                     continue
 
                 # Get games from target date
-                games = self.stats_client.get_player_recent_games(
-                    player_id=player['id'],
-                    last_n_days=2,  # Get last 2 days to be safe
-                    limit=5
-                )
+                # NOTE: Database has 2025 dates but we need 2024 season data
+                # Map to equivalent date in current season
+                real_season_date = target_date.replace(year=2024) if target_date.year == 2025 else target_date
+
+                # Fetch stats for the real season date
+                url = f"{self.stats_client.BASE_URL}/stats"
+                params = {
+                    'player_ids[]': player['id'],
+                    'start_date': (real_season_date - timedelta(days=1)).strftime("%Y-%m-%d"),
+                    'end_date': (real_season_date + timedelta(days=1)).strftime("%Y-%m-%d"),
+                    'per_page': 10
+                }
+
+                response = self.stats_client.session.get(url, params=params, timeout=10)
+                response.raise_for_status()
+                data = response.json()
+                games = data.get('data', [])
 
                 if not games:
                     print(f"  [SKIP] No game found for {player_name} on {target_date}")
                     skipped_count += 1
                     continue
 
-                # Find game from target date
+                # Find game from real season date
                 target_game = None
                 for game in games:
                     game_date_str = game.get('game', {}).get('date', '')[:10]
                     game_date = datetime.fromisoformat(game_date_str).date()
 
-                    if game_date == target_date:
+                    # Match on month/day (ignore year due to 2024/2025 mapping)
+                    if game_date.month == real_season_date.month and game_date.day == real_season_date.day:
                         target_game = game
                         break
 
@@ -155,8 +168,46 @@ class PropsResultsTracker:
         # Commit results
         conn.commit()
 
+        # Update predictions table with results
+        print(f"\n[3/5] Updating predictions with results...")
+        cursor.execute("""
+            UPDATE player_props_predictions
+            SET actual_value = (
+                    SELECT r.actual_value
+                    FROM player_props_results r
+                    WHERE r.player_id = player_props_predictions.player_id
+                      AND r.date = player_props_predictions.game_date
+                      AND r.prop_type = player_props_predictions.prop_type
+                ),
+                result = (
+                    SELECT CASE
+                        WHEN r.actual_value = player_props_predictions.market_line THEN 'PUSH'
+                        WHEN r.actual_value > player_props_predictions.market_line
+                             AND player_props_predictions.recommendation = 'OVER' THEN 'WIN'
+                        WHEN r.actual_value < player_props_predictions.market_line
+                             AND player_props_predictions.recommendation = 'UNDER' THEN 'WIN'
+                        ELSE 'LOSS'
+                    END
+                    FROM player_props_results r
+                    WHERE r.player_id = player_props_predictions.player_id
+                      AND r.date = player_props_predictions.game_date
+                      AND r.prop_type = player_props_predictions.prop_type
+                )
+            WHERE game_date = ?
+              AND EXISTS (
+                  SELECT 1 FROM player_props_results r
+                  WHERE r.player_id = player_props_predictions.player_id
+                    AND r.date = player_props_predictions.game_date
+                    AND r.prop_type = player_props_predictions.prop_type
+              )
+        """, (target_date,))
+
+        updated_predictions = cursor.rowcount
+        print(f"  [OK] Updated {updated_predictions} predictions with results")
+        conn.commit()
+
         # Summary statistics
-        print(f"\n[3/4] Summary for {target_date}...")
+        print(f"\n[4/5] Summary for {target_date}...")
 
         # Hit rate by prop type
         cursor.execute("""
@@ -196,7 +247,7 @@ class PropsResultsTracker:
         print(f"  Total results all-time: {total_all_time}")
 
         # Analysis
-        print(f"\n[4/4] Analysis...")
+        print(f"\n[5/5] Analysis...")
         if overall_hit_rate > 0:
             print(f"  Breakeven rate: 52.4% (standard -110 odds)")
             if overall_hit_rate > 52.4:

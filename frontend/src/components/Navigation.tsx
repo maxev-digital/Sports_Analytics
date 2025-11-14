@@ -15,6 +15,7 @@ export function Navigation() {
   const [strategyDropdownOpen, setStrategyDropdownOpen] = useState(false);
   const [strategyResultsDropdownOpen, setStrategyResultsDropdownOpen] = useState(false);
   const [edgesDropdownOpen, setEdgesDropdownOpen] = useState(false);
+  const [propsDropdownOpen, setPropsDropdownOpen] = useState(false);
   const [toolsDropdownOpen, setToolsDropdownOpen] = useState(false);
   const [learnDropdownOpen, setLearnDropdownOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
@@ -22,6 +23,7 @@ export function Navigation() {
   const strategyRef = useRef<HTMLDivElement>(null);
   const strategyResultsRef = useRef<HTMLDivElement>(null);
   const edgesRef = useRef<HTMLDivElement>(null);
+  const propsRef = useRef<HTMLDivElement>(null);
   const toolsRef = useRef<HTMLDivElement>(null);
   const learnRef = useRef<HTMLDivElement>(null);
   const userRef = useRef<HTMLDivElement>(null);
@@ -71,7 +73,12 @@ export function Navigation() {
     { path: '/odds', label: 'ODDS', emoji: uiEmojis.chart },
     { path: '/analytics', label: 'PERFORMANCE', emoji: uiEmojis.search },
     { path: '/alerts', label: 'ALERTS', emoji: uiEmojis.lightning },
-    { path: '/props', label: 'PLAYER PROPS', emoji: uiEmojis.book },
+  ];
+
+  // Player Props dropdown items (with Performance dashboard)
+  const propsItems = [
+    { path: '/props', label: 'PROPS', emoji: uiEmojis.book },
+    { path: '/props-performance', label: 'PERFORMANCE', emoji: uiEmojis.chart },
   ];
 
   // Edges dropdown items (ML Model Edges)
@@ -128,6 +135,9 @@ export function Navigation() {
       }
       if (strategyResultsRef.current && !strategyResultsRef.current.contains(event.target as Node)) {
         setStrategyResultsDropdownOpen(false);
+      }
+      if (propsRef.current && !propsRef.current.contains(event.target as Node)) {
+        setPropsDropdownOpen(false);
       }
       if (toolsRef.current && !toolsRef.current.contains(event.target as Node)) {
         setToolsDropdownOpen(false);
@@ -228,8 +238,8 @@ export function Navigation() {
               )}
             </div>
 
-            {/* Main Nav Items - Remaining items (Performance, Alerts, Player Props) */}
-            {mainNavItems.slice(2, 5).map((item) => (
+            {/* Main Nav Items - Remaining items (Performance, Alerts) */}
+            {mainNavItems.slice(2, 4).map((item) => (
               <Link
                 key={item.path}
                 to={item.path}
@@ -250,6 +260,44 @@ export function Navigation() {
                 {item.label}
               </Link>
             ))}
+
+            {/* Player Props Dropdown */}
+            <div className="relative" ref={propsRef}>
+              <button
+                onClick={() => handleDropdownToggle(setPropsDropdownOpen, propsDropdownOpen)}
+                className={`px-5 py-2.5 rounded-lg font-bold transition-all text-base flex items-center gap-2 italic whitespace-nowrap ${
+                  isDropdownActive(propsItems)
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+                    : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
+                }`}
+              >
+                {/* <img src={uiEmojis.book} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} /> */}
+                PLAYER PROPS
+                <svg className={`w-5 h-5 transition-transform ${propsDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {propsDropdownOpen && (
+                <div className="absolute top-full mt-1 left-0 bg-slate-800 border border-slate-700 rounded-lg shadow-xl min-w-[220px] py-2 z-50">
+                  {propsItems.map((item) => (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      onClick={() => { /* Sound disabled */ setPropsDropdownOpen(false); }}
+                      className={`px-4 py-2.5 flex items-center gap-3 transition-all ${
+                        isActive(item.path)
+                          ? 'bg-blue-600 text-white'
+                          : 'text-slate-300 hover:bg-slate-700 hover:text-slate-100'
+                      }`}
+                    >
+                      {/* <img src={item.emoji} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} /> */}
+                      <span className="font-semibold text-base italic">{item.label}</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {/* Strategy Results Dropdown - Live vs Pre-Game */}
             <div className="relative" ref={strategyResultsRef}>
@@ -506,7 +554,23 @@ export function Navigation() {
 
         {/* Mobile Navigation - Scrollable */}
         <div className="md:hidden flex gap-1 pb-3 overflow-x-auto scrollbar-hide">
-          {mainNavItems.slice(0, 5).map((item) => (
+          {mainNavItems.map((item) => (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={`px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+                isActive(item.path)
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-slate-800 text-slate-300'
+              }`}
+            >
+              {item.emoji && (
+                <img src={item.emoji} alt="" className="w-3.5 h-3.5" style={{ imageRendering: 'crisp-edges' }} />
+              )}
+              {item.label}
+            </Link>
+          ))}
+          {propsItems.map((item) => (
             <Link
               key={item.path}
               to={item.path}
@@ -523,22 +587,6 @@ export function Navigation() {
             </Link>
           ))}
           {strategyResultsItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
-                isActive(item.path)
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-slate-800 text-slate-300'
-              }`}
-            >
-              {item.emoji && (
-                <img src={item.emoji} alt="" className="w-3.5 h-3.5" style={{ imageRendering: 'crisp-edges' }} />
-              )}
-              {item.label}
-            </Link>
-          ))}
-          {mainNavItems.slice(5).map((item) => (
             <Link
               key={item.path}
               to={item.path}

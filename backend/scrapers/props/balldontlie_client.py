@@ -31,32 +31,53 @@ class BallDontLieClient:
         """
         Search for player by name
         Returns player object with id, team, etc.
+
+        Note: API only searches first OR last name, not full name
+        So we try last name first, then first name
         """
         cache_key = f"player_search_{player_name.lower()}"
         if cache_key in self.cache:
             return self.cache[cache_key]
 
+        # Try searching by last name first (most unique)
+        name_parts = player_name.split()
+        search_terms = []
+
+        if len(name_parts) >= 2:
+            search_terms = [name_parts[-1], name_parts[0]]  # Last name, then first name
+        else:
+            search_terms = [player_name]
+
         url = f"{self.BASE_URL}/players"
-        params = {
-            "search": player_name
-        }
 
-        try:
-            response = self.session.get(url, params=params, timeout=10)
-            response.raise_for_status()
-            data = response.json()
+        for search_term in search_terms:
+            params = {"search": search_term}
 
-            if data.get("data") and len(data["data"]) > 0:
-                player = data["data"][0]  # Take first match
-                self.cache[cache_key] = player
-                time.sleep(self.rate_limit_delay)
-                return player
+            try:
+                response = self.session.get(url, params=params, timeout=10)
+                response.raise_for_status()
+                data = response.json()
 
-            return None
+                if data.get("data") and len(data["data"]) > 0:
+                    # Check if full name matches (case-insensitive)
+                    for player in data["data"]:
+                        player_full_name = f"{player['first_name']} {player['last_name']}"
+                        if player_full_name.lower() == player_name.lower():
+                            self.cache[cache_key] = player
+                            time.sleep(self.rate_limit_delay)
+                            return player
 
-        except Exception as e:
-            print(f"Error fetching player {player_name}: {e}")
-            return None
+                    # If no exact match, return first result
+                    player = data["data"][0]
+                    self.cache[cache_key] = player
+                    time.sleep(self.rate_limit_delay)
+                    return player
+
+            except Exception as e:
+                print(f"Error fetching player {player_name} with term '{search_term}': {e}")
+                continue
+
+        return None
 
     def get_player_season_averages(self, player_id: int, season: int = 2024) -> Optional[Dict]:
         """

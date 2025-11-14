@@ -42,6 +42,7 @@ import { AdminDashboard } from './pages/AdminDashboard';
 import { MyFeedback } from './pages/MyFeedback';
 import { MaxEvEdges } from './pages/MaxEvEdges';
 import { ModelPerformance } from './pages/ModelPerformance';
+import { PropsPerformance } from './pages/PropsPerformance';
 import { MLModelsExplained } from './pages/MLModelsExplained';
 import Performance from './pages/Performance';
 import GoaliePull from './pages/GoaliePull';
@@ -248,6 +249,7 @@ function AppContent() {
                       <Route path="/analytics" element={<Analytics />} />
                       <Route path="/analytics-sample" element={<AnalyticsSample />} />
                       <Route path="/props" element={<Props />} />
+                      <Route path="/props-performance" element={<PropsPerformance />} />
 
                       <Route path="/alerts" element={<Alerts />} />
                       <Route path="/odds" element={<Odds />} />
