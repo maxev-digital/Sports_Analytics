@@ -54,7 +54,8 @@ class EnhancedPropsPredictor:
 
     def __init__(self, db_path: str = "data/player_props.db"):
         self.db_path = db_path
-        self.models_dir = Path("D:/backend/ml/trained_models")
+        # Use relative path that works on both Windows and Linux
+        self.models_dir = Path(__file__).parent.parent / "trained_models"
         self.models = {}
         self.team_scraper = TeamRankingsNBAScraper()
         self.team_stats = {}

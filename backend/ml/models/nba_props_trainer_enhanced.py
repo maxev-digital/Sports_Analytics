@@ -67,9 +67,10 @@ class EnhancedNBAPropsTrainer:
     OFFENSIVE_PROPS = ['points', 'assists', 'threes', 'PRA']
     DEFENSIVE_PROPS = ['rebounds', 'blocks', 'steals']
 
-    def __init__(self, db_path: str = "D:/backend/data/player_props.db"):
+    def __init__(self, db_path: str = "data/player_props.db"):
         self.db_path = db_path
-        self.models_dir = Path("D:/backend/ml/trained_models")
+        # Use relative path that works on both Windows and Linux
+        self.models_dir = Path(__file__).parent.parent / "trained_models"
         self.models_dir.mkdir(parents=True, exist_ok=True)
         self.team_scraper = TeamRankingsNBAScraper()
         self.team_stats = {}
