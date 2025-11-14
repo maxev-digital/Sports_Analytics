@@ -131,6 +131,117 @@ TOAST_ALERTS = {
     "playoff_intensity_alert.mp3": "Playoff intensity factor detected!",
     "revenge_game_alert.mp3": "Revenge game opportunity!",
     "lookahead_spot_alert.mp3": "Lookahead spot edge detected!",
+
+    # ========== BET ACTION PHRASES (Reusable for any bet) ==========
+    "bet_the_over.mp3": "Bet the over",
+    "bet_the_under.mp3": "Bet the under",
+    "bet_home_spread.mp3": "Bet the home spread",
+    "bet_away_spread.mp3": "Bet the away spread",
+    "bet_home_moneyline.mp3": "Bet the home moneyline",
+    "bet_away_moneyline.mp3": "Bet the away moneyline",
+    "bet_both_sides.mp3": "Bet both sides",
+    "take_the_over.mp3": "Take the over",
+    "take_the_under.mp3": "Take the under",
+    "take_home_team.mp3": "Take the home team",
+    "take_away_team.mp3": "Take the away team",
+
+    # ========== CONNECTOR WORDS (For chaining alerts) ==========
+    "versus.mp3": "versus",
+    "at.mp3": "at",
+    "and.mp3": "and",
+    "or.mp3": "or",
+    "also.mp3": "also",
+
+    # ========== PRO TEAM NAMES (NBA: 25, NHL: 27, NFL: 32) ==========
+    # NBA Teams
+    "team_atlanta_hawks.mp3": "Atlanta Hawks",
+    "team_brooklyn_nets.mp3": "Brooklyn Nets",
+    "team_charlotte_hornets.mp3": "Charlotte Hornets",
+    "team_cleveland_cavaliers.mp3": "Cleveland Cavaliers",
+    "team_dallas_mavericks.mp3": "Dallas Mavericks",
+    "team_denver_nuggets.mp3": "Denver Nuggets",
+    "team_detroit_pistons.mp3": "Detroit Pistons",
+    "team_golden_state_warriors.mp3": "Golden State Warriors",
+    "team_houston_rockets.mp3": "Houston Rockets",
+    "team_indiana_pacers.mp3": "Indiana Pacers",
+    "team_los_angeles_clippers.mp3": "Los Angeles Clippers",
+    "team_los_angeles_lakers.mp3": "Los Angeles Lakers",
+    "team_miami_heat.mp3": "Miami Heat",
+    "team_milwaukee_bucks.mp3": "Milwaukee Bucks",
+    "team_minnesota_timberwolves.mp3": "Minnesota Timberwolves",
+    "team_new_orleans_pelicans.mp3": "New Orleans Pelicans",
+    "team_new_york_knicks.mp3": "New York Knicks",
+    "team_orlando_magic.mp3": "Orlando Magic",
+    "team_philadelphia_76ers.mp3": "Philadelphia 76ers",
+    "team_phoenix_suns.mp3": "Phoenix Suns",
+    "team_portland_trail_blazers.mp3": "Portland Trail Blazers",
+    "team_sacramento_kings.mp3": "Sacramento Kings",
+    "team_san_antonio_spurs.mp3": "San Antonio Spurs",
+    "team_toronto_raptors.mp3": "Toronto Raptors",
+    "team_utah_jazz.mp3": "Utah Jazz",
+
+    # NHL Teams
+    "team_anaheim_ducks.mp3": "Anaheim Ducks",
+    "team_boston_bruins.mp3": "Boston Bruins",
+    "team_buffalo_sabres.mp3": "Buffalo Sabres",
+    "team_calgary_flames.mp3": "Calgary Flames",
+    "team_carolina_hurricanes.mp3": "Carolina Hurricanes",
+    "team_colorado_avalanche.mp3": "Colorado Avalanche",
+    "team_columbus_blue_jackets.mp3": "Columbus Blue Jackets",
+    "team_dallas_stars.mp3": "Dallas Stars",
+    "team_detroit_red_wings.mp3": "Detroit Red Wings",
+    "team_edmonton_oilers.mp3": "Edmonton Oilers",
+    "team_florida_panthers.mp3": "Florida Panthers",
+    "team_los_angeles_kings.mp3": "Los Angeles Kings",
+    "team_montreal_canadiens.mp3": "Montreal Canadiens",
+    "team_nashville_predators.mp3": "Nashville Predators",
+    "team_new_york_islanders.mp3": "New York Islanders",
+    "team_ottawa_senators.mp3": "Ottawa Senators",
+    "team_philadelphia_flyers.mp3": "Philadelphia Flyers",
+    "team_pittsburgh_penguins.mp3": "Pittsburgh Penguins",
+    "team_san_jose_sharks.mp3": "San Jose Sharks",
+    "team_seattle_kraken.mp3": "Seattle Kraken",
+    "team_st_louis_blues.mp3": "St Louis Blues",
+    "team_toronto_maple_leafs.mp3": "Toronto Maple Leafs",
+    "team_utah_mammoth.mp3": "Utah Mammoth",
+    "team_vancouver_canucks.mp3": "Vancouver Canucks",
+    "team_vegas_golden_knights.mp3": "Vegas Golden Knights",
+    "team_washington_capitals.mp3": "Washington Capitals",
+    "team_winnipeg_jets.mp3": "Winnipeg Jets",
+
+    # NFL Teams
+    "team_arizona_cardinals.mp3": "Arizona Cardinals",
+    "team_atlanta_falcons.mp3": "Atlanta Falcons",
+    "team_baltimore_ravens.mp3": "Baltimore Ravens",
+    "team_buffalo_bills.mp3": "Buffalo Bills",
+    "team_carolina_panthers.mp3": "Carolina Panthers",
+    "team_chicago_bears.mp3": "Chicago Bears",
+    "team_cincinnati_bengals.mp3": "Cincinnati Bengals",
+    "team_cleveland_browns.mp3": "Cleveland Browns",
+    "team_dallas_cowboys.mp3": "Dallas Cowboys",
+    "team_denver_broncos.mp3": "Denver Broncos",
+    "team_detroit_lions.mp3": "Detroit Lions",
+    "team_green_bay_packers.mp3": "Green Bay Packers",
+    "team_houston_texans.mp3": "Houston Texans",
+    "team_indianapolis_colts.mp3": "Indianapolis Colts",
+    "team_jacksonville_jaguars.mp3": "Jacksonville Jaguars",
+    "team_kansas_city_chiefs.mp3": "Kansas City Chiefs",
+    "team_las_vegas_raiders.mp3": "Las Vegas Raiders",
+    "team_los_angeles_chargers.mp3": "Los Angeles Chargers",
+    "team_los_angeles_rams.mp3": "Los Angeles Rams",
+    "team_miami_dolphins.mp3": "Miami Dolphins",
+    "team_minnesota_vikings.mp3": "Minnesota Vikings",
+    "team_new_england_patriots.mp3": "New England Patriots",
+    "team_new_orleans_saints.mp3": "New Orleans Saints",
+    "team_new_york_giants.mp3": "New York Giants",
+    "team_new_york_jets.mp3": "New York Jets",
+    "team_philadelphia_eagles.mp3": "Philadelphia Eagles",
+    "team_pittsburgh_steelers.mp3": "Pittsburgh Steelers",
+    "team_san_francisco_49ers.mp3": "San Francisco 49ers",
+    "team_seattle_seahawks.mp3": "Seattle Seahawks",
+    "team_tampa_bay_buccaneers.mp3": "Tampa Bay Buccaneers",
+    "team_tennessee_titans.mp3": "Tennessee Titans",
+    "team_washington_commanders.mp3": "Washington Commanders",
 }
 
 def generate_alert_sound(filename: str, text: str):
@@ -193,14 +304,18 @@ def main():
         return
 
     print("\n" + "="*80)
-    print("🎙️  TOAST ALERT SOUND GENERATOR - ElevenLabs API")
+    print("🎙️  COMPREHENSIVE VOICE ALERT SYSTEM - ElevenLabs API")
     print("="*80)
     print(f"\n📊 Total alerts to generate: {len(TOAST_ALERTS)}")
     print(f"   - Core alerts: 20")
     print(f"   - Sportsbook alerts: 25")
     print(f"   - Strategy alerts: 45")
+    print(f"   - Bet action phrases: 11")
+    print(f"   - Connector words: 5")
+    print(f"   - Pro team names: 84 (NBA: 25, NHL: 27, NFL: 32)")
     print(f"📁 Output directory: frontend/public/alerts/")
     print(f"🎤 Voice: Brian (Authoritative, Professional)")
+    print(f"\n💡 These alerts can be chained together for flowing announcements!")
     print("\n" + "-"*80 + "\n")
 
     success_count = 0
