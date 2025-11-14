@@ -560,8 +560,8 @@ async def broadcast_game_updates():
         except Exception as e:
             logger.error(f"Error in broadcast task: {e}", exc_info=True)
 
-        # Wait 3 seconds before next update (much faster than 30s polling!)
-        await asyncio.sleep(3)
+        # Wait 5 seconds before next update (optimized for live games)
+        await asyncio.sleep(5)
 
 # ========== AUTOMATIC BET GRADING TASK ==========
 
@@ -682,9 +682,21 @@ async def get_games(user_id: str = 'default', show_all: bool = False):
 
         # Get all games
         all_games = tracker.get_all_games()
+        logger.info(f"[DEBUG /api/games] Total games from tracker: {len(all_games)}")
+
+        nhl_games_before = [g for g in all_games if g.sport_key == 'icehockey_nhl']
+        logger.info(f"[DEBUG /api/games] NHL games before filtering: {len(nhl_games_before)}")
+        if nhl_games_before:
+            logger.info(f"[DEBUG /api/games] First NHL game: {nhl_games_before[0].away_team} @ {nhl_games_before[0].home_team}, odds count: {len(nhl_games_before[0].odds)}")
 
         # Filter by enabled bookmakers (uses model_copy for performance)
         filtered_games = filter_games_by_bookmakers(all_games, settings['enabled_bookmakers'])
+        logger.info(f"[DEBUG /api/games] Total games after filtering: {len(filtered_games)}")
+
+        nhl_games_after = [g for g in filtered_games if g.sport_key == 'icehockey_nhl']
+        logger.info(f"[DEBUG /api/games] NHL games after filtering: {len(nhl_games_after)}")
+        if nhl_games_after:
+            logger.info(f"[DEBUG /api/games] First NHL game after filter: {nhl_games_after[0].away_team} @ {nhl_games_after[0].home_team}, odds count: {len(nhl_games_after[0].odds)}")
 
         # Convert to dicts and handle numpy types
         games_dicts = [game.model_dump() for game in filtered_games]
@@ -723,6 +735,17 @@ async def get_game(game_id: str, user_id: str = 'default'):
         logger.error(f"Error filtering game: {str(e)}")
         # On error, return unfiltered game
         return tracker.get_game(game_id) or {"error": "Game not found"}
+
+@app.get("/api/debug-nhl")
+async def debug_nhl():
+    """Debug NHL games in tracker"""
+    all_games = tracker.get_all_games()
+    nhl_games = [g for g in all_games if g.sport_key == 'icehockey_nhl']
+    return {
+        "total_games": len(all_games),
+        "nhl_count": len(nhl_games),
+        "nhl_samples": [{"away": g.state.away_team.name, "home": g.state.home_team.name, "odds": len(g.odds)} for g in nhl_games[:3]]
+    }
 
 @app.get("/api/health")
 async def health():
@@ -2508,7 +2531,9 @@ async def get_player_props(sport: str):
 @app.get("/api/player-props/nba/edges")
 async def get_nba_props_with_edges(min_edge_pct: float = 5.0):
     """
-    Get NBA player props with advanced projections and edge analysis
+    Get NBA player props with ML-powered projections and edge analysis
+
+    Fetches predictions from the autonomous ML props system database
 
     Args:
         min_edge_pct: Minimum edge percentage to filter (default 5.0%)
@@ -2516,63 +2541,146 @@ async def get_nba_props_with_edges(min_edge_pct: float = 5.0):
     Returns:
         PlayerPropsResponse with props that have calculated edges
     """
-    from nba_props_manager import NBAPropsManager
-    from player_props_client import PlayerPropsClient
-
     try:
-        logger.info(f"Fetching NBA props with edges (min_edge: {min_edge_pct}%)")
+        logger.info(f"Fetching ML NBA props with edges (min_edge: {min_edge_pct}%)")
 
-        # Get upcoming NBA games
-        props_client = PlayerPropsClient()
-        url = f"{props_client.base_url}/sports/basketball_nba/events"
+        # Connect to ML props database
+        db_path = "D:/backend/data/player_props.db"
+        if not os.path.exists(db_path):
+            logger.warning(f"ML props database not found at {db_path}")
+            return {
+                "games": [],
+                "total_props": 0,
+                "total_strong_bets": 0,
+                "total_moderate_bets": 0,
+                "last_updated": datetime.now().isoformat()
+            }
 
-        import httpx
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.get(url, params={
-                'apiKey': os.getenv('ODDS_API_KEY', ''),
-                'dateFormat': 'iso'
-            })
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
 
-            if response.status_code != 200:
-                raise HTTPException(status_code=500, detail="Failed to fetch NBA games")
+        # Get today's date
+        today = datetime.now().date().isoformat()
 
-            games = response.json()
+        # Query predictions with edges >= min_edge_pct
+        cursor.execute("""
+            SELECT
+                p.player_name,
+                p.team,
+                p.opponent,
+                p.prop_type,
+                p.market_line,
+                p.predicted_value,
+                p.recommendation,
+                p.confidence,
+                p.edge_pct,
+                p.game_date,
+                p.game_time,
+                p.event_id,
+                s.minutes_per_game,
+                s.season_avg,
+                s.last_10_avg
+            FROM player_props_predictions p
+            LEFT JOIN player_stats_cache s
+                ON p.player_name = s.player_name AND p.prop_type = s.stat_type
+            WHERE p.game_date = ?
+              AND p.recommendation != 'PASS'
+              AND ABS(p.edge_pct) >= ?
+            ORDER BY ABS(p.edge_pct) DESC
+        """, (today, min_edge_pct))
 
-            # Limit to next 5 games to avoid excessive API calls
-            upcoming_games = games[:5]
+        predictions = cursor.fetchall()
+        conn.close()
 
-            logger.info(f"Found {len(upcoming_games)} upcoming NBA games")
+        # Group predictions by game
+        games_dict = {}
+        total_strong = 0
+        total_moderate = 0
 
-        # DISABLED: NBA API causes timeouts - return empty response
-        logger.warning("NBA props disabled due to API timeouts")
-        from live_models import PlayerPropsResponse
-        props_response = PlayerPropsResponse(
-            total_props=0,
-            total_strong_bets=0,
-            total_moderate_bets=0,
-            games=[]
-        )
+        for pred in predictions:
+            event_id = pred['event_id'] or f"{pred['team']}-{pred['opponent']}-{pred['game_date']}"
 
-        # OLD CODE - DISABLED
-        # Initialize props manager and get props with edges
-        # props_manager = NBAPropsManager()
-        # props_response = await props_manager.get_nba_props_with_edges(
-        #     games=upcoming_games,
-        #     min_edge_pct=min_edge_pct
-        # )
+            if event_id not in games_dict:
+                games_dict[event_id] = {
+                    "event_id": event_id,
+                    "sport_key": "basketball_nba",
+                    "home_team": pred['team'] if pred['opponent'] else "TBD",
+                    "away_team": pred['opponent'] if pred['opponent'] else "TBD",
+                    "commence_time": pred['game_time'] or pred['game_date'],
+                    "props": []
+                }
 
-        # Clean up
-        # await props_manager.close()
+            # Determine bet strength
+            edge_pct = abs(pred['edge_pct'])
+            if edge_pct >= 10.0:
+                bet_strength = "STRONG"
+                total_strong += 1
+            elif edge_pct >= 7.0:
+                bet_strength = "MODERATE"
+                total_moderate += 1
+            else:
+                bet_strength = "WEAK"
+
+            # Build prop with edge
+            prop = {
+                "player_name": pred['player_name'],
+                "team": pred['team'],
+                "opponent": pred['opponent'],
+                "game_time": pred['game_time'] or pred['game_date'],
+                "prop_type": pred['prop_type'],
+                "market_odds": {
+                    "player_name": pred['player_name'],
+                    "prop_type": pred['prop_type'],
+                    "line": pred['market_line'],
+                    "bookmakers": [],
+                    "best_over_odds": -110,
+                    "best_under_odds": -110,
+                    "best_over_book": "DraftKings",
+                    "best_under_book": "DraftKings"
+                },
+                "projection": {
+                    "prop_type": pred['prop_type'],
+                    "projection": round(pred['predicted_value'], 1),
+                    "confidence": "HIGH" if pred['confidence'] >= 0.75 else "MEDIUM" if pred['confidence'] >= 0.60 else "LOW",
+                    "confidence_score": pred['confidence'],
+                    "factors": {
+                        "baseline": pred['season_avg'] if pred['season_avg'] else pred['predicted_value'],
+                        "recent_avg": pred['last_10_avg'] if pred['last_10_avg'] else pred['predicted_value'],
+                        "trend": "stable",
+                        "matchup_adjustment": 0.0,
+                        "pace_adjustment": 0.0,
+                        "total_adjustment": round(pred['predicted_value'] - pred['market_line'], 1)
+                    },
+                    "reasoning": f"ML model predicts {pred['predicted_value']:.1f} vs market line {pred['market_line']}. {pred['recommendation']} has {edge_pct:.1f}% edge."
+                },
+                "edge": {
+                    "edge": round(pred['predicted_value'] - pred['market_line'], 1),
+                    "edge_pct": round(pred['edge_pct'], 1),
+                    "recommendation": pred['recommendation'],
+                    "bet_strength": bet_strength
+                }
+            }
+
+            games_dict[event_id]["props"].append(prop)
+
+        games_list = list(games_dict.values())
 
         logger.info(
-            f"Returning {props_response.total_props} props "
-            f"({props_response.total_strong_bets} strong, {props_response.total_moderate_bets} moderate)"
+            f"Returning {len(predictions)} ML props from {len(games_list)} games "
+            f"({total_strong} strong, {total_moderate} moderate)"
         )
 
-        return props_response
+        return {
+            "games": games_list,
+            "total_props": len(predictions),
+            "total_strong_bets": total_strong,
+            "total_moderate_bets": total_moderate,
+            "last_updated": datetime.now().isoformat()
+        }
 
     except Exception as e:
-        logger.error(f"Error fetching NBA props with edges: {str(e)}", exc_info=True)
+        logger.error(f"Error fetching ML NBA props: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
