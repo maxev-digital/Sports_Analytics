@@ -9,8 +9,21 @@ import logging
 import pandas as pd
 from pathlib import Path
 import numpy as np
+import math
 
 logger = logging.getLogger(__name__)
+
+def safe_float(value):
+    """Convert to float, returning None for NaN/inf values"""
+    if value is None:
+        return None
+    try:
+        f = float(value)
+        if math.isnan(f) or math.isinf(f):
+            return None
+        return f
+    except (ValueError, TypeError):
+        return None
 
 router = APIRouter(prefix="/api/model-performance", tags=["model-performance"])
 
@@ -460,17 +473,17 @@ async def get_individual_predictions(
                 'home_team': row.get('home_team'),
                 'bet_type': row.get('bet_type'),
                 'model': row.get('model'),
-                'predicted_value': float(row['predicted_value']) if pd.notna(row.get('predicted_value')) else None,
-                'market_value': float(row['market_value']) if pd.notna(row.get('market_value')) else None,
-                'edge': float(row['edge']) if pd.notna(row.get('edge')) else None,
+                'predicted_value': safe_float(row.get('predicted_value')),
+                'market_value': safe_float(row.get('market_value')),
+                'edge': safe_float(row.get('edge')),
                 'recommendation': row.get('recommendation'),
                 'confidence': row.get('confidence'),
                 'bet_placed': row.get('bet_placed'),
-                'actual_total': float(row['actual_total']) if pd.notna(row.get('actual_total')) else None,
-                'away_score': float(row['away_score']) if pd.notna(row.get('away_score')) else None,
-                'home_score': float(row['home_score']) if pd.notna(row.get('home_score')) else None,
+                'actual_total': safe_float(row.get('actual_total')),
+                'away_score': safe_float(row.get('away_score')),
+                'home_score': safe_float(row.get('home_score')),
                 'result': row.get('result'),
-                'profit_loss': float(row['profit_loss']) if pd.notna(row.get('profit_loss')) else 0
+                'profit_loss': safe_float(row.get('profit_loss')) or 0
             }
             predictions.append(pred)
         
