@@ -433,7 +433,7 @@ async def get_individual_predictions(
         cutoff_date = datetime.now() - timedelta(days=days)
         if 'game_date' in predictions_df.columns:
             predictions_df = predictions_df[predictions_df['game_date'] >= cutoff_date]
-        
+
         # Apply filters
         if sport:
             predictions_df = predictions_df[predictions_df['sport'].str.lower() == sport.lower()]
@@ -441,17 +441,17 @@ async def get_individual_predictions(
             predictions_df = predictions_df[predictions_df['model'].str.lower() == model.lower()]
         if bet_type:
             predictions_df = predictions_df[predictions_df['bet_type'].str.lower() == bet_type.lower()]
-        
-        # Load results for merging
+
+        # Load results for merging - ONLY show graded predictions
         results_df = None
         if results_file.exists():
             results_df = pd.read_csv(results_file)
-            # Merge results
+            # INNER JOIN to show only predictions that have been graded
             predictions_df = pd.merge(
                 predictions_df,
                 results_df[['prediction_id', 'actual_total', 'away_score', 'home_score', 'result', 'profit_loss']],
                 on='prediction_id',
-                how='left'
+                how='inner'  # Changed from 'left' to 'inner' - only show graded predictions
             )
         
         # Sort by date descending
