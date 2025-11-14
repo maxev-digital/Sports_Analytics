@@ -512,8 +512,8 @@ class AlertMonitor:
         min_gap_totals = 1.0 if is_nhl else 3.0  # NHL: 1+ goal, NBA: 3+ points
         min_gap_spreads = 1.0 if is_nhl else 2.0  # NHL: 1+ goal, NBA: 2+ points
 
-        # Check each market type
-        for market_type in ['spreads', 'totals']:
+        # Check each market type (ONLY TOTALS - spreads/puck lines disabled per user request)
+        for market_type in ['totals']:
             # Collect all lines from all books
             book_lines = []
 

@@ -184,7 +184,7 @@ export function BetAlertToast({ alert, onDismiss, position, isAudioMuted }: BetA
         bg: 'bg-gradient-to-br from-black via-gray-900 to-slate-900',
         border: 'border-white',
         glow: 'shadow-2xl shadow-white/30',
-        pulse: 'animate-pulse',
+        pulse: '',
         emoji: '🚨',
         timerColor: 'text-white',
         infoBg: 'bg-black/40',
