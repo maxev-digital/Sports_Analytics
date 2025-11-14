@@ -463,29 +463,33 @@ async def get_individual_predictions(
         
         # Convert to list of dicts
         predictions = []
-        for _, row in predictions_df.iterrows():
-            pred = {
-                'prediction_id': row.get('prediction_id'),
-                'game_date': row.get('game_date').strftime('%Y-%m-%d') if pd.notna(row.get('game_date')) else None,
-                'game_time': row.get('game_time'),
-                'sport': row.get('sport'),
-                'away_team': row.get('away_team'),
-                'home_team': row.get('home_team'),
-                'bet_type': row.get('bet_type'),
-                'model': row.get('model'),
-                'predicted_value': safe_float(row.get('predicted_value')),
-                'market_value': safe_float(row.get('market_value')),
-                'edge': safe_float(row.get('edge')),
-                'recommendation': row.get('recommendation'),
-                'confidence': row.get('confidence'),
-                'bet_placed': row.get('bet_placed'),
-                'actual_total': safe_float(row.get('actual_total')),
-                'away_score': safe_float(row.get('away_score')),
-                'home_score': safe_float(row.get('home_score')),
-                'result': row.get('result'),
-                'profit_loss': safe_float(row.get('profit_loss')) or 0
-            }
-            predictions.append(pred)
+        for idx, row in predictions_df.iterrows():
+            try:
+                pred = {
+                    'prediction_id': row.get('prediction_id'),
+                    'game_date': row.get('game_date').strftime('%Y-%m-%d') if pd.notna(row.get('game_date')) else None,
+                    'game_time': row.get('game_time'),
+                    'sport': row.get('sport'),
+                    'away_team': row.get('away_team'),
+                    'home_team': row.get('home_team'),
+                    'bet_type': row.get('bet_type'),
+                    'model': row.get('model'),
+                    'predicted_value': safe_float(row.get('predicted_value')),
+                    'market_value': safe_float(row.get('market_value')),
+                    'edge': safe_float(row.get('edge')),
+                    'recommendation': row.get('recommendation'),
+                    'confidence': row.get('confidence'),
+                    'bet_placed': row.get('bet_placed'),
+                    'actual_total': safe_float(row.get('actual_total')),
+                    'away_score': safe_float(row.get('away_score')),
+                    'home_score': safe_float(row.get('home_score')),
+                    'result': row.get('result') if pd.notna(row.get('result')) else None,
+                    'profit_loss': safe_float(row.get('profit_loss')) or 0
+                }
+                predictions.append(pred)
+            except Exception as e:
+                logger.error(f"Error processing row {idx}: {str(e)}, row data: {row.to_dict()}")
+                raise
         
         return {
             "predictions": predictions,
