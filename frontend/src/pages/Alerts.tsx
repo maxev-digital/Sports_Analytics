@@ -9,7 +9,6 @@ import { WeatherImpactAlerts } from '../components/WeatherImpactAlert';
 import { QuarterReversalAlerts } from '../components/QuarterReversalAlert';
 import { AlertsOverallPerformance } from '../components/AlertsOverallPerformance';
 import { GenericStrategyAlert } from '../components/GenericStrategyAlert';
-import { AlertsPerformance } from '../components/AlertsPerformance';
 import { getApiUrl } from '../config';
 import { useSoundEffect } from '../hooks/useSoundEffect';
 // Toast notifications removed - no longer needed
@@ -966,11 +965,6 @@ export function Alerts() {
             category={strategy.category}
           />
         ))}
-
-        {/* Alerts Performance Section */}
-        <div className="mt-8">
-          <AlertsPerformance />
-        </div>
       </div>
     </div>
   );
