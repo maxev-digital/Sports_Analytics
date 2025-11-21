@@ -230,6 +230,132 @@ class TeamRankingsNFLScraper:
             logger.error(f"Error scraping standings: {e}")
             return {}
 
+    def scrape_ats_trends(self) -> Dict[str, Dict]:
+        """
+        Scrape ATS (Against The Spread) trends from TeamRankings
+
+        Returns:
+            Dict mapping team name -> ATS data:
+            {
+                'Buffalo': {
+                    'ats_wins': 8,
+                    'ats_losses': 2,
+                    'ats_pushes': 0
+                },
+                ...
+            }
+        """
+        url = f"{self.BASE_URL}/trends/ats_trends/"
+
+        try:
+            response = self.session.get(url, timeout=10)
+            response.raise_for_status()
+
+            soup = BeautifulSoup(response.content, 'html.parser')
+
+            # Find the stats table
+            table = soup.find('table', {'class': 'datatable'})
+            if not table:
+                logger.error(f"Could not find ATS trends table on {url}")
+                return {}
+
+            ats_data = {}
+
+            # Parse table rows (skip header)
+            for row in table.find('tbody').find_all('tr'):
+                cols = row.find_all('td')
+                if len(cols) < 2:
+                    continue
+
+                # Column 0: Team name
+                team_link = cols[0].find('a')
+                if not team_link:
+                    continue
+                team_name = team_link.text.strip()
+
+                # Column 1: ATS Record (format: "W-L-P")
+                ats_record = cols[1].text.strip()
+                try:
+                    parts = ats_record.split('-')
+                    if len(parts) == 3:
+                        ats_data[team_name] = {
+                            'ats_wins': int(parts[0]),
+                            'ats_losses': int(parts[1]),
+                            'ats_pushes': int(parts[2])
+                        }
+                except (ValueError, IndexError) as e:
+                    logger.warning(f"Could not parse ATS record for {team_name}: {ats_record}")
+
+            logger.info(f"Scraped ATS trends for {len(ats_data)} teams")
+            return ats_data
+
+        except Exception as e:
+            logger.error(f"Error scraping ATS trends: {e}")
+            return {}
+
+    def scrape_ou_trends(self) -> Dict[str, Dict]:
+        """
+        Scrape O/U (Over/Under) trends from TeamRankings
+
+        Returns:
+            Dict mapping team name -> O/U data:
+            {
+                'Buffalo': {
+                    'ou_overs': 7,
+                    'ou_unders': 3,
+                    'ou_pushes': 0
+                },
+                ...
+            }
+        """
+        url = f"{self.BASE_URL}/trends/ou_trends/"
+
+        try:
+            response = self.session.get(url, timeout=10)
+            response.raise_for_status()
+
+            soup = BeautifulSoup(response.content, 'html.parser')
+
+            # Find the stats table
+            table = soup.find('table', {'class': 'datatable'})
+            if not table:
+                logger.error(f"Could not find O/U trends table on {url}")
+                return {}
+
+            ou_data = {}
+
+            # Parse table rows (skip header)
+            for row in table.find('tbody').find_all('tr'):
+                cols = row.find_all('td')
+                if len(cols) < 2:
+                    continue
+
+                # Column 0: Team name
+                team_link = cols[0].find('a')
+                if not team_link:
+                    continue
+                team_name = team_link.text.strip()
+
+                # Column 1: Over Record (format: "O-U-P")
+                ou_record = cols[1].text.strip()
+                try:
+                    parts = ou_record.split('-')
+                    if len(parts) == 3:
+                        ou_data[team_name] = {
+                            'ou_overs': int(parts[0]),
+                            'ou_unders': int(parts[1]),
+                            'ou_pushes': int(parts[2])
+                        }
+                except (ValueError, IndexError) as e:
+                    logger.warning(f"Could not parse O/U record for {team_name}: {ou_record}")
+
+            logger.info(f"Scraped O/U trends for {len(ou_data)} teams")
+            return ou_data
+
+        except Exception as e:
+            logger.error(f"Error scraping O/U trends: {e}")
+            return {}
+
     def fetch_all_team_stats(self, force_refresh: bool = False) -> Dict[str, Dict]:
         """
         Fetch all NFL team statistics from TeamRankings
@@ -322,6 +448,96 @@ class TeamRankingsNFLScraper:
         first_downs = self.scrape_stat_page('first-downs-per-game')
         time.sleep(1)
 
+        # === NEW: PHASE 1 - EFFICIENCY METRICS (6 stats) ===
+        yards_per_play = self.scrape_stat_page('yards-per-play')
+        time.sleep(1)
+
+        opp_yards_per_play = self.scrape_stat_page('opponent-yards-per-play')
+        time.sleep(1)
+
+        completion_pct = self.scrape_stat_page('completion-pct')
+        time.sleep(1)
+
+        opp_completion_pct = self.scrape_stat_page('opponent-completion-pct')
+        time.sleep(1)
+
+        fourth_down_pct = self.scrape_stat_page('fourth-down-conversion-pct')
+        time.sleep(1)
+
+        opp_fourth_down_pct = self.scrape_stat_page('opponent-fourth-down-conversion-pct')
+        time.sleep(1)
+
+        # === NEW: PHASE 2 - TURNOVERS & SCORING (5 stats) ===
+        interceptions_caught = self.scrape_stat_page('interceptions-per-game')
+        time.sleep(1)
+
+        interceptions_thrown = self.scrape_stat_page('interceptions-thrown-per-game')
+        time.sleep(1)
+
+        fumbles_lost = self.scrape_stat_page('fumbles-lost-per-game')
+        time.sleep(1)
+
+        offensive_tds = self.scrape_stat_page('offensive-touchdowns-per-game')
+        time.sleep(1)
+
+        defensive_tds = self.scrape_stat_page('defensive-touchdowns-per-game')
+        time.sleep(1)
+
+        # === NEW: PHASE 3 - PASSING DETAILS (6 stats) ===
+        pass_attempts = self.scrape_stat_page('pass-attempts-per-game')
+        time.sleep(1)
+
+        opp_pass_attempts = self.scrape_stat_page('opponent-pass-attempts-per-game')
+        time.sleep(1)
+
+        passing_tds = self.scrape_stat_page('passing-touchdowns-per-game')
+        time.sleep(1)
+
+        opp_passing_tds = self.scrape_stat_page('opponent-passing-touchdowns-per-game')
+        time.sleep(1)
+
+        qb_sacked = self.scrape_stat_page('qb-sacked-per-game')
+        time.sleep(1)
+
+        touchdowns_total = self.scrape_stat_page('touchdowns-per-game')
+        time.sleep(1)
+
+        # === NEW: PHASE 4 - RUSHING DETAILS (4 stats) ===
+        rush_attempts = self.scrape_stat_page('rushing-attempts-per-game')
+        time.sleep(1)
+
+        opp_rush_attempts = self.scrape_stat_page('opponent-rushing-attempts-per-game')
+        time.sleep(1)
+
+        rushing_tds = self.scrape_stat_page('rushing-touchdowns-per-game')
+        time.sleep(1)
+
+        opp_rushing_tds = self.scrape_stat_page('opponent-rushing-touchdowns-per-game')
+        time.sleep(1)
+
+        # === NEW: PHASE 5 - MISCELLANEOUS (5 stats) ===
+        two_point_pct = self.scrape_stat_page('two-point-conversion-pct')
+        time.sleep(1)
+
+        penalty_yards = self.scrape_stat_page('penalty-yards-per-game')
+        time.sleep(1)
+
+        plays_per_game = self.scrape_stat_page('plays-per-game')
+        time.sleep(1)
+
+        opp_plays_per_game = self.scrape_stat_page('opponent-plays-per-game')
+        time.sleep(1)
+
+        opp_first_downs = self.scrape_stat_page('opponent-first-downs-per-game')
+        time.sleep(1)
+
+        # === NEW: PHASE 6 - BETTING TRENDS (ATS & O/U) ===
+        ats_trends = self.scrape_ats_trends()
+        time.sleep(1)
+
+        ou_trends = self.scrape_ou_trends()
+        time.sleep(1)
+
         # Combine all stats
         all_teams = set(ppg.keys()) | set(opp_ppg.keys()) | set(point_diff.keys())
 
@@ -366,6 +582,51 @@ class TeamRankingsNFLScraper:
                 'net_rating': point_diff.get(team, 0.0),
                 'off_rating': ppg.get(team, 20.0),  # Simplified
                 'def_rating': opp_ppg.get(team, 20.0),  # Simplified
+
+                # === NEW: EFFICIENCY METRICS (Phase 1) ===
+                'yards_per_play': yards_per_play.get(team, 5.5),
+                'opponent_yards_per_play': opp_yards_per_play.get(team, 5.5),
+                'completion_pct': completion_pct.get(team, 62.0),
+                'opponent_completion_pct': opp_completion_pct.get(team, 62.0),
+                'fourth_down_conversion_pct': fourth_down_pct.get(team, 50.0),
+                'opponent_fourth_down_conversion_pct': opp_fourth_down_pct.get(team, 50.0),
+
+                # === NEW: TURNOVERS & SCORING (Phase 2) ===
+                'interceptions_per_game': interceptions_caught.get(team, 0.7),
+                'interceptions_thrown_per_game': interceptions_thrown.get(team, 0.7),
+                'fumbles_lost_per_game': fumbles_lost.get(team, 0.5),
+                'offensive_touchdowns_per_game': offensive_tds.get(team, 2.5),
+                'defensive_touchdowns_per_game': defensive_tds.get(team, 0.2),
+
+                # === NEW: PASSING DETAILS (Phase 3) ===
+                'pass_attempts_per_game': pass_attempts.get(team, 35.0),
+                'opponent_pass_attempts_per_game': opp_pass_attempts.get(team, 35.0),
+                'passing_touchdowns_per_game': passing_tds.get(team, 1.5),
+                'opponent_passing_touchdowns_per_game': opp_passing_tds.get(team, 1.5),
+                'qb_sacked_per_game': qb_sacked.get(team, 2.0),
+                'touchdowns_per_game': touchdowns_total.get(team, 2.5),
+
+                # === NEW: RUSHING DETAILS (Phase 4) ===
+                'rushing_attempts_per_game': rush_attempts.get(team, 25.0),
+                'opponent_rushing_attempts_per_game': opp_rush_attempts.get(team, 25.0),
+                'rushing_touchdowns_per_game': rushing_tds.get(team, 1.0),
+                'opponent_rushing_touchdowns_per_game': opp_rushing_tds.get(team, 1.0),
+
+                # === NEW: MISCELLANEOUS (Phase 5) ===
+                'two_point_conversion_pct': two_point_pct.get(team, 50.0),
+                'penalty_yards_per_game': penalty_yards.get(team, 50.0),
+                'plays_per_game': plays_per_game.get(team, 65.0),
+                'opponent_plays_per_game': opp_plays_per_game.get(team, 65.0),
+                'opponent_first_downs_per_game': opp_first_downs.get(team, 20.0),
+
+                # === NEW: BETTING TRENDS (Phase 6) ===
+                'ats_wins': ats_trends.get(team, {}).get('ats_wins'),
+                'ats_losses': ats_trends.get(team, {}).get('ats_losses'),
+                'ats_pushes': ats_trends.get(team, {}).get('ats_pushes'),
+                'ou_overs': ou_trends.get(team, {}).get('ou_overs'),
+                'ou_unders': ou_trends.get(team, {}).get('ou_unders'),
+                'ou_pushes': ou_trends.get(team, {}).get('ou_pushes'),
+
                 'source': 'teamrankings',
                 'last_updated': datetime.now().isoformat()
             }
@@ -408,7 +669,7 @@ class TeamRankingsNFLScraper:
 
         # Offensive stats (higher is better)
         offensive_stats = [
-            ('pts_per_game', 'points_per_game_rank'),  # Fixed: was 'points_per_game'
+            ('pts_per_game', 'points_per_game_rank'),
             ('passing_yards_per_game', 'passing_yards_per_game_rank'),
             ('rushing_yards_per_game', 'rushing_yards_per_game_rank'),
             ('first_downs_per_game', 'first_downs_rank'),
@@ -417,6 +678,22 @@ class TeamRankingsNFLScraper:
             ('sacks_per_game', 'sacks_rank'),
             ('turnover_diff', 'turnover_differential_rank'),
             ('yards_per_game', 'total_yards_per_game_rank'),
+            # NEW: Efficiency rankings
+            ('yards_per_play', 'yards_per_play_rank'),
+            ('completion_pct', 'completion_pct_rank'),
+            ('fourth_down_conversion_pct', 'fourth_down_conversion_pct_rank'),
+            # NEW: Turnover & scoring rankings
+            ('interceptions_per_game', 'interceptions_per_game_rank'),
+            ('offensive_touchdowns_per_game', 'offensive_touchdowns_per_game_rank'),
+            ('defensive_touchdowns_per_game', 'defensive_touchdowns_per_game_rank'),
+            # NEW: Passing rankings
+            ('passing_touchdowns_per_game', 'passing_touchdowns_per_game_rank'),
+            ('touchdowns_per_game', 'touchdowns_per_game_rank'),
+            # NEW: Rushing rankings
+            ('rushing_touchdowns_per_game', 'rushing_touchdowns_per_game_rank'),
+            # NEW: Misc rankings
+            ('two_point_conversion_pct', 'two_point_conversion_pct_rank'),
+            ('plays_per_game', 'plays_per_game_rank'),
         ]
 
         # Defensive stats (lower is better)
@@ -428,6 +705,20 @@ class TeamRankingsNFLScraper:
             ('opponent_third_down_conversion_pct', 'opponent_third_down_pct_rank'),
             ('opponent_red_zone_scoring_pct', 'opponent_red_zone_pct_rank'),
             ('penalties_per_game', 'penalties_rank'),
+            # NEW: Efficiency defense rankings (lower = better)
+            ('opponent_yards_per_play', 'opponent_yards_per_play_rank'),
+            ('opponent_completion_pct', 'opponent_completion_pct_rank'),
+            ('opponent_fourth_down_conversion_pct', 'opponent_fourth_down_conversion_pct_rank'),
+            # NEW: Turnover defense rankings (lower = better for giving up)
+            ('interceptions_thrown_per_game', 'interceptions_thrown_per_game_rank'),
+            ('fumbles_lost_per_game', 'fumbles_lost_per_game_rank'),
+            ('opponent_passing_touchdowns_per_game', 'opponent_passing_touchdowns_per_game_rank'),
+            ('opponent_rushing_touchdowns_per_game', 'opponent_rushing_touchdowns_per_game_rank'),
+            ('qb_sacked_per_game', 'qb_sacked_per_game_rank'),
+            # NEW: Misc defense rankings (lower = better)
+            ('penalty_yards_per_game', 'penalty_yards_per_game_rank'),
+            ('opponent_plays_per_game', 'opponent_plays_per_game_rank'),
+            ('opponent_first_downs_per_game', 'opponent_first_downs_per_game_rank'),
         ]
 
         # Calculate ranks for offensive stats (higher = better)

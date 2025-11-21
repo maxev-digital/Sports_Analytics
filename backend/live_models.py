@@ -1,5 +1,5 @@
 """Pydantic models for type safety"""
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, computed_field
 from typing import Optional
 from datetime import datetime
 
@@ -46,6 +46,10 @@ class GameProjection(BaseModel):
     current_total: int
     projected_final: float
     pregame_total: float  # Opening/closing total from one book
+    pregame_spread: Optional[float] = None  # Pregame/closing spread (away team perspective)
+    pregame_spread_price: Optional[int] = None  # Pregame/closing spread price
+    pregame_moneyline_home: Optional[int] = None  # Pregame/closing moneyline (home)
+    pregame_moneyline_away: Optional[int] = None  # Pregame/closing moneyline (away)
     current_live_total: Optional[float] = None  # Current live average
     line_movement: Optional[float] = None  # Difference between pregame and current
     best_book_disparity: Optional[str] = None  # Book with largest disparity
@@ -217,7 +221,7 @@ class NHLTeamStats(BaseModel):
     en_situations_defensive: Optional[float] = None  # Situations when opponent pulled goalie
 
 class NFLTeamStats(BaseModel):
-    """Season statistics for NFL teams"""
+    """Season statistics for NFL teams - ENHANCED with 26 new stats"""
     team_id: str
     team_name: str
     games_played: int
@@ -244,7 +248,44 @@ class NFLTeamStats(BaseModel):
     away_record: Optional[str] = None  # "5-3"
     division_record: Optional[str] = None  # "3-1"
     conference_record: Optional[str] = None  # "8-3"
-    # Rankings (1-32 for NFL, 1-134 for NCAAF)
+
+    # === NEW: EFFICIENCY METRICS (6 fields) ===
+    yards_per_play: Optional[float] = None  # Critical efficiency metric
+    opponent_yards_per_play: Optional[float] = None  # Defensive efficiency
+    completion_pct: Optional[float] = None  # QB accuracy
+    opponent_completion_pct: Optional[float] = None  # Pass defense
+    fourth_down_conversion_pct: Optional[float] = None  # Aggressiveness
+    opponent_fourth_down_conversion_pct: Optional[float] = None  # Goal line defense
+
+    # === NEW: TURNOVERS & SCORING (5 fields) ===
+    interceptions_per_game: Optional[float] = None  # Defensive INTs
+    interceptions_thrown_per_game: Optional[float] = None  # QB mistakes
+    fumbles_lost_per_game: Optional[float] = None  # Ball security
+    offensive_touchdowns_per_game: Optional[float] = None  # Offensive TDs
+    defensive_touchdowns_per_game: Optional[float] = None  # Defensive TDs
+
+    # === NEW: PASSING DETAILS (6 fields) ===
+    pass_attempts_per_game: Optional[float] = None  # Pass volume
+    opponent_pass_attempts_per_game: Optional[float] = None  # Opp pass volume
+    passing_touchdowns_per_game: Optional[float] = None  # Pass TDs
+    opponent_passing_touchdowns_per_game: Optional[float] = None  # Pass TDs allowed
+    qb_sacked_per_game: Optional[float] = None  # Pass protection
+    touchdowns_per_game: Optional[float] = None  # Total TDs
+
+    # === NEW: RUSHING DETAILS (4 fields) ===
+    rushing_attempts_per_game: Optional[float] = None  # Rush volume
+    opponent_rushing_attempts_per_game: Optional[float] = None  # Opp rush volume
+    rushing_touchdowns_per_game: Optional[float] = None  # Rush TDs
+    opponent_rushing_touchdowns_per_game: Optional[float] = None  # Rush TDs allowed
+
+    # === NEW: MISCELLANEOUS (5 fields) ===
+    two_point_conversion_pct: Optional[float] = None  # 2-pt conversions
+    penalty_yards_per_game: Optional[float] = None  # Penalty yards
+    plays_per_game: Optional[float] = None  # Total plays
+    opponent_plays_per_game: Optional[float] = None  # Opponent plays
+    opponent_first_downs_per_game: Optional[float] = None  # First downs allowed
+
+    # === ORIGINAL RANKINGS (12 ranks) ===
     points_per_game_rank: Optional[int] = None  # Offensive rank
     points_allowed_per_game_rank: Optional[int] = None  # Defensive rank
     total_yards_per_game_rank: Optional[int] = None  # Total offense rank
@@ -257,6 +298,46 @@ class NFLTeamStats(BaseModel):
     red_zone_pct_rank: Optional[int] = None  # Red zone efficiency rank
     sacks_rank: Optional[int] = None  # Defensive sacks rank
     turnover_differential_rank: Optional[int] = None  # Turnover margin rank
+
+    # === NEW: EFFICIENCY RANKINGS (6 ranks) ===
+    yards_per_play_rank: Optional[int] = None
+    opponent_yards_per_play_rank: Optional[int] = None
+    completion_pct_rank: Optional[int] = None
+    opponent_completion_pct_rank: Optional[int] = None
+    fourth_down_conversion_pct_rank: Optional[int] = None
+    opponent_fourth_down_conversion_pct_rank: Optional[int] = None
+
+    # === NEW: TURNOVER & SCORING RANKINGS (5 ranks) ===
+    interceptions_per_game_rank: Optional[int] = None
+    interceptions_thrown_per_game_rank: Optional[int] = None
+    fumbles_lost_per_game_rank: Optional[int] = None
+    offensive_touchdowns_per_game_rank: Optional[int] = None
+    defensive_touchdowns_per_game_rank: Optional[int] = None
+
+    # === NEW: PASSING RANKINGS (4 ranks) ===
+    passing_touchdowns_per_game_rank: Optional[int] = None
+    opponent_passing_touchdowns_per_game_rank: Optional[int] = None
+    qb_sacked_per_game_rank: Optional[int] = None
+    touchdowns_per_game_rank: Optional[int] = None
+
+    # === NEW: RUSHING RANKINGS (2 ranks) ===
+    rushing_touchdowns_per_game_rank: Optional[int] = None
+    opponent_rushing_touchdowns_per_game_rank: Optional[int] = None
+
+    # === NEW: MISC RANKINGS (5 ranks) ===
+    two_point_conversion_pct_rank: Optional[int] = None
+    penalty_yards_per_game_rank: Optional[int] = None
+    plays_per_game_rank: Optional[int] = None
+    opponent_plays_per_game_rank: Optional[int] = None
+    opponent_first_downs_per_game_rank: Optional[int] = None
+
+    # === NEW: BETTING TRENDS (6 fields) ===
+    ats_wins: Optional[int] = None  # Against the spread wins
+    ats_losses: Optional[int] = None  # Against the spread losses
+    ats_pushes: Optional[int] = None  # Against the spread pushes
+    ou_overs: Optional[int] = None  # Over/under overs
+    ou_unders: Optional[int] = None  # Over/under unders
+    ou_pushes: Optional[int] = None  # Over/under pushes
 
 class MLBTeamStats(BaseModel):
     """Season statistics for MLB teams"""
@@ -362,6 +443,55 @@ class LiveGame(BaseModel):
     weather: Optional[WeatherInfo] = None  # Weather data (NFL primarily)
     injuries: Optional[list[InjuryInfo]] = None  # Key injuries for both teams
     strategy_alerts: Optional[list[dict]] = None  # Strategy alerts for this game (Quarter Reversal, Halftime Tracker, etc.)
+
+    @computed_field
+    @property
+    def sport(self) -> Optional[str]:
+        """Map sport_key to readable sport name for frontend"""
+        if not self.state or not hasattr(self.state, 'sport_key'):
+            return None
+        sport_map = {
+            'basketball_nba': 'NBA',
+            'basketball_nba_preseason': 'NBA',
+            'basketball_ncaab': 'NCAAB',
+            'americanfootball_nfl': 'NFL',
+            'americanfootball_ncaaf': 'NCAAF',
+            'icehockey_nhl': 'NHL',
+            'baseball_mlb': 'MLB'
+        }
+        return sport_map.get(self.state.sport_key)
+
+    @computed_field
+    @property
+    def sport_key(self) -> Optional[str]:
+        """Return the raw sport_key from state"""
+        if not self.state or not hasattr(self.state, 'sport_key'):
+            return None
+        return self.state.sport_key
+
+    @computed_field
+    @property
+    def home_team(self) -> Optional[str]:
+        """Return home team name from state"""
+        if not self.state or not hasattr(self.state, 'home_team'):
+            return None
+        return self.state.home_team.name if self.state.home_team else None
+
+    @computed_field
+    @property
+    def away_team(self) -> Optional[str]:
+        """Return away team name from state"""
+        if not self.state or not hasattr(self.state, 'away_team'):
+            return None
+        return self.state.away_team.name if self.state.away_team else None
+
+    @computed_field
+    @property
+    def game_id(self) -> Optional[str]:
+        """Return game ID from state"""
+        if not self.state or not hasattr(self.state, 'id'):
+            return None
+        return self.state.id
 
 
 # ============================================================================

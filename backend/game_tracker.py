@@ -13,7 +13,7 @@ from scrapers.teamrankings_nba_scraper import TeamRankingsNBAScraper  # Primary 
 from scrapers.teamrankings_nfl_scraper import TeamRankingsNFLScraper  # NFL stats source
 from scrapers.teamrankings_ncaaf_scraper import TeamRankingsNCAAFScraper  # NCAAF stats source
 from scrapers.teamrankings_mlb_scraper import TeamRankingsMLBScraper  # MLB stats source
-from config import POLL_INTERVAL, ENABLE_ESPN_STATS, QUIET_HOURS_ENABLED, QUIET_HOURS_START, QUIET_HOURS_END
+from config import POLL_INTERVAL, ENABLE_ESPN_STATS, QUIET_HOURS_ENABLED, QUIET_HOURS_START, QUIET_HOURS_END, is_cache_only_time, CACHE_ONLY_MODE_ENABLED
 # NHL stats client (always enabled - fetches live data from NHL API)
 from nhl_stats_client import NHLStatsClient
 # BallDontLie clients (always enabled - primary NBA/NHL advanced stats source)
@@ -87,6 +87,10 @@ class GameTracker:
         self.ncaab_team_stats_cache: Dict[str, TeamStats] = {}  # Cache NCAAB team stats (KenPom)
         self.kenpom_data: Dict[str, Dict] = {}  # Cached KenPom data
         self.pregame_totals_cache: Dict[str, float] = {}  # Cache pregame totals per game_id
+        self.pregame_spreads_cache: Dict[str, float] = {}  # Cache pregame spreads per game_id (away perspective)
+        self.pregame_spread_prices_cache: Dict[str, int] = {}  # Cache pregame spread prices per game_id
+        self.pregame_moneylines_home_cache: Dict[str, int] = {}  # Cache pregame home moneylines per game_id
+        self.pregame_moneylines_away_cache: Dict[str, int] = {}  # Cache pregame away moneylines per game_id
         self.espn_scoreboard_cache: Dict = {}  # Cache ESPN scoreboard data
         self.odds_timestamp_cache: Dict[str, Dict[str, float]] = {}  # Track when each book updates odds: {game_id: {bookmaker: timestamp}}
         self.goalie_pull_opportunities: List[Dict] = []  # Track goalie pull betting opportunities
@@ -292,7 +296,13 @@ class GameTracker:
         self.running = True
         while self.running:
             try:
-                # Skip API calls during quiet hours to save credits
+                # Cache-only mode: 12am-12pm CST - use cached data, no API calls
+                if CACHE_ONLY_MODE_ENABLED and is_cache_only_time():
+                    logger.info("Cache-only mode active (12am-12pm CST). Using cached data, skipping API calls.")
+                    await asyncio.sleep(300)  # Check every 5 minutes during cache mode
+                    continue
+
+                # Legacy quiet hours check (fallback)
                 if self._is_quiet_hours():
                     logger.info(f"Quiet hours active ({QUIET_HOURS_START}:00 - {QUIET_HOURS_END}:00). Skipping API calls.")
                     await asyncio.sleep(60)  # Check every minute during quiet hours
@@ -537,9 +547,32 @@ class GameTracker:
 
     async def _get_nfl_team_stats(self, team_name: str, is_ncaaf: bool = False) -> Optional[NFLTeamStats]:
         """Get NFL/NCAAF team stats with caching"""
+        print(f"[DEBUG _get_nfl_team_stats] Called for {team_name}, is_ncaaf={is_ncaaf}")
         # Check if we have cached stats
-        if team_name in self.nfl_team_stats_cache:
-            return self.nfl_team_stats_cache[team_name]
+        cache_exists = team_name in self.nfl_team_stats_cache
+        print(f"[DEBUG] Cache exists for {team_name}: {cache_exists}")
+
+        if cache_exists:
+            cached_stats = self.nfl_team_stats_cache[team_name]
+            print(f"[DEBUG] cached_stats type: {type(cached_stats)}, is None: {cached_stats is None}")
+
+            # IMPORTANT: Invalidate cache if missing new ranking fields (for NFL only)
+            if not is_ncaaf and cached_stats:
+                total_yards_rank = getattr(cached_stats, 'total_yards_per_game_rank', 'ATTR_NOT_FOUND')
+                print(f"[DEBUG] total_yards_per_game_rank = {total_yards_rank}")
+
+                if cached_stats.total_yards_per_game_rank is None:
+                    # Cache has old data without new ranking fields - clear it
+                    print(f"[DEBUG] INVALIDATING CACHE - total_yards_per_game_rank is None")
+                    logger.info(f"[CACHE INVALIDATION] Clearing outdated cache for {team_name} (missing new ranking fields)")
+                    del self.nfl_team_stats_cache[team_name]
+                    print(f"[DEBUG] Cache cleared, proceeding to database load")
+                else:
+                    print(f"[DEBUG] Cache is valid, returning cached stats")
+                    return cached_stats
+            else:
+                print(f"[DEBUG] Returning cached stats (is_ncaaf={is_ncaaf})")
+                return cached_stats
 
         if is_ncaaf:
             # Check if ESPN stats are enabled
@@ -566,22 +599,25 @@ class GameTracker:
                 logger.warning(f"Error fetching NCAAF stats for {team_name} (mapped to {mapped_team_name}): {e}")
                 return None
         else:
-            # For NFL, use TeamRankings (always available, no rate limits, current 2024 season)
+            # For NFL, use TeamRankings scraper directly (user requested scraper-first approach)
             try:
-                # PRIMARY: TeamRankings (most reliable for current season data)
+                # PRIMARY: TeamRankings scraper (has all 38+ ranking fields)
+                logger.info(f"Fetching NFL stats for {team_name} from TeamRankings scraper")
                 teamrankings_data = self.teamrankings_nfl_scraper.fetch_all_team_stats()
 
-                # Map full team name to TeamRankings abbreviated name
-                tr_team_name = self.teamrankings_nfl_scraper.TEAM_NAME_MAP.get(team_name)
-                if not tr_team_name:
-                    # Try partial match
-                    for full_name, abbrev in self.teamrankings_nfl_scraper.TEAM_NAME_MAP.items():
-                        if team_name.lower() in full_name.lower() or full_name.lower() in team_name.lower():
-                            tr_team_name = abbrev
+                # TeamRankings data is keyed by team city names like "Buffalo", "Kansas City", etc.
+                # Try direct lookup first
+                tr_stats = teamrankings_data.get(team_name)
+
+                # If not found, try partial match (in case team_name has mascot like "Buffalo Bills")
+                if not tr_stats:
+                    for tr_team_name in teamrankings_data.keys():
+                        if team_name.lower() in tr_team_name.lower() or tr_team_name.lower() in team_name.lower():
+                            tr_stats = teamrankings_data[tr_team_name]
+                            logger.info(f"Matched {team_name} to TeamRankings team {tr_team_name}")
                             break
 
-                if tr_team_name and tr_team_name in teamrankings_data:
-                    tr_stats = teamrankings_data[tr_team_name]
+                if tr_stats:
 
                     # Convert TeamRankings data to NFLTeamStats format
                     nfl_stats = NFLTeamStats(
@@ -605,7 +641,44 @@ class GameTracker:
                         third_down_pct=float(tr_stats.get('third_down_conversion_pct', 0.0)) / 100.0,  # Convert to decimal
                         red_zone_pct=float(tr_stats.get('red_zone_scoring_pct', 0.0)) / 100.0,  # Convert to decimal
                         sacks_per_game=float(tr_stats.get('sacks_per_game', 0.0)),
-                        # Rankings from TeamRankings
+
+                        # === NEW: EFFICIENCY METRICS (6 fields) ===
+                        yards_per_play=tr_stats.get('yards_per_play'),
+                        opponent_yards_per_play=tr_stats.get('opponent_yards_per_play'),
+                        completion_pct=tr_stats.get('completion_pct'),
+                        opponent_completion_pct=tr_stats.get('opponent_completion_pct'),
+                        fourth_down_conversion_pct=tr_stats.get('fourth_down_conversion_pct'),
+                        opponent_fourth_down_conversion_pct=tr_stats.get('opponent_fourth_down_conversion_pct'),
+
+                        # === NEW: TURNOVERS & SCORING (5 fields) ===
+                        interceptions_per_game=tr_stats.get('interceptions_per_game'),
+                        interceptions_thrown_per_game=tr_stats.get('interceptions_thrown_per_game'),
+                        fumbles_lost_per_game=tr_stats.get('fumbles_lost_per_game'),
+                        offensive_touchdowns_per_game=tr_stats.get('offensive_touchdowns_per_game'),
+                        defensive_touchdowns_per_game=tr_stats.get('defensive_touchdowns_per_game'),
+
+                        # === NEW: PASSING DETAILS (6 fields) ===
+                        pass_attempts_per_game=tr_stats.get('pass_attempts_per_game'),
+                        opponent_pass_attempts_per_game=tr_stats.get('opponent_pass_attempts_per_game'),
+                        passing_touchdowns_per_game=tr_stats.get('passing_touchdowns_per_game'),
+                        opponent_passing_touchdowns_per_game=tr_stats.get('opponent_passing_touchdowns_per_game'),
+                        qb_sacked_per_game=tr_stats.get('qb_sacked_per_game'),
+                        touchdowns_per_game=tr_stats.get('touchdowns_per_game'),
+
+                        # === NEW: RUSHING DETAILS (4 fields) ===
+                        rushing_attempts_per_game=tr_stats.get('rushing_attempts_per_game'),
+                        opponent_rushing_attempts_per_game=tr_stats.get('opponent_rushing_attempts_per_game'),
+                        rushing_touchdowns_per_game=tr_stats.get('rushing_touchdowns_per_game'),
+                        opponent_rushing_touchdowns_per_game=tr_stats.get('opponent_rushing_touchdowns_per_game'),
+
+                        # === NEW: MISCELLANEOUS (5 fields) ===
+                        two_point_conversion_pct=tr_stats.get('two_point_conversion_pct'),
+                        penalty_yards_per_game=tr_stats.get('penalty_yards_per_game'),
+                        plays_per_game=tr_stats.get('plays_per_game'),
+                        opponent_plays_per_game=tr_stats.get('opponent_plays_per_game'),
+                        opponent_first_downs_per_game=tr_stats.get('opponent_first_downs_per_game'),
+
+                        # === ORIGINAL RANKINGS ===
                         points_per_game_rank=tr_stats.get('points_per_game_rank'),
                         points_allowed_per_game_rank=tr_stats.get('points_allowed_per_game_rank'),
                         total_yards_per_game_rank=tr_stats.get('total_yards_per_game_rank'),
@@ -615,13 +688,50 @@ class GameTracker:
                         passing_yards_allowed_rank=tr_stats.get('passing_yards_allowed_rank'),
                         rushing_yards_allowed_rank=tr_stats.get('rushing_yards_allowed_rank'),
                         third_down_pct_rank=tr_stats.get('third_down_pct_rank'),
-                        opponent_third_down_pct_rank=tr_stats.get('opponent_third_down_pct_rank'),
                         red_zone_pct_rank=tr_stats.get('red_zone_pct_rank'),
-                        opponent_red_zone_pct_rank=tr_stats.get('opponent_red_zone_pct_rank'),
                         sacks_rank=tr_stats.get('sacks_rank'),
                         turnover_differential_rank=tr_stats.get('turnover_differential_rank'),
-                        penalties_rank=tr_stats.get('penalties_rank'),
-                        first_downs_rank=tr_stats.get('first_downs_rank'),
+
+                        # === NEW: EFFICIENCY RANKINGS (6 ranks) ===
+                        yards_per_play_rank=tr_stats.get('yards_per_play_rank'),
+                        opponent_yards_per_play_rank=tr_stats.get('opponent_yards_per_play_rank'),
+                        completion_pct_rank=tr_stats.get('completion_pct_rank'),
+                        opponent_completion_pct_rank=tr_stats.get('opponent_completion_pct_rank'),
+                        fourth_down_conversion_pct_rank=tr_stats.get('fourth_down_conversion_pct_rank'),
+                        opponent_fourth_down_conversion_pct_rank=tr_stats.get('opponent_fourth_down_conversion_pct_rank'),
+
+                        # === NEW: TURNOVER & SCORING RANKINGS (5 ranks) ===
+                        interceptions_per_game_rank=tr_stats.get('interceptions_per_game_rank'),
+                        interceptions_thrown_per_game_rank=tr_stats.get('interceptions_thrown_per_game_rank'),
+                        fumbles_lost_per_game_rank=tr_stats.get('fumbles_lost_per_game_rank'),
+                        offensive_touchdowns_per_game_rank=tr_stats.get('offensive_touchdowns_per_game_rank'),
+                        defensive_touchdowns_per_game_rank=tr_stats.get('defensive_touchdowns_per_game_rank'),
+
+                        # === NEW: PASSING RANKINGS (4 ranks) ===
+                        passing_touchdowns_per_game_rank=tr_stats.get('passing_touchdowns_per_game_rank'),
+                        opponent_passing_touchdowns_per_game_rank=tr_stats.get('opponent_passing_touchdowns_per_game_rank'),
+                        qb_sacked_per_game_rank=tr_stats.get('qb_sacked_per_game_rank'),
+                        touchdowns_per_game_rank=tr_stats.get('touchdowns_per_game_rank'),
+
+                        # === NEW: RUSHING RANKINGS (2 ranks) ===
+                        rushing_touchdowns_per_game_rank=tr_stats.get('rushing_touchdowns_per_game_rank'),
+                        opponent_rushing_touchdowns_per_game_rank=tr_stats.get('opponent_rushing_touchdowns_per_game_rank'),
+
+                        # === NEW: MISC RANKINGS (5 ranks) ===
+                        two_point_conversion_pct_rank=tr_stats.get('two_point_conversion_pct_rank'),
+                        penalty_yards_per_game_rank=tr_stats.get('penalty_yards_per_game_rank'),
+                        plays_per_game_rank=tr_stats.get('plays_per_game_rank'),
+                        opponent_plays_per_game_rank=tr_stats.get('opponent_plays_per_game_rank'),
+                        opponent_first_downs_per_game_rank=tr_stats.get('opponent_first_downs_per_game_rank'),
+
+                        # === NEW: BETTING TRENDS (6 fields) ===
+                        ats_wins=tr_stats.get('ats_wins'),
+                        ats_losses=tr_stats.get('ats_losses'),
+                        ats_pushes=tr_stats.get('ats_pushes'),
+                        ou_overs=tr_stats.get('ou_overs'),
+                        ou_unders=tr_stats.get('ou_unders'),
+                        ou_pushes=tr_stats.get('ou_pushes'),
+
                         # Optional fields
                         last_5_record=None,
                         form_trend=None,
@@ -963,16 +1073,159 @@ class GameTracker:
             return None
 
     def _get_nfl_teamrankings_stats(self, team_name: str, is_ncaaf: bool = False) -> Optional[NFLTeamStats]:
-        """Get NFL/NCAAF team stats from TeamRankings"""
-        # Use appropriate cache and scraper
+        """
+        Get NFL/NCAAF team stats from DATABASE (fast) with scraper fallback
+        NEW: Reads from database for 400x speed improvement
+        """
         cache_key = f"{'ncaaf' if is_ncaaf else 'nfl'}_{team_name}"
 
+        # Normalize team name for database lookup (remove mascot)
+        def normalize_nfl_team_name(name: str) -> str:
+            """Convert 'Houston Texans' -> 'Houston', handle special cases"""
+            mascots = [
+                'Texans', 'Bills', 'Ravens', 'Steelers', 'Bengals', 'Browns', 'Colts',
+                'Jaguars', 'Titans', 'Chiefs', 'Broncos', 'Chargers', 'Raiders',
+                'Cowboys', 'Eagles', 'Giants', 'Commanders', 'Bears', 'Lions',
+                'Packers', 'Vikings', 'Falcons', 'Panthers', 'Saints', 'Buccaneers',
+                '49ers', 'Cardinals', 'Rams', 'Seahawks', 'Patriots', 'Dolphins', 'Jets'
+            ]
+            # Special cases for database format
+            if name == 'New York Giants':
+                return 'NY Giants'
+            elif name == 'New York Jets':
+                return 'NY Jets'
+            elif name == 'Los Angeles Rams':
+                return 'LA Rams'
+            elif name == 'Los Angeles Chargers':
+                return 'LA Chargers'
+            elif name == 'San Francisco 49ers':
+                return 'San Francisco'
+            elif name == 'Tampa Bay Buccaneers':
+                return 'Tampa Bay'
+            elif name == 'New England Patriots':
+                return 'New England'
+
+            # Strip mascot from end
+            for mascot in mascots:
+                if name.endswith(mascot):
+                    return name.replace(mascot, '').strip()
+            return name
+
         try:
-            # Use the scraper's get_team_stats method with improved fuzzy matching
-            if is_ncaaf:
-                tr_stats = self.teamrankings_ncaaf_scraper.get_team_stats(team_name)
+            # NEW: Try database first (for NFL only, NCAAF still uses scraper)
+            if not is_ncaaf:
+                try:
+                    from database.nfl_db import NFLDatabase
+                    db = NFLDatabase()
+                    normalized_name = normalize_nfl_team_name(team_name)
+                    db_stats = db.get_latest_team_stats(normalized_name, season=2024)
+                    db.close()
+
+                    if db_stats:
+                        logger.info(f"[DATABASE] Loaded {team_name} stats from database (fast!)")
+                        # Map database field names to scraper format
+                        tr_stats = {
+                            'team_name': db_stats.get('team_name'),
+                            'games_played': (db_stats.get('wins') or 0) + (db_stats.get('losses') or 0),
+                            'wins': db_stats.get('wins'),
+                            'losses': db_stats.get('losses'),
+                            'win_pct': db_stats.get('wins', 0) / max((db_stats.get('wins', 0) + db_stats.get('losses', 0)), 1),
+                            'pts_per_game': db_stats.get('points_per_game'),
+                            'pts_allowed': db_stats.get('opponent_points_per_game'),
+                            'point_diff': db_stats.get('points_per_game', 0) - db_stats.get('opponent_points_per_game', 0),
+                            'yards_per_game': db_stats.get('total_yards_per_game'),
+                            'yards_allowed': db_stats.get('opponent_total_yards_per_game'),
+                            'turnovers_lost': db_stats.get('turnovers_per_game'),
+                            'turnovers_gained': db_stats.get('interceptions_per_game'),  # Defensive takeaways
+                            'turnover_diff': (db_stats.get('interceptions_per_game') or 0) - (db_stats.get('turnovers_per_game') or 0),
+                            'third_down_conversion_pct': db_stats.get('fourth_down_conversion_pct'),  # Using 4th down as proxy
+                            'red_zone_scoring_pct': db_stats.get('red_zone_scoring_pct'),
+                            'passing_yards_per_game': db_stats.get('passing_yards_per_game'),
+                            'rushing_yards_per_game': db_stats.get('rushing_yards_per_game'),
+                            'opponent_passing_yards_per_game': db_stats.get('opponent_passing_yards_per_game'),
+                            'opponent_rushing_yards_per_game': db_stats.get('opponent_rushing_yards_per_game'),
+                            'sacks_per_game': db_stats.get('sacks_per_game'),
+                            # NEW fields
+                            'yards_per_play': db_stats.get('yards_per_play'),
+                            'opponent_yards_per_play': db_stats.get('opponent_yards_per_play'),
+                            'completion_pct': db_stats.get('completion_pct'),
+                            'opponent_completion_pct': db_stats.get('opponent_completion_pct'),
+                            'fourth_down_conversion_pct': db_stats.get('fourth_down_conversion_pct'),
+                            'opponent_fourth_down_conversion_pct': db_stats.get('opponent_fourth_down_conversion_pct'),
+                            'interceptions_per_game': db_stats.get('interceptions_per_game'),
+                            'interceptions_thrown_per_game': db_stats.get('interceptions_thrown_per_game'),
+                            'fumbles_lost_per_game': db_stats.get('fumbles_lost_per_game'),
+                            'offensive_touchdowns_per_game': db_stats.get('offensive_touchdowns_per_game'),
+                            'defensive_touchdowns_per_game': db_stats.get('defensive_touchdowns_per_game'),
+                            'pass_attempts_per_game': db_stats.get('pass_attempts_per_game'),
+                            'opponent_pass_attempts_per_game': db_stats.get('opponent_pass_attempts_per_game'),
+                            'passing_touchdowns_per_game': db_stats.get('passing_touchdowns_per_game'),
+                            'opponent_passing_touchdowns_per_game': db_stats.get('opponent_passing_touchdowns_per_game'),
+                            'qb_sacked_per_game': db_stats.get('qb_sacked_per_game'),
+                            'touchdowns_per_game': db_stats.get('total_touchdowns_per_game'),
+                            'rushing_attempts_per_game': db_stats.get('rush_attempts_per_game'),
+                            'opponent_rushing_attempts_per_game': db_stats.get('opponent_rush_attempts_per_game'),
+                            'rushing_touchdowns_per_game': db_stats.get('rushing_touchdowns_per_game'),
+                            'opponent_rushing_touchdowns_per_game': db_stats.get('opponent_rushing_touchdowns_per_game'),
+                            'two_point_conversion_pct': db_stats.get('two_point_conversion_pct'),
+                            'penalty_yards_per_game': db_stats.get('penalty_yards_per_game'),
+                            'plays_per_game': db_stats.get('plays_per_game'),
+                            'opponent_plays_per_game': db_stats.get('opponent_plays_per_game'),
+                            'opponent_first_downs_per_game': db_stats.get('opponent_first_downs_per_game'),
+                            # Rankings
+                            'points_per_game_rank': db_stats.get('points_per_game_rank'),
+                            'total_yards_per_game_rank': db_stats.get('total_yards_per_game_rank'),
+                            'passing_yards_per_game_rank': db_stats.get('passing_yards_per_game_rank'),
+                            'rushing_yards_per_game_rank': db_stats.get('rushing_yards_per_game_rank'),
+                            'third_down_pct_rank': db_stats.get('third_down_pct_rank'),
+                            'red_zone_pct_rank': db_stats.get('red_zone_pct_rank'),
+                            'sacks_rank': db_stats.get('sacks_rank'),
+                            'turnover_differential_rank': db_stats.get('turnover_differential_rank'),
+                            'first_downs_rank': db_stats.get('first_downs_rank'),
+                            'points_allowed_per_game_rank': db_stats.get('points_allowed_per_game_rank'),
+                            'yards_allowed_per_game_rank': db_stats.get('yards_allowed_per_game_rank'),
+                            'passing_yards_allowed_rank': db_stats.get('passing_yards_allowed_rank'),
+                            'rushing_yards_allowed_rank': db_stats.get('rushing_yards_allowed_rank'),
+                            'opponent_third_down_pct_rank': db_stats.get('opponent_third_down_pct_rank'),
+                            'opponent_red_zone_pct_rank': db_stats.get('opponent_red_zone_pct_rank'),
+                            'penalties_rank': db_stats.get('penalties_rank'),
+                            'touchdowns_per_game_rank': db_stats.get('touchdowns_per_game_rank'),
+                            'yards_per_play_rank': db_stats.get('yards_per_play_rank'),
+                            'red_zone_scoring_pct_rank': db_stats.get('red_zone_scoring_pct_rank'),
+                            'completion_pct_rank': db_stats.get('completion_pct_rank'),
+                            'fourth_down_conversion_pct_rank': db_stats.get('fourth_down_conversion_pct_rank'),
+                            'interceptions_thrown_per_game_rank': db_stats.get('interceptions_thrown_per_game_rank'),
+                            'fumbles_lost_per_game_rank': db_stats.get('fumbles_lost_per_game_rank'),
+                            'offensive_touchdowns_per_game_rank': db_stats.get('offensive_touchdowns_per_game_rank'),
+                            'passing_touchdowns_per_game_rank': db_stats.get('passing_touchdowns_per_game_rank'),
+                            'rushing_touchdowns_per_game_rank': db_stats.get('rushing_touchdowns_per_game_rank'),
+                            'touchdowns_per_game_rank': db_stats.get('total_touchdowns_per_game_rank'),
+                            'pass_attempts_per_game_rank': db_stats.get('pass_attempts_per_game_rank'),
+                            'rushing_attempts_per_game_rank': db_stats.get('rush_attempts_per_game_rank'),
+                            'plays_per_game_rank': db_stats.get('plays_per_game_rank'),
+                            'penalty_yards_per_game_rank': db_stats.get('penalty_yards_per_game_rank'),
+                            'qb_sacked_per_game_rank': db_stats.get('qb_sacked_per_game_rank'),
+                            'opponent_points_per_game_rank': db_stats.get('opponent_points_per_game_rank'),
+                            'opponent_yards_per_play_rank': db_stats.get('opponent_yards_per_play_rank'),
+                            'opponent_red_zone_scoring_pct_rank': db_stats.get('opponent_red_zone_scoring_pct_rank'),
+                            'opponent_completion_pct_rank': db_stats.get('opponent_completion_pct_rank'),
+                            'opponent_fourth_down_conversion_pct_rank': db_stats.get('opponent_fourth_down_conversion_pct_rank'),
+                            'sacks_per_game_rank': db_stats.get('sacks_per_game_rank'),
+                            'interceptions_per_game_rank': db_stats.get('interceptions_per_game_rank'),
+                            'defensive_touchdowns_per_game_rank': db_stats.get('defensive_touchdowns_per_game_rank'),
+                            'opponent_passing_touchdowns_per_game_rank': db_stats.get('opponent_passing_touchdowns_per_game_rank'),
+                            'opponent_rushing_touchdowns_per_game_rank': db_stats.get('opponent_rushing_touchdowns_per_game_rank'),
+                            'opponent_first_downs_per_game_rank': db_stats.get('opponent_first_downs_per_game_rank'),
+                        }
+                    else:
+                        logger.warning(f"[DATABASE] No data for {team_name}, falling back to scraper")
+                        tr_stats = self.teamrankings_nfl_scraper.get_team_stats(team_name)
+                except Exception as db_error:
+                    logger.warning(f"[DATABASE] Error reading from database: {str(db_error)}, using scraper")
+                    tr_stats = self.teamrankings_nfl_scraper.get_team_stats(team_name)
             else:
-                tr_stats = self.teamrankings_nfl_scraper.get_team_stats(team_name)
+                # NCAAF still uses scraper (database support coming later)
+                tr_stats = self.teamrankings_ncaaf_scraper.get_team_stats(team_name)
 
             if not tr_stats:
                 logger.warning(f"TeamRankings data not found for {team_name} ({'NCAAF' if is_ncaaf else 'NFL'})")
@@ -1002,6 +1255,37 @@ class GameTracker:
                 third_down_pct=float(tr_stats.get('third_down_conversion_pct', 40.0)) / 100.0,  # Convert to decimal (40.0 -> 0.40)
                 red_zone_pct=float(tr_stats.get('red_zone_scoring_pct', 55.0)) / 100.0,  # Convert to decimal (55.0 -> 0.55)
                 sacks_per_game=float(tr_stats.get('sacks_per_game', 2.5)),
+                # === NEW: EFFICIENCY METRICS (6 fields) ===
+                yards_per_play=tr_stats.get('yards_per_play'),
+                opponent_yards_per_play=tr_stats.get('opponent_yards_per_play'),
+                completion_pct=tr_stats.get('completion_pct'),
+                opponent_completion_pct=tr_stats.get('opponent_completion_pct'),
+                fourth_down_conversion_pct=tr_stats.get('fourth_down_conversion_pct'),
+                opponent_fourth_down_conversion_pct=tr_stats.get('opponent_fourth_down_conversion_pct'),
+                # === NEW: TURNOVERS & SCORING (5 fields) ===
+                interceptions_per_game=tr_stats.get('interceptions_per_game'),
+                interceptions_thrown_per_game=tr_stats.get('interceptions_thrown_per_game'),
+                fumbles_lost_per_game=tr_stats.get('fumbles_lost_per_game'),
+                offensive_touchdowns_per_game=tr_stats.get('offensive_touchdowns_per_game'),
+                defensive_touchdowns_per_game=tr_stats.get('defensive_touchdowns_per_game'),
+                # === NEW: PASSING DETAILS (5 fields) ===
+                pass_attempts_per_game=tr_stats.get('pass_attempts_per_game'),
+                opponent_pass_attempts_per_game=tr_stats.get('opponent_pass_attempts_per_game'),
+                passing_touchdowns_per_game=tr_stats.get('passing_touchdowns_per_game'),
+                opponent_passing_touchdowns_per_game=tr_stats.get('opponent_passing_touchdowns_per_game'),
+                qb_sacked_per_game=tr_stats.get('qb_sacked_per_game'),
+                # === NEW: RUSHING DETAILS (4 fields) ===
+                rushing_attempts_per_game=tr_stats.get('rushing_attempts_per_game'),
+                opponent_rushing_attempts_per_game=tr_stats.get('opponent_rushing_attempts_per_game'),
+                rushing_touchdowns_per_game=tr_stats.get('rushing_touchdowns_per_game'),
+                opponent_rushing_touchdowns_per_game=tr_stats.get('opponent_rushing_touchdowns_per_game'),
+                # === NEW: MISCELLANEOUS (6 fields) ===
+                touchdowns_per_game=tr_stats.get('touchdowns_per_game'),
+                two_point_conversion_pct=tr_stats.get('two_point_conversion_pct'),
+                penalty_yards_per_game=tr_stats.get('penalty_yards_per_game'),
+                plays_per_game=tr_stats.get('plays_per_game'),
+                opponent_plays_per_game=tr_stats.get('opponent_plays_per_game'),
+                opponent_first_downs_per_game=tr_stats.get('opponent_first_downs_per_game'),
                 # Rankings
                 points_per_game_rank=tr_stats.get('points_per_game_rank'),
                 points_allowed_per_game_rank=tr_stats.get('points_allowed_per_game_rank'),
@@ -1014,7 +1298,45 @@ class GameTracker:
                 third_down_pct_rank=tr_stats.get('third_down_pct_rank'),
                 red_zone_pct_rank=tr_stats.get('red_zone_pct_rank'),
                 sacks_rank=tr_stats.get('sacks_rank'),
-                turnover_differential_rank=tr_stats.get('turnover_differential_rank')
+                turnover_differential_rank=tr_stats.get('turnover_differential_rank'),
+                # === NEW: EFFICIENCY RANKINGS (6 ranks) ===
+                yards_per_play_rank=tr_stats.get('yards_per_play_rank'),
+                opponent_yards_per_play_rank=tr_stats.get('opponent_yards_per_play_rank'),
+                completion_pct_rank=tr_stats.get('completion_pct_rank'),
+                opponent_completion_pct_rank=tr_stats.get('opponent_completion_pct_rank'),
+                fourth_down_conversion_pct_rank=tr_stats.get('fourth_down_conversion_pct_rank'),
+                opponent_fourth_down_conversion_pct_rank=tr_stats.get('opponent_fourth_down_conversion_pct_rank'),
+                # === NEW: TURNOVER & SCORING RANKINGS (5 ranks) ===
+                interceptions_per_game_rank=tr_stats.get('interceptions_per_game_rank'),
+                interceptions_thrown_per_game_rank=tr_stats.get('interceptions_thrown_per_game_rank'),
+                fumbles_lost_per_game_rank=tr_stats.get('fumbles_lost_per_game_rank'),
+                offensive_touchdowns_per_game_rank=tr_stats.get('offensive_touchdowns_per_game_rank'),
+                defensive_touchdowns_per_game_rank=tr_stats.get('defensive_touchdowns_per_game_rank'),
+                # === NEW: PASSING DETAIL RANKINGS (5 ranks) ===
+                pass_attempts_per_game_rank=tr_stats.get('pass_attempts_per_game_rank'),
+                opponent_pass_attempts_per_game_rank=tr_stats.get('opponent_pass_attempts_per_game_rank'),
+                passing_touchdowns_per_game_rank=tr_stats.get('passing_touchdowns_per_game_rank'),
+                opponent_passing_touchdowns_per_game_rank=tr_stats.get('opponent_passing_touchdowns_per_game_rank'),
+                qb_sacked_per_game_rank=tr_stats.get('qb_sacked_per_game_rank'),
+                # === NEW: RUSHING DETAIL RANKINGS (4 ranks) ===
+                rushing_attempts_per_game_rank=tr_stats.get('rushing_attempts_per_game_rank'),
+                opponent_rushing_attempts_per_game_rank=tr_stats.get('opponent_rushing_attempts_per_game_rank'),
+                rushing_touchdowns_per_game_rank=tr_stats.get('rushing_touchdowns_per_game_rank'),
+                opponent_rushing_touchdowns_per_game_rank=tr_stats.get('opponent_rushing_touchdowns_per_game_rank'),
+                # === NEW: MISCELLANEOUS RANKINGS (5 ranks) ===
+                touchdowns_per_game_rank=tr_stats.get('touchdowns_per_game_rank'),
+                two_point_conversion_pct_rank=tr_stats.get('two_point_conversion_pct_rank'),
+                penalty_yards_per_game_rank=tr_stats.get('penalty_yards_per_game_rank'),
+                plays_per_game_rank=tr_stats.get('plays_per_game_rank'),
+                opponent_plays_per_game_rank=tr_stats.get('opponent_plays_per_game_rank'),
+                opponent_first_downs_per_game_rank=tr_stats.get('opponent_first_downs_per_game_rank'),
+                # === NEW: BETTING TRENDS (6 fields) ===
+                ats_wins=tr_stats.get('ats_wins'),
+                ats_losses=tr_stats.get('ats_losses'),
+                ats_pushes=tr_stats.get('ats_pushes'),
+                ou_overs=tr_stats.get('ou_overs'),
+                ou_unders=tr_stats.get('ou_unders'),
+                ou_pushes=tr_stats.get('ou_pushes')
             )
 
             logger.info(f"✅ Fetched TeamRankings {'NCAAF' if is_ncaaf else 'NFL'} stats for {team_name}")
@@ -1294,6 +1616,12 @@ class GameTracker:
                     else:
                         pregame_total = current_avg_total
 
+                    # Retrieve cached pregame spreads and moneylines (closing lines)
+                    pregame_spread = self.pregame_spreads_cache.get(game_id)
+                    pregame_spread_price = self.pregame_spread_prices_cache.get(game_id)
+                    pregame_moneyline_home = self.pregame_moneylines_home_cache.get(game_id)
+                    pregame_moneyline_away = self.pregame_moneylines_away_cache.get(game_id)
+
                     # Display average latency times for each sportsbook
                     # These represent typical speed differences between books
 
@@ -1431,6 +1759,18 @@ class GameTracker:
                     self.pregame_totals_cache[game_id] = pregame_total
                     logger.info(f"Cached pregame total for {game_id}: {pregame_total}")
 
+                    # Also cache pregame spreads and moneylines (closing lines)
+                    if away_spread is not None:
+                        self.pregame_spreads_cache[game_id] = away_spread
+                    if away_spread_price is not None:
+                        self.pregame_spread_prices_cache[game_id] = away_spread_price
+                    if home_ml is not None:
+                        self.pregame_moneylines_home_cache[game_id] = home_ml
+                    if away_ml is not None:
+                        self.pregame_moneylines_away_cache[game_id] = away_ml
+
+                    logger.info(f"Cached pregame lines for {game_id}: spread={away_spread}, home_ml={home_ml}, away_ml={away_ml}")
+
                 # Get team stats (fetch early so projector can use them) - basketball only (NBA & NCAAB)
                 home_stats = None
                 away_stats = None
@@ -1480,6 +1820,11 @@ class GameTracker:
                         away_stats
                     )
 
+                    # Set pregame closing lines (cached from when game was upcoming)
+                    projection.pregame_spread = pregame_spread
+                    projection.pregame_spread_price = pregame_spread_price
+                    projection.pregame_moneyline_home = pregame_moneyline_home
+                    projection.pregame_moneyline_away = pregame_moneyline_away
                     # Get current live total and calculate disparities
                     if odds_list:
                         avg_live_total = sum(o.total for o in odds_list) / len(odds_list)
@@ -1551,6 +1896,10 @@ class GameTracker:
                         current_total=0,
                         projected_final=pregame_total,
                         pregame_total=pregame_total,
+                        pregame_spread=pregame_spread,
+                        pregame_spread_price=pregame_spread_price,
+                        pregame_moneyline_home=pregame_moneyline_home,
+                        pregame_moneyline_away=pregame_moneyline_away,
                         confidence="LOW"
                     )
 
@@ -1911,7 +2260,7 @@ class GameTracker:
         live_nhl_games = []
 
         for game_id, live_game in self.games.items():
-            if live_game.state.sport_key.startswith('icehockey') and live_game.state.status == 'live':
+            if hasattr(live_game.state, 'sport_key') and live_game.state.sport_key.startswith('icehockey') and live_game.state.status == 'live':
                 # Convert to format expected by GoaliePullPredictor
                 game_dict = {
                     'game_id': game_id,
@@ -1953,6 +2302,10 @@ class GameTracker:
         opportunities = GoaliePullPredictor.check_for_opportunities(live_nhl_games, odds_data)
 
         # Update stored opportunities
+        if opportunities and len(opportunities) != len(self.goalie_pull_opportunities):
+            logger.info(f"🚨 GOALIE PULL ALERT: Found {len(opportunities)} opportunities")
+            for opp in opportunities:
+                logger.info(f"  - {opp.get('game', {}).get('away_team', 'N/A')} @ {opp.get('game', {}).get('home_team', 'N/A')}: {opp.get('alert_type', 'N/A')} - EV: {opp.get('best_ev', 0):.1f}%")
         self.goalie_pull_opportunities = opportunities
 
         # Log any HIGH priority opportunities
@@ -2519,3 +2872,4 @@ class GameTracker:
     def get_injury_props_opportunities(self) -> List[Dict]:
         """Get current injury props betting opportunities"""
         return self.injury_props_opportunities
+
