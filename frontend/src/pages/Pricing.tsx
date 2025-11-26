@@ -206,7 +206,7 @@ export function Pricing() {
       name: 'Starter',
       price: 29,
       period: 'month',
-      description: 'Essential tools for recreational bettors',
+      description: 'Essential sports data analytics tools',
       edge: '2-4%',
       edgeColor: 'green',
       features: [
@@ -220,7 +220,7 @@ export function Pricing() {
         '10 Second Refresh',
         'Historical data (7 days)',
         'Email Notifications',
-        'Advanced Bet Tracker 100 Bets a month',
+        'Advanced Situation Tracker 100 situations a month',
         'Export to CSV',
       ],
       limitations: [
@@ -238,7 +238,7 @@ export function Pricing() {
       name: 'Semi Pro',
       price: 79,
       period: 'month',
-      description: 'For serious bettors who want every edge',
+      description: 'For serious sports data analysts',
       edge: '4-6%',
       edgeColor: 'blue',
       features: [
@@ -249,7 +249,7 @@ export function Pricing() {
         'Market Consensus Line',
         'Arbitrage Finder',
         'Middle Finder',
-        'Advanced Bet Tracking (unlimited)',
+        'Advanced Situation Tracking (unlimited)',
         'CLV Tracker',
         'ROI Dashboard with analytics',
         'All sports + international markets',
@@ -269,7 +269,7 @@ export function Pricing() {
       name: 'Professional',
       price: 149,
       period: 'month',
-      description: 'Maximum firepower for sharp bettors',
+      description: 'Maximum sports data analytics firepower',
       edge: '6-8%',
       edgeColor: 'purple',
       features: [
@@ -302,7 +302,7 @@ export function Pricing() {
       name: 'Elite',
       price: 299,
       period: 'month',
-      description: 'For professional operations and serious bettors',
+      description: 'For professional operations and serious analysts',
       edge: '8-10%',
       edgeColor: 'amber',
       features: [
@@ -315,7 +315,7 @@ export function Pricing() {
         'Custom sportsbook integrations',
         'Advanced backtesting engine',
         'Machine learning models',
-        'Automated bet placement (via API)',
+        'Automated alert placement (via API)',
         'Custom data feeds',
         'White-glove onboarding',
         'Priority feature requests',
@@ -336,7 +336,7 @@ export function Pricing() {
       name: 'Elite Pro',
       price: 799,
       period: 'month',
-      description: 'Ultra-premium tier for the top 2% of bettors',
+      description: 'Ultra-premium tier for the top 2% of analysts',
       edge: '10-15%',
       edgeColor: 'red',
       features: [
@@ -446,10 +446,10 @@ export function Pricing() {
         {!loadingStatus && (
           <div className="mb-16">
             <h2 className="text-4xl font-bold text-slate-100 mb-4 text-center">
-              Maximizing Our Expected Value in Every Wager By Monitoring All Games Systematically Through Automation and Machine Learning
+              Maximizing Expected Value Through Sports Data Analysis By Monitoring All Games Systematically Through Automation and Machine Learning
             </h2>
             <p className="text-xl text-slate-300 mb-8 text-center max-w-4xl mx-auto">
-              Explore our powerful platform features - Proprietary Algo Betting Engine - 50+ Betting Strategies
+              Explore our powerful platform features - Proprietary Sports Analytics Engine - 50+ Analytical Strategies
             </p>
             <ImageSlider />
           </div>
@@ -465,7 +465,7 @@ export function Pricing() {
             <p className="text-xl text-slate-300 mb-6">
               {hasActiveSubscription
                 ? 'Explore other plans and features available to you'
-                : 'Get the tools you need to win at sports betting'
+                : 'Get the tools you need for professional sports data analytics'
               }
             </p>
 
@@ -930,7 +930,7 @@ export function Pricing() {
 
                 {/* Betting Strategies */}
                 <tr className="hover:bg-slate-700/20">
-                  <td className="py-4 px-4 text-slate-100 text-base">Pre-Built Betting Strategies</td>
+                  <td className="py-4 px-4 text-slate-100 text-base">Pre-Built Analytical Strategies</td>
                   <td className="text-center py-4 px-4 bg-blue-900/10">
                     <span className="text-green-400 font-bold text-lg">20+</span>
                   </td>
@@ -1013,7 +1013,7 @@ export function Pricing() {
                       <span className="text-slate-500">(45-60s polling)</span>
                     </td>
                     <td className="py-4 px-4 text-slate-300 text-xs">
-                      Basic odds (60+ books), totals, lines, NFL/NBA/NHL/NCAAF/NCAAB, Basic Bet Tracker, 15s updates, 5 strategies
+                      Basic odds (60+ books), totals, lines, NFL/NBA/NHL/NCAAF/NCAAB, Basic Situation Tracker, 15s updates, 5 strategies
                     </td>
                     <td className="py-4 px-4 text-slate-400 text-xs">
                       ML, props, injuries, historical, push alerts
@@ -1031,7 +1031,7 @@ export function Pricing() {
                       <span className="text-slate-500">(30-45s polling)</span>
                     </td>
                     <td className="py-4 px-4 text-slate-300 text-xs">
-                      Trial + EV/No-Vig Calc, line tracker, all sports, 10s refresh, Advanced Bet Tracker (100 bets/mo), Email Notifications, 7-day historical, 10 strategies
+                      Trial + EV/No-Vig Calc, line tracker, all sports, 10s refresh, Advanced Situation Tracker (100 situations/mo), Email Notifications, 7-day historical, 10 strategies
                     </td>
                     <td className="py-4 px-4 text-slate-400 text-xs">
                       Advanced ML, props, sub-1s alerts
@@ -1121,7 +1121,7 @@ export function Pricing() {
               {/* Additional Info */}
               <div className="mt-6 p-4 bg-blue-900/20 border border-blue-700/50 rounded-lg">
                 <p className="text-xs text-blue-300">
-                  <strong>💡 Pro Tip:</strong> Higher tiers use faster data sources giving you a competitive edge. Sub-second speeds are crucial for arbitrage and live betting opportunities.
+                  <strong>💡 Pro Tip:</strong> Higher tiers use faster data sources giving you a competitive edge. Sub-second speeds are crucial for arbitrage and live data opportunities.
                 </p>
               </div>
             </div>

@@ -47,9 +47,13 @@ class NHLStatsClient:
         Returns dict keyed by team_abbr with EN stats
         """
         try:
-            # Look for latest empty net CSV
-            data_dir = Path(__file__).parent / "data" / "raw" / "nhl"
-            en_file = data_dir / "empty_net_stats_latest.csv"
+            # Look for EN_DATA.csv with rankings first, fallback to empty_net_stats_latest.csv
+            en_file = Path(r"D:\backend\data\NHL Empty_Net_Data_Daily\EN_DATA.csv")
+
+            if not en_file.exists():
+                # Fallback to empty_net_stats_latest.csv
+                data_dir = Path(__file__).parent / "data" / "raw" / "nhl"
+                en_file = data_dir / "empty_net_stats_latest.csv"
 
             if not en_file.exists():
                 logger.warning(f"Empty net stats file not found: {en_file}")
@@ -70,12 +74,18 @@ class NHLStatsClient:
                     'en_success_rate': float(row['en_success_rate']) if pd.notna(row['en_success_rate']) else 0.0,
                     # Offensive (WITH Empty Net - we pulled goalie)
                     'en_goals_for_offensive': float(row['en_goals_for_offensive']) if pd.notna(row['en_goals_for_offensive']) else 0.0,
+                    'goals_for_offensive_rank': int(row['goals_for_offensive_rank']) if pd.notna(row['goals_for_offensive_rank']) else 32,
                     'en_goals_against_offensive': float(row['en_goals_against_offensive']) if pd.notna(row['en_goals_against_offensive']) else 0.0,
+                    'goals_against_offensive_rank': int(row['goals_against_offensive_rank']) if pd.notna(row['goals_against_offensive_rank']) else 32,
                     'en_situations_offensive': float(row['en_situations_offensive']) if pd.notna(row['en_situations_offensive']) else 0.0,
+                    'situations_offensive_rank': int(row['situations_offensive_rank']) if pd.notna(row['situations_offensive_rank']) else 32,
                     # Defensive (AGAINST Empty Net - opponent pulled goalie)
                     'en_goals_for_defensive': float(row['en_goals_for_defensive']) if pd.notna(row['en_goals_for_defensive']) else 0.0,
+                    'goals_for_defensive_rank': int(row['goals_for_defensive_rank']) if pd.notna(row['goals_for_defensive_rank']) else 32,
                     'en_goals_against_defensive': float(row['en_goals_against_defensive']) if pd.notna(row['en_goals_against_defensive']) else 0.0,
+                    'goals_against_defensive_rank': int(row['goals_against_defensive_rank']) if pd.notna(row['goals_against_defensive_rank']) else 32,
                     'en_situations_defensive': float(row['en_situations_defensive']) if pd.notna(row['en_situations_defensive']) else 0.0,
+                    'situations_defensive_rank': int(row['situations_defensive_rank']) if pd.notna(row['situations_defensive_rank']) else 32,
                 }
 
             self.en_stats_cache = en_dict

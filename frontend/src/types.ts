@@ -14,6 +14,7 @@ export interface GameState {
   away_team: Team;
   commence_time: string;
   status: 'upcoming' | 'live' | 'completed';
+  is_live?: boolean;  // For NCAAB baseline comparison
   quarter: number | null;
   time_remaining: string | null;
   tournament?: string | null;  // For tennis: "Australian Open", "Wimbledon", etc.
@@ -43,6 +44,10 @@ export interface GameProjection {
   current_total: number;
   projected_final: number;
   pregame_total: number;
+  pregame_spread?: number | null;  // Pregame spread (away team perspective)
+  pregame_spread_price?: number | null;  // Pregame spread price
+  pregame_moneyline_home?: number | null;  // Pregame moneyline for home team
+  pregame_moneyline_away?: number | null;  // Pregame moneyline for away team
   current_live_total: number | null;
   line_movement: number | null;
   best_book_disparity: string | null;
@@ -206,6 +211,14 @@ export interface NHLTeamStats {
   en_goals_for_rank?: number | null;
   en_goals_against_rank?: number | null;
   en_differential_rank?: number | null;
+  // Empty Net Offensive Rankings
+  goals_for_offensive_rank?: number | null;
+  goals_against_offensive_rank?: number | null;
+  situations_offensive_rank?: number | null;
+  // Empty Net Defensive Rankings
+  goals_for_defensive_rank?: number | null;
+  goals_against_defensive_rank?: number | null;
+  situations_defensive_rank?: number | null;
 }
 
 export interface NFLTeamStats {
@@ -229,6 +242,27 @@ export interface NFLTeamStats {
   third_down_pct: number;  // 3rd down conversion %
   red_zone_pct: number;  // Red zone scoring %
   sacks_per_game: number;  // Defensive sacks
+  yards_per_play?: number | null;  // Offensive efficiency
+  completion_pct?: number | null;  // Passing completion percentage
+  fourth_down_conversion_pct?: number | null;  // 4th down conversion %
+  interceptions_thrown_per_game?: number | null;  // INTs thrown per game
+  fumbles_lost_per_game?: number | null;  // Fumbles lost per game
+  offensive_touchdowns_per_game?: number | null;  // Offensive TDs per game
+  defensive_touchdowns_per_game?: number | null;  // Defensive TDs per game
+  // Additional volume stats (Phase 3, 4, 5)
+  passing_touchdowns_per_game?: number | null;  // Passing TDs per game
+  rushing_touchdowns_per_game?: number | null;  // Rushing TDs per game
+  touchdowns_per_game?: number | null;  // Total TDs per game
+  pass_attempts_per_game?: number | null;  // Pass attempts per game
+  rushing_attempts_per_game?: number | null;  // Rush attempts per game
+  qb_sacked_per_game?: number | null;  // Times QB sacked per game
+  penalty_yards_per_game?: number | null;  // Penalty yards per game
+  two_point_conversion_pct?: number | null;  // 2-point conversion %
+  plays_per_game?: number | null;  // Total plays per game
+  opponent_passing_touchdowns_per_game?: number | null;  // Opponent pass TDs allowed
+  opponent_rushing_touchdowns_per_game?: number | null;  // Opponent rush TDs allowed
+  opponent_plays_per_game?: number | null;  // Opponent plays per game
+  opponent_first_downs_per_game?: number | null;  // Opponent first downs
   last_5_record?: string | null;  // "4-1"
   form_trend?: string | null;  // "HOT", "COLD", "NEUTRAL"
   home_record?: string | null;  // "8-1"
@@ -248,6 +282,30 @@ export interface NFLTeamStats {
   red_zone_pct_rank?: number | null;  // Red zone efficiency rank
   sacks_rank?: number | null;  // Defensive sacks rank
   turnover_differential_rank?: number | null;  // Turnover margin rank
+  // Betting Trends (ATS - Against The Spread)
+  ats_wins?: number | null;  // ATS wins
+  ats_losses?: number | null;  // ATS losses
+  ats_pushes?: number | null;  // ATS pushes
+  home_ats_wins?: number | null;  // Home ATS wins
+  home_ats_losses?: number | null;  // Home ATS losses
+  home_ats_pushes?: number | null;  // Home ATS pushes
+  away_ats_wins?: number | null;  // Away ATS wins
+  away_ats_losses?: number | null;  // Away ATS losses
+  away_ats_pushes?: number | null;  // Away ATS pushes
+  ats_last_5?: number[] | null;  // Last 5 games: [1, 0, 1, 1, 0] (1=win, 0=loss, -1=push)
+  ats_last_10?: number[] | null;  // Last 10 games
+  // Betting Trends (O/U - Over/Under)
+  ou_overs?: number | null;  // Overs hit
+  ou_unders?: number | null;  // Unders hit
+  ou_pushes?: number | null;  // O/U pushes
+  home_ou_overs?: number | null;  // Home overs
+  home_ou_unders?: number | null;  // Home unders
+  home_ou_pushes?: number | null;  // Home pushes
+  away_ou_overs?: number | null;  // Away overs
+  away_ou_unders?: number | null;  // Away unders
+  away_ou_pushes?: number | null;  // Away pushes
+  ou_last_5?: number[] | null;  // Last 5 games: [1, 0, 1, 1, 0] (1=over, 0=under, -1=push)
+  ou_last_10?: number[] | null;  // Last 10 games
 }
 
 export interface MLBTeamStats {

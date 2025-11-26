@@ -8,6 +8,7 @@ Endpoints:
 - GET /api/goalie-pull/alerts - Get recent alerts
 - GET /api/goalie-pull/alerts/{alert_id} - Get specific alert
 - GET /api/goalie-pull/performance - Performance metrics (CLV, ROI)
+- GET /api/goalie-pull/team-stats - Empty net team statistics and rankings
 """
 
 from fastapi import APIRouter, HTTPException, BackgroundTasks
@@ -17,6 +18,7 @@ from datetime import datetime, timedelta
 import threading
 import sys
 import os
+import pandas as pd
 
 # Add goalie_pull directory to path
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'ml', 'goalie_pull'))
@@ -24,7 +26,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'ml', 'goalie_pull
 from database_schema import GoaliePullDB
 from live_monitor_service import LiveGoaliePullMonitor
 
-router = APIRouter()
+router = APIRouter(prefix="/api/goalie-pull", tags=["goalie-pull"])
 
 # Global monitor instance
 monitor_instance: Optional[LiveGoaliePullMonitor] = None
@@ -295,3 +297,64 @@ async def get_live_games():
         "games": list(monitor_instance.active_games.values()),
         "count": len(monitor_instance.active_games)
     }
+
+
+@router.get("/team-stats")
+async def get_empty_net_team_stats():
+    """
+    Get empty net statistics and rankings for all NHL teams
+
+    Returns team rankings for:
+    - Goals scored (offensive)
+    - Goals allowed (offensive situations)
+    - Goals scored (defensive situations)
+    - Goals allowed (defensive)
+    - Success rates and differentials
+    """
+    try:
+        # Path to EN_DATA.csv
+        en_data_path = os.path.join(
+            os.path.dirname(__file__),
+            '..',
+            'data',
+            'raw',
+            'nhl',
+            'EN_DATA.csv'
+        )
+
+        # Alternative path if not found
+        if not os.path.exists(en_data_path):
+            en_data_path = r'D:\backend\data\NHL Empty_Net_Data_Daily\EN_DATA.csv'
+
+        if not os.path.exists(en_data_path):
+            raise HTTPException(
+                status_code=404,
+                detail="EN_DATA.csv not found. Please ensure empty net data is scraped."
+            )
+
+        # Read CSV
+        df = pd.read_csv(en_data_path)
+
+        # Convert to list of dicts
+        teams = df.to_dict('records')
+
+        # Sort by differential (best teams first)
+        teams_sorted = sorted(teams, key=lambda x: x.get('en_differential', 0), reverse=True)
+
+        return {
+            "teams": teams_sorted,
+            "total_teams": len(teams_sorted),
+            "last_updated": datetime.now().isoformat(),
+            "data_path": en_data_path
+        }
+
+    except FileNotFoundError:
+        raise HTTPException(
+            status_code=404,
+            detail="Empty net data file not found"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to load team stats: {str(e)}"
+        )

@@ -1,9 +1,9 @@
-import { useState } from 'react';
-import { addStakeToBet, deleteBet, addManualBet, updateBet, settleBet } from '../utils/betTracking';
+import { useState, useEffect } from 'react';
+import { addStakeToBet, deleteBet, addManualBet, updateBet, settleBet, getUserPerformanceData, PerformanceData } from '../utils/betTracking';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from './Toast';
 import { formatTeamName } from '../utils/teamNames';
-
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 // Helper function to convert sport names to sport keys
 const sportKeyMapper = (sport: string): string => {
@@ -14,10 +14,6 @@ const sportKeyMapper = (sport: string): string => {
     'NCAAF': 'americanfootball_ncaaf',
     'NHL': 'icehockey_nhl',
     'MLB': 'baseball_mlb',
-    'Basketball': 'basketball_nba',
-    'Football': 'americanfootball_nfl',
-    'Hockey': 'icehockey_nhl',
-    'Baseball': 'baseball_mlb',
   };
   return sportMap[sport] || sport.toLowerCase();
 };
@@ -61,879 +57,314 @@ export function PersonalBetAnalytics({
     betId: string;
     result: 'win' | 'loss' | 'push';
   } | null>(null);
-  const [editForm, setEditForm] = useState<{
-    betSide: string;
-    odds: string;
-    stake: string;
-    bookmaker: string;
-  }>({
-    betSide: '',
-    odds: '',
-    stake: '',
-    bookmaker: ''
+
+  // Time range filter state
+  const [days, setDays] = useState<number | undefined>(undefined);
+  const [performanceData, setPerformanceData] = useState<PerformanceData | null>(null);
+  const [loadingPerformance, setLoadingPerformance] = useState(false);
+
+  const [editForm, setEditForm] = useState<{ betSide: string; odds: string; stake: string; bookmaker: string; }>({
+    betSide: '', odds: '', stake: '', bookmaker: ''
   });
   const [manualBetForm, setManualBetForm] = useState<ManualBetForm>({
-    sport: 'NBA',
-    homeTeam: '',
-    awayTeam: '',
-    commenceTime: new Date().toISOString().slice(0, 16),
-    betType: 'spread',
-    betSide: '',
-    odds: '',
-    stake: '',
-    bookmaker: '',
-    confidence: '',
-    edgePercent: '',
-    notes: ''
+    sport: 'NBA', homeTeam: '', awayTeam: '', commenceTime: new Date().toISOString().slice(0, 16),
+    betType: 'spread', betSide: '', odds: '', stake: '', bookmaker: '', confidence: '', edgePercent: '', notes: ''
   });
+
+  useEffect(() => {
+    if (username) fetchPerformanceData();
+  }, [username, days]);
+
+  const fetchPerformanceData = async () => {
+    if (!username) return;
+    setLoadingPerformance(true);
+    try {
+      const data = await getUserPerformanceData(username, days);
+      setPerformanceData(data);
+    } catch (error) {
+      console.error('Error fetching performance data:', error);
+    } finally {
+      setLoadingPerformance(false);
+    }
+  };
 
   const handleAddStake = async (betId: string) => {
     const stakeAmount = parseFloat(stakes[betId] || '0');
-    if (stakeAmount <= 0) {
-      alert('Please enter a valid stake amount');
-      return;
-    }
-
+    if (stakeAmount <= 0) { alert('Please enter a valid stake amount'); return; }
     const success = await addStakeToBet(betId, stakeAmount);
-    if (success) {
-      setStakes({ ...stakes, [betId]: '' });
-      onRefresh();
-    }
+    if (success) { setStakes({ ...stakes, [betId]: '' }); onRefresh(); fetchPerformanceData(); }
   };
 
   const handleDeleteBet = async (betId: string) => {
     if (confirm('Are you sure you want to remove this pending bet?')) {
-      await deleteBet(betId);
-      onRefresh();
+      await deleteBet(betId); onRefresh(); fetchPerformanceData();
     }
   };
 
   const handleManualBetSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!username) {
-      alert('You must be logged in to add a bet');
-      return;
+    if (!username) { alert('You must be logged in to add a bet'); return; }
+    if (!manualBetForm.homeTeam || !manualBetForm.awayTeam || !manualBetForm.betSide || !manualBetForm.odds || !manualBetForm.stake || !manualBetForm.bookmaker) {
+      showToast('Please fill in all required fields', 'warning'); return;
     }
-
-    // Validate required fields
-    if (!manualBetForm.homeTeam || !manualBetForm.awayTeam || !manualBetForm.betSide ||
-        !manualBetForm.odds || !manualBetForm.stake || !manualBetForm.bookmaker) {
-      showToast('Please fill in all required fields', 'warning');
-      return;
-    }
-
     const result = await addManualBet({
-      userId: username,
-      sport: manualBetForm.sport,
-      homeTeam: manualBetForm.homeTeam,
-      awayTeam: manualBetForm.awayTeam,
-      commenceTime: manualBetForm.commenceTime,
-      betType: manualBetForm.betType,
-      betSide: manualBetForm.betSide,
-      odds: parseFloat(manualBetForm.odds),
-      stake: parseFloat(manualBetForm.stake),
-      bookmaker: manualBetForm.bookmaker,
-      confidence: manualBetForm.confidence || undefined,
-      edgePercent: manualBetForm.edgePercent ? parseFloat(manualBetForm.edgePercent) : undefined,
-      notes: manualBetForm.notes || undefined,
+      userId: username, sport: manualBetForm.sport, homeTeam: manualBetForm.homeTeam, awayTeam: manualBetForm.awayTeam,
+      commenceTime: manualBetForm.commenceTime, betType: manualBetForm.betType, betSide: manualBetForm.betSide,
+      odds: parseFloat(manualBetForm.odds), stake: parseFloat(manualBetForm.stake), bookmaker: manualBetForm.bookmaker,
+      confidence: manualBetForm.confidence || undefined, edgePercent: manualBetForm.edgePercent ? parseFloat(manualBetForm.edgePercent) : undefined,
     });
-
     if (result) {
-      // Reset form and close modal
-      setManualBetForm({
-        sport: 'NBA',
-        homeTeam: '',
-        awayTeam: '',
-        commenceTime: new Date().toISOString().slice(0, 16),
-        betType: 'spread',
-        betSide: '',
-        odds: '',
-        stake: '',
-        bookmaker: '',
-        confidence: '',
-        edgePercent: '',
-        notes: ''
-      });
-      setShowManualEntry(false);
-      onRefresh();
-      showToast('Bet added successfully!', 'success');
-    } else {
-      showToast('Failed to add bet. Please try again.', 'error');
-    }
+      setManualBetForm({ sport: 'NBA', homeTeam: '', awayTeam: '', commenceTime: new Date().toISOString().slice(0, 16), betType: 'spread', betSide: '', odds: '', stake: '', bookmaker: '', confidence: '', edgePercent: '', notes: '' });
+      setShowManualEntry(false); onRefresh(); fetchPerformanceData(); showToast('Bet added successfully!', 'success');
+    } else { showToast('Failed to add bet. Please try again.', 'error'); }
   };
 
   const handleStartEdit = (bet: any) => {
     setEditingBetId(bet.id);
-    setEditForm({
-      betSide: bet.bet_side || '',
-      odds: bet.odds?.toString() || '',
-      stake: bet.stake?.toString() || '',
-      bookmaker: bet.bookmaker || ''
-    });
+    setEditForm({ betSide: bet.bet_side || '', odds: bet.odds?.toString() || '', stake: bet.stake?.toString() || '', bookmaker: bet.bookmaker || '' });
   };
 
-  const handleCancelEdit = () => {
-    setEditingBetId(null);
-    setEditForm({
-      betSide: '',
-      odds: '',
-      stake: '',
-      bookmaker: ''
-    });
-  };
+  const handleCancelEdit = () => { setEditingBetId(null); setEditForm({ betSide: '', odds: '', stake: '', bookmaker: '' }); };
 
   const handleSaveEdit = async (betId: string) => {
-    // Validate fields
-    if (!editForm.betSide || !editForm.odds || !editForm.bookmaker) {
-      alert('Please fill in all required fields (Bet Side, Odds, Bookmaker)');
-      return;
-    }
-
-    const updates: any = {
-      betSide: editForm.betSide,
-      odds: parseFloat(editForm.odds),
-      bookmaker: editForm.bookmaker
-    };
-
-    // Only include stake if it's provided (for pending bets)
-    if (editForm.stake && parseFloat(editForm.stake) > 0) {
-      updates.stake = parseFloat(editForm.stake);
-    }
-
+    if (!editForm.betSide || !editForm.odds || !editForm.bookmaker) { alert('Please fill in all required fields'); return; }
+    const updates: any = { betSide: editForm.betSide, odds: parseFloat(editForm.odds), bookmaker: editForm.bookmaker };
+    if (editForm.stake && parseFloat(editForm.stake) > 0) updates.stake = parseFloat(editForm.stake);
     const result = await updateBet(betId, updates);
-
-    if (result) {
-      handleCancelEdit();
-      onRefresh();
-    } else {
-      alert('Failed to update bet. Please try again.');
-    }
+    if (result) { handleCancelEdit(); onRefresh(); fetchPerformanceData(); } else { alert('Failed to update bet.'); }
   };
 
-  const handleToggleBetSide = () => {
-    // Toggle between OVER and UNDER if it's a total bet
-    if (editForm.betSide.includes('OVER')) {
-      setEditForm({ ...editForm, betSide: editForm.betSide.replace('OVER', 'UNDER') });
-    } else if (editForm.betSide.includes('UNDER')) {
-      setEditForm({ ...editForm, betSide: editForm.betSide.replace('UNDER', 'OVER') });
-    }
-  };
-
-  const handleAdjustOdds = (amount: number) => {
-    const currentOdds = parseFloat(editForm.odds) || 0;
-    const newOdds = currentOdds + amount;
-    // Don't let odds be exactly 0 or between -100 and 0
-    if (newOdds === 0 || (newOdds > -100 && newOdds < 0)) {
-      setEditForm({ ...editForm, odds: (amount > 0 ? '100' : '-105') });
-    } else {
-      setEditForm({ ...editForm, odds: newOdds.toString() });
-    }
-  };
-
-  const handleAdjustStake = (amount: number) => {
-    const currentStake = parseFloat(editForm.stake) || 0;
-    const newStake = Math.max(0, currentStake + amount); // Don't go below 0
-    setEditForm({ ...editForm, stake: newStake.toFixed(2) });
-  };
-
-  const canToggleBetSide = (betSide: string) => {
-    return betSide.includes('OVER') || betSide.includes('UNDER');
-  };
+  const canToggleBetSide = (betSide: string) => betSide.includes('OVER') || betSide.includes('UNDER');
 
   const handleQuickToggleBetSide = async (bet: any) => {
-    // Quickly toggle OVER/UNDER without entering edit mode
     let newBetSide = bet.bet_side;
-
-    if (bet.bet_side.includes('OVER')) {
-      newBetSide = bet.bet_side.replace('OVER', 'UNDER');
-    } else if (bet.bet_side.includes('UNDER')) {
-      newBetSide = bet.bet_side.replace('UNDER', 'OVER');
-    } else {
-      // For spreads and moneylines, can't toggle
-      return;
-    }
-
-    // Update the bet directly
+    if (bet.bet_side.includes('OVER')) newBetSide = bet.bet_side.replace('OVER', 'UNDER');
+    else if (bet.bet_side.includes('UNDER')) newBetSide = bet.bet_side.replace('UNDER', 'OVER');
+    else return;
     const success = await updateBet(bet.id, { betSide: newBetSide });
-    if (success) {
-      onRefresh();
-    }
+    if (success) onRefresh();
   };
 
-  const handleSettleBet = async (betId: string, result: 'win' | 'loss' | 'push') => {
-    // Show custom confirmation modal instead of browser confirm
-    setSettleConfirmation({ betId, result });
-  };
+  const handleSettleBet = async (betId: string, result: 'win' | 'loss' | 'push') => { setSettleConfirmation({ betId, result }); };
 
   const confirmSettleBet = async () => {
     if (!settleConfirmation) return;
-
     const { betId, result } = settleConfirmation;
     const settled = await settleBet(betId, result);
-
-    if (settled) {
-      showToast(`Bet settled as ${result.toUpperCase()}!`, 'success');
-      setSettleConfirmation(null);
-      onRefresh();
-    } else {
-      showToast('Failed to settle bet. Please try again.', 'error');
-    }
+    if (settled) { showToast(`Bet settled as ${result.toUpperCase()}!`, 'success'); setSettleConfirmation(null); onRefresh(); fetchPerformanceData(); }
+    else { showToast('Failed to settle bet.', 'error'); }
   };
 
-  // Show loading state if no stats yet
-  if (!stats) {
-    return (
-      <div className="text-center py-20">
-        <div className="text-white text-xl">Loading your bet data...</div>
-      </div>
-    );
+  const summaryData = performanceData?.summary || stats;
+
+  if (!stats && !performanceData) {
+    return <div className="text-center py-20"><div className="text-white text-xl">Loading your bet data...</div></div>;
   }
 
   return (
     <div>
-      {/* Manual Entry Button */}
-      <div className="mb-6 flex justify-end">
-        <button
-          onClick={() => setShowManualEntry(true)}
-          className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all border-2 border-blue-500"
-        >
-          <span className="text-2xl">📖</span>
-          Manual Bet Entry
-        </button>
+      {/* Time Range Filter & Manual Entry */}
+      <div className="bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 border border-white rounded-xl p-4 mb-6">
+        <div className="flex gap-4 items-center justify-between flex-wrap">
+          <div className="flex gap-4 items-center flex-wrap">
+            <div>
+              <label className="text-slate-400 text-sm block mb-1">Time Range:</label>
+              <select value={days || 'all'} onChange={(e) => setDays(e.target.value === 'all' ? undefined : parseInt(e.target.value))} className="px-3 py-2 bg-slate-800 border border-slate-600 hover:border-white transition-all rounded text-white">
+                <option value="7">Last 7 Days</option>
+                <option value="30">Last 30 Days</option>
+                <option value="90">Last 90 Days</option>
+                <option value="all">All Time</option>
+              </select>
+            </div>
+          </div>
+          <button onClick={() => setShowManualEntry(true)} className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all border border-blue-500 rounded">
+            <span className="text-xl">+</span> Manual Bet Entry
+          </button>
+        </div>
       </div>
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+        <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-black border border-white rounded-xl p-6">
+          <div className="text-slate-400 text-sm mb-1">Win Rate</div>
+          <div className="text-3xl font-bold text-blue-400">{(summaryData?.win_rate || 0).toFixed(1)}%</div>
+          <div className="text-slate-500 text-xs mt-2">{summaryData?.wins || summaryData?.won_bets || 0}W - {summaryData?.losses || summaryData?.lost_bets || 0}L</div>
+        </div>
+        <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-black border border-white rounded-xl p-6">
+          <div className="text-slate-400 text-sm mb-1">ROI</div>
+          <div className={`text-3xl font-bold ${(summaryData?.roi || summaryData?.roi_percent || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+            {(summaryData?.roi || summaryData?.roi_percent || 0) >= 0 ? '+' : ''}{(summaryData?.roi || summaryData?.roi_percent || 0).toFixed(1)}%
+          </div>
+          <div className="text-slate-500 text-xs mt-2">Return on Investment</div>
+        </div>
+        <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-black border border-white rounded-xl p-6">
+          <div className="text-slate-400 text-sm mb-1">Net Profit/Loss</div>
+          <div className={`text-3xl font-bold ${(summaryData?.net_profit_loss || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+            {(summaryData?.net_profit_loss || 0) >= 0 ? '+' : ''}${(summaryData?.net_profit_loss || 0).toFixed(2)}
+          </div>
+          <div className="text-slate-500 text-xs mt-2">{summaryData?.total_bets || summaryData?.settled_bets || 0} settled bets</div>
+        </div>
+        <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-black border border-white rounded-xl p-6">
+          <div className="text-slate-400 text-sm mb-1">Total Wagered</div>
+          <div className="text-3xl font-bold text-purple-400">${(summaryData?.total_wagered || 0).toFixed(0)}</div>
+          <div className="text-slate-500 text-xs mt-2">{summaryData?.pushes || summaryData?.push_bets || 0} pushes</div>
+        </div>
+        <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-black border border-white rounded-xl p-6">
+          <div className="text-slate-400 text-sm mb-1">Avg Stake</div>
+          <div className="text-3xl font-bold text-orange-400">${(summaryData?.avg_stake || 0).toFixed(0)}</div>
+          <div className="text-slate-500 text-xs mt-2">Per bet average</div>
+        </div>
+      </div>
+
+      {/* Performance Charts */}
+      {performanceData && performanceData.history && performanceData.history.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-black border border-white rounded-xl p-6">
+            <h3 className="text-lg font-bold text-white mb-4">Cumulative Profit/Loss</h3>
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={performanceData.history}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <XAxis dataKey="date" stroke="#9CA3AF" fontSize={10} tickFormatter={(v) => v.slice(5)} />
+                <YAxis stroke="#9CA3AF" fontSize={10} tickFormatter={(v) => `$${v}`} />
+                <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151', borderRadius: '8px' }} labelStyle={{ color: '#9CA3AF' }} formatter={(value: number) => [`$${value.toFixed(2)}`, 'Cumulative P/L']} />
+                <Line type="monotone" dataKey="cumulative_pl" stroke="#10B981" strokeWidth={2} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-black border border-white rounded-xl p-6">
+            <h3 className="text-lg font-bold text-white mb-4">Daily Results</h3>
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={performanceData.history}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <XAxis dataKey="date" stroke="#9CA3AF" fontSize={10} tickFormatter={(v) => v.slice(5)} />
+                <YAxis stroke="#9CA3AF" fontSize={10} />
+                <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151', borderRadius: '8px' }} labelStyle={{ color: '#9CA3AF' }} />
+                <Bar dataKey="wins" name="Wins" fill="#10B981" stackId="a" />
+                <Bar dataKey="losses" name="Losses" fill="#EF4444" stackId="a" />
+                <Legend />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+      {/* Performance Breakdowns */}
+      {performanceData && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {performanceData.by_sport && performanceData.by_sport.length > 0 && (
+            <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-black border border-white rounded-xl p-6">
+              <h3 className="text-lg font-bold text-white mb-4">Performance by Sport</h3>
+              <table className="w-full text-sm">
+                <thead><tr className="border-b border-slate-700"><th className="text-left py-2 text-slate-400">Sport</th><th className="text-center py-2 text-slate-400">Bets</th><th className="text-center py-2 text-slate-400">W-L</th><th className="text-center py-2 text-slate-400">Win%</th><th className="text-right py-2 text-slate-400">P/L</th><th className="text-right py-2 text-slate-400">ROI</th></tr></thead>
+                <tbody>{performanceData.by_sport.map((s) => (
+                  <tr key={s.sport} className="border-b border-slate-700/50">
+                    <td className="py-2 text-white font-semibold">{s.sport}</td>
+                    <td className="text-center py-2 text-slate-300">{s.total}</td>
+                    <td className="text-center py-2 text-slate-300">{s.wins}-{s.losses}</td>
+                    <td className="text-center py-2 text-blue-400">{s.win_rate.toFixed(1)}%</td>
+                    <td className={`text-right py-2 font-semibold ${s.profit_loss >= 0 ? 'text-green-400' : 'text-red-400'}`}>{s.profit_loss >= 0 ? '+' : ''}${s.profit_loss.toFixed(2)}</td>
+                    <td className={`text-right py-2 ${s.roi >= 0 ? 'text-green-400' : 'text-red-400'}`}>{s.roi >= 0 ? '+' : ''}{s.roi.toFixed(1)}%</td>
+                  </tr>
+                ))}</tbody>
+              </table>
+            </div>
+          )}
+          {performanceData.by_bet_type && performanceData.by_bet_type.length > 0 && (
+            <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-black border border-white rounded-xl p-6">
+              <h3 className="text-lg font-bold text-white mb-4">Performance by Bet Type</h3>
+              <table className="w-full text-sm">
+                <thead><tr className="border-b border-slate-700"><th className="text-left py-2 text-slate-400">Type</th><th className="text-center py-2 text-slate-400">Bets</th><th className="text-center py-2 text-slate-400">W-L</th><th className="text-center py-2 text-slate-400">Win%</th><th className="text-right py-2 text-slate-400">P/L</th><th className="text-right py-2 text-slate-400">ROI</th></tr></thead>
+                <tbody>{performanceData.by_bet_type.map((t) => (
+                  <tr key={t.bet_type} className="border-b border-slate-700/50">
+                    <td className="py-2 text-white font-semibold capitalize">{t.bet_type}</td>
+                    <td className="text-center py-2 text-slate-300">{t.total}</td>
+                    <td className="text-center py-2 text-slate-300">{t.wins}-{t.losses}</td>
+                    <td className="text-center py-2 text-blue-400">{t.win_rate.toFixed(1)}%</td>
+                    <td className={`text-right py-2 font-semibold ${t.profit_loss >= 0 ? 'text-green-400' : 'text-red-400'}`}>{t.profit_loss >= 0 ? '+' : ''}${t.profit_loss.toFixed(2)}</td>
+                    <td className={`text-right py-2 ${t.roi >= 0 ? 'text-green-400' : 'text-red-400'}`}>{t.roi >= 0 ? '+' : ''}{t.roi.toFixed(1)}%</td>
+                  </tr>
+                ))}</tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Manual Entry Modal */}
       {showManualEntry && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-900 border-2 border-blue-600 p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-black border border-white rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                <span className="text-3xl">📖</span>
-                Manual Bet Entry
-              </h2>
-              <button
-                onClick={() => setShowManualEntry(false)}
-                className="text-slate-400 hover:text-white text-2xl font-bold"
-              >
-                ×
-              </button>
+              <h2 className="text-2xl font-bold text-white">Manual Bet Entry</h2>
+              <button onClick={() => setShowManualEntry(false)} className="text-slate-400 hover:text-white text-2xl font-bold">x</button>
             </div>
-
             <form onSubmit={handleManualBetSubmit} className="space-y-4">
-              {/* Sport Selection */}
-              <div>
-                <label className="block text-sm font-semibold text-slate-300 mb-2">
-                  Sport *
-                </label>
-                <select
-                  value={manualBetForm.sport}
-                  onChange={(e) => setManualBetForm({ ...manualBetForm, sport: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 text-white focus:border-blue-500 focus:outline-none"
-                  required
-                >
-                  <option value="NBA">NBA</option>
-                  <option value="NFL">NFL</option>
-                  <option value="NHL">NHL</option>
-                  <option value="MLB">MLB</option>
-                  <option value="NCAAB">NCAAB</option>
-                  <option value="NCAAF">NCAAF</option>
-                </select>
-              </div>
-
-              {/* Teams */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-300 mb-2">
-                    Away Team *
-                  </label>
-                  <input
-                    type="text"
-                    value={manualBetForm.awayTeam}
-                    onChange={(e) => setManualBetForm({ ...manualBetForm, awayTeam: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 text-white focus:border-blue-500 focus:outline-none"
-                    placeholder="e.g., Lakers"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-slate-300 mb-2">
-                    Home Team *
-                  </label>
-                  <input
-                    type="text"
-                    value={manualBetForm.homeTeam}
-                    onChange={(e) => setManualBetForm({ ...manualBetForm, homeTeam: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 text-white focus:border-blue-500 focus:outline-none"
-                    placeholder="e.g., Warriors"
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Game Time */}
-              <div>
-                <label className="block text-sm font-semibold text-slate-300 mb-2">
-                  Game Time *
-                </label>
-                <input
-                  type="datetime-local"
-                  value={manualBetForm.commenceTime}
-                  onChange={(e) => setManualBetForm({ ...manualBetForm, commenceTime: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 text-white focus:border-blue-500 focus:outline-none"
-                  required
-                />
-              </div>
-
-              {/* Bet Type and Side */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-300 mb-2">
-                    Bet Type *
-                  </label>
-                  <select
-                    value={manualBetForm.betType}
-                    onChange={(e) => setManualBetForm({ ...manualBetForm, betType: e.target.value as any })}
-                    className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 text-white focus:border-blue-500 focus:outline-none"
-                    required
-                  >
-                    <option value="spread">Spread</option>
-                    <option value="total">Total</option>
-                    <option value="moneyline">Moneyline</option>
-                    <option value="prop">Prop</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-slate-300 mb-2">
-                    Bet Side *
-                  </label>
-                  <input
-                    type="text"
-                    value={manualBetForm.betSide}
-                    onChange={(e) => setManualBetForm({ ...manualBetForm, betSide: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 text-white focus:border-blue-500 focus:outline-none"
-                    placeholder="e.g., OVER 220.5, Lakers -5.5"
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Odds, Stake, Bookmaker */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-300 mb-2">
-                    Odds *
-                  </label>
-                  <input
-                    type="number"
-                    step="1"
-                    value={manualBetForm.odds}
-                    onChange={(e) => setManualBetForm({ ...manualBetForm, odds: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 text-white focus:border-blue-500 focus:outline-none"
-                    placeholder="-110"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-slate-300 mb-2">
-                    Stake ($) *
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={manualBetForm.stake}
-                    onChange={(e) => setManualBetForm({ ...manualBetForm, stake: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 text-white focus:border-blue-500 focus:outline-none"
-                    placeholder="100.00"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-slate-300 mb-2">
-                    Bookmaker *
-                  </label>
-                  <input
-                    type="text"
-                    value={manualBetForm.bookmaker}
-                    onChange={(e) => setManualBetForm({ ...manualBetForm, bookmaker: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 text-white focus:border-blue-500 focus:outline-none"
-                    placeholder="DraftKings"
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Optional: Confidence */}
-              <div>
-                <label className="block text-sm font-semibold text-slate-300 mb-2">
-                  Confidence (Optional)
-                </label>
-                <select
-                  value={manualBetForm.confidence}
-                  onChange={(e) => setManualBetForm({ ...manualBetForm, confidence: e.target.value as any })}
-                  className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 text-white focus:border-blue-500 focus:outline-none"
-                >
-                  <option value="">None</option>
-                  <option value="HIGH">HIGH</option>
-                  <option value="MEDIUM">MEDIUM</option>
-                  <option value="LOW">LOW</option>
-                </select>
-              </div>
-
-              {/* Notes */}
-              <div>
-                <label className="block text-sm font-semibold text-slate-300 mb-2">
-                  Notes (Optional)
-                </label>
-                <textarea
-                  value={manualBetForm.notes}
-                  onChange={(e) => setManualBetForm({ ...manualBetForm, notes: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-900 border-2 border-slate-600 text-white focus:border-blue-500 focus:outline-none"
-                  rows={3}
-                  placeholder="Any additional notes about this bet..."
-                />
-              </div>
-
-              {/* Submit Buttons */}
-              <div className="flex gap-3 pt-4">
-                <button
-                  type="submit"
-                  className="flex-1 px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-bold transition-all"
-                >
-                  Add Bet
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowManualEntry(false)}
-                  className="px-6 py-3 bg-slate-600 hover:bg-slate-700 text-white font-semibold transition-all"
-                >
-                  Cancel
-                </button>
-              </div>
+              <div><label className="block text-sm font-semibold text-slate-300 mb-2">Sport *</label><select value={manualBetForm.sport} onChange={(e) => setManualBetForm({ ...manualBetForm, sport: e.target.value })} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 text-white rounded" required><option value="NBA">NBA</option><option value="NFL">NFL</option><option value="NHL">NHL</option><option value="MLB">MLB</option><option value="NCAAB">NCAAB</option><option value="NCAAF">NCAAF</option></select></div>
+              <div className="grid grid-cols-2 gap-4"><div><label className="block text-sm font-semibold text-slate-300 mb-2">Away Team *</label><input type="text" value={manualBetForm.awayTeam} onChange={(e) => setManualBetForm({ ...manualBetForm, awayTeam: e.target.value })} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 text-white rounded" placeholder="e.g., Lakers" required /></div><div><label className="block text-sm font-semibold text-slate-300 mb-2">Home Team *</label><input type="text" value={manualBetForm.homeTeam} onChange={(e) => setManualBetForm({ ...manualBetForm, homeTeam: e.target.value })} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 text-white rounded" placeholder="e.g., Warriors" required /></div></div>
+              <div><label className="block text-sm font-semibold text-slate-300 mb-2">Game Time *</label><input type="datetime-local" value={manualBetForm.commenceTime} onChange={(e) => setManualBetForm({ ...manualBetForm, commenceTime: e.target.value })} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 text-white rounded" required /></div>
+              <div className="grid grid-cols-2 gap-4"><div><label className="block text-sm font-semibold text-slate-300 mb-2">Bet Type *</label><select value={manualBetForm.betType} onChange={(e) => setManualBetForm({ ...manualBetForm, betType: e.target.value as any })} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 text-white rounded" required><option value="spread">Spread</option><option value="total">Total</option><option value="moneyline">Moneyline</option><option value="prop">Prop</option></select></div><div><label className="block text-sm font-semibold text-slate-300 mb-2">Bet Side *</label><input type="text" value={manualBetForm.betSide} onChange={(e) => setManualBetForm({ ...manualBetForm, betSide: e.target.value })} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 text-white rounded" placeholder="e.g., OVER 220.5" required /></div></div>
+              <div className="grid grid-cols-3 gap-4"><div><label className="block text-sm font-semibold text-slate-300 mb-2">Odds *</label><input type="number" step="1" value={manualBetForm.odds} onChange={(e) => setManualBetForm({ ...manualBetForm, odds: e.target.value })} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 text-white rounded" placeholder="-110" required /></div><div><label className="block text-sm font-semibold text-slate-300 mb-2">Stake ($) *</label><input type="number" step="0.01" value={manualBetForm.stake} onChange={(e) => setManualBetForm({ ...manualBetForm, stake: e.target.value })} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 text-white rounded" placeholder="100.00" required /></div><div><label className="block text-sm font-semibold text-slate-300 mb-2">Bookmaker *</label><input type="text" value={manualBetForm.bookmaker} onChange={(e) => setManualBetForm({ ...manualBetForm, bookmaker: e.target.value })} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 text-white rounded" placeholder="DraftKings" required /></div></div>
+              <div className="flex gap-3 pt-4"><button type="submit" className="flex-1 px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded">Add Bet</button><button type="button" onClick={() => setShowManualEntry(false)} className="px-6 py-3 bg-slate-600 hover:bg-slate-700 text-white font-semibold rounded">Cancel</button></div>
             </form>
           </div>
         </div>
       )}
 
-      {/* Overall Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-slate-900 border-2 border-green-700 p-6 hover:border-green-600 transition-all">
-          <div className="flex items-center justify-between mb-3">
-            <div className="text-sm text-white font-bold tracking-wide">NET PROFIT/LOSS</div>
-          </div>
-          <div className={`text-3xl font-bold mb-1 ${stats.net_profit_loss >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-            {stats.net_profit_loss >= 0 ? '+' : ''}${stats.net_profit_loss.toFixed(2)}
-          </div>
-          <div className="text-xs text-green-300/60">{stats.settled_bets} settled bets</div>
-        </div>
-
-        <div className="bg-slate-900 border-2 border-blue-700 p-6 hover:border-blue-600 transition-all">
-          <div className="flex items-center justify-between mb-3">
-            <div className="text-sm text-white font-bold tracking-wide">WIN RATE</div>
-          </div>
-          <div className="text-3xl font-bold text-blue-400 mb-1">
-            {stats.win_rate}%
-          </div>
-          <div className="text-xs text-blue-300/60">{stats.won_bets}W / {stats.lost_bets}L / {stats.push_bets}P</div>
-        </div>
-
-        <div className="bg-slate-900 border-2 border-purple-700 p-6 hover:border-purple-600 transition-all">
-          <div className="flex items-center justify-between mb-3">
-            <div className="text-sm text-white font-bold tracking-wide">ROI</div>
-          </div>
-          <div className={`text-3xl font-bold mb-1 ${stats.roi_percent >= 0 ? 'text-purple-400' : 'text-red-400'}`}>
-            {stats.roi_percent >= 0 ? '+' : ''}{stats.roi_percent}%
-          </div>
-          <div className="text-xs text-purple-300/60">Return on investment</div>
-        </div>
-
-        <div className="bg-slate-900 border-2 border-slate-700 p-6 hover:border-blue-600 transition-all">
-          <div className="flex items-center justify-between mb-3">
-            <div className="text-sm text-white font-bold tracking-wide">TOTAL WAGERED</div>
-          </div>
-          <div className="text-3xl font-bold text-white mb-1">
-            ${stats.total_wagered.toFixed(2)}
-          </div>
-          <div className="text-xs text-slate-400">
-            {stats.total_bets} bets • ${stats.settled_wagered?.toFixed(2) || '0.00'} settled
-          </div>
-        </div>
-      </div>
-
-      {/* Pending Bets Section */}
+      {/* Pending Bets */}
       {pendingBets.length > 0 && (
         <div className="mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <h2 className="text-2xl font-bold text-white">⏳ Pending Bets</h2>
-            <span className="text-sm text-slate-400">({pendingBets.length}) - Add stake amount to track</span>
-          </div>
+          <div className="flex items-center gap-3 mb-4"><h2 className="text-2xl font-bold text-white">Pending Bets</h2><span className="text-sm text-slate-400">({pendingBets.length})</span></div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {pendingBets.map((bet) => (
-              <div key={bet.id} className="bg-slate-900 border-2 border-orange-600 p-4">
-                {editingBetId === bet.id ? (
-                  // Edit Mode
-                  <div>
-                    <div className="text-lg font-bold text-white mb-3">
-                      {formatTeamName(bet.away_team, sportKeyMapper(bet.sport))} @ {formatTeamName(bet.home_team, sportKeyMapper(bet.sport))}
-                    </div>
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-xs text-slate-400 mb-1">Bet Side *</label>
-                        <div className="flex gap-2">
-                          <input
-                            type="text"
-                            value={editForm.betSide}
-                            onChange={(e) => setEditForm({ ...editForm, betSide: e.target.value })}
-                            className="flex-1 px-3 py-2 bg-slate-800 border-2 border-slate-600 text-white focus:border-blue-500 focus:outline-none"
-                            placeholder="e.g., OVER 220.5"
-                          />
-                          {canToggleBetSide(editForm.betSide) && (
-                            <button
-                              type="button"
-                              onClick={handleToggleBetSide}
-                              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold transition-all"
-                              title="Toggle OVER/UNDER"
-                            >
-                              ⇅
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <label className="block text-xs text-slate-400 mb-1">Odds *</label>
-                          <div className="flex gap-1">
-                            <button
-                              type="button"
-                              onClick={() => handleAdjustOdds(-5)}
-                              className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white font-bold transition-all"
-                              title="Decrease odds by 5"
-                            >
-                              ▼
-                            </button>
-                            <input
-                              type="number"
-                              step="1"
-                              value={editForm.odds}
-                              onChange={(e) => setEditForm({ ...editForm, odds: e.target.value })}
-                              className="flex-1 px-3 py-2 bg-slate-800 border-2 border-slate-600 text-white text-center focus:border-blue-500 focus:outline-none"
-                              placeholder="-110"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => handleAdjustOdds(5)}
-                              className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white font-bold transition-all"
-                              title="Increase odds by 5"
-                            >
-                              ▲
-                            </button>
-                          </div>
-                        </div>
-                        <div>
-                          <label className="block text-xs text-slate-400 mb-1">Stake ($)</label>
-                          <div className="flex gap-1">
-                            <button
-                              type="button"
-                              onClick={() => handleAdjustStake(-5)}
-                              className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white font-bold transition-all"
-                              title="Decrease stake by $5"
-                            >
-                              ▼
-                            </button>
-                            <input
-                              type="number"
-                              step="0.01"
-                              value={editForm.stake}
-                              onChange={(e) => setEditForm({ ...editForm, stake: e.target.value })}
-                              className="flex-1 px-3 py-2 bg-slate-800 border-2 border-slate-600 text-white text-center focus:border-blue-500 focus:outline-none"
-                              placeholder="100.00"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => handleAdjustStake(5)}
-                              className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white font-bold transition-all"
-                              title="Increase stake by $5"
-                            >
-                              ▲
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-xs text-slate-400 mb-1">Bookmaker *</label>
-                        <input
-                          type="text"
-                          value={editForm.bookmaker}
-                          onChange={(e) => setEditForm({ ...editForm, bookmaker: e.target.value })}
-                          className="w-full px-3 py-2 bg-slate-800 border-2 border-slate-600 text-white focus:border-blue-500 focus:outline-none"
-                          placeholder="DraftKings"
-                        />
-                      </div>
-                      <div className="flex gap-2 pt-2">
-                        <button
-                          onClick={() => handleSaveEdit(bet.id)}
-                          className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold transition-all"
-                        >
-                          Save
-                        </button>
-                        <button
-                          onClick={handleCancelEdit}
-                          className="px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white font-semibold transition-all"
-                        >
-                          Cancel
-                        </button>
-                      </div>
+              <div key={bet.id} className="bg-gradient-to-br from-slate-800 via-slate-900 to-black border border-white rounded-xl p-4">
+                <div className="flex justify-between items-start mb-3">
+                  <div className="flex-1">
+                    <div className="text-lg font-bold text-white mb-1">{formatTeamName(bet.away_team, sportKeyMapper(bet.sport))} @ {formatTeamName(bet.home_team, sportKeyMapper(bet.sport))}</div>
+                    <div className="text-sm text-slate-400 mb-2">{bet.sport} - {new Date(bet.clicked_at).toLocaleDateString()}</div>
+                    <div className="flex items-center gap-2">
+                      <div className="text-sm text-yellow-400 font-semibold">{bet.bet_side} ({bet.odds > 0 ? '+' : ''}{bet.odds})</div>
+                      {canToggleBetSide(bet.bet_side) && <button onClick={() => handleQuickToggleBetSide(bet)} className="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold rounded">Switch</button>}
                     </div>
                   </div>
-                ) : (
-                  // View Mode
-                  <>
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="flex-1">
-                        <div className="text-lg font-bold text-white mb-1">
-                          {formatTeamName(bet.away_team, sportKeyMapper(bet.sport))} @ {formatTeamName(bet.home_team, sportKeyMapper(bet.sport))}
-                        </div>
-                        <div className="text-sm text-slate-400 mb-2">
-                          {bet.sport} • {new Date(bet.clicked_at).toLocaleDateString()}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="text-sm text-yellow-400 font-semibold">
-                            {bet.bet_side} ({bet.odds > 0 ? '+' : ''}{bet.odds})
-                          </div>
-                          {canToggleBetSide(bet.bet_side) && (
-                            <button
-                              onClick={() => handleQuickToggleBetSide(bet)}
-                              className="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold transition-all"
-                              title="Switch to opposite side"
-                            >
-                              ⇅ Switch Side
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-xs text-slate-400 mb-1">Bookmaker</div>
-                        <div className="text-sm font-semibold text-white">{bet.bookmaker}</div>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2">
-                      <input
-                        type="number"
-                        placeholder="Stake amount ($)"
-                        value={stakes[bet.id] || ''}
-                        onChange={(e) => setStakes({ ...stakes, [bet.id]: e.target.value })}
-                        className="flex-1 px-3 py-2 bg-slate-900 border-2 border-slate-600 text-white focus:border-blue-500 focus:outline-none"
-                      />
-                      <button
-                        onClick={() => handleAddStake(bet.id)}
-                        className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold transition-all"
-                      >
-                        Log Bet
-                      </button>
-                      <button
-                        onClick={() => handleStartEdit(bet)}
-                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-all"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDeleteBet(bet.id)}
-                        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold transition-all"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </>
-                )}
+                  <div className="text-right"><div className="text-xs text-slate-400">Bookmaker</div><div className="text-sm font-semibold text-white">{bet.bookmaker}</div></div>
+                </div>
+                <div className="flex gap-2">
+                  <input type="number" placeholder="Stake ($)" value={stakes[bet.id] || ''} onChange={(e) => setStakes({ ...stakes, [bet.id]: e.target.value })} className="flex-1 px-3 py-2 bg-slate-900 border border-slate-600 text-white rounded" />
+                  <button onClick={() => handleAddStake(bet.id)} className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded">Log</button>
+                  <button onClick={() => handleStartEdit(bet)} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded">Edit</button>
+                  <button onClick={() => handleDeleteBet(bet.id)} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded">X</button>
+                </div>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Active Bets Section */}
+      {/* Active Bets */}
       {activeBets.length > 0 && (
         <div className="mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <h2 className="text-2xl font-bold text-white">🔴 Active Bets</h2>
-            <span className="text-sm text-slate-400">({activeBets.length}) - Waiting for results</span>
-          </div>
+          <div className="flex items-center gap-3 mb-4"><h2 className="text-2xl font-bold text-white">Active Bets</h2><span className="text-sm text-slate-400">({activeBets.length})</span></div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {activeBets.map((bet) => (
-              <div key={bet.id} className="bg-slate-900 border-2 border-blue-600 p-4">
-                {editingBetId === bet.id ? (
-                  // Edit Mode
+              <div key={bet.id} className="bg-gradient-to-br from-slate-800 via-slate-900 to-black border border-white rounded-xl p-4">
+                <div className="flex justify-between items-start mb-3">
                   <div>
-                    <div className="text-lg font-bold text-white mb-3">
-                      {formatTeamName(bet.away_team, sportKeyMapper(bet.sport))} @ {formatTeamName(bet.home_team, sportKeyMapper(bet.sport))}
-                    </div>
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-xs text-slate-400 mb-1">Bet Side *</label>
-                        <div className="flex gap-2">
-                          <input
-                            type="text"
-                            value={editForm.betSide}
-                            onChange={(e) => setEditForm({ ...editForm, betSide: e.target.value })}
-                            className="flex-1 px-3 py-2 bg-slate-800 border-2 border-slate-600 text-white focus:border-blue-500 focus:outline-none"
-                            placeholder="e.g., OVER 220.5"
-                          />
-                          {canToggleBetSide(editForm.betSide) && (
-                            <button
-                              type="button"
-                              onClick={handleToggleBetSide}
-                              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold transition-all"
-                              title="Toggle OVER/UNDER"
-                            >
-                              ⇅
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <label className="block text-xs text-slate-400 mb-1">Odds *</label>
-                          <div className="flex gap-1">
-                            <button
-                              type="button"
-                              onClick={() => handleAdjustOdds(-5)}
-                              className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white font-bold transition-all"
-                              title="Decrease odds by 5"
-                            >
-                              ▼
-                            </button>
-                            <input
-                              type="number"
-                              step="1"
-                              value={editForm.odds}
-                              onChange={(e) => setEditForm({ ...editForm, odds: e.target.value })}
-                              className="flex-1 px-3 py-2 bg-slate-800 border-2 border-slate-600 text-white text-center focus:border-blue-500 focus:outline-none"
-                              placeholder="-110"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => handleAdjustOdds(5)}
-                              className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white font-bold transition-all"
-                              title="Increase odds by 5"
-                            >
-                              ▲
-                            </button>
-                          </div>
-                        </div>
-                        <div>
-                          <label className="block text-xs text-slate-400 mb-1">Stake ($) *</label>
-                          <div className="flex gap-1">
-                            <button
-                              type="button"
-                              onClick={() => handleAdjustStake(-5)}
-                              className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white font-bold transition-all"
-                              title="Decrease stake by $5"
-                            >
-                              ▼
-                            </button>
-                            <input
-                              type="number"
-                              step="0.01"
-                              value={editForm.stake}
-                              onChange={(e) => setEditForm({ ...editForm, stake: e.target.value })}
-                              className="flex-1 px-3 py-2 bg-slate-800 border-2 border-slate-600 text-white text-center focus:border-blue-500 focus:outline-none"
-                              placeholder="100.00"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => handleAdjustStake(5)}
-                              className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white font-bold transition-all"
-                              title="Increase stake by $5"
-                            >
-                              ▲
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-xs text-slate-400 mb-1">Bookmaker *</label>
-                        <input
-                          type="text"
-                          value={editForm.bookmaker}
-                          onChange={(e) => setEditForm({ ...editForm, bookmaker: e.target.value })}
-                          className="w-full px-3 py-2 bg-slate-800 border-2 border-slate-600 text-white focus:border-blue-500 focus:outline-none"
-                          placeholder="DraftKings"
-                        />
-                      </div>
-                      <div className="flex gap-2 pt-2">
-                        <button
-                          onClick={() => handleSaveEdit(bet.id)}
-                          className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold transition-all"
-                        >
-                          Save
-                        </button>
-                        <button
-                          onClick={handleCancelEdit}
-                          className="px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white font-semibold transition-all"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
+                    <div className="text-lg font-bold text-white mb-1">{formatTeamName(bet.away_team, sportKeyMapper(bet.sport))} @ {formatTeamName(bet.home_team, sportKeyMapper(bet.sport))}</div>
+                    <div className="text-sm text-slate-400 mb-1">{bet.sport} - {new Date(bet.commence_time).toLocaleDateString()}</div>
+                    <div className="text-sm text-blue-400 font-semibold">{bet.bet_side} ({bet.odds > 0 ? '+' : ''}{bet.odds})</div>
                   </div>
-                ) : (
-                  // View Mode
-                  <>
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <div className="text-lg font-bold text-white mb-1">
-                          {formatTeamName(bet.away_team, sportKeyMapper(bet.sport))} @ {formatTeamName(bet.home_team, sportKeyMapper(bet.sport))}
-                        </div>
-                        <div className="text-sm text-slate-400 mb-1">
-                          {bet.sport} • {new Date(bet.commence_time).toLocaleDateString()}
-                        </div>
-                        <div className="text-sm text-blue-400 font-semibold">
-                          {bet.bet_side} ({bet.odds > 0 ? '+' : ''}{bet.odds})
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-xs text-slate-400 mb-1">Stake</div>
-                        <div className="text-lg font-bold text-white">${bet.stake.toFixed(2)}</div>
-                      </div>
-                    </div>
-
-                    <div className="text-xs text-slate-400 mb-3">
-                      Bookmaker: {bet.bookmaker}
-                    </div>
-
-                    {/* Settle Bet Buttons */}
-                    <div className="border-t border-slate-700 pt-3 mt-3">
-                      <div className="text-xs text-slate-400 mb-2 font-semibold">SETTLE BET:</div>
-                      <div className="grid grid-cols-4 gap-2">
-                        <button
-                          onClick={() => handleSettleBet(bet.id, 'win')}
-                          className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white font-bold transition-all text-sm"
-                        >
-                          WON ✓
-                        </button>
-                        <button
-                          onClick={() => handleSettleBet(bet.id, 'loss')}
-                          className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white font-bold transition-all text-sm"
-                        >
-                          LOST ✗
-                        </button>
-                        <button
-                          onClick={() => handleSettleBet(bet.id, 'push')}
-                          className="px-3 py-2 bg-slate-600 hover:bg-slate-700 text-white font-bold transition-all text-sm"
-                        >
-                          PUSH ↔
-                        </button>
-                        <button
-                          onClick={() => handleStartEdit(bet)}
-                          className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all text-sm"
-                        >
-                          Edit
-                        </button>
-                      </div>
-                    </div>
-                  </>
-                )}
+                  <div className="text-right"><div className="text-xs text-slate-400">Stake</div><div className="text-lg font-bold text-white">${bet.stake.toFixed(2)}</div></div>
+                </div>
+                <div className="text-xs text-slate-400 mb-3">Bookmaker: {bet.bookmaker}</div>
+                <div className="border-t border-slate-700 pt-3">
+                  <div className="text-xs text-slate-400 mb-2 font-semibold">SETTLE BET:</div>
+                  <div className="grid grid-cols-4 gap-2">
+                    <button onClick={() => handleSettleBet(bet.id, 'win')} className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white font-bold text-sm rounded">WON</button>
+                    <button onClick={() => handleSettleBet(bet.id, 'loss')} className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white font-bold text-sm rounded">LOST</button>
+                    <button onClick={() => handleSettleBet(bet.id, 'push')} className="px-3 py-2 bg-slate-600 hover:bg-slate-700 text-white font-bold text-sm rounded">PUSH</button>
+                    <button onClick={() => handleStartEdit(bet)} className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded">Edit</button>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
@@ -943,60 +374,21 @@ export function PersonalBetAnalytics({
       {/* Settled Bets Table */}
       {settledBets.length > 0 && (
         <div className="mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <h2 className="text-2xl font-bold text-white">✅ Settled Bets</h2>
-            <span className="text-sm text-slate-400">({settledBets.length}) - Last 50 shown</span>
-          </div>
-          <div className="bg-slate-900 border-2 border-slate-700 p-6 overflow-x-auto">
+          <div className="flex items-center gap-3 mb-4"><h2 className="text-2xl font-bold text-white">Settled Bets</h2><span className="text-sm text-slate-400">({settledBets.length})</span></div>
+          <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-black border border-white rounded-xl p-6 overflow-x-auto">
             <table className="w-full">
-              <thead>
-                <tr className="border-b border-slate-700">
-                  <th className="text-left py-3 px-4 text-slate-300 font-semibold">Date</th>
-                  <th className="text-left py-3 px-4 text-slate-300 font-semibold">Game</th>
-                  <th className="text-left py-3 px-4 text-slate-300 font-semibold">Bet</th>
-                  <th className="text-right py-3 px-4 text-slate-300 font-semibold">Stake</th>
-                  <th className="text-right py-3 px-4 text-slate-300 font-semibold">Odds</th>
-                  <th className="text-center py-3 px-4 text-slate-300 font-semibold">Result</th>
-                  <th className="text-right py-3 px-4 text-slate-300 font-semibold">Profit/Loss</th>
+              <thead><tr className="border-b border-slate-700"><th className="text-left py-3 px-4 text-slate-300 font-semibold">Date</th><th className="text-left py-3 px-4 text-slate-300 font-semibold">Game</th><th className="text-left py-3 px-4 text-slate-300 font-semibold">Bet</th><th className="text-right py-3 px-4 text-slate-300 font-semibold">Stake</th><th className="text-right py-3 px-4 text-slate-300 font-semibold">Odds</th><th className="text-center py-3 px-4 text-slate-300 font-semibold">Result</th><th className="text-right py-3 px-4 text-slate-300 font-semibold">P/L</th></tr></thead>
+              <tbody>{settledBets.slice(0, 50).map((bet) => (
+                <tr key={bet.id} className="border-b border-slate-700/50 hover:bg-slate-700/30">
+                  <td className="py-3 px-4 text-sm text-slate-400">{new Date(bet.settled_at).toLocaleDateString()}</td>
+                  <td className="py-3 px-4 text-sm text-white">{formatTeamName(bet.away_team, sportKeyMapper(bet.sport))} @ {formatTeamName(bet.home_team, sportKeyMapper(bet.sport))}</td>
+                  <td className="py-3 px-4 text-sm text-slate-300">{bet.bet_side}</td>
+                  <td className="text-right py-3 px-4 text-sm text-white">${bet.stake.toFixed(2)}</td>
+                  <td className="text-right py-3 px-4 text-sm text-slate-300">{bet.odds > 0 ? '+' : ''}{bet.odds}</td>
+                  <td className="text-center py-3 px-4"><span className={`px-3 py-1 text-xs font-bold rounded ${bet.status === 'won' ? 'bg-green-900 text-green-300' : bet.status === 'lost' ? 'bg-red-900 text-red-300' : 'bg-slate-700 text-slate-300'}`}>{bet.status.toUpperCase()}</span></td>
+                  <td className={`text-right py-3 px-4 text-sm font-bold ${bet.profit_loss > 0 ? 'text-green-400' : bet.profit_loss < 0 ? 'text-red-400' : 'text-slate-400'}`}>{bet.profit_loss > 0 ? '+' : ''}${bet.profit_loss.toFixed(2)}</td>
                 </tr>
-              </thead>
-              <tbody>
-                {settledBets.slice(0, 50).map((bet) => (
-                  <tr key={bet.id} className="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors">
-                    <td className="py-3 px-4 text-sm text-slate-400">
-                      {new Date(bet.settled_at).toLocaleDateString()}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-white">
-                      {formatTeamName(bet.away_team, sportKeyMapper(bet.sport))} @ {formatTeamName(bet.home_team, sportKeyMapper(bet.sport))}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-slate-300">
-                      {bet.bet_side}
-                    </td>
-                    <td className="text-right py-3 px-4 text-sm text-white">
-                      ${bet.stake.toFixed(2)}
-                    </td>
-                    <td className="text-right py-3 px-4 text-sm text-slate-300">
-                      {bet.odds > 0 ? '+' : ''}{bet.odds}
-                    </td>
-                    <td className="text-center py-3 px-4">
-                      <span className={`px-3 py-1 text-xs font-bold ${
-                        bet.status === 'won' ? 'bg-green-900 text-green-300' :
-                        bet.status === 'lost' ? 'bg-red-900 text-red-300' :
-                        'bg-slate-700 text-slate-300'
-                      }`}>
-                        {bet.status.toUpperCase()}
-                      </span>
-                    </td>
-                    <td className={`text-right py-3 px-4 text-sm font-bold ${
-                      bet.profit_loss > 0 ? 'text-green-400' :
-                      bet.profit_loss < 0 ? 'text-red-400' :
-                      'text-slate-400'
-                    }`}>
-                      {bet.profit_loss > 0 ? '+' : ''}${bet.profit_loss.toFixed(2)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
+              ))}</tbody>
             </table>
           </div>
         </div>
@@ -1005,54 +397,20 @@ export function PersonalBetAnalytics({
       {/* Empty State */}
       {pendingBets.length === 0 && activeBets.length === 0 && settledBets.length === 0 && (
         <div className="text-center py-20">
-          <div className="text-4xl mb-4">📊</div>
           <h3 className="text-2xl font-bold text-white mb-2">No Bets Yet</h3>
-          <p className="text-slate-400 mb-6">
-            Start tracking your bets by clicking bookmaker icons on game cards
-          </p>
-          <div className="bg-blue-900/30 border-2 border-blue-700 p-6 max-w-2xl mx-auto">
-            <h4 className="text-lg font-semibold text-blue-300 mb-3">How it works:</h4>
-            <ol className="text-left text-slate-300 space-y-2">
-              <li>1. Click a bookmaker icon on any game card</li>
-              <li>2. Your bet is automatically tracked as "pending"</li>
-              <li>3. Come here to add your stake amount</li>
-              <li>4. Track your performance over time!</li>
-            </ol>
-          </div>
+          <p className="text-slate-400 mb-6">Start tracking your bets by clicking bookmaker icons on game cards</p>
         </div>
       )}
 
-      {/* Settle Bet Confirmation Modal */}
+      {/* Settle Confirmation Modal */}
       {settleConfirmation && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-900 border-2 border-blue-600 p-6 max-w-md w-full">
-            <h3 className="text-xl font-bold text-white mb-4">
-              {settleConfirmation.result === 'win' ? '✓ Mark as WON?' :
-               settleConfirmation.result === 'loss' ? '✗ Mark as LOST?' :
-               '↔ Mark as PUSH?'}
-            </h3>
-            <p className="text-slate-300 mb-6">
-              {settleConfirmation.result === 'win' ? 'This bet won and you will receive payout.' :
-               settleConfirmation.result === 'loss' ? 'This bet lost and you will lose your stake.' :
-               'This bet pushed (tie) and you will get your stake back.'}
-            </p>
+          <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-black border border-white rounded-xl p-6 max-w-md w-full">
+            <h3 className="text-xl font-bold text-white mb-4">{settleConfirmation.result === 'win' ? 'Mark as WON?' : settleConfirmation.result === 'loss' ? 'Mark as LOST?' : 'Mark as PUSH?'}</h3>
+            <p className="text-slate-300 mb-6">{settleConfirmation.result === 'win' ? 'This bet won.' : settleConfirmation.result === 'loss' ? 'This bet lost.' : 'This bet pushed.'}</p>
             <div className="flex gap-3">
-              <button
-                onClick={confirmSettleBet}
-                className={`flex-1 px-6 py-3 font-bold transition-all ${
-                  settleConfirmation.result === 'win' ? 'bg-green-600 hover:bg-green-700 text-white' :
-                  settleConfirmation.result === 'loss' ? 'bg-red-600 hover:bg-red-700 text-white' :
-                  'bg-slate-600 hover:bg-slate-700 text-white'
-                }`}
-              >
-                Confirm
-              </button>
-              <button
-                onClick={() => setSettleConfirmation(null)}
-                className="px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white font-semibold transition-all"
-              >
-                Cancel
-              </button>
+              <button onClick={confirmSettleBet} className={`flex-1 px-6 py-3 font-bold rounded ${settleConfirmation.result === 'win' ? 'bg-green-600 hover:bg-green-700' : settleConfirmation.result === 'loss' ? 'bg-red-600 hover:bg-red-700' : 'bg-slate-600 hover:bg-slate-700'} text-white`}>Confirm</button>
+              <button onClick={() => setSettleConfirmation(null)} className="px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded">Cancel</button>
             </div>
           </div>
         </div>

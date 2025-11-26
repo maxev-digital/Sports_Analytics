@@ -1,0 +1,14 @@
+[Unit]
+Description=Odds Archive Data Retention Timer (Monthly on 1st at 2 AM)
+Requires=odds-retention.service
+
+[Timer]
+# Run on the 1st of every month at 2:00 AM
+OnCalendar=monthly
+OnCalendar=*-*-01 02:00:00
+
+# Run 10 minutes after boot if missed
+OnBootSec=10min
+
+[Install]
+WantedBy=timers.target

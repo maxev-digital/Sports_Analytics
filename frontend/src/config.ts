@@ -8,8 +8,10 @@ const isDevelopment =
   window.location.hostname === 'localhost' ||
   window.location.hostname === '127.0.0.1';
 
-// ALWAYS use production VPS backend - predictions/data live on VPS only
-export const API_BASE_URL = 'https://max-ev-sports.com/api';
+// Use local backend for testing NCAAF
+export const API_BASE_URL = isDevelopment
+  ? 'http://localhost:8000/api'
+  : 'https://max-ev-sports.com/api';
 
 // Helper function to build API URLs
 export function getApiUrl(endpoint: string): string {

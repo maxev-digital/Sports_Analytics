@@ -10,6 +10,9 @@ interface BookmakersByRegion {
 }
 
 export function Settings() {
+  // Get username first
+  const { username, subscriptionTier } = useAuth();
+
   const {
     settings,
     loading,
@@ -21,13 +24,10 @@ export function Settings() {
     disableAllBookmakers,
     enablePopularBookmakers,
     resetToDefaults
-  } = useSettings('default');
+  } = useSettings(username || 'default');
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRegion, setSelectedRegion] = useState<string>('all');
-
-  // Subscription management
-  const { username, subscriptionTier } = useAuth();
   const [subscriptionStatus, setSubscriptionStatus] = useState<any>(null);
   const [loadingPortal, setLoadingPortal] = useState(false);
 
@@ -81,30 +81,35 @@ export function Settings() {
 
   // Filter bookmakers based on search and region
   const getFilteredBookmakers = () => {
-    let filtered = Object.entries(BOOKMAKERS);
+    try {
+      let filtered = Object.entries(BOOKMAKERS);
 
-    // Filter by search query
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(([_, bookmaker]) =>
-        bookmaker.name.toLowerCase().includes(query) ||
-        bookmaker.key.toLowerCase().includes(query)
-      );
+      // Filter by search query
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        filtered = filtered.filter(([_, bookmaker]) =>
+          bookmaker?.name?.toLowerCase().includes(query) ||
+          bookmaker?.key?.toLowerCase().includes(query)
+        );
+      }
+
+      // Filter by region
+      if (selectedRegion !== 'all') {
+        filtered = filtered.filter(([_, bookmaker]) =>
+          bookmaker?.region?.includes(selectedRegion)
+        );
+      }
+
+      return filtered;
+    } catch (err) {
+      console.error('Error filtering bookmakers:', err);
+      return [];
     }
-
-    // Filter by region
-    if (selectedRegion !== 'all') {
-      filtered = filtered.filter(([_, bookmaker]) =>
-        bookmaker.region.includes(selectedRegion)
-      );
-    }
-
-    return filtered;
   };
 
   const filteredBookmakers = getFilteredBookmakers();
-  const enabledCount = settings?.enabled_bookmakers.length || 0;
-  const totalCount = Object.keys(BOOKMAKERS).length;
+  const enabledCount = settings?.enabled_bookmakers?.length || 0;
+  const totalCount = Object.keys(BOOKMAKERS || {}).length;
 
   if (loading) {
     return (
@@ -116,8 +121,23 @@ export function Settings() {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
         <div className="text-xl text-red-400">Error: {error}</div>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold"
+        >
+          Reload Page
+        </button>
+      </div>
+    );
+  }
+
+  // Safety check: ensure settings is loaded before rendering
+  if (!settings) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-xl text-slate-300">Initializing settings...</div>
       </div>
     );
   }

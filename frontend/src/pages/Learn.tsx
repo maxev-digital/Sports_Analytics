@@ -204,8 +204,8 @@ const articles: Article[] = [
   // Section 6: Advanced Strategies
   {
     id: 'nhl-goalie-pull-strategy',
-    title: 'NHL Goalie Pull Strategy: Winning with 48% Success Rate',
-    description: 'Master the most profitable NHL betting strategy with REAL 2023-24 season data (581 goalie pulls analyzed). 80.4% chance goal is scored after pull. Learn how positive expected value (EV) makes you profitable even with a 48% win rate, backed by Moneypuck statistics.',
+    title: 'NHL Empty Net Betting Strategy: Finding Value in Goalie Pull Situations',
+    description: 'Master NHL empty net betting with all 4 bet types: OVER, No Next Goal (NNG), UNDER, and EXACT SCORE. Learn how goalie pull probability analysis creates massive edges. Conservative teams with 3-5 pulls offer 70-80% NNG win rates. Real 2024-25 season data.',
     category: 'Advanced',
     readTime: '28 min'
   },

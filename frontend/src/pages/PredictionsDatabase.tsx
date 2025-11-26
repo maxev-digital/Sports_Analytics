@@ -1,0 +1,363 @@
+import { useState, useEffect } from 'react';
+import { getApiUrl } from '../config';
+import { uiEmojis } from '../utils/sportDetection';
+
+interface Prediction {
+  prediction_id: string;
+  game_date: string;
+  game_time: string;
+  sport: string;
+  away_team: string;
+  home_team: string;
+  bet_type: string;
+  model: string;
+  predicted_value: number;
+  market_value: number;
+  edge: number;
+  recommendation: string;
+  confidence: string;
+  bet_placed: string;
+  actual_total: number | null;
+  away_score: number | null;
+  home_score: number | null;
+  result: string | null;
+  profit_loss: number;
+}
+
+type SortField = 'game_date' | 'sport' | 'model' | 'bet_type' | 'edge' | 'result' | 'profit_loss';
+type SortDirection = 'asc' | 'desc';
+
+export default function PredictionsDatabase() {
+  const [predictions, setPredictions] = useState<Prediction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [days, setDays] = useState(30);
+  const [limit, setLimit] = useState(100);
+  const [sportFilter, setSportFilter] = useState('all');
+  const [modelFilter, setModelFilter] = useState('all');
+  const [betTypeFilter, setBetTypeFilter] = useState('all');
+  const [sortField, setSortField] = useState<SortField>('game_date');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+
+  useEffect(() => {
+    fetchPredictions();
+  }, [days, limit, sportFilter, modelFilter, betTypeFilter]);
+
+  const fetchPredictions = async () => {
+    try {
+      setLoading(true);
+      let url = `${getApiUrl('model-performance/predictions')}?days=${days}&limit=${limit}`;
+      if (sportFilter !== 'all') url += `&sport=${sportFilter}`;
+      if (modelFilter !== 'all') url += `&model=${modelFilter}`;
+      if (betTypeFilter !== 'all') url += `&bet_type=${betTypeFilter}`;
+
+      const response = await fetch(url);
+      const data = await response.json();
+      setPredictions(data.predictions || []);
+    } catch (error) {
+      console.error('Error fetching predictions:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('desc');
+    }
+  };
+
+  const sortedPredictions = [...predictions].sort((a, b) => {
+    let aVal: any = a[sortField];
+    let bVal: any = b[sortField];
+
+    if (sortField === 'game_date') {
+      aVal = new Date(a.game_date).getTime();
+      bVal = new Date(b.game_date).getTime();
+    }
+
+    if (aVal === null || aVal === undefined) return 1;
+    if (bVal === null || bVal === undefined) return -1;
+
+    if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+    if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortField !== field) return <span className="text-slate-500 ml-1">↕</span>;
+    return <span className="text-blue-400 ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>;
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4 md:p-8">
+      <div className="max-w-[1800px] mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-5xl font-bold italic text-slate-100 mb-2" style={{ fontStyle: 'italic', textTransform: 'uppercase' }}>
+            HISTORICAL PREDICTIONS
+          </h1>
+          <p className="text-slate-400 text-lg">Complete history of all ML model predictions with results</p>
+        </div>
+
+        {/* Filters */}
+        <div className="bg-slate-900 border-4 border-slate-700 rounded-lg p-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-slate-300 mb-2">Time Range</label>
+              <select
+                value={days}
+                onChange={(e) => setDays(Number(e.target.value))}
+                className="w-full bg-slate-800 border-2 border-slate-600 text-slate-100 rounded px-3 py-2"
+              >
+                <option value={7}>Last 7 Days</option>
+                <option value={14}>Last 14 Days</option>
+                <option value={30}>Last 30 Days</option>
+                <option value={90}>Last 90 Days</option>
+                <option value={365}>Last Year</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-slate-300 mb-2">Sport</label>
+              <select
+                value={sportFilter}
+                onChange={(e) => setSportFilter(e.target.value)}
+                className="w-full bg-slate-800 border-2 border-slate-600 text-slate-100 rounded px-3 py-2"
+              >
+                <option value="all">All Sports</option>
+                <option value="nba">NBA</option>
+                <option value="ncaab">NCAAB</option>
+                <option value="nhl">NHL</option>
+                <option value="nfl">NFL</option>
+                <option value="ncaaf">NCAAF</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-slate-300 mb-2">Model</label>
+              <select
+                value={modelFilter}
+                onChange={(e) => setModelFilter(e.target.value)}
+                className="w-full bg-slate-800 border-2 border-slate-600 text-slate-100 rounded px-3 py-2"
+              >
+                <option value="all">All Models</option>
+                <option value="ensemble">Ensemble</option>
+                <option value="xgboost">XGBoost</option>
+                <option value="random_forest">Random Forest</option>
+                <option value="lightgbm">LightGBM</option>
+                <option value="linear_regression">Linear Regression</option>
+                <option value="logistic_regression">Logistic Regression</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-slate-300 mb-2">Bet Type</label>
+              <select
+                value={betTypeFilter}
+                onChange={(e) => setBetTypeFilter(e.target.value)}
+                className="w-full bg-slate-800 border-2 border-slate-600 text-slate-100 rounded px-3 py-2"
+              >
+                <option value="all">All Types</option>
+                <option value="totals">Totals</option>
+                <option value="spreads">Spreads</option>
+                <option value="moneyline">Moneyline</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-slate-300 mb-2">Limit</label>
+              <select
+                value={limit}
+                onChange={(e) => setLimit(Number(e.target.value))}
+                className="w-full bg-slate-800 border-2 border-slate-600 text-slate-100 rounded px-3 py-2"
+              >
+                <option value={50}>50 Predictions</option>
+                <option value={100}>100 Predictions</option>
+                <option value={250}>250 Predictions</option>
+                <option value={500}>500 Predictions</option>
+                <option value={1000}>1000 Predictions</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Predictions Table */}
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+            <p className="text-slate-400 mt-4">Loading predictions...</p>
+          </div>
+        ) : (
+          <div className="bg-slate-900 border-4 border-slate-700 rounded-lg overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-800 border-b-2 border-slate-700">
+                  <tr>
+                    <th
+                      className="px-4 py-3 text-left text-slate-300 font-semibold cursor-pointer hover:bg-slate-750"
+                      onClick={() => handleSort('game_date')}
+                    >
+                      Date <SortIcon field="game_date" />
+                    </th>
+                    <th className="px-3 py-3 text-left text-slate-300 font-semibold">Time</th>
+                    <th
+                      className="px-4 py-3 text-left text-slate-300 font-semibold cursor-pointer hover:bg-slate-750"
+                      onClick={() => handleSort('sport')}
+                    >
+                      Sport <SortIcon field="sport" />
+                    </th>
+                    <th className="px-4 py-3 text-left text-slate-300 font-semibold">Matchup</th>
+                    <th
+                      className="px-4 py-3 text-left text-slate-300 font-semibold cursor-pointer hover:bg-slate-750"
+                      onClick={() => handleSort('bet_type')}
+                    >
+                      Type <SortIcon field="bet_type" />
+                    </th>
+                    <th
+                      className="px-4 py-3 text-left text-slate-300 font-semibold cursor-pointer hover:bg-slate-750"
+                      onClick={() => handleSort('model')}
+                    >
+                      Model <SortIcon field="model" />
+                    </th>
+                    <th className="px-4 py-3 text-center text-slate-300 font-semibold">Predicted</th>
+                    <th className="px-4 py-3 text-center text-slate-300 font-semibold">Market</th>
+                    <th
+                      className="px-4 py-3 text-center text-slate-300 font-semibold cursor-pointer hover:bg-slate-750"
+                      onClick={() => handleSort('edge')}
+                    >
+                      Edge <SortIcon field="edge" />
+                    </th>
+                    <th className="px-3 py-3 text-center text-slate-300 font-semibold">Pick</th>
+                    <th className="px-3 py-3 text-center text-slate-300 font-semibold">Confidence</th>
+                    <th className="px-3 py-3 text-center text-slate-300 font-semibold">Actual</th>
+                    <th className="px-4 py-3 text-center text-slate-300 font-semibold">Score</th>
+                    <th
+                      className="px-4 py-3 text-center text-slate-300 font-semibold cursor-pointer hover:bg-slate-750"
+                      onClick={() => handleSort('result')}
+                    >
+                      Result <SortIcon field="result" />
+                    </th>
+                    <th
+                      className="px-4 py-3 text-center text-slate-300 font-semibold cursor-pointer hover:bg-slate-750"
+                      onClick={() => handleSort('profit_loss')}
+                    >
+                      P/L <SortIcon field="profit_loss" />
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedPredictions.map((pred, idx) => (
+                    <tr
+                      key={pred.prediction_id}
+                      className={`border-b border-slate-800 hover:bg-slate-800/50 ${
+                        idx % 2 === 0 ? 'bg-slate-900/50' : 'bg-slate-900'
+                      }`}
+                    >
+                      <td className="px-4 py-3 text-slate-300 whitespace-nowrap">
+                        {pred.game_date}
+                      </td>
+                      <td className="px-3 py-3 text-slate-400 text-xs whitespace-nowrap">
+                        {pred.game_time || '-'}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="px-2 py-1 rounded text-xs font-bold bg-blue-900 text-blue-200">
+                          {pred.sport ?? 'N/A'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-slate-300">
+                        <div className="text-xs">{pred.away_team}</div>
+                        <div className="text-xs text-slate-500">@ {pred.home_team}</div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="px-2 py-1 rounded text-xs font-bold bg-purple-900 text-purple-200">
+                          {pred.bet_type?.toUpperCase() ?? 'N/A'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-slate-400 text-xs">{pred.model ?? 'N/A'}</td>
+                      <td className="px-4 py-3 text-center text-slate-300">{pred.predicted_value?.toFixed(2)}</td>
+                      <td className="px-4 py-3 text-center text-slate-400">{pred.market_value?.toFixed(2)}</td>
+                      <td className="px-4 py-3 text-center">
+                        <span className={`font-bold ${pred.edge > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {pred.edge > 0 ? '+' : ''}{pred.edge?.toFixed(2)}
+                        </span>
+                      </td>
+                      <td className="px-3 py-3 text-center">
+                        {pred.recommendation ? (
+                          <span className={`px-2 py-1 rounded text-xs font-bold ${
+                            pred.recommendation?.toLowerCase().includes('over')
+                              ? 'bg-orange-900 text-orange-200'
+                              : pred.recommendation?.toLowerCase().includes('under')
+                              ? 'bg-blue-900 text-blue-200'
+                              : 'bg-slate-700 text-slate-300'
+                          }`}>
+                            {pred.recommendation}
+                          </span>
+                        ) : <span className="text-slate-500 text-xs">-</span>}
+                      </td>
+                      <td className="px-3 py-3 text-center">
+                        {pred.confidence ? (
+                          <span className={`px-2 py-1 rounded text-xs font-bold ${
+                            pred.confidence?.toLowerCase() === 'high'
+                              ? 'bg-green-900 text-green-200'
+                              : pred.confidence?.toLowerCase() === 'medium'
+                              ? 'bg-yellow-900 text-yellow-200'
+                              : 'bg-slate-700 text-slate-300'
+                          }`}>
+                            {pred.confidence?.toUpperCase()}
+                          </span>
+                        ) : <span className="text-slate-500 text-xs">-</span>}
+                      </td>
+                      <td className="px-3 py-3 text-center text-slate-300 font-semibold text-sm">
+                        {pred.actual_total !== null && pred.actual_total !== undefined
+                          ? pred.actual_total.toFixed(1)
+                          : '-'}
+                      </td>
+                      <td className="px-4 py-3 text-center text-slate-300 text-xs">
+                        {pred.away_score !== null && pred.home_score !== null
+                          ? `${pred.away_score}-${pred.home_score}`
+                          : '-'
+                        }
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        {pred.result === 'WIN' && (
+                          <span className="px-2 py-1 rounded text-xs font-bold bg-green-900 text-green-200">WIN</span>
+                        )}
+                        {pred.result === 'LOSS' && (
+                          <span className="px-2 py-1 rounded text-xs font-bold bg-red-900 text-red-200">LOSS</span>
+                        )}
+                        {pred.result === 'PUSH' && (
+                          <span className="px-2 py-1 rounded text-xs font-bold bg-yellow-900 text-yellow-200">PUSH</span>
+                        )}
+                        {!pred.result && (
+                          <span className="px-2 py-1 rounded text-xs font-bold bg-slate-700 text-slate-400">PENDING</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span className={`font-bold ${pred.profit_loss > 0 ? 'text-green-400' : pred.profit_loss < 0 ? 'text-red-400' : 'text-slate-400'}`}>
+                          {pred.profit_loss > 0 ? '+' : ''}{pred.profit_loss?.toFixed(2)}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {sortedPredictions.length === 0 && (
+              <div className="text-center py-12 text-slate-400">
+                No predictions found for the selected filters.
+              </div>
+            )}
+
+            <div className="bg-slate-800 px-6 py-4 text-sm text-slate-400">
+              Showing {sortedPredictions.length} predictions
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

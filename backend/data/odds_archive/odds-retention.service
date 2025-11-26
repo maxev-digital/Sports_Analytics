@@ -1,0 +1,13 @@
+[Unit]
+Description=Odds Archive Data Retention Cleanup (Monthly)
+After=network.target
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/root/sporttrader/backend/data/odds_archive
+ExecStart=/usr/bin/python3 /root/sporttrader/backend/data/odds_archive/retention_cleanup.py
+
+# Logging
+StandardOutput=append:/var/log/odds-retention.log
+StandardError=append:/var/log/odds-retention-error.log

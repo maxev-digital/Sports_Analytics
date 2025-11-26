@@ -76,7 +76,7 @@ const Tooltip = ({ children, text }: { children: React.ReactNode; text: string }
         {children}
       </div>
       {show && (
-        <div className="absolute z-[9999] top-full left-1/2 transform -translate-x-1/2 mt-2 px-3 py-2 bg-slate-900 border-2 border-blue-500 rounded-lg shadow-2xl whitespace-nowrap text-sm text-white min-w-max">
+        <div className="absolute z-[9999] top-full left-1/2 transform -translate-x-1/2 mt-2 px-3 py-2 bg-slate-900 border border-blue-500 rounded-lg shadow-2xl whitespace-nowrap text-sm text-white min-w-max">
           {text}
           <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-[-1px]">
             <div className="border-8 border-transparent border-b-blue-500"></div>
@@ -193,6 +193,31 @@ export function MaxEvEdges() {
         play.home_team.toLowerCase().includes(searchQuery.toLowerCase()) ||
         play.away_team.toLowerCase().includes(searchQuery.toLowerCase()) ||
         play.model_name.toLowerCase().includes(searchQuery.toLowerCase());
+
+      // Filter for today/tomorrow's games for daily sports (NBA, NHL, NCAAB)
+      const dailySports = ['basketball_nba', 'icehockey_nhl', 'basketball_ncaab'];
+      if (dailySports.includes(play.sport)) {
+        try {
+          // Get today and tomorrow in CST
+          const nowCST = new Date(new Date().getTime() - 6 * 60 * 60 * 1000);
+          const todayCST = nowCST.toISOString().split('T')[0];
+          const tomorrowCST = new Date(nowCST.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+          // Parse game time (UTC) and convert to CST (UTC-6)
+          const gameTimeUTC = new Date(play.game_time);
+          const gameTimeCST = new Date(gameTimeUTC.getTime() - 6 * 60 * 60 * 1000);
+          const gameDate = gameTimeCST.toISOString().split('T')[0]; // YYYY-MM-DD
+
+          // Only show games for today or tomorrow
+          if (gameDate !== todayCST && gameDate !== tomorrowCST) {
+            return false;
+          }
+        } catch (error) {
+          console.error('Error parsing game time:', error);
+          return false;
+        }
+      }
+
       return matchesSearch;
     })
     .sort((a, b) => {
@@ -338,7 +363,7 @@ export function MaxEvEdges() {
           </div>
           <div className="flex-1">
             <div className="h-16 bg-slate-800/50 border border-slate-700 rounded-lg mb-3 animate-pulse"></div>
-            <div className="bg-slate-900 border-2 border-slate-700 rounded-lg p-4">
+            <div className="bg-slate-900 border border-slate-700 rounded-lg p-4">
               <div className="space-y-3">
                 {[...Array(5)].map((_, i) => (
                   <div key={i} className="h-16 bg-slate-800 rounded animate-pulse"></div>
@@ -366,9 +391,23 @@ export function MaxEvEdges() {
           </p>
         </div>
 
+        {/* Data Collection Notice */}
+        <div className="mb-4 bg-blue-900/40 border border-blue-600 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <div className="text-2xl">📊</div>
+            <div className="flex-1">
+              <div className="text-blue-300 font-semibold mb-1">Data Collection & ML Training In Progress</div>
+              <div className="text-blue-200/90 text-sm">
+                Our autonomous ML system is currently collecting game data, training prediction models, and building our historical dataset across NBA, NCAAB, NHL, NFL, and NCAAF.
+                <span className="text-blue-100 font-medium"> Full launch with live predictions: December 15, 2025.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Mock Data Banner */}
         {showingMockData && (
-          <div className="mb-4 bg-yellow-900/40 border-2 border-yellow-600 rounded-lg p-4">
+          <div className="mb-4 bg-yellow-900/40 border border-yellow-600 rounded-lg p-4">
             <div className="flex items-start gap-3">
               <div className="text-2xl">ℹ️</div>
               <div className="flex-1">
@@ -480,7 +519,7 @@ export function MaxEvEdges() {
 
             {/* Plays Table - ALWAYS show table with headers */}
             {(
-              <div className="bg-slate-900 border-2 border-slate-700 shadow-2xl rounded-lg overflow-visible">
+              <div className="bg-slate-900 border border-slate-700 shadow-2xl rounded-lg overflow-visible">
                 {/* Mobile scroll hint */}
                 <div className="md:hidden bg-blue-900/40 border-b-2 border-blue-600 px-4 py-2 text-center">
                   <span className="text-blue-300 text-xs font-semibold">← Scroll horizontally to see all columns →</span>
@@ -531,9 +570,9 @@ export function MaxEvEdges() {
                           className="text-center py-2 px-3 text-slate-300 font-bold text-xs uppercase tracking-wider border-r border-b-2 border-slate-600 cursor-pointer hover:bg-slate-700 transition-colors"
                           onClick={() => toggleSort('confidence')}
                         >
-                          <Tooltip text="Model confidence (0-1)">
+                          <Tooltip text="Calibrated model probability (0-1)">
                             <span className="cursor-pointer">
-                              Confidence <SortIndicator field="confidence" />
+                              Model Probability <SortIndicator field="confidence" />
                             </span>
                           </Tooltip>
                         </th>
@@ -576,7 +615,7 @@ export function MaxEvEdges() {
                               )}
                             </div>
                             <div className="text-slate-600 text-sm">
-                              Table columns: Game | Sport | Bet Type | Line | Prediction | Bet | Edge | Confidence | Kelly % | Model | Consensus
+                              Table columns: Game | Sport | Bet Type | Line | Prediction | Bet | Edge | Model Probability | Kelly % | Model | Consensus
                             </div>
                             {searchQuery && (
                               <button
@@ -628,7 +667,7 @@ export function MaxEvEdges() {
                             </td>
                             <td className="py-3 px-3 text-center border-r border-slate-600">
                               <div className="text-blue-400 font-semibold text-base">
-                                {play.model_prediction.toFixed(1)}
+                                {play.model_prediction?.toFixed(1) ?? 'N/A'}
                               </div>
                             </td>
                             <td className="py-3 px-3 text-center border-r border-slate-600">
@@ -642,20 +681,20 @@ export function MaxEvEdges() {
                             </td>
                             <td className="py-3 px-3 text-center border-r border-slate-600">
                               <div className="text-green-400 font-bold text-lg">
-                                {play.edge > 0 ? '+' : ''}{play.edge.toFixed(1)}
+                                {play.edge != null ? (play.edge > 0 ? '+' : '') + play.edge.toFixed(1) : 'N/A'}
                               </div>
                               <div className="text-green-300 text-xs">
-                                ({play.edge_percentage.toFixed(1)}%)
+                                ({play.edge_percentage?.toFixed(1) ?? 'N/A'}%)
                               </div>
                             </td>
                             <td className="py-3 px-3 text-center border-r border-slate-600">
                               <div className="text-white font-semibold text-base">
-                                {(play.model_confidence * 100).toFixed(0)}%
+                                {play.model_confidence != null ? (play.model_confidence * 100).toFixed(0) : 'N/A'}%
                               </div>
                             </td>
                             <td className="py-3 px-3 text-center border-r border-slate-600">
                               <div className="text-amber-400 font-bold text-base">
-                                {(play.kelly_fraction * 100).toFixed(1)}%
+                                {play.kelly_fraction != null ? (play.kelly_fraction * 100).toFixed(1) : 'N/A'}%
                               </div>
                             </td>
                             <td className="py-3 px-3 text-center border-r border-slate-600">

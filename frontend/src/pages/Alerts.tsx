@@ -440,7 +440,7 @@ export function Alerts() {
               </button>
               <button
                 onClick={fetchAlerts}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white border-2 border-blue-500 font-bold tracking-wide transition-all"
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white border border-blue-500 font-bold tracking-wide transition-all"
               >
                 REFRESH NOW
               </button>
@@ -489,7 +489,7 @@ export function Alerts() {
         <div className="flex gap-4 mb-6">
           <button
             onClick={() => { setCategoryTab('live'); setActiveTab('comeback'); }}
-            className={`px-8 py-4 border-2 font-bold text-lg tracking-wide transition-all ${
+            className={`px-8 py-4 border font-bold text-lg tracking-wide transition-all ${
               categoryTab === 'live'
                 ? 'bg-gradient-to-br from-red-600 via-red-700 to-red-800 text-white border-red-500 shadow-lg shadow-red-600/30'
                 : 'bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800 hover:border-blue-600'
@@ -499,7 +499,7 @@ export function Alerts() {
           </button>
           <button
             onClick={() => { setCategoryTab('pregame'); setActiveTab('steam'); }}
-            className={`px-8 py-4 border-2 font-bold text-lg tracking-wide transition-all ${
+            className={`px-8 py-4 border font-bold text-lg tracking-wide transition-all ${
               categoryTab === 'pregame'
                 ? 'bg-gradient-to-br from-green-600 via-green-700 to-green-800 text-white border-green-500 shadow-lg shadow-green-600/30'
                 : 'bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800 hover:border-blue-600'
@@ -544,13 +544,13 @@ export function Alerts() {
         {activeTab === 'arbitrage' && (
           <div className="space-y-4">
             {alertsData?.arbitrage.alerts.length === 0 ? (
-              <div className="bg-slate-800 border-2 border-slate-700 p-12 text-center">
+              <div className="bg-slate-800 border border-slate-700 p-12 text-center">
                 <div className="text-slate-400 text-lg">No arbitrage opportunities detected</div>
                 <div className="text-slate-500 text-sm mt-2">Scanning every 10 seconds...</div>
               </div>
             ) : (
               alertsData?.arbitrage.alerts.map((alert, idx) => (
-                <div key={idx} className="bg-slate-900 border-2 border-red-700 p-6">
+                <div key={idx} className="bg-slate-900 border border-red-700 p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <span className={`px-3 py-1 text-xs font-bold text-white ${getSportBadgeColor(alert.sport)}`}>
@@ -574,7 +574,7 @@ export function Alerts() {
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div className="bg-slate-800 border-2 border-slate-700 p-4">
+                    <div className="bg-slate-800 border border-slate-700 p-4">
                       <div className="text-sm text-slate-400 mb-2">Book A: {alert.book_a}</div>
                       <div className="text-xl font-bold text-white mb-1">
                         {alert.odds_a > 0 ? `+${alert.odds_a}` : alert.odds_a}
@@ -583,7 +583,7 @@ export function Alerts() {
                         Stake: ${alert.stake_a.toFixed(2)}
                       </div>
                     </div>
-                    <div className="bg-slate-800 border-2 border-slate-700 p-4">
+                    <div className="bg-slate-800 border border-slate-700 p-4">
                       <div className="text-sm text-slate-400 mb-2">Book B: {alert.book_b}</div>
                       <div className="text-xl font-bold text-white mb-1">
                         {alert.odds_b > 0 ? `+${alert.odds_b}` : alert.odds_b}
@@ -615,13 +615,13 @@ export function Alerts() {
         {activeTab === 'steam' && (
           <div className="space-y-4">
             {alertsData?.steam_moves.alerts.length === 0 ? (
-              <div className="bg-slate-800 border-2 border-slate-700 p-12 text-center">
+              <div className="bg-slate-800 border border-slate-700 p-12 text-center">
                 <div className="text-slate-400 text-lg">No steam moves detected</div>
                 <div className="text-slate-500 text-sm mt-2">Scanning every 10 seconds...</div>
               </div>
             ) : (
               alertsData?.steam_moves.alerts.map((alert, idx) => (
-                <div key={idx} className="bg-slate-900 border-2 border-blue-500 p-6">
+                <div key={idx} className="bg-slate-900 border border-blue-500 p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <span className={`px-3 py-1 text-xs font-bold text-white ${getSportBadgeColor(alert.sport)}`}>
@@ -642,7 +642,7 @@ export function Alerts() {
                     </div>
                   </div>
 
-                  <div className="bg-slate-800 border-2 border-slate-700 p-4 mb-4">
+                  <div className="bg-slate-800 border border-slate-700 p-4 mb-4">
                     <div className="grid grid-cols-3 gap-4 text-center">
                       <div>
                         <div className="text-sm text-slate-400 mb-1">Original Line</div>
@@ -679,13 +679,13 @@ export function Alerts() {
         {activeTab === 'lines' && (
           <div className="space-y-4">
             {alertsData?.middles.alerts.length === 0 ? (
-              <div className="bg-slate-800 border-2 border-slate-700 p-12 text-center">
+              <div className="bg-slate-800 border border-slate-700 p-12 text-center">
                 <div className="text-slate-400 text-lg">No middle opportunities detected</div>
                 <div className="text-slate-500 text-sm mt-2">Scanning every 10 seconds...</div>
               </div>
             ) : (
               alertsData?.middles.alerts.map((alert, idx) => (
-                <div key={idx} className="bg-slate-900 border-2 border-purple-600 p-6">
+                <div key={idx} className="bg-slate-900 border border-purple-600 p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <span className={`px-3 py-1 text-xs font-bold text-white ${getSportBadgeColor(alert.sport)}`}>
@@ -709,7 +709,7 @@ export function Alerts() {
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div className="bg-slate-800 border-2 border-slate-700 p-4">
+                    <div className="bg-slate-800 border border-slate-700 p-4">
                       <div className="text-sm text-slate-400 mb-2">Low: {alert.book_low}</div>
                       <div className="text-lg font-bold text-white mb-1">
                         {alert.side_low}
@@ -718,7 +718,7 @@ export function Alerts() {
                         Odds: {alert.odds_low > 0 ? `+${alert.odds_low}` : alert.odds_low}
                       </div>
                     </div>
-                    <div className="bg-slate-800 border-2 border-slate-700 p-4">
+                    <div className="bg-slate-800 border border-slate-700 p-4">
                       <div className="text-sm text-slate-400 mb-2">High: {alert.book_high}</div>
                       <div className="text-lg font-bold text-white mb-1">
                         {alert.side_high}
@@ -742,13 +742,13 @@ export function Alerts() {
         {activeTab === 'sharp-money' && (
           <div className="space-y-4">
             {alertsData?.sharp_money.alerts.length === 0 ? (
-              <div className="bg-slate-800 border-2 border-slate-700 p-12 text-center">
+              <div className="bg-slate-800 border border-slate-700 p-12 text-center">
                 <div className="text-slate-400 text-lg">No sharp money movements detected</div>
                 <div className="text-slate-500 text-sm mt-2">Scanning every 2 minutes...</div>
               </div>
             ) : (
               alertsData?.sharp_money.alerts.map((alert, idx) => (
-                <div key={idx} className="bg-slate-900 border-2 border-purple-600 p-6">
+                <div key={idx} className="bg-slate-900 border border-purple-600 p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <span className={`px-3 py-1 text-xs font-bold text-white ${getSportBadgeColor(alert.sport)}`}>
@@ -778,7 +778,7 @@ export function Alerts() {
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div className="bg-slate-800 border-2 border-slate-700 p-4">
+                    <div className="bg-slate-800 border border-slate-700 p-4">
                       <div className="text-sm text-slate-400 mb-2">Line Movement</div>
                       <div className="text-lg font-bold text-white mb-1">
                         {alert.opening_line !== undefined && alert.current_line !== undefined ? (
@@ -793,7 +793,7 @@ export function Alerts() {
                         )}
                       </div>
                     </div>
-                    <div className="bg-slate-800 border-2 border-slate-700 p-4">
+                    <div className="bg-slate-800 border border-slate-700 p-4">
                       <div className="text-sm text-slate-400 mb-2">Sharp Books Involved</div>
                       <div className="text-sm font-bold text-purple-400">
                         {alert.sharp_books_involved.join(', ')}
@@ -802,7 +802,7 @@ export function Alerts() {
                   </div>
 
                   {alert.reasoning && (
-                    <div className="bg-slate-800 border-2 border-slate-700 p-4 mb-4">
+                    <div className="bg-slate-800 border border-slate-700 p-4 mb-4">
                       <div className="text-sm text-slate-400 mb-2">Analysis</div>
                       <div className="text-sm text-slate-200">{alert.reasoning}</div>
                     </div>
@@ -834,13 +834,13 @@ export function Alerts() {
         {activeTab === 'fatigue' && (
           <div className="space-y-4">
             {alertsData?.schedule_fatigue.alerts.length === 0 ? (
-              <div className="bg-slate-800 border-2 border-slate-700 p-12 text-center">
+              <div className="bg-slate-800 border border-slate-700 p-12 text-center">
                 <div className="text-slate-400 text-lg">No schedule fatigue situations detected</div>
                 <div className="text-slate-500 text-sm mt-2">Scanning every hour for rest advantages...</div>
               </div>
             ) : (
               alertsData?.schedule_fatigue.alerts.map((alert, idx) => (
-                <div key={idx} className="bg-slate-900 border-2 border-yellow-600 p-6">
+                <div key={idx} className="bg-slate-900 border border-yellow-600 p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <span className={`px-3 py-1 text-xs font-bold text-white ${getSportBadgeColor(alert.sport)}`}>
@@ -870,7 +870,7 @@ export function Alerts() {
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div className="bg-slate-800 border-2 border-slate-700 p-4">
+                    <div className="bg-slate-800 border border-slate-700 p-4">
                       <div className="text-sm text-slate-400 mb-2">Rest Differential</div>
                       <div className="text-lg font-bold text-white mb-1">
                         {alert.rest_differential} days
@@ -882,7 +882,7 @@ export function Alerts() {
                         Away: {alert.away_rest_days} days {alert.away_is_b2b && '(B2B)'}
                       </div>
                     </div>
-                    <div className="bg-slate-800 border-2 border-slate-700 p-4">
+                    <div className="bg-slate-800 border border-slate-700 p-4">
                       <div className="text-sm text-slate-400 mb-2">Fatigue Impact</div>
                       <div className="text-sm font-bold text-yellow-400">
                         {alert.favored_side === 'home' ? alert.home_team : alert.away_team} has rest advantage
@@ -891,7 +891,7 @@ export function Alerts() {
                   </div>
 
                   {alert.reasoning && (
-                    <div className="bg-slate-800 border-2 border-slate-700 p-4 mb-4">
+                    <div className="bg-slate-800 border border-slate-700 p-4 mb-4">
                       <div className="text-sm text-slate-400 mb-2">Analysis</div>
                       <div className="text-sm text-slate-200">{alert.reasoning}</div>
                     </div>

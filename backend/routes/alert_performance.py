@@ -107,9 +107,10 @@ async def get_performance_overview(
         pending_count = total_alerts - settled_count
 
         if settled_count > 0:
-            wins = len(settled[settled['outcome'] == 'won'])
-            losses = len(settled[settled['outcome'] == 'lost'])
-            pushes = len(settled[settled['outcome'] == 'push'])
+            # Match outcome values from grade_alerts.py (uppercase)
+            wins = len(settled[settled['outcome'].str.contains('WIN', case=False, na=False)])
+            losses = len(settled[settled['outcome'].str.contains('LOSS|LOSE', case=False, na=False)])
+            pushes = len(settled[settled['outcome'].str.contains('PUSH', case=False, na=False)])
 
             # Win rate excludes pushes
             win_rate = (wins / (wins + losses) * 100) if (wins + losses) > 0 else 0
@@ -224,9 +225,10 @@ def calculate_stats(df: pd.DataFrame, settled: pd.DataFrame) -> Dict[str, Any]:
     pending = total - settled_count
 
     if settled_count > 0:
-        wins = len(settled[settled['outcome'] == 'won'])
-        losses = len(settled[settled['outcome'] == 'lost'])
-        pushes = len(settled[settled['outcome'] == 'push'])
+        # Match outcome values from grade_alerts.py (uppercase)
+        wins = len(settled[settled['outcome'].str.contains('WIN', case=False, na=False)])
+        losses = len(settled[settled['outcome'].str.contains('LOSS|LOSE', case=False, na=False)])
+        pushes = len(settled[settled['outcome'].str.contains('PUSH', case=False, na=False)])
 
         win_rate = (wins / (wins + losses) * 100) if (wins + losses) > 0 else 0
         total_profit = settled['profit_loss'].sum()

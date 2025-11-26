@@ -716,7 +716,7 @@ class AlertMonitor:
     async def scan_for_alerts(self, sports: List[str]) -> Dict[str, List[Any]]:
         """Scan all sports for alerts"""
         all_alerts = {
-            'arbitrage': [],
+            'arbitrage': [],  # DISABLED - Replaced with Volatility Arbitrage
             'steam_moves': [],
             'middles': []  # Replaced line_movements with middles
         }
@@ -730,9 +730,9 @@ class AlertMonitor:
             for game in odds_data:
                 game_id = game.get('id')
 
-                # Detect arbitrage
-                arb_alerts = self.detect_arbitrage(game)
-                all_alerts['arbitrage'].extend(arb_alerts)
+                # Detect arbitrage - DISABLED (replaced with Volatility Arbitrage)
+                # arb_alerts = self.detect_arbitrage(game)
+                # all_alerts['arbitrage'].extend(arb_alerts)
 
                 # Detect steam moves
                 steam_alerts = self.detect_steam_move(game_id, game)

@@ -30,7 +30,10 @@ PREDICTIONS_LOG = DATA_DIR / "predictions_log_multi_bet.csv"
 RESULTS_LOG = DATA_DIR / "results_log.csv"
 
 # The Odds API config
-ODDS_API_KEY = "b569397089cab564f5fa1dd218288aec"  # TODO: Move to env var
+import os
+from dotenv import load_dotenv
+load_dotenv()
+ODDS_API_KEY = os.getenv("ODDS_API_KEY", "b569397089cab564f5fa1dd218288aec")
 ODDS_API_BASE = "https://api.the-odds-api.com/v4"
 
 # Sport mappings
@@ -84,13 +87,7 @@ def normalize_team_name(team: str) -> str:
     - "Los Angeles Lakers" vs "LA Lakers"
     - "Golden State Warriors" vs "GSW"
     """
-    # Remove common prefixes
-    team = team.replace("Los Angeles", "LA")
-    team = team.replace("New York", "NY")
-    team = team.replace("San Antonio", "SA")
-    team = team.replace("Golden State", "GS")
-
-    # Lowercase for comparison
+    # Just lowercase - both sources use full team names
     return team.lower().strip()
 
 
@@ -188,9 +185,13 @@ def calculate_result(prediction: pd.Series, score: Dict) -> Dict:
             else:
                 result = 'PUSH'
         elif recommendation == 'AWAY':
-            if actual_spread < -abs(market_spread):
+            # AWAY gets the underdog spread
+            # If market is -18.5 (HOME favored), AWAY gets +18.5
+            # AWAY wins if they lose by LESS than 18.5 (or win outright)
+            # actual_spread is positive when HOME wins
+            if actual_spread < abs(market_spread):
                 result = 'WIN'
-            elif actual_spread > -abs(market_spread):
+            elif actual_spread > abs(market_spread):
                 result = 'LOSS'
             else:
                 result = 'PUSH'
@@ -320,8 +321,8 @@ def backfill_results(sport: Optional[str] = None, days: int = 30, dry_run: bool 
                 'away_score': outcome['away_score'],
                 'home_score': outcome['home_score'],
                 'actual_total': outcome['actual_total'],
-                'market_total': prediction.get('market_value'),
-                'predicted_total': prediction.get('predicted_value'),
+                'market_total': prediction.get('market_value') or prediction.get('market_total'),
+                'predicted_total': prediction.get('predicted_value') or prediction.get('predicted_total'),
                 'recommendation': prediction['recommendation'],
                 'confidence': prediction['confidence'],
                 'result': outcome['result'],

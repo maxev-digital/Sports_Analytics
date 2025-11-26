@@ -278,11 +278,13 @@ class NFLTeamStats(BaseModel):
     rushing_touchdowns_per_game: Optional[float] = None  # Rush TDs
     opponent_rushing_touchdowns_per_game: Optional[float] = None  # Rush TDs allowed
 
-    # === NEW: MISCELLANEOUS (5 fields) ===
+    # === NEW: MISCELLANEOUS (7 fields) ===
     two_point_conversion_pct: Optional[float] = None  # 2-pt conversions
     penalty_yards_per_game: Optional[float] = None  # Penalty yards
     plays_per_game: Optional[float] = None  # Total plays
     opponent_plays_per_game: Optional[float] = None  # Opponent plays
+    first_downs_per_game: Optional[float] = None  # First downs gained
+    time_of_possession: Optional[float] = None  # Average time of possession
     opponent_first_downs_per_game: Optional[float] = None  # First downs allowed
 
     # === ORIGINAL RANKINGS (12 ranks) ===
@@ -569,3 +571,70 @@ class PlayerPropsResponse(BaseModel):
     last_updated: datetime  # When props were last fetched/updated
 
 
+# ==================== NCAAB BASELINE COMPARISON MODELS ====================
+
+class NCAABEmojiIndicator(BaseModel):
+    """Emoji indicator with intensity level"""
+    emoji: str  # e.g., "🔥🔥🔥" or "❄️❄️"
+    level: str  # e.g., "SCORCHING", "ICE COLD", "VERY FAST"
+    count: int  # Number of emojis (1-3)
+
+class NCAABShootingVariance(BaseModel):
+    """Shooting performance vs baseline"""
+    fg_pct: float  # Live FG%
+    fg_variance: float  # Percentage points vs baseline
+    three_pct: float  # Live 3PT%
+    three_variance: float  # Percentage points vs baseline
+    ft_pct: float  # Live FT%
+    ft_variance: float  # Percentage points vs baseline
+    is_hot_fg: bool
+    is_cold_fg: bool
+    is_hot_three: bool
+    is_cold_three: bool
+
+class NCAABPaceVariance(BaseModel):
+    """Pace performance vs baseline tempo"""
+    live_possessions: float
+    expected_possessions: float
+    pace_variance: float  # Possessions above/below expected
+    is_faster: bool
+    is_slower: bool
+    projected_total_possessions: float
+
+class NCAABEfficiencyVariance(BaseModel):
+    """Offensive efficiency vs baseline"""
+    live_efficiency: float  # Pts/100 possessions
+    season_efficiency: float  # Season avg pts/100 poss
+    efficiency_variance: float
+    is_underperforming: bool
+    is_overperforming: bool
+
+class NCAABRegressionOpportunity(BaseModel):
+    """Regression to mean probability"""
+    has_regression_opportunity: bool
+    confidence: str  # "HIGH", "MEDIUM", "LOW", "NONE"
+    reason: str
+    expected_regression_points: float
+
+class NCAABTeamBaselineAnalysis(BaseModel):
+    """Complete baseline comparison for one team"""
+    team_name: str
+    team_abv: str
+    possessions: float
+    shooting: NCAABShootingVariance
+    pace: NCAABPaceVariance
+    efficiency: NCAABEfficiencyVariance
+    regression: NCAABRegressionOpportunity
+    shooting_emoji: NCAABEmojiIndicator  # Team's shooting status
+    pace_emoji: NCAABEmojiIndicator  # Game pace status
+    period: int
+    clock: str
+
+class NCAABBaselineComparison(BaseModel):
+    """Full baseline comparison for a game"""
+    game_id: str
+    home_team_analysis: NCAABTeamBaselineAnalysis
+    away_team_analysis: NCAABTeamBaselineAnalysis
+    is_live: bool
+    status: str
+    last_updated: datetime

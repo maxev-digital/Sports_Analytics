@@ -575,28 +575,87 @@ class GameTracker:
                 return cached_stats
 
         if is_ncaaf:
-            # Check if ESPN stats are enabled
-            if self.nfl_stats_client is None:
-                return None
-
-            # For NCAAF, map team name to ESPN's full name format
-            mapped_team_name = self._map_ncaaf_team_name(team_name)
-            if not mapped_team_name:
-                logger.warning(f"Could not map NCAAF team name: {team_name}")
-                return None
-
+            # For NCAAF, use TeamRankings scraper (same pattern as NFL)
             try:
-                # Fetch season stats from ESPN API using mapped name
-                nfl_stats = await self.nfl_stats_client.get_team_season_stats(mapped_team_name, is_ncaaf=True)
-                if not nfl_stats:
+                logger.info(f"Fetching NCAAF stats for {team_name} from TeamRankings scraper")
+                teamrankings_data = self.teamrankings_ncaaf_scraper.fetch_all_team_stats()
+
+                # TeamRankings data is keyed by team names like "Alabama", "Ohio St", etc.
+                # Try direct lookup first
+                tr_stats = teamrankings_data.get(team_name)
+
+                # If not found, try partial match (handle name variations)
+                if not tr_stats:
+                    for tr_team_name in teamrankings_data.keys():
+                        # Handle common abbreviations (e.g., "Ohio St" vs "Ohio State")
+                        if team_name.lower() in tr_team_name.lower() or tr_team_name.lower() in team_name.lower():
+                            tr_stats = teamrankings_data[tr_team_name]
+                            logger.info(f"Matched {team_name} to TeamRankings team {tr_team_name}")
+                            break
+
+                if tr_stats:
+                    # Convert TeamRankings data to NFLTeamStats format (NCAAF uses same model)
+                    ncaaf_stats = NFLTeamStats(
+                        team_id=team_name,
+                        team_name=team_name,
+                        games_played=int(tr_stats.get('games_played', 0)),
+                        wins=int(tr_stats.get('wins', 0)),
+                        losses=int(tr_stats.get('losses', 0)),
+                        ties=0,  # NCAAF doesn't have ties
+                        win_pct=float(tr_stats.get('win_pct', 0.0)),
+                        points_per_game=float(tr_stats.get('pts_per_game', 0.0)),
+                        points_allowed_per_game=float(tr_stats.get('pts_allowed', 0.0)),
+                        point_differential=float(tr_stats.get('point_diff', 0.0)),
+                        total_yards_per_game=float(tr_stats.get('yards_per_game', 0.0)),
+                        yards_allowed_per_game=float(tr_stats.get('yards_allowed', 0.0)),
+                        passing_yards_per_game=float(tr_stats.get('passing_yards_per_game', 0.0)),
+                        rushing_yards_per_game=float(tr_stats.get('rushing_yards_per_game', 0.0)),
+                        turnovers_per_game=0.0,  # Not in NCAAF scraper yet
+                        takeaways_per_game=float(tr_stats.get('takeaways_per_game', 0.0)),
+                        turnover_differential=0.0,  # Not in NCAAF scraper yet
+                        third_down_pct=float(tr_stats.get('third_down_conversion_pct', 0.0)) / 100.0,  # Convert to decimal
+                        red_zone_pct=float(tr_stats.get('red_zone_scoring_pct', 0.0)) / 100.0,  # Convert to decimal
+                        sacks_per_game=float(tr_stats.get('sacks_per_game', 0.0)),
+
+                        # Rankings (NCAAF scraper has these)
+                        points_per_game_rank=tr_stats.get('points_per_game_rank'),
+                        points_allowed_per_game_rank=tr_stats.get('points_allowed_per_game_rank'),
+                        total_yards_per_game_rank=tr_stats.get('total_yards_per_game_rank'),
+                        yards_allowed_per_game_rank=tr_stats.get('yards_allowed_per_game_rank'),
+                        passing_yards_per_game_rank=tr_stats.get('passing_yards_per_game_rank'),
+                        rushing_yards_per_game_rank=tr_stats.get('rushing_yards_per_game_rank'),
+                        third_down_pct_rank=tr_stats.get('third_down_pct_rank'),
+                        red_zone_pct_rank=tr_stats.get('red_zone_pct_rank'),
+                        sacks_rank=tr_stats.get('sacks_rank'),
+                        takeaways_per_game_rank=tr_stats.get('takeaways_rank'),
+
+                        # === NEW: BETTING TRENDS (6 fields) ===
+                        ats_wins=tr_stats.get('ats_wins'),
+                        ats_losses=tr_stats.get('ats_losses'),
+                        ats_pushes=tr_stats.get('ats_pushes'),
+                        ou_overs=tr_stats.get('ou_overs'),
+                        ou_unders=tr_stats.get('ou_unders'),
+                        ou_pushes=tr_stats.get('ou_pushes'),
+
+                        # Optional fields
+                        last_5_record=None,
+                        form_trend=None,
+                        home_record=None,
+                        away_record=None,
+                        division_record=None,
+                        conference_record=None
+                    )
+
+                    # Cache the stats
+                    self.nfl_team_stats_cache[team_name] = ncaaf_stats
+                    logger.info(f"✅ Loaded NCAAF stats from TeamRankings for {team_name} (Record: {ncaaf_stats.wins}-{ncaaf_stats.losses}, ATS: {ncaaf_stats.ats_wins}-{ncaaf_stats.ats_losses}-{ncaaf_stats.ats_pushes})")
+                    return ncaaf_stats
+                else:
+                    logger.warning(f"Could not find NCAAF team in TeamRankings: {team_name}")
                     return None
 
-                # Cache the stats (using original team name as key)
-                self.nfl_team_stats_cache[team_name] = nfl_stats
-                return nfl_stats
-
             except Exception as e:
-                logger.warning(f"Error fetching NCAAF stats for {team_name} (mapped to {mapped_team_name}): {e}")
+                logger.error(f"Error fetching NCAAF stats for {team_name}: {e}")
                 return None
         else:
             # For NFL, use TeamRankings scraper directly (user requested scraper-first approach)

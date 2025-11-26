@@ -361,7 +361,7 @@ export function MLModelsExplained() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
               {/* 87 Active Models */}
-              <div className="bg-gradient-to-br from-green-900/30 to-blue-900/30 border-2 border-slate-600/50 rounded-lg p-6">
+              <div className="bg-gradient-to-br from-green-900/30 to-blue-900/30 border border-slate-600/50 rounded-lg p-6">
                 <h3 className="text-3xl font-extrabold text-slate-300 mb-4">87 Active ML Models</h3>
                 <div className="space-y-3 text-slate-300">
                   <p className="flex items-start gap-2">
@@ -430,7 +430,7 @@ export function MLModelsExplained() {
 
         {/* Strategy Integration - Coming Soon */}
         <section id="strategy-integration" className="mb-12">
-          <div className="bg-slate-900 border-2 border-slate-600/50 rounded-lg p-6">
+          <div className="bg-slate-900 border border-slate-600/50 rounded-lg p-6">
             <div className="flex items-start gap-4 mb-6">
               <span className="text-5xl">🚧</span>
               <div>
@@ -709,7 +709,7 @@ export function MLModelsExplained() {
 
             <div className="space-y-6">
               {/* Phase 1: Current - Fully Operational */}
-              <div className="bg-slate-800/50 border-2 border-slate-600 rounded-lg p-5">
+              <div className="bg-slate-800/50 border border-slate-600 rounded-lg p-5">
                 <div className="flex items-center gap-3 mb-4">
                   <span className="bg-slate-700 text-white px-4 py-2 rounded-full font-bold">PHASE 1: COMPLETE</span>
                   <h3 className="text-3xl font-extrabold text-slate-300">Automated ML System</h3>
@@ -739,7 +739,7 @@ export function MLModelsExplained() {
               </div>
 
               {/* Phase 2: Next - Strategy Integration */}
-              <div className="bg-slate-800/50 border-2 border-slate-600 rounded-lg p-5">
+              <div className="bg-slate-800/50 border border-slate-600 rounded-lg p-5">
                 <div className="flex items-center gap-3 mb-4">
                   <span className="bg-yellow-600 text-black px-4 py-2 rounded-full font-bold">PHASE 2: NEXT</span>
                   <h3 className="text-3xl font-extrabold text-slate-200">ML + Strategy Integration</h3>

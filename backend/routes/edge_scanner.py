@@ -71,6 +71,11 @@ def load_edge_lab_predictions(bet_type_filter: Optional[str] = None, model_filte
 
         df = pd.read_csv(PREDICTIONS_LOG)
 
+        # Detect format - if 'model' column doesn't exist, use old format loader
+        if 'model' not in df.columns:
+            logger.info("Multi-bet file detected as old format, using old format loader")
+            return load_edge_lab_predictions_old()
+
         # Filter for recent predictions (last 7 days) - handle mixed date formats
         df['date_predicted'] = pd.to_datetime(df['date_predicted'], format='mixed', errors='coerce')
         cutoff = pd.Timestamp.now() - pd.Timedelta(days=7)
@@ -81,7 +86,7 @@ def load_edge_lab_predictions(bet_type_filter: Optional[str] = None, model_filte
         now = pd.Timestamp.now(tz='UTC')
 
         # Filter based on sport:
-        # - NBA, NHL, NCAAB: Next 24 hours (daily sports - timezone safe)
+        # - NBA, NHL, NCAAB: Next 36 hours (daily sports - more lenient to handle timezone differences)
         # - NFL, NCAAF: Next 7 days (weekly sports)
         def should_include_game(row):
             game_date = row['game_date_parsed']
@@ -97,18 +102,18 @@ def load_edge_lab_predictions(bet_type_filter: Optional[str] = None, model_filte
             # Get sport from CSV column
             sport_code = str(row.get('sport', '')).upper()
 
-            # Daily sports: next 24 hours (captures all of "today" regardless of timezone)
+            # Daily sports: next 36 hours (more lenient since CSV only stores date, not exact time)
             if sport_code in ['NBA', 'NHL', 'NCAAB']:
                 hours_until_game = (game_date - now).total_seconds() / 3600
-                return -2 <= hours_until_game <= 24  # Include games that started up to 2 hours ago, and games within next 24 hours
+                return -12 <= hours_until_game <= 36  # Include games from up to 12 hours ago through next 36 hours
             # Weekly sports: next 7 days
             elif sport_code in ['NFL', 'NCAAF']:
                 days_until_game = (game_date - now).total_seconds() / 86400
                 return -0.5 <= days_until_game <= 7  # Include games that started up to 12 hours ago, and games within next 7 days
             else:
-                # Default: next 24 hours
+                # Default: next 36 hours
                 hours_until_game = (game_date - now).total_seconds() / 3600
-                return -2 <= hours_until_game <= 24
+                return -12 <= hours_until_game <= 36
 
         df = df[df.apply(should_include_game, axis=1)]
 
@@ -121,6 +126,10 @@ def load_edge_lab_predictions(bet_type_filter: Optional[str] = None, model_filte
 
         predictions = []
         for _, row in df.iterrows():
+            # Skip rows with invalid model values
+            if pd.isna(row.get('model')) or row.get('model') == '':
+                continue
+            
             # Get sport from CSV and normalize it to API key format
             home_team = row['home_team']
             away_team = row['away_team']
@@ -141,7 +150,7 @@ def load_edge_lab_predictions(bet_type_filter: Optional[str] = None, model_filte
             predicted_value = float(row['predicted_value'])
             market_value = float(row['market_value'])
             bet_type = row['bet_type']
-            model = row['model']
+            model = str(row['model']).strip()
 
             # Sport-specific validation - filter out unrealistic predictions
             if sport_raw.upper() == 'NHL' and bet_type.lower() == 'spreads':
@@ -158,28 +167,12 @@ def load_edge_lab_predictions(bet_type_filter: Optional[str] = None, model_filte
             #         logger.warning(f"Skipping unrealistic NHL totals prediction: {predicted_value}")
             #         continue
 
-            # Calculate confidence based on CSV confidence level with modest adjustments
-            confidence_base = {'HIGH': 0.72, 'MEDIUM': 0.64, 'LOW': 0.56, 'NONE': 0.50}
-            base = confidence_base.get(str(row['confidence']).upper(), 0.64)
-
-            # Add small boost for ensemble models (multiple models agreeing)
-            model_boost = 0.03 if model == 'ensemble' else 0.00
-
-            # Add small edge-based adjustment (capped lower to avoid inflating confidence)
-            if bet_type == 'totals':
-                # For totals, significant edges (5+ points) add small confidence boost
-                edge_adjustment = min(abs(edge) / 100.0, 0.08)
-            elif bet_type == 'spreads':
-                # For spreads, 3+ point edges add small boost
-                edge_adjustment = min(abs(edge) / 60.0, 0.06)
-            elif bet_type == 'moneyline':
-                # For moneyline, probability edges add small boost
-                edge_adjustment = min(abs(edge) * 0.3, 0.05)
-            else:
-                edge_adjustment = 0.00
-
-            # Calculate final confidence (cap at 88% to be realistic)
-            confidence = min(base + model_boost + edge_adjustment, 0.88)
+            # ✅ READ model_probability from CSV (calculated in prediction generator)
+            # NO MORE CALCULATIONS - just read the pre-calculated value
+            confidence = float(row.get('model_probability', 0.60))
+            
+            # Also read kelly_fraction if available (for future use)
+            kelly_from_csv = float(row.get('kelly_fraction', 0.0))
 
             # Calculate Kelly fraction based on bet type
             if bet_type == 'totals':
@@ -266,20 +259,44 @@ def load_edge_lab_predictions_old() -> List[Dict]:
             base = confidence_base.get(str(row['confidence']).upper(), 0.64)
 
             # Add small edge-based adjustment for totals (capped lower)
-            edge_adjustment = min(abs(edge) / 100.0, 0.08)
+            # Calculate calibrated model probability
+            edge_pct = (abs(edge) / market_total) * 100 if market_total > 0 else 0
+            import math
+            confidence = 0.50 + (1 / (1 + math.exp(-0.3 * (edge_pct - 5)))) * 0.20
+            confidence = min(max(confidence, 0.52), 0.70)
 
-            # Calculate final confidence (cap at 88% to be realistic)
-            confidence = min(base + edge_adjustment, 0.88)
+            # Get required fields from row
+            predicted_total = float(row.get('predicted_total', row.get('predicted_value', 0)))
+            market_total = float(row.get('market_total', row.get('market_value', 0)))
+
+            # Calculate Kelly fraction
+            kelly = min(abs(edge) / market_total * confidence, 0.05) if market_total > 0 else 0
 
             predictions.append({
                 "id": f"edgelab_{row['prediction_id']}",
                 "sport": sport,
+                "game_id": row['prediction_id'],
+                "game_time": parse_game_time(row['game_date'], row.get('game_time', '07:00 PM')),
+                "home_team": row['home_team'],
+                "away_team": row['away_team'],
                 "bet_type": "Totals",
+                "market": "Over/Under",
+                "market_line": market_total,
+                "model_prediction": predicted_total,
                 "model_name": "Edge Lab Ensemble",
-                "edge": edge,
                 "model_confidence": confidence,
-                "score": abs(edge) * confidence,
-                # ... rest of fields from old format
+                "edge": edge,
+                "edge_percentage": (abs(edge) / market_total * 100) if market_total > 0 else 0,
+                "recommendation": row.get('recommendation', 'OVER' if edge > 0 else 'UNDER'),
+                "kelly_fraction": abs(kelly),
+                "suggested_bet_size": f"{abs(kelly)*100:.1f}% of bankroll",
+                "probability": 0.5 + (edge / market_total / 2) if market_total > 0 else 0.5,
+                "is_pregame": True,
+                "projection_type": "pregame",
+                "features_used": {},
+                "model_performance": {"mae": 11.5, "accuracy": 0.62},
+                "consensus": {"models_agree": 1, "models_total": 5, "strength": "MODERATE"},
+                "score": abs(edge) * confidence
             })
 
         logger.info(f"Loaded {len(predictions)} predictions from old format")

@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Trial Ends Soon - Choose Your Plan</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #0f172a;
+            color: #e2e8f0;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #1e293b;
+        }
+        .header {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .logo {
+            max-width: 200px;
+            height: auto;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            color: #ffffff;
+            font-size: 28px;
+            margin: 0 0 10px 0;
+            font-weight: 700;
+        }
+        .header p {
+            color: #dbeafe;
+            font-size: 16px;
+            margin: 0;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .greeting {
+            font-size: 18px;
+            color: #f1f5f9;
+            margin-bottom: 20px;
+        }
+        .message {
+            font-size: 16px;
+            line-height: 1.6;
+            color: #cbd5e1;
+            margin-bottom: 30px;
+        }
+        .trial-warning {
+            background-color: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 15px 20px;
+            margin: 30px 0;
+            border-radius: 4px;
+        }
+        .trial-warning p {
+            color: #78350f;
+            margin: 0;
+            font-size: 15px;
+            font-weight: 600;
+        }
+        .plan-card {
+            background-color: #334155;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            border: 2px solid #475569;
+            transition: all 0.3s ease;
+        }
+        .plan-card.popular {
+            border-color: #3b82f6;
+            background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+        }
+        .plan-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .plan-name {
+            font-size: 22px;
+            font-weight: 700;
+            color: #ffffff;
+            margin: 0;
+        }
+        .plan-badge {
+            background-color: #3b82f6;
+            color: #ffffff;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .plan-price {
+            font-size: 36px;
+            font-weight: 800;
+            color: #ffffff;
+            margin: 12px 0;
+        }
+        .plan-price .original {
+            text-decoration: line-through;
+            color: #94a3b8;
+            font-size: 20px;
+            margin-right: 8px;
+        }
+        .plan-price .discount {
+            color: #10b981;
+            font-size: 16px;
+            margin-left: 8px;
+        }
+        .plan-description {
+            color: #cbd5e1;
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+        .plan-features {
+            list-style: none;
+            padding: 0;
+            margin: 16px 0;
+        }
+        .plan-features li {
+            color: #cbd5e1;
+            font-size: 13px;
+            padding: 6px 0;
+            padding-left: 24px;
+            position: relative;
+        }
+        .plan-features li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #10b981;
+            font-weight: bold;
+        }
+        .cta-button {
+            display: block;
+            width: 100%;
+            padding: 16px 24px;
+            background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+            color: #ffffff;
+            text-decoration: none;
+            text-align: center;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 700;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+        }
+        .cta-button:hover {
+            background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        .footer {
+            background-color: #0f172a;
+            padding: 30px;
+            text-align: center;
+            font-size: 13px;
+            color: #64748b;
+        }
+        .footer a {
+            color: #3b82f6;
+            text-decoration: none;
+        }
+        .divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #475569, transparent);
+            margin: 30px 0;
+        }
+        @media only screen and (max-width: 600px) {
+            .content {
+                padding: 20px 15px;
+            }
+            .plan-price {
+                font-size: 28px;
+            }
+            .plan-name {
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Header -->
+        <div class="header">
+            <img src="https://max-ev-sports.com/logo2.png" alt="Max EV Sports" class="logo">
+            <h1>🎯 Your Trial Ends in 4 Days</h1>
+            <p>Choose your plan to continue crushing the books</p>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <div class="greeting">
+                Hey {{ contact.FIRSTNAME | default: "there" }},
+            </div>
+
+            <div class="message">
+                <p>You've been using Max EV Sports for <strong>10 days</strong> now, and we hope you've been finding valuable edges! 📊</p>
+                <p style="margin-top: 16px;">Your <strong>14-day free trial ends on {{ contact.TRIAL_END_DATE }}</strong>. To continue your access and keep winning, select the plan that's right for you below.</p>
+            </div>
+
+            <div class="trial-warning">
+                <p>⏰ 4 days remaining • Choose your plan to avoid interruption</p>
+            </div>
+
+            <h2 style="color: #f1f5f9; font-size: 24px; margin: 40px 0 24px 0; text-align: center;">Choose Your Plan</h2>
+
+            <!-- STARTER PLAN -->
+            <div class="plan-card">
+                <div class="plan-header">
+                    <h3 class="plan-name">Starter</h3>
+                </div>
+                <div class="plan-price">
+                    <span class="original">$29</span>
+                    <span>$14.50</span>
+                    <span class="discount">/ month</span>
+                </div>
+                <p class="plan-description">Essential sports data analytics tools • 50% OFF FOR LIFE</p>
+                <ul class="plan-features">
+                    <li>Live odds from 60+ sportsbooks</li>
+                    <li>Basic totals projections</li>
+                    <li>No-Vig & EV calculators</li>
+                    <li>All major sports</li>
+                    <li>10-second refresh</li>
+                </ul>
+                <a href="https://max-ev-sports.com/api/upgrade?tier=starter&email={{ contact.EMAIL }}&username={{ contact.USERNAME }}" class="cta-button">
+                    Get Starter - $14.50/mo
+                </a>
+            </div>
+
+            <!-- SEMI PRO PLAN (POPULAR) -->
+            <div class="plan-card popular">
+                <div class="plan-header">
+                    <h3 class="plan-name">Semi Pro</h3>
+                    <span class="plan-badge">Most Popular</span>
+                </div>
+                <div class="plan-price">
+                    <span class="original">$79</span>
+                    <span>$39.50</span>
+                    <span class="discount">/ month</span>
+                </div>
+                <p class="plan-description">For serious sports analysts • 50% OFF FOR LIFE</p>
+                <ul class="plan-features">
+                    <li><strong>Everything in Starter, plus:</strong></li>
+                    <li>Advanced analytics dashboard</li>
+                    <li>Steam move alerts (real-time)</li>
+                    <li>Arbitrage & middle finder</li>
+                    <li>CLV tracker & ROI dashboard</li>
+                    <li>1-second refresh rate</li>
+                    <li>SMS notifications</li>
+                </ul>
+                <a href="https://max-ev-sports.com/api/upgrade?tier=semipro&email={{ contact.EMAIL }}&username={{ contact.USERNAME }}" class="cta-button">
+                    Get Semi Pro - $39.50/mo
+                </a>
+            </div>
+
+            <!-- PROFESSIONAL PLAN -->
+            <div class="plan-card">
+                <div class="plan-header">
+                    <h3 class="plan-name">Professional</h3>
+                </div>
+                <div class="plan-price">
+                    <span class="original">$149</span>
+                    <span>$74.50</span>
+                    <span class="discount">/ month</span>
+                </div>
+                <p class="plan-description">Maximum analytics firepower • 50% OFF FOR LIFE</p>
+                <ul class="plan-features">
+                    <li><strong>Everything in Semi Pro, plus:</strong></li>
+                    <li>Browser extension tool</li>
+                    <li>Player props module (all sports)</li>
+                    <li>SGP builder with correlation</li>
+                    <li>PrizePicks/Underdog comparison</li>
+                    <li>Kelly criterion optimizer</li>
+                    <li>24/7 priority support</li>
+                </ul>
+                <a href="https://max-ev-sports.com/api/upgrade?tier=professional&email={{ contact.EMAIL }}&username={{ contact.USERNAME }}" class="cta-button">
+                    Get Professional - $74.50/mo
+                </a>
+            </div>
+
+            <!-- ELITE PLAN -->
+            <div class="plan-card">
+                <div class="plan-header">
+                    <h3 class="plan-name">Elite</h3>
+                </div>
+                <div class="plan-price">
+                    <span class="original">$299</span>
+                    <span>$149.50</span>
+                    <span class="discount">/ month</span>
+                </div>
+                <p class="plan-description">For professional operations • 50% OFF FOR LIFE</p>
+                <ul class="plan-features">
+                    <li><strong>Everything in Professional, plus:</strong></li>
+                    <li>Downloadable desktop client</li>
+                    <li>Full API access (unlimited)</li>
+                    <li>Custom model integration</li>
+                    <li>Dedicated account manager</li>
+                    <li>Advanced backtesting engine</li>
+                    <li>Machine learning models</li>
+                    <li>99.9% SLA guarantee</li>
+                </ul>
+                <a href="https://max-ev-sports.com/api/upgrade?tier=elite&email={{ contact.EMAIL }}&username={{ contact.USERNAME }}" class="cta-button">
+                    Get Elite - $149.50/mo
+                </a>
+            </div>
+
+            <!-- ELITE PRO PLAN -->
+            <div class="plan-card">
+                <div class="plan-header">
+                    <h3 class="plan-name">Elite Pro</h3>
+                </div>
+                <div class="plan-price">
+                    <span class="original">$799</span>
+                    <span>$399.50</span>
+                    <span class="discount">/ month</span>
+                </div>
+                <p class="plan-description">Ultra-premium tier for top 2% • 50% OFF FOR LIFE</p>
+                <ul class="plan-features">
+                    <li><strong>Everything in Elite, plus:</strong></li>
+                    <li>Offshore server access</li>
+                    <li>Direct sportsbook API connections</li>
+                    <li>Sub-50ms line detection</li>
+                    <li>Dedicated GPU processing</li>
+                    <li>Sharp action alerts</li>
+                    <li>Private syndicate data feeds</li>
+                    <li>VIP Circa Survivor Week 1 invite</li>
+                </ul>
+                <a href="https://max-ev-sports.com/api/upgrade?tier=elitepro&email={{ contact.EMAIL }}&username={{ contact.USERNAME }}" class="cta-button">
+                    Get Elite Pro - $399.50/mo
+                </a>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="message">
+                <p style="text-align: center; font-size: 14px; color: #94a3b8;">
+                    <strong>Still have questions?</strong> Reply to this email or contact us at <a href="mailto:support@max-ev-sports.com" style="color: #3b82f6;">support@max-ev-sports.com</a>
+                </p>
+                <p style="text-align: center; font-size: 14px; color: #94a3b8; margin-top: 16px;">
+                    Not ready to subscribe? No problem! You can continue with our free tier after your trial ends.
+                </p>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p style="margin: 0 0 10px 0;">
+                <strong>Max EV Sports</strong><br>
+                The Bull Market of Sports Betting
+            </p>
+            <p style="margin: 10px 0;">
+                <a href="https://max-ev-sports.com">Visit Website</a> •
+                <a href="https://max-ev-sports.com/#/pricing">View All Plans</a> •
+                <a href="{{ unsubscribe }}">Unsubscribe</a>
+            </p>
+            <p style="margin: 10px 0; font-size: 11px;">
+                © 2025 Max EV Sports. All rights reserved.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

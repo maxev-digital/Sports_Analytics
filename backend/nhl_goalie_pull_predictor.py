@@ -82,22 +82,35 @@ class GoaliePullPredictor:
         current_time_remaining = game.get('time_remaining_seconds', 0)
         time_until_pull = current_time_remaining - expected_pull
 
-        # Two alert types:
-        # 1. EARLY_WARNING: 5+ minutes remaining, alerts user to prepare betting books
-        # 2. IMMINENT: 30-90 seconds before expected pull, bet must be placed NOW
-        is_early_warning = current_time_remaining >= 300 and score_diff in [-1, -2]
-        is_imminent = 30 <= time_until_pull <= 90
+        # FEED DELAY ADJUSTMENT:
+        # Our feed is 30 seconds delayed, so we trigger alerts earlier in our system
+        # to account for real game time being 30 seconds ahead
+        #
+        # Alert triggers (in our delayed system):
+        # - Down 2+ goals: Alert at 3:00 mark (180 sec) → Real game: ~2:30
+        # - Down 1 goal:   Alert at 2:00 mark (120 sec) → Real game: ~1:30
+        #
+        # This gives users time to place bets before the actual pull happens
 
-        # Determine alert type and priority
-        if is_imminent:
-            alert_type = 'IMMINENT'
-            alert_priority = 'HIGH' if confidence >= 0.70 else 'MEDIUM'
-        elif is_early_warning:
-            alert_type = 'EARLY_WARNING'
-            alert_priority = 'MEDIUM'
-        else:
-            alert_type = None
-            alert_priority = None
+        is_imminent = False
+        alert_type = None
+        alert_priority = None
+
+        if score_diff <= -2:
+            # Down 2+ goals: Alert when we see 3:00 remaining (real game ~2:30)
+            if current_time_remaining >= 175 and current_time_remaining <= 185:
+                is_imminent = True
+                alert_type = 'IMMINENT'
+                alert_priority = 'HIGH' if confidence >= 0.65 else 'MEDIUM'
+        elif score_diff == -1:
+            # Down 1 goal: Alert when we see 2:00 remaining (real game ~1:30)
+            if current_time_remaining >= 115 and current_time_remaining <= 125:
+                is_imminent = True
+                alert_type = 'IMMINENT'
+                alert_priority = 'HIGH' if confidence >= 0.70 else 'MEDIUM'
+
+        # Early warning removed - single alert at optimal time for bet placement
+        is_early_warning = False
 
         return {
             'trailing_team': trailing_team,
@@ -117,11 +130,16 @@ class GoaliePullPredictor:
     @staticmethod
     def calculate_betting_ev(game: Dict, prediction: Dict, current_odds: Dict, season: str = '2024-25') -> Dict:
         """
-        Calculate expected value of betting OVER before pull
+        Calculate expected value of ALL bet types: OVER, NNG (No Next Goal), UNDER, EXACT SCORE
         Uses team-specific historical empty net stats from database
+
+        Key insight: Must factor in GOALIE PULL PROBABILITY
+        - Teams with low pull rate = less likely to pull = higher NNG value
+        - 1 goal deficits = best NNG opportunities
         """
         score_diff = game.get('score_diff', -1)
         trailing_team = prediction.get('trailing_team')
+        current_score = game.get('home_score', 0) + game.get('away_score', 0)
 
         # Get database for team-specific EN stats
         db = get_database()
@@ -133,137 +151,309 @@ class GoaliePullPredictor:
         opponent = game.get('home_team') if trailing_team == game.get('away_team') else game.get('away_team')
         opponent_en_stats = db.get_empty_net_stats(opponent, season)
 
-        # Calculate EN goal probability using team-specific data
-        if trailing_en_stats and trailing_en_stats.get('en_opportunities', 0) >= 5:
-            # Use team's actual EN defense rate (% of time they DON'T allow EN goal)
-            en_defense_rate = trailing_en_stats.get('en_defense_rate', 52.0) / 100
-            en_goal_prob = 1 - en_defense_rate  # Flip to get probability OF en goal
-            logger.info(f"{trailing_team} EN defense: {en_defense_rate*100:.1f}% -> EN goal prob: {en_goal_prob*100:.1f}%")
-        else:
-            # Use league average (45-50%)
-            en_goal_prob = 0.48
-            logger.info(f"Using league average EN goal prob: {en_goal_prob*100:.1f}%")
+        # ========== STEP 1: CALCULATE GOALIE PULL PROBABILITY ==========
+        # KEY INSIGHT: Team must ACTUALLY PULL goalie for EN goal to happen
+        # Low pull rate = less likely to pull = HIGHER NNG value
 
-        # Calculate trailing team scoring probability using their actual success rate
-        if trailing_en_stats and trailing_en_stats.get('en_opportunities', 0) >= 5:
-            # Use team's actual EN success rate
-            trailing_scores_prob = trailing_en_stats.get('en_success_rate', 15.0) / 100
-            logger.info(f"{trailing_team} EN success rate: {trailing_scores_prob*100:.1f}%")
-        else:
-            # Use league average based on score differential
+        en_situations = trailing_en_stats.get('en_opportunities', 0) if trailing_en_stats else 0
+        league_avg_situations = 12  # Average team pulls goalie ~12 times per season
+
+        if en_situations >= 3:
+            # Calculate pull propensity relative to league average
+            pull_propensity = en_situations / league_avg_situations
+
+            # Base pull probability by score differential
             if score_diff == -1:
-                trailing_scores_prob = 0.18  # 18% when down 1
+                base_pull_prob = 0.85  # 85% pull when down 1
             elif score_diff == -2:
-                trailing_scores_prob = 0.08  # 8% when down 2
+                base_pull_prob = 0.65  # 65% pull when down 2
             else:
-                trailing_scores_prob = 0.03
-            logger.info(f"Using league average trailing score prob: {trailing_scores_prob*100:.1f}%")
+                base_pull_prob = 0.40  # 40% pull when down 3+
 
-        # Combined probability at least one goal scored
-        # P(EN goal OR trailing scores) assuming mutual exclusivity
-        prob_over_hits = en_goal_prob + (trailing_scores_prob * (1 - en_goal_prob))
-
-        # Get current odds
-        current_total = current_odds.get('total', game.get('current_score', 0) + 0.5)
-        current_over_odds = current_odds.get('over_odds', 140)  # Default +140
-
-        # Convert American odds to decimal and implied prob
-        if current_over_odds > 0:
-            implied_prob = 100 / (current_over_odds + 100)
-            payout_multiplier = current_over_odds / 100
+            # Adjust based on team's historical tendency
+            prob_pulls_goalie = min(0.95, base_pull_prob * pull_propensity)
+            logger.info(f"{trailing_team} pull probability: {prob_pulls_goalie*100:.1f}% (situations: {en_situations}, league avg: {league_avg_situations})")
         else:
-            implied_prob = abs(current_over_odds) / (abs(current_over_odds) + 100)
-            payout_multiplier = 100 / abs(current_over_odds)
+            # Not enough data - use league averages
+            if score_diff == -1:
+                prob_pulls_goalie = 0.85
+            elif score_diff == -2:
+                prob_pulls_goalie = 0.65
+            else:
+                prob_pulls_goalie = 0.40
+            logger.info(f"Using league average pull prob: {prob_pulls_goalie*100:.1f}%")
 
-        # Calculate edge
-        edge = prob_over_hits - implied_prob
-        edge_percentage = edge * 100
+        # ========== STEP 2: CALCULATE GOAL PROBABILITIES IF GOALIE IS PULLED ==========
 
-        # Calculate EV
-        # EV = (Win Prob × Payout) - (Lose Prob × Stake)
-        ev = (prob_over_hits * payout_multiplier) - ((1 - prob_over_hits) * 1)
-        ev_percentage = ev * 100
+        # EN goal probability (opponent scores) IF goalie is pulled
+        if trailing_en_stats and trailing_en_stats.get('en_opportunities', 0) >= 5:
+            en_defense_rate = trailing_en_stats.get('en_defense_rate', 52.0) / 100
+            en_goal_prob_if_pulled = 1 - en_defense_rate
+            logger.info(f"{trailing_team} EN defense: {en_defense_rate*100:.1f}% -> EN goal prob IF pulled: {en_goal_prob_if_pulled*100:.1f}%")
+        else:
+            en_goal_prob_if_pulled = 0.48  # League average
+            logger.info(f"Using league average EN goal prob IF pulled: {en_goal_prob_if_pulled*100:.1f}%")
 
-        # Determine if we should alert user
-        # IMMINENT alerts require positive EV (bet NOW)
-        # EARLY_WARNING alerts shown regardless of EV (prepare books)
-        alert_user = False
-        if prediction.get('is_imminent'):
-            alert_user = ev > 0 and ev_percentage >= 5.0  # Require positive EV for betting
-        elif prediction.get('is_early_warning'):
-            alert_user = True  # Always alert early warnings to prepare
+        # Trailing team scoring probability IF goalie is pulled
+        if trailing_en_stats and trailing_en_stats.get('en_opportunities', 0) >= 5:
+            trailing_scores_prob_if_pulled = trailing_en_stats.get('en_success_rate', 15.0) / 100
+            logger.info(f"{trailing_team} EN success rate IF pulled: {trailing_scores_prob_if_pulled*100:.1f}%")
+        else:
+            if score_diff == -1:
+                trailing_scores_prob_if_pulled = 0.18  # 18% when down 1
+            elif score_diff == -2:
+                trailing_scores_prob_if_pulled = 0.08  # 8% when down 2
+            else:
+                trailing_scores_prob_if_pulled = 0.03
+            logger.info(f"Using league average trailing score prob IF pulled: {trailing_scores_prob_if_pulled*100:.1f}%")
+
+        # ========== STEP 3: CALCULATE OVERALL PROBABILITIES ==========
+
+        # Probability of goal IF goalie pulled (EN goal OR trailing team scores)
+        prob_goal_if_pulled = en_goal_prob_if_pulled + (trailing_scores_prob_if_pulled * (1 - en_goal_prob_if_pulled))
+
+        # Probability of goal IF goalie NOT pulled (much lower - normal hockey)
+        prob_goal_if_not_pulled = 0.08  # ~8% chance of goal in last 2 min if no pull
+
+        # TOTAL probability at least one goal scored
+        prob_over_hits = (prob_pulls_goalie * prob_goal_if_pulled) + ((1 - prob_pulls_goalie) * prob_goal_if_not_pulled)
+
+        # TOTAL probability NO goal scored (NNG/Under/Exact Score)
+        prob_no_goal = 1 - prob_over_hits
+
+        logger.info(f"FINAL PROBABILITIES: Over={prob_over_hits*100:.1f}%, No Goal={prob_no_goal*100:.1f}%")
+
+        # ========== STEP 4: GET CURRENT ODDS FOR ALL BET TYPES ==========
+
+        current_total = current_odds.get('total', current_score + 0.5)
+        current_over_odds = current_odds.get('over_odds', 140)  # Default +140
+        current_under_odds = current_odds.get('under_odds', -160)  # Default -160
+
+        # NNG odds estimation (typically between +150 and +250 depending on situation)
+        # More aggressive teams (high pull prob) = higher NNG odds
+        # Conservative teams (low pull prob) = lower NNG odds
+        if prob_pulls_goalie > 0.80:
+            current_nng_odds = 180  # +180 for aggressive teams
+        elif prob_pulls_goalie > 0.60:
+            current_nng_odds = 200  # +200 for average teams
+        else:
+            current_nng_odds = 150  # +150 for conservative teams (less likely to pull)
+
+        current_nng_odds = current_odds.get('nng_odds', current_nng_odds)  # Use provided odds if available
+
+        # Exact score odds (typically 2-3x higher than NNG)
+        current_exact_odds = current_odds.get('exact_score_odds', current_nng_odds + 100)
+
+        # ========== STEP 5: CALCULATE EV FOR EACH BET TYPE ==========
+
+        def calculate_ev_for_bet(win_prob: float, american_odds: int) -> tuple:
+            """Calculate edge and EV for a bet. Returns (edge%, EV%, implied_prob)"""
+            if american_odds > 0:
+                implied_prob = 100 / (american_odds + 100)
+                payout_multiplier = american_odds / 100
+            else:
+                implied_prob = abs(american_odds) / (abs(american_odds) + 100)
+                payout_multiplier = 100 / abs(american_odds)
+
+            edge = win_prob - implied_prob
+            edge_pct = edge * 100
+            ev = (win_prob * payout_multiplier) - ((1 - win_prob) * 1)
+            ev_pct = ev * 100
+
+            return edge_pct, ev_pct, implied_prob
+
+        # Calculate OVER bet
+        over_edge, over_ev, over_implied = calculate_ev_for_bet(prob_over_hits, current_over_odds)
+
+        # Calculate NNG bet (No Next Goal)
+        nng_edge, nng_ev, nng_implied = calculate_ev_for_bet(prob_no_goal, current_nng_odds)
+
+        # Calculate UNDER bet (only if total > current score)
+        if current_total > current_score:
+            under_edge, under_ev, under_implied = calculate_ev_for_bet(prob_no_goal, current_under_odds)
+        else:
+            under_edge, under_ev, under_implied = -100, -100, 1.0  # No value if total already under
+
+        # Calculate EXACT SCORE bet (slightly lower prob than NNG due to OT possibility)
+        prob_exact_score = prob_no_goal * 0.95  # 95% of NNG games end in regulation
+        exact_edge, exact_ev, exact_implied = calculate_ev_for_bet(prob_exact_score, current_exact_odds)
+
+        # ========== STEP 6: DETERMINE BEST BET ==========
+
+        bets = [
+            {'type': 'OVER', 'edge': over_edge, 'ev': over_ev, 'prob': prob_over_hits, 'odds': current_over_odds},
+            {'type': 'NNG', 'edge': nng_edge, 'ev': nng_ev, 'prob': prob_no_goal, 'odds': current_nng_odds},
+            {'type': 'UNDER', 'edge': under_edge, 'ev': under_ev, 'prob': prob_no_goal, 'odds': current_under_odds},
+            {'type': 'EXACT_SCORE', 'edge': exact_edge, 'ev': exact_ev, 'prob': prob_exact_score, 'odds': current_exact_odds},
+        ]
+
+        # Filter to only positive EV bets with 5%+ EV
+        positive_ev_bets = [b for b in bets if b['ev'] >= 5.0]
+
+        # Sort by EV (highest first)
+        positive_ev_bets.sort(key=lambda x: x['ev'], reverse=True)
+
+        # Determine recommended bet and whether to alert
+        if positive_ev_bets and prediction.get('is_imminent'):
+            best_bet = positive_ev_bets[0]
+            recommended_bet = best_bet['type']
+            alert_user = True
+
+            # Log recommendation
+            logger.info(f"RECOMMENDED BET: {best_bet['type']} @ {best_bet['odds']:+d} (EV: {best_bet['ev']:.1f}%, Edge: {best_bet['edge']:.1f}%)")
+            if len(positive_ev_bets) > 1:
+                alt_bets_str = ', '.join([f"{b['type']} (EV: {b['ev']:.1f}%)" for b in positive_ev_bets[1:3]])
+                logger.info(f"Alternative bets: {alt_bets_str}")
+        else:
+            recommended_bet = None
+            best_bet = bets[0]  # Default to first for display
+            alert_user = False
+
+        # ========== STEP 7: RETURN ALL BETTING INFORMATION ==========
 
         return {
-            'recommended_bet': 'OVER' if ev > 0 else None,
+            # Primary recommendation
+            'recommended_bet': recommended_bet,
+            'alert_user': alert_user,
+
+            # OVER bet details
             'current_total': current_total,
             'current_odds': current_over_odds,
             'probability_over_hits': round(prob_over_hits, 3),
-            'implied_probability': round(implied_prob, 3),
-            'edge_percentage': round(edge_percentage, 2),
-            'expected_value_percentage': round(ev_percentage, 2),
+            'over_edge_percentage': round(over_edge, 2),
+            'over_ev_percentage': round(over_ev, 2),
+
+            # NNG/UNDER/EXACT bet details (all based on prob_no_goal)
+            'probability_no_goal': round(prob_no_goal, 3),
+            'nng_odds': current_nng_odds,
+            'nng_edge_percentage': round(nng_edge, 2),
+            'nng_ev_percentage': round(nng_ev, 2),
+
+            'under_odds': current_under_odds,
+            'under_edge_percentage': round(under_edge, 2),
+            'under_ev_percentage': round(under_ev, 2),
+
+            'exact_score_odds': current_exact_odds,
+            'exact_edge_percentage': round(exact_edge, 2),
+            'exact_ev_percentage': round(exact_ev, 2),
+
+            # Best bet details (for alert display)
+            'best_bet_type': recommended_bet if recommended_bet else 'OVER',
+            'best_bet_odds': best_bet['odds'],
+            'best_bet_edge': round(best_bet['edge'], 2),
+            'best_bet_ev': round(best_bet['ev'], 2),
+            'best_bet_prob': round(best_bet['prob'], 3),
+
+            # All positive EV opportunities
+            'all_positive_ev_bets': positive_ev_bets,
+
+            # Additional context
+            'goalie_pull_probability': round(prob_pulls_goalie, 3),
+            'en_situations': en_situations,
             'confidence': prediction['confidence'],
-            'is_positive_ev': ev > 0 and ev_percentage >= 5.0,  # Require 5%+ EV
-            'alert_user': alert_user
+            'is_positive_ev': len(positive_ev_bets) > 0,
+
+            # Legacy fields (for backward compatibility)
+            'edge_percentage': round(best_bet['edge'], 2),
+            'expected_value_percentage': round(best_bet['ev'], 2),
+            'implied_probability': round(over_implied, 3),
         }
 
     @staticmethod
     def generate_alert_message(game: Dict, prediction: Dict, ev_analysis: Dict) -> str:
         """
         Generate user-friendly alert message for betting opportunity
-        Handles both EARLY_WARNING and IMMINENT alert types
+        Handles OVER, NNG, UNDER, and EXACT SCORE recommendations
         """
-        alert_type = prediction.get('alert_type', 'IMMINENT')
-        time_until = prediction['time_until_pull']
+        alert_type = prediction.get('alert_priority', 'HIGH')
+        score_diff = abs(game.get('score_diff', 1))
         current_time = game.get('time_remaining_seconds', 0)
+        current_score = game.get('home_score', 0) + game.get('away_score', 0)
 
-        if alert_type == 'EARLY_WARNING':
-            # Early warning: prepare betting books
-            message = f"""
-⏰ EARLY WARNING - POSSIBLE EMPTY NET GOAL PENDING
+        # Format time in MM:SS
+        mins = current_time // 60
+        secs = current_time % 60
+        time_display = f"{mins}:{secs:02d}"
+
+        # Get recommended bet type
+        bet_type = ev_analysis.get('best_bet_type', 'OVER')
+        bet_odds = ev_analysis.get('best_bet_odds', 140)
+        bet_edge = ev_analysis.get('best_bet_edge', 0)
+        bet_ev = ev_analysis.get('best_bet_ev', 0)
+        bet_prob = ev_analysis.get('best_bet_prob', 0.5)
+        goalie_pull_prob = ev_analysis.get('goalie_pull_probability', 0.85)
+        en_situations = ev_analysis.get('en_situations', 12)
+
+        # Format bet recommendation based on type
+        if bet_type == 'OVER':
+            bet_display = f"OVER {ev_analysis['current_total']}"
+            bet_explanation = "At least one more goal will be scored"
+        elif bet_type == 'NNG':
+            bet_display = "NO NEXT GOAL"
+            bet_explanation = "Game ends with current score (no more goals)"
+        elif bet_type == 'UNDER':
+            bet_display = f"UNDER {ev_analysis['current_total']}"
+            bet_explanation = "Game total stays under the line"
+        elif bet_type == 'EXACT_SCORE':
+            bet_display = f"EXACT SCORE {game['away_score']}-{game['home_score']}"
+            bet_explanation = "Game ends with this exact score"
+        else:
+            bet_display = bet_type
+            bet_explanation = ""
+
+        # Build situation context
+        pull_context = ""
+        if goalie_pull_prob < 0.50:
+            pull_context = f"\n⚠️ LOW PULL PROBABILITY ({goalie_pull_prob*100:.0f}%) - Team rarely pulls goalie (only {en_situations} times this season)"
+        elif goalie_pull_prob > 0.90:
+            pull_context = f"\n📊 HIGH PULL PROBABILITY ({goalie_pull_prob*100:.0f}%) - Aggressive team ({en_situations} pulls this season)"
+
+        # Alert message
+        message = f"""
+🚨 GOALIE PULL ALERT - {alert_type} PRIORITY
 
 {game['away_team']} @ {game['home_team']}
-Score: {game['away_score']}-{game['home_score']}
-Time: {game['time_remaining']} remaining (Period {game['period']})
+Score: {game['away_score']}-{game['home_score']} (Total: {current_score})
+Time: {time_display} remaining (Period {game['period']})
 
 📊 SITUATION:
-{prediction['trailing_team']} is trailing by {abs(game.get('score_diff', 1))} goal(s)
-Expected goalie pull in ~{time_until} seconds
+{prediction['trailing_team']} trailing by {score_diff} goal(s)
+Goalie pull probability: {goalie_pull_prob*100:.0f}%
+Coach: {prediction['coach']} (Analytics: {prediction['analytics_rating']}/10){pull_context}
 
-🎯 PREPARE YOUR BETTING BOOKS NOW
-Get ready to bet OVER {ev_analysis['current_total']} when goalie pull is imminent
-Current odds: {ev_analysis['current_odds']:+d}
+💰 RECOMMENDED BET - {bet_display} @ {bet_odds:+d}
+{bet_explanation}
 
-📈 EXPECTED EDGE:
-Win Probability: {ev_analysis['probability_over_hits']*100:.1f}%
-Expected Value: {ev_analysis['expected_value_percentage']:+.1f}%
+📈 BETTING EDGE:
+Edge: {bet_edge:+.1f}%
+Expected Value: {bet_ev:+.1f}%
+Win Probability: {bet_prob*100:.1f}%
 
-Coach: {prediction['coach']} (Analytics: {prediction['analytics_rating']}/10)
+⏰ PLACE BET IMMEDIATELY!
+Feed is 30 seconds delayed - goalie pull happening soon in real time.
 """
-        else:
-            # Imminent alert: bet NOW
-            message = f"""
-🚨 GOALIE PULL ALERT - {prediction['alert_priority']} PRIORITY
 
-{game['away_team']} @ {game['home_team']}
-Score: {game['away_score']}-{game['home_score']}
-Time: {game['time_remaining']} remaining (Period {game['period']})
+        # Add alternative bets if available
+        alt_bets = ev_analysis.get('all_positive_ev_bets', [])
+        if len(alt_bets) > 1:
+            message += "\n🎯 ALTERNATIVE BETS (also positive EV):\n"
+            for i, alt in enumerate(alt_bets[1:3], 1):  # Show top 2 alternatives
+                alt_type = alt['type']
+                alt_odds = alt['odds']
+                alt_ev = alt['ev']
 
-📊 PREDICTION:
-{prediction['trailing_team']} will pull goalie in ~{time_until} seconds
-Coach: {prediction['coach']}
-Analytics Score: {prediction['analytics_rating']}/10
-Confidence: {prediction['confidence']*100:.0f}%
+                if alt_type == 'OVER':
+                    alt_display = f"OVER {ev_analysis['current_total']}"
+                elif alt_type == 'NNG':
+                    alt_display = "NO NEXT GOAL"
+                elif alt_type == 'UNDER':
+                    alt_display = f"UNDER {ev_analysis['current_total']}"
+                elif alt_type == 'EXACT_SCORE':
+                    alt_display = f"EXACT SCORE {game['away_score']}-{game['home_score']}"
+                else:
+                    alt_display = alt_type
 
-💰 BET NOW:
-OVER {ev_analysis['current_total']} @ {ev_analysis['current_odds']:+d}
-
-Edge: +{ev_analysis['edge_percentage']:.1f}%
-Expected Value: +{ev_analysis['expected_value_percentage']:.1f}%
-Win Probability: {ev_analysis['probability_over_hits']*100:.1f}%
-
-⏰ BET IMMEDIATELY! (before goalie is pulled)
-Odds will shift to -110 or worse after pull.
-"""
+                message += f"  {i}. {alt_display} @ {alt_odds:+d} (EV: {alt_ev:+.1f}%)\n"
 
         return message.strip()
 

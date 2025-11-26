@@ -1,0 +1,14 @@
+[Unit]
+Description=Odds Archive Collection Service (One-time run)
+After=network.target
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/root/sporttrader/backend
+Environment="ODDS_API_KEY=1da2e5df04ef63dd4d9f7645829dbf20"
+ExecStart=/usr/bin/python3 /root/sporttrader/backend/data/odds_archive/odds_collector_service.py
+
+# Logging
+StandardOutput=append:/var/log/odds-collector.log
+StandardError=append:/var/log/odds-collector-error.log

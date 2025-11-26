@@ -44,11 +44,14 @@ import { MaxEvEdges } from './pages/MaxEvEdges';
 import { ModelPerformance } from './pages/ModelPerformance';
 import { PropsPerformance } from './pages/PropsPerformance';
 import { MLModelsExplained } from './pages/MLModelsExplained';
+import PredictionsDatabase from './pages/PredictionsDatabase';
 import Performance from './pages/Performance';
 import GoaliePull from './pages/GoaliePull';
 import { EdgeScannerAlertMonitor } from './components/EdgeScannerAlertMonitor';
 import { GlobalAlertMonitor } from './components/GlobalAlertMonitor';
+import { QuarterStrategyAlertMonitor } from './components/QuarterStrategyAlertMonitor';
 import { GoaliePullMonitor } from './components/GoaliePullMonitor';
+import { HedgeAlertMonitor } from './components/HedgeAlertMonitor';
 import { isElectron } from './utils/isElectron';
 import { MLAdvantage } from './pages/MLAdvantage';
 import { EvidenceArchitecture } from './pages/EvidenceArchitecture';
@@ -59,7 +62,7 @@ function AppContent() {
 
   // PERF FIX: Only enable monitors on pages that need them (not pricing, login, etc.)
   // Enable alerts on main app pages where users view games
-  const excludedPaths = ['/login', '/signup', '/pricing', '/evidence-architecture', '/ml-advantage'];
+  const excludedPaths = ['/login', '/signup', '/pricing', '/evidence', '/ml-advantage', '/ml-models-explained', '/learn'];
   const needsAlerts = !excludedPaths.some(path => location.pathname.includes(path));
 
   // Check if running in desktop (Electron) mode
@@ -80,15 +83,24 @@ function AppContent() {
                 minConfidence={0.70}
                 pollInterval={30000}
               />
-              {/* Global Alert Monitor - DISABLED for goalie pull testing */}
+              {/* Global Alert Monitor - DISABLED (arbitrage, middles, and steam moves) */}
               <GlobalAlertMonitor
                 enabled={false}
                 pollInterval={30000}
+              />
+              {/* Quarter Strategy Alert Monitor - ENABLED for NBA Quarter Reversal and Cold Team Bounce-Back via WebSocket */}
+              <QuarterStrategyAlertMonitor
+                enabled={needsAlerts}
               />
               {/* Goalie Pull Monitor - alerts for NHL goalie pull opportunities in 3rd period - ACTIVE */}
               <GoaliePullMonitor
                 enabled={needsAlerts}
                 pollInterval={3000}
+              />
+              {/* Hedge Alert Monitor - monitors bet positions and alerts for hedge opportunities - ACTIVE */}
+              <HedgeAlertMonitor
+                enabled={needsAlerts}
+                pollInterval={10000}
               />
               <Routes>
           {/* Public routes - Login and SignUp pages */}
@@ -210,6 +222,44 @@ function AppContent() {
             }
           />
 
+          {/* ML Models Explained - PUBLIC educational page for social media sharing */}
+          <Route
+            path="/ml-models-explained"
+            element={
+              <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col">
+                <Navigation />
+                <MLModelsExplained />
+                <Footer />
+              </div>
+            }
+          />
+
+          {/* Learn Articles - PUBLIC for social media sharing */}
+          <Route
+            path="/learn"
+            element={
+              <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col">
+                <Navigation />
+                <div className="flex-grow">
+                  <Learn />
+                </div>
+                <Footer />
+              </div>
+            }
+          />
+          <Route
+            path="/learn/:articleId"
+            element={
+              <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col">
+                <Navigation />
+                <div className="flex-grow">
+                  <ArticleDetail />
+                </div>
+                <Footer />
+              </div>
+            }
+          />
+
           <Route
             path="/subscription/success"
             element={
@@ -255,7 +305,7 @@ function AppContent() {
                       <Route path="/odds" element={<Odds />} />
                       <Route path="/max-ev-edges" element={<MaxEvEdges />} />
                       <Route path="/model-performance" element={<ModelPerformance />} />
-                      <Route path="/ml-models-explained" element={<MLModelsExplained />} />
+                      <Route path="/predictions-database" element={<PredictionsDatabase />} />
                       <Route path="/performance" element={<Performance />} />
                       <Route path="/goalie-pull" element={<GoaliePull />} />
                       <Route path="/handicapper-picks" element={<HandicapperPicks />} />
@@ -263,9 +313,7 @@ function AppContent() {
                       <Route path="/strategy-settings" element={<StrategySettings />} />
                       <Route path="/alert-preferences" element={<AlertPreferences />} />
                       <Route path="/my-feedback" element={<MyFeedback />} />
-                      {/* Learn pages - redirect to home in desktop mode */}
-                      <Route path="/learn" element={isDesktop ? <Navigate to="/live-games" replace /> : <Learn />} />
-                      <Route path="/learn/:articleId" element={isDesktop ? <Navigate to="/live-games" replace /> : <ArticleDetail />} />
+                      {/* Getting Started - redirect to home in desktop mode */}
                       <Route path="/getting-started" element={isDesktop ? <Navigate to="/live-games" replace /> : <GettingStarted />} />
                       <Route path="/odds-explained" element={isDesktop ? <Navigate to="/live-games" replace /> : <OddsExplained />} />
                       {/* Admin and sample pages - redirect to home in desktop mode */}

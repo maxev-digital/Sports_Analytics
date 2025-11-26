@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { getApiUrl } from '../config';
 import { BOOKMAKERS } from '../data/bookmakers';
 import { useToast } from './Toast';
+import { useSettings } from '../hooks/useSettings';
 
 interface BookmakerBankroll {
   bookmaker: string;
@@ -18,6 +19,7 @@ interface BankrollData {
 
 export function BankrollManager() {
   const { username } = useAuth();
+  const { settings, loading: settingsLoading } = useSettings(username || 'default');
   const { showToast } = useToast();
   const [totalBankroll, setTotalBankroll] = useState(0);
   const [bookmakerBankrolls, setBookmakerBankrolls] = useState<Record<string, number>>({});
@@ -29,10 +31,14 @@ export function BankrollManager() {
   const [kellyEdge, setKellyEdge] = useState(5.0);
   const [kellyOdds, setKellyOdds] = useState(-110);
 
-  // Popular bookmakers to show by default
-  const popularBookmakers = Object.values(BOOKMAKERS)
-    .filter(b => b.popular)
-    .sort((a, b) => a.name.localeCompare(b.name));
+  // Get user's enabled bookmakers from settings (fallback to popular if none set)
+  const displayBookmakers = settings && settings.enabled_bookmakers.length > 0
+    ? Object.values(BOOKMAKERS)
+        .filter(b => settings.enabled_bookmakers.includes(b.key))
+        .sort((a, b) => a.name.localeCompare(b.name))
+    : Object.values(BOOKMAKERS)
+        .filter(b => b.popular)
+        .sort((a, b) => a.name.localeCompare(b.name));
 
   useEffect(() => {
     fetchBankrollData();
@@ -163,7 +169,7 @@ export function BankrollManager() {
 
       {/* Total Bankroll Card */}
       <div className="mb-6">
-        <div className="bg-gradient-to-br from-green-900/50 to-green-800/30 border-2 border-green-700 rounded-lg p-6">
+        <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-black border border-white rounded-xl p-6">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-green-400 text-sm font-semibold mb-2">Total Bankroll</div>
@@ -183,7 +189,7 @@ export function BankrollManager() {
       <div className="mb-6">
         <h3 className="text-lg font-semibold text-white mb-3">Reference Betting Units (Fixed)</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-slate-900 border-2 border-blue-700 rounded-lg p-4">
+          <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-black border border-white rounded-xl p-4">
             <div className="text-xs text-slate-400 mb-1">Standard Unit</div>
             <div className="text-2xl font-bold text-blue-400">
               ${(totalBankroll * 0.01).toFixed(2)}
@@ -191,7 +197,7 @@ export function BankrollManager() {
             <div className="text-xs text-slate-400 mt-1">1% flat betting</div>
           </div>
 
-          <div className="bg-slate-900 border-2 border-purple-700 rounded-lg p-4">
+          <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-black border border-white rounded-xl p-4">
             <div className="text-xs text-slate-400 mb-1">Safety Cap</div>
             <div className="text-2xl font-bold text-purple-400">
               ${(totalBankroll * 0.05).toFixed(2)}
@@ -199,7 +205,7 @@ export function BankrollManager() {
             <div className="text-xs text-slate-400 mt-1">5% max (never exceed)</div>
           </div>
 
-          <div className="bg-slate-900 border-2 border-amber-700 rounded-lg p-4">
+          <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-black border border-white rounded-xl p-4">
             <div className="text-xs text-slate-400 mb-1">Conservative Unit</div>
             <div className="text-2xl font-bold text-amber-400">
               ${(totalBankroll * 0.005).toFixed(2)}
@@ -225,14 +231,14 @@ export function BankrollManager() {
 
       {/* Bookmaker Bankroll Inputs */}
       {showBookmakers && (
-        <div className="bg-slate-900 border-2 border-slate-700 rounded-lg p-6 mb-6">
+        <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-black border border-white rounded-xl p-6 mb-6">
           <h3 className="text-xl font-bold text-white mb-4">Individual Bookmaker Balances</h3>
           <p className="text-sm text-slate-400 mb-4">
             Enter your current balance at each sportsbook. Total bankroll is calculated automatically.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {popularBookmakers.map(bookmaker => (
+            {displayBookmakers.map(bookmaker => (
               <div key={bookmaker.key} className="bg-slate-800 border border-slate-600 rounded-lg p-4">
                 <div className="flex items-center gap-3 mb-2">
                   <img
@@ -273,7 +279,7 @@ export function BankrollManager() {
       )}
 
       {/* Dynamic Kelly Calculator */}
-      <div className="bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-blue-600 rounded-lg p-6 mb-6">
+      <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-black border border-white rounded-xl p-6 mb-6">
         <h3 className="text-xl font-bold text-white mb-3">📊 Kelly Criterion Calculator (Dynamic)</h3>
         <p className="text-sm text-slate-400 mb-4">
           Adjust edge and odds below to see how 1/4 Kelly adapts to different situations
@@ -327,7 +333,7 @@ export function BankrollManager() {
                   <div className="text-sm text-slate-400">${(totalBankroll * halfKelly / 100).toFixed(2)}</div>
                 </div>
 
-                <div className="text-center border-2 border-green-600 rounded p-2">
+                <div className="text-center border border-green-600 rounded p-2">
                   <div className="text-xs text-green-400 mb-1 font-bold">1/4 Kelly (Recommended)</div>
                   <div className="text-3xl font-bold text-green-400">{quarterKelly.toFixed(2)}%</div>
                   <div className="text-lg text-green-300 font-semibold">${cappedAmount.toFixed(2)}</div>

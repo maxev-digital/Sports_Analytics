@@ -3,6 +3,7 @@ print("=" * 80)
 print("LOADING main.py from:", __file__)
 print("=" * 80)
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Request
+from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import sys
@@ -226,6 +227,30 @@ try:
     print("DEBUG: Player props router registered - NBA props ML system ready")
 except Exception as e:
     print(f"ERROR importing/registering player_props router: {type(e).__name__}: {e}")
+    import traceback
+    traceback.print_exc()
+
+# Import and register Volatility Arbitrage router
+try:
+    print("DEBUG: About to import volatility_arb router...")
+    from routes.volatility_arb import router as volatility_router
+    print("DEBUG: Volatility arbitrage router imported successfully")
+    app.include_router(volatility_router)
+    print("DEBUG: Volatility arbitrage router registered - Hybrid timing strategy ready")
+except Exception as e:
+    print(f"ERROR importing/registering volatility_arb router: {type(e).__name__}: {e}")
+    import traceback
+    traceback.print_exc()
+
+# Import and register NCAAB Live Baseline router
+try:
+    print("DEBUG: About to import ncaab_baseline router...")
+    from routes.ncaab_baseline import router as ncaab_baseline_router
+    print("DEBUG: NCAAB baseline router imported successfully")
+    app.include_router(ncaab_baseline_router)
+    print("DEBUG: NCAAB baseline router registered - Live vs baseline comparison ready")
+except Exception as e:
+    print(f"ERROR importing/registering ncaab_baseline router: {type(e).__name__}: {e}")
     import traceback
     traceback.print_exc()
 
@@ -639,6 +664,8 @@ def filter_games_by_bookmakers(games: List[LiveGame], enabled_bookmakers: List[s
     ALWAYS shows all upcoming games (even without odds) so cards display at all times
     For games with odds: requires at least 2 enabled bookmakers for comparison
     """
+    logger.info(f"[BOOKMAKER FILTER] Called with {len(games)} games and {len(enabled_bookmakers)} enabled bookmakers: {enabled_bookmakers}")
+
     filtered_games = []
     # Normalize all enabled bookmakers for comparison
     enabled_set = {normalize_bookmaker_name(bm) for bm in enabled_bookmakers}
@@ -653,7 +680,7 @@ def filter_games_by_bookmakers(games: List[LiveGame], enabled_bookmakers: List[s
         matches = [bm for bm in first_game_bookmakers if bm in enabled_set]
         logger.info(f"[FILTER DEBUG] Matches found: {matches[:5]}")
 
-    for game in games:
+    for idx, game in enumerate(games):
         # Filter odds to only enabled bookmakers (with normalization)
         # ALWAYS include "consensus" bookmaker (from Sports Data IO)
         filtered_odds = [
@@ -661,6 +688,9 @@ def filter_games_by_bookmakers(games: List[LiveGame], enabled_bookmakers: List[s
             if normalize_bookmaker_name(odd.bookmaker) in enabled_set
             or normalize_bookmaker_name(odd.bookmaker) == 'consensus'
         ]
+
+        if idx == 0:
+            logger.info(f"[FILTER] First game: {game.state.home_team.name} vs {game.state.away_team.name}, original odds count: {len(game.odds)}, filtered odds count: {len(filtered_odds)}")
 
         # ALWAYS show all games (upcoming and live)
         # The odds list will only contain the user's enabled bookmakers + consensus
@@ -679,13 +709,37 @@ async def get_games(user_id: str = 'default', show_all: bool = False):
     Normal mode: Only returns games with at least 2 enabled bookmakers
     show_all=True: Returns all games regardless of odds availability (for testing)
     """
+    logger.info(f"[GET /api/games] user_id={user_id}, show_all={show_all}")
     try:
         # If show_all parameter is set, return all games (bypasses bookmaker filtering)
         if show_all:
             logger.info("Bypassing bookmaker filter - showing all games for odds testing")
             games = tracker.get_all_games()
+
+            # Detect volatility opportunities
+            from volatility_detector_simple import detect_volatility_opportunities
+            games = detect_volatility_opportunities(games)
+
             # Convert Pydantic models to dicts and handle numpy types
             games_dicts = [game.model_dump() for game in games]
+
+            # Add computed fields for frontend compatibility
+            sport_map = {
+                'basketball_nba': 'NBA',
+                'basketball_nba_preseason': 'NBA',
+                'basketball_ncaab': 'NCAAB',
+                'americanfootball_nfl': 'NFL',
+                'americanfootball_ncaaf': 'NCAAF',
+                'icehockey_nhl': 'NHL',
+                'baseball_mlb': 'MLB'
+            }
+            for game_dict, game_obj in zip(games_dicts, games):
+                game_dict['sport_key'] = game_obj.state.sport_key
+                game_dict['sport'] = sport_map.get(game_obj.state.sport_key)
+                game_dict['home_team'] = game_obj.state.home_team.name
+                game_dict['away_team'] = game_obj.state.away_team.name
+                game_dict['game_id'] = game_obj.state.id
+
             return convert_numpy_types(games_dicts)
 
         # Get user settings
@@ -694,36 +748,88 @@ async def get_games(user_id: str = 'default', show_all: bool = False):
             # If no settings found, return all games (backwards compatible)
             logger.info(f"No settings found for user {user_id}, returning all games")
             games = tracker.get_all_games()
+
+            # Detect volatility opportunities
+            from volatility_detector_simple import detect_volatility_opportunities
+            games = detect_volatility_opportunities(games)
+
             games_dicts = [game.model_dump() for game in games]
+
+            # Add computed fields for frontend compatibility
+            sport_map = {
+                'basketball_nba': 'NBA',
+                'basketball_nba_preseason': 'NBA',
+                'basketball_ncaab': 'NCAAB',
+                'americanfootball_nfl': 'NFL',
+                'americanfootball_ncaaf': 'NCAAF',
+                'icehockey_nhl': 'NHL',
+                'baseball_mlb': 'MLB'
+            }
+            for game_dict, game_obj in zip(games_dicts, games):
+                game_dict['sport_key'] = game_obj.state.sport_key
+                game_dict['sport'] = sport_map.get(game_obj.state.sport_key)
+                game_dict['home_team'] = game_obj.state.home_team.name
+                game_dict['away_team'] = game_obj.state.away_team.name
+                game_dict['game_id'] = game_obj.state.id
+
             return convert_numpy_types(games_dicts)
 
         # Get all games
         all_games = tracker.get_all_games()
         logger.info(f"[DEBUG /api/games] Total games from tracker: {len(all_games)}")
 
-        nhl_games_before = [g for g in all_games if g.sport_key == 'icehockey_nhl']
-        logger.info(f"[DEBUG /api/games] NHL games before filtering: {len(nhl_games_before)}")
-        if nhl_games_before:
-            logger.info(f"[DEBUG /api/games] First NHL game: {nhl_games_before[0].away_team} @ {nhl_games_before[0].home_team}, odds count: {len(nhl_games_before[0].odds)}")
-
         # Filter by enabled bookmakers (uses model_copy for performance)
         filtered_games = filter_games_by_bookmakers(all_games, settings['enabled_bookmakers'])
         logger.info(f"[DEBUG /api/games] Total games after filtering: {len(filtered_games)}")
 
-        nhl_games_after = [g for g in filtered_games if g.sport_key == 'icehockey_nhl']
-        logger.info(f"[DEBUG /api/games] NHL games after filtering: {len(nhl_games_after)}")
-        if nhl_games_after:
-            logger.info(f"[DEBUG /api/games] First NHL game after filter: {nhl_games_after[0].away_team} @ {nhl_games_after[0].home_team}, odds count: {len(nhl_games_after[0].odds)}")
+        # Detect volatility opportunities
+        from volatility_detector_simple import detect_volatility_opportunities
+        filtered_games = detect_volatility_opportunities(filtered_games)
 
         # Convert to dicts and handle numpy types
         games_dicts = [game.model_dump() for game in filtered_games]
+
+        # Add computed fields for frontend compatibility
+        sport_map = {
+            'basketball_nba': 'NBA',
+            'basketball_nba_preseason': 'NBA',
+            'basketball_ncaab': 'NCAAB',
+            'americanfootball_nfl': 'NFL',
+            'americanfootball_ncaaf': 'NCAAF',
+            'icehockey_nhl': 'NHL',
+            'baseball_mlb': 'MLB'
+        }
+        for game_dict, game_obj in zip(games_dicts, filtered_games):
+            game_dict['sport_key'] = game_obj.state.sport_key
+            game_dict['sport'] = sport_map.get(game_obj.state.sport_key)
+            game_dict['home_team'] = game_obj.state.home_team.name
+            game_dict['away_team'] = game_obj.state.away_team.name
+            game_dict['game_id'] = game_obj.state.id
+
+        # EXTREME DEBUG: Log what we're actually returning
+        if games_dicts and user_id == 'DrewB':
+            logger.info(f"[EXTREME DEBUG] About to return for DrewB:")
+            logger.info(f"[EXTREME DEBUG] First game odds count AFTER model_dump: {len(games_dicts[0]['odds'])}")
+            logger.info(f"[EXTREME DEBUG] First 5 bookmakers: {[odd['bookmaker'] for odd in games_dicts[0]['odds'][:5]]}")
+
         return convert_numpy_types(games_dicts)
 
     except Exception as e:
+        import traceback
         logger.error(f"Error filtering games: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
         # On error, return all games (fail-safe)
         games = tracker.get_all_games()
         games_dicts = [game.model_dump() for game in games]
+
+        # Add computed fields for frontend compatibility
+        for game_dict, game_obj in zip(games_dicts, games):
+            game_dict['sport'] = game_obj.sport
+            game_dict['sport_key'] = game_obj.sport_key
+            game_dict['home_team'] = game_obj.home_team
+            game_dict['away_team'] = game_obj.away_team
+            game_dict['game_id'] = game_obj.game_id
+
         return convert_numpy_types(games_dicts)
 
 @app.get("/api/games/{game_id}", response_model=LiveGame)
@@ -1443,6 +1549,55 @@ async def check_feature_access(user_id: str, feature: str):
     except Exception as e:
         logger.error(f"Error checking feature access: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to check feature access: {str(e)}")
+
+
+@app.get("/api/upgrade")
+async def upgrade_from_email(tier: str, email: str, username: str):
+    """
+    Upgrade endpoint for email trial reminder links
+    Redirects user to Stripe checkout for selected tier
+
+    Query params:
+        - tier: starter, semipro, professional, elite, elitepro
+        - email: user email
+        - username: user username
+    """
+    try:
+        # Map tier to Stripe price IDs
+        STRIPE_PRICE_IDS = {
+            'starter': 'price_1SNuPeR1TzxiBDhG2poLUgpO',
+            'semipro': 'price_1SNuQhR1TzxiBDhG1Qe8ZwGN',
+            'professional': 'price_1SNuRQR1TzxiBDhGo6UuEf6f',
+            'elite': 'price_1SNuRrR1TzxiBDhG2sGWFocn',
+            'elitepro': 'price_1SNuSRR1TzxiBDhGaBhjKZXJ',
+        }
+
+        tier_lower = tier.lower()
+
+        if tier_lower not in STRIPE_PRICE_IDS:
+            raise HTTPException(status_code=400, detail=f"Invalid tier: {tier}")
+
+        price_id = STRIPE_PRICE_IDS[tier_lower]
+
+        # Create Stripe checkout session
+        checkout_session = StripeService.create_checkout_session(
+            price_id=price_id,
+            user_id=username,
+            user_email=email,
+            success_url=f"{os.getenv('DOMAIN', 'https://max-ev-sports.com')}/subscription/success?session_id={{CHECKOUT_SESSION_ID}}",
+            cancel_url=f"{os.getenv('DOMAIN', 'https://max-ev-sports.com')}/#/pricing",
+            apply_beta_discount=True  # Apply EARLY50 promo code (50% OFF FOR LIFE)
+        )
+
+        # Redirect to Stripe checkout
+        return RedirectResponse(url=checkout_session['url'])
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating upgrade checkout: {str(e)}")
+        # Fallback: redirect to pricing page
+        return RedirectResponse(url=f"{os.getenv('DOMAIN', 'https://max-ev-sports.com')}/#/pricing")
 
 
 @app.get("/api/subscription/beta-count")
@@ -2699,6 +2854,176 @@ async def get_nba_props_with_edges(min_edge_pct: float = 5.0):
     except Exception as e:
         logger.error(f"Error fetching ML NBA props: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/alerts/empty-net")
+async def get_empty_net_alerts(user_id: str = 'default'):
+    """Get NHL empty net / goalie pull alerts"""
+    try:
+        # Get empty net alerts from storage (status='pending' means active)
+        tracked_alerts = alert_storage.get_alerts_by_type('empty_net', status='pending', limit=50)
+
+        # Convert to response format
+        alerts = []
+        for tracked_alert in tracked_alerts:
+            details = tracked_alert.strategy_details or {}
+
+            alerts.append({
+                'id': tracked_alert.id,
+                'game_id': tracked_alert.game_id,
+                'sport': tracked_alert.sport,
+                'home_team': tracked_alert.home_team,
+                'away_team': tracked_alert.away_team,
+                'commence_time': tracked_alert.commence_time,
+                'market_type': tracked_alert.market_type,
+                'recommended_side': tracked_alert.recommended_side,
+                'recommended_odds': tracked_alert.recommended_odds,
+                'recommended_bookmaker': tracked_alert.recommended_bookmaker,
+                'confidence': tracked_alert.confidence,
+                'edge_percent': tracked_alert.edge_percent,
+                'profit_potential': tracked_alert.profit_potential,
+                'generated_at': tracked_alert.generated_at,
+                'status': tracked_alert.status,
+                'strategy_details': details
+            })
+
+        return {
+            'count': len(alerts),
+            'alerts': alerts,
+            'alert_type': 'empty_net'
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting empty net alerts: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/alerts/volatility-arb")
+async def get_volatility_arb_alerts(user_id: str = 'default'):
+    """Get volatility arbitrage hedge alerts"""
+    try:
+        # Get volatility arb alerts from storage (status='pending' means active hedge opportunity)
+        tracked_alerts = alert_storage.get_alerts_by_type('volatility_arb', status='pending', limit=50)
+
+        # Convert to response format
+        alerts = []
+        for tracked_alert in tracked_alerts:
+            details = tracked_alert.strategy_details or {}
+
+            alerts.append({
+                'id': tracked_alert.id,
+                'game_id': tracked_alert.game_id,
+                'sport': tracked_alert.sport,
+                'home_team': tracked_alert.home_team,
+                'away_team': tracked_alert.away_team,
+                'commence_time': tracked_alert.commence_time,
+                'market_type': tracked_alert.market_type,
+                'recommended_side': tracked_alert.recommended_side,
+                'recommended_odds': tracked_alert.recommended_odds,
+                'recommended_bookmaker': tracked_alert.recommended_bookmaker,
+                'confidence': tracked_alert.confidence,
+                'edge_percent': tracked_alert.edge_percent,
+                'profit_potential': tracked_alert.profit_potential,
+                'generated_at': tracked_alert.generated_at,
+                'status': tracked_alert.status,
+                'strategy_details': details
+            })
+
+        return {
+            'count': len(alerts),
+            'alerts': alerts,
+            'alert_type': 'volatility_arb'
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting volatility arb alerts: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
+@app.get("/api/alerts/empty-net")
+async def get_empty_net_alerts(user_id: str = 'default'):
+    """Get NHL empty net / goalie pull alerts"""
+    try:
+        # Get empty net alerts from storage (status='pending' means active)
+        tracked_alerts = alert_storage.get_alerts_by_type('empty_net', status='pending', limit=50)
+
+        # Convert to response format
+        alerts = []
+        for tracked_alert in tracked_alerts:
+            details = tracked_alert.strategy_details or {}
+
+            alerts.append({
+                'id': tracked_alert.id,
+                'game_id': tracked_alert.game_id,
+                'sport': tracked_alert.sport,
+                'home_team': tracked_alert.home_team,
+                'away_team': tracked_alert.away_team,
+                'commence_time': tracked_alert.commence_time,
+                'market_type': tracked_alert.market_type,
+                'recommended_side': tracked_alert.recommended_side,
+                'recommended_odds': tracked_alert.recommended_odds,
+                'recommended_bookmaker': tracked_alert.recommended_bookmaker,
+                'confidence': tracked_alert.confidence,
+                'edge_percent': tracked_alert.edge_percent,
+                'profit_potential': tracked_alert.profit_potential,
+                'generated_at': tracked_alert.generated_at,
+                'status': tracked_alert.status,
+                'strategy_details': details
+            })
+
+        return {
+            'count': len(alerts),
+            'alerts': alerts,
+            'alert_type': 'empty_net'
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting empty net alerts: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/alerts/volatility-arb")
+async def get_volatility_arb_alerts(user_id: str = 'default'):
+    """Get volatility arbitrage hedge alerts"""
+    try:
+        # Get volatility arb alerts from storage (status='pending' means active hedge opportunity)
+        tracked_alerts = alert_storage.get_alerts_by_type('volatility_arb', status='pending', limit=50)
+
+        # Convert to response format
+        alerts = []
+        for tracked_alert in tracked_alerts:
+            details = tracked_alert.strategy_details or {}
+
+            alerts.append({
+                'id': tracked_alert.id,
+                'game_id': tracked_alert.game_id,
+                'sport': tracked_alert.sport,
+                'home_team': tracked_alert.home_team,
+                'away_team': tracked_alert.away_team,
+                'commence_time': tracked_alert.commence_time,
+                'market_type': tracked_alert.market_type,
+                'recommended_side': tracked_alert.recommended_side,
+                'recommended_odds': tracked_alert.recommended_odds,
+                'recommended_bookmaker': tracked_alert.recommended_bookmaker,
+                'confidence': tracked_alert.confidence,
+                'edge_percent': tracked_alert.edge_percent,
+                'profit_potential': tracked_alert.profit_potential,
+                'generated_at': tracked_alert.generated_at,
+                'status': tracked_alert.status,
+                'strategy_details': details
+            })
+
+        return {
+            'count': len(alerts),
+            'alerts': alerts,
+            'alert_type': 'volatility_arb'
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting volatility arb alerts: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 
 
 # ========== ENSEMBLE BETTING ENGINE ENDPOINTS ==========

@@ -53,8 +53,15 @@ export function BetAlertToast({ alert, onDismiss, position, isAudioMuted }: BetA
                        confidence === 'HIGH' ? '/alerts/middle_high.mp3' :
                        '/alerts/middle_medium.mp3');
       } else if (strategyName.includes('goalie')) {
-        audioChain.push(confidence === 'CRITICAL' ? '/alerts/goalie_pull_critical.mp3' :
-                       '/alerts/goalie_pull_warning.mp3');
+        // Use short alert audio only - no long detailed explanations
+        audioChain.push('/alerts/goalie_pull_alert.mp3');
+      } else if (strategyName.includes('quarter') && strategyName.includes('reversal')) {
+        audioChain.push(confidence === 'CRITICAL' ? '/alerts/quarter_reversal_critical.mp3' :
+                       confidence === 'HIGH' ? '/alerts/quarter_reversal_high.mp3' :
+                       '/alerts/quarter_reversal_medium.mp3');
+      } else if (strategyName.includes('cold') && strategyName.includes('team')) {
+        audioChain.push(confidence === 'HIGH' ? '/alerts/cold_team_high.mp3' :
+                       '/alerts/cold_team_medium.mp3');
       } else {
         audioChain.push(confidence === 'HIGH' ? '/alerts/alert_high.mp3' :
                        confidence === 'MEDIUM' ? '/alerts/alert_medium.mp3' :
@@ -226,6 +233,54 @@ export function BetAlertToast({ alert, onDismiss, position, isAudioMuted }: BetA
       };
     }
 
+    // Quarter Reversal = Black background with PURPLE inner windows
+    // Bet against hot team's momentum after 2 consecutive quarter wins
+    if (strategyName.includes('quarter') && strategyName.includes('reversal')) {
+      return {
+        bg: 'bg-gradient-to-br from-black via-gray-900 to-slate-900',
+        border: 'border-white',
+        glow: 'shadow-xl shadow-white/25',
+        pulse: '',
+        emoji: '🔄',
+        timerColor: 'text-white',
+        infoBg: 'bg-black/40',
+        bookCardBg: 'bg-purple-600/80 border-white',
+        bookCardHover: 'hover:bg-purple-500/90 hover:border-white'
+      };
+    }
+
+    // Cold Team Bounce-Back = Black background with CYAN inner windows
+    // Desperation play when team loses 3 straight quarters
+    if (strategyName.includes('cold') && strategyName.includes('team')) {
+      return {
+        bg: 'bg-gradient-to-br from-black via-gray-900 to-slate-900',
+        border: 'border-white',
+        glow: 'shadow-xl shadow-white/25',
+        pulse: '',
+        emoji: '❄️',
+        timerColor: 'text-white',
+        infoBg: 'bg-black/40',
+        bookCardBg: 'bg-cyan-600/80 border-white',
+        bookCardHover: 'hover:bg-cyan-500/90 hover:border-white'
+      };
+    }
+
+    // Goalie Pull = Black background with YELLOW inner windows
+    // NHL empty net opportunities when trailing team pulls goalie
+    if (strategyName.includes('goalie')) {
+      return {
+        bg: 'bg-gradient-to-br from-black via-gray-900 to-slate-900',
+        border: 'border-white',
+        glow: 'shadow-xl shadow-white/25',
+        pulse: '',
+        emoji: '🥅',
+        timerColor: 'text-white',
+        infoBg: 'bg-black/40',
+        bookCardBg: 'bg-yellow-600/80 border-white',
+        bookCardHover: 'hover:bg-yellow-500/90 hover:border-white'
+      };
+    }
+
     // All other strategies = Black background with ORANGE inner windows
     return {
       bg: 'bg-gradient-to-br from-black via-gray-900 to-slate-900',
@@ -263,12 +318,12 @@ export function BetAlertToast({ alert, onDismiss, position, isAudioMuted }: BetA
           <span className="text-xl">{styles.emoji}</span>
           <div className="flex-1">
             <div className="font-bold text-white text-xs">{alert.strategy_name}</div>
-            {isExpanded && alert.home_team && alert.away_team && (
+            {alert.home_team && alert.away_team && (
               <div className="text-xs text-white/80 font-semibold mt-0.5">
                 {alert.away_team} @ {alert.home_team}
               </div>
             )}
-            {!isExpanded && (
+            {!isExpanded && !alert.home_team && !alert.away_team && (
               <div className="text-xs text-white/70 uppercase">{alert.confidence}</div>
             )}
           </div>

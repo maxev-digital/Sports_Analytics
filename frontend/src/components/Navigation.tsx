@@ -84,7 +84,8 @@ export function Navigation() {
   // Edges dropdown items (ML Model Edges)
   const edgesItems = [
     { path: '/max-ev-edges', label: 'ML EDGES', emoji: uiEmojis.star },
-    { path: '/model-performance', label: 'MODEL PERFORMANCE', emoji: uiEmojis.chart },
+    { path: '/model-performance', label: 'PERFORMANCE', emoji: uiEmojis.chart },
+    { path: '/predictions-database', label: 'PREDICTIONS DATABASE', emoji: uiEmojis.book },
     { path: '/ml-models-explained', label: 'ML MODELS EXPLAINED', emoji: uiEmojis.book },
   ];
 

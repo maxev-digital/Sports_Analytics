@@ -38,15 +38,46 @@ interface QuarterReversalOpportunity {
   timestamp: string;
 }
 
+interface ColdTeamOpportunity {
+  game_id: string;
+  matchup: string;
+  strategy: 'COLD_TEAM_Q4';
+  cold_team: string;
+  hot_team: string;
+  quarter: string;
+  trigger: string;
+  confidence: number;
+  expected_roi: string;
+  alert_level: 'HIGH' | 'MEDIUM' | 'CRITICAL';
+  reasoning: string;
+  quality_differential: number | null;
+  recommendations: BetRecommendation[];
+  total_options: number;
+  timestamp: string;
+}
+
 interface WebSocketMessage {
   type: string;
   timestamp: string;
   count?: number;
   opportunities?: QuarterReversalOpportunity[];
+  quarter_reversal_alerts?: {
+    type: string;
+    count: number;
+    opportunities: QuarterReversalOpportunity[];
+    timestamp: string;
+  };
+  cold_team_alerts?: {
+    type: string;
+    count: number;
+    opportunities: ColdTeamOpportunity[];
+    timestamp: string;
+  };
 }
 
 interface UseQuarterReversalWebSocketReturn {
   opportunities: QuarterReversalOpportunity[];
+  coldTeamOpportunities: ColdTeamOpportunity[];
   connected: boolean;
   lastUpdate: Date | null;
   error: string | null;
@@ -57,6 +88,7 @@ const PING_INTERVAL = 25000; // 25 seconds
 
 export const useQuarterReversalWebSocket = (userId: string = 'default'): UseQuarterReversalWebSocketReturn => {
   const [opportunities, setOpportunities] = useState<QuarterReversalOpportunity[]>([]);
+  const [coldTeamOpportunities, setColdTeamOpportunities] = useState<ColdTeamOpportunity[]>([]);
   const [connected, setConnected] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -98,13 +130,29 @@ export const useQuarterReversalWebSocket = (userId: string = 'default'): UseQuar
         try {
           const message: WebSocketMessage = JSON.parse(event.data);
 
-          // Handle quarter reversal updates
+          // Handle nested quarter reversal alerts (new structure from main.py)
+          if (message.quarter_reversal_alerts) {
+            const qrAlerts = message.quarter_reversal_alerts;
+            console.log(`🔄 Received ${qrAlerts.count} quarter reversal opportunities`);
+            setOpportunities(qrAlerts.opportunities || []);
+            setLastUpdate(new Date());
+          }
+
+          // Handle nested cold team bounce-back alerts (new structure from main.py)
+          if (message.cold_team_alerts) {
+            const ctAlerts = message.cold_team_alerts;
+            console.log(`❄️ Received ${ctAlerts.count} cold team bounce-back opportunities`);
+            setColdTeamOpportunities(ctAlerts.opportunities || []);
+            setLastUpdate(new Date());
+          }
+
+          // Legacy: Handle old direct quarter reversal updates
           if (message.type === 'quarter_reversal_update' && message.opportunities) {
-            console.log(`🔄 Received ${message.opportunities.length} quarter reversal opportunities`);
+            console.log(`🔄 Received ${message.opportunities.length} quarter reversal opportunities (legacy)`);
             setOpportunities(message.opportunities);
             setLastUpdate(new Date());
           } else if (message.type === 'quarter_reversal_batch' && message.opportunities) {
-            console.log(`📦 Received batch of ${message.opportunities.length} quarter reversal opportunities`);
+            console.log(`📦 Received batch of ${message.opportunities.length} quarter reversal opportunities (legacy)`);
             setOpportunities(message.opportunities);
             setLastUpdate(new Date());
           } else if (message.type === 'ping' || message.type === 'pong') {
@@ -184,6 +232,7 @@ export const useQuarterReversalWebSocket = (userId: string = 'default'): UseQuar
 
   return {
     opportunities,
+    coldTeamOpportunities,
     connected,
     lastUpdate,
     error,

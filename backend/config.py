@@ -20,8 +20,8 @@ SPORTS = [
     "americanfootball_nfl",       # NFL (Sep-Feb)
     "icehockey_nhl",              # NHL (Oct-Apr)
     "basketball_ncaab",           # NCAA Basketball (Nov-Apr)
+    "americanfootball_ncaaf",     # NCAA Football (Aug-Jan) - Now with betting trends!
     # OUT OF SEASON (Disabled to save API credits):
-    # "americanfootball_ncaaf",   # NCAA Football (season ends Dec)
     # "baseball_mlb",             # MLB (Apr-Oct)
     # PERMANENTLY DISABLED TO SAVE API CREDITS:
     # "golf_pga_championship",    # PGA Golf
@@ -33,12 +33,12 @@ REGION = "us,us2,uk,au,eu"  # Fetch from all regions for maximum bookmaker cover
 MARKETS = "h2h,spreads,totals"  # Fetch money lines, spreads, and totals
 
 # Adaptive Polling Configuration (CST timezone)
-# Active Polling: 12pm-12am CST (5 second interval)
+# Active Polling: 12pm-12am CST (120 second / 2 minute interval)
 # Cache-Only Mode: 12am-12pm CST (no API calls, use cached data)
 CACHE_ONLY_MODE_ENABLED = True
 CACHE_ONLY_START_HOUR = 0   # 12am CST
 CACHE_ONLY_END_HOUR = 12     # 12pm CST
-ACTIVE_POLL_INTERVAL = 5     # seconds (when polling is active)
+ACTIVE_POLL_INTERVAL = 120   # seconds (when polling is active) - 2 minutes to conserve API credits
 CACHE_CHECK_INTERVAL = 300   # seconds (5 min - how often to check time during cache mode)
 
 def is_cache_only_time():
@@ -58,7 +58,7 @@ def get_poll_interval():
     """Get current poll interval based on cache-only mode"""
     if is_cache_only_time():
         return CACHE_CHECK_INTERVAL  # Just check time, don't poll APIs
-    return ACTIVE_POLL_INTERVAL  # Active polling (5 seconds)
+    return ACTIVE_POLL_INTERVAL  # Active polling (2 minutes)
 
 # Legacy config (kept for backwards compatibility)
 POLL_INTERVAL = get_poll_interval()

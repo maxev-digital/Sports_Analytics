@@ -233,6 +233,7 @@ class TeamRankingsNFLScraper:
     def scrape_ats_trends(self) -> Dict[str, Dict]:
         """
         Scrape ATS (Against The Spread) trends from TeamRankings
+        Scrapes overall, home, and away ATS records from separate pages
 
         Returns:
             Dict mapping team name -> ATS data:
@@ -240,13 +241,44 @@ class TeamRankingsNFLScraper:
                 'Buffalo': {
                     'ats_wins': 8,
                     'ats_losses': 2,
-                    'ats_pushes': 0
+                    'ats_pushes': 0,
+                    'home_ats_wins': 5,
+                    'home_ats_losses': 1,
+                    'home_ats_pushes': 0,
+                    'away_ats_wins': 3,
+                    'away_ats_losses': 1,
+                    'away_ats_pushes': 0
                 },
                 ...
             }
         """
-        url = f"{self.BASE_URL}/trends/ats_trends/"
+        # Scrape overall ATS
+        ats_data = self._scrape_ats_page(f"{self.BASE_URL}/trends/ats_trends/", 'overall')
 
+        # Scrape home ATS
+        time.sleep(1)
+        home_ats = self._scrape_ats_page(f"{self.BASE_URL}/trends/ats_trends/?sc=is_home", 'home')
+
+        # Scrape away ATS
+        time.sleep(1)
+        away_ats = self._scrape_ats_page(f"{self.BASE_URL}/trends/ats_trends/?sc=is_away", 'away')
+
+        # Merge home/away data into overall
+        for team, data in ats_data.items():
+            if team in home_ats:
+                data['home_ats_wins'] = home_ats[team]['ats_wins']
+                data['home_ats_losses'] = home_ats[team]['ats_losses']
+                data['home_ats_pushes'] = home_ats[team]['ats_pushes']
+            if team in away_ats:
+                data['away_ats_wins'] = away_ats[team]['ats_wins']
+                data['away_ats_losses'] = away_ats[team]['ats_losses']
+                data['away_ats_pushes'] = away_ats[team]['ats_pushes']
+
+        logger.info(f"Scraped ATS trends (overall + home/away) for {len(ats_data)} teams")
+        return ats_data
+
+    def _scrape_ats_page(self, url: str, record_type: str) -> Dict[str, Dict]:
+        """Helper to scrape a single ATS page (overall, home, or away)"""
         try:
             response = self.session.get(url, timeout=10)
             response.raise_for_status()
@@ -284,18 +316,19 @@ class TeamRankingsNFLScraper:
                             'ats_pushes': int(parts[2])
                         }
                 except (ValueError, IndexError) as e:
-                    logger.warning(f"Could not parse ATS record for {team_name}: {ats_record}")
+                    logger.warning(f"Could not parse {record_type} ATS record for {team_name}: {ats_record}")
 
-            logger.info(f"Scraped ATS trends for {len(ats_data)} teams")
+            logger.info(f"Scraped {record_type} ATS trends for {len(ats_data)} teams")
             return ats_data
 
         except Exception as e:
-            logger.error(f"Error scraping ATS trends: {e}")
+            logger.error(f"Error scraping {record_type} ATS trends: {e}")
             return {}
 
     def scrape_ou_trends(self) -> Dict[str, Dict]:
         """
         Scrape O/U (Over/Under) trends from TeamRankings
+        Scrapes overall, home, and away O/U records from separate pages
 
         Returns:
             Dict mapping team name -> O/U data:
@@ -303,13 +336,44 @@ class TeamRankingsNFLScraper:
                 'Buffalo': {
                     'ou_overs': 7,
                     'ou_unders': 3,
-                    'ou_pushes': 0
+                    'ou_pushes': 0,
+                    'home_ou_overs': 4,
+                    'home_ou_unders': 2,
+                    'home_ou_pushes': 0,
+                    'away_ou_overs': 3,
+                    'away_ou_unders': 1,
+                    'away_ou_pushes': 0
                 },
                 ...
             }
         """
-        url = f"{self.BASE_URL}/trends/ou_trends/"
+        # Scrape overall O/U
+        ou_data = self._scrape_ou_page(f"{self.BASE_URL}/trends/ou_trends/", 'overall')
 
+        # Scrape home O/U
+        time.sleep(1)
+        home_ou = self._scrape_ou_page(f"{self.BASE_URL}/trends/ou_trends/?sc=is_home", 'home')
+
+        # Scrape away O/U
+        time.sleep(1)
+        away_ou = self._scrape_ou_page(f"{self.BASE_URL}/trends/ou_trends/?sc=is_away", 'away')
+
+        # Merge home/away data into overall
+        for team, data in ou_data.items():
+            if team in home_ou:
+                data['home_ou_overs'] = home_ou[team]['ou_overs']
+                data['home_ou_unders'] = home_ou[team]['ou_unders']
+                data['home_ou_pushes'] = home_ou[team]['ou_pushes']
+            if team in away_ou:
+                data['away_ou_overs'] = away_ou[team]['ou_overs']
+                data['away_ou_unders'] = away_ou[team]['ou_unders']
+                data['away_ou_pushes'] = away_ou[team]['ou_pushes']
+
+        logger.info(f"Scraped O/U trends (overall + home/away) for {len(ou_data)} teams")
+        return ou_data
+
+    def _scrape_ou_page(self, url: str, record_type: str) -> Dict[str, Dict]:
+        """Helper to scrape a single O/U page (overall, home, or away)"""
         try:
             response = self.session.get(url, timeout=10)
             response.raise_for_status()
@@ -336,7 +400,7 @@ class TeamRankingsNFLScraper:
                     continue
                 team_name = team_link.text.strip()
 
-                # Column 1: Over Record (format: "O-U-P")
+                # Column 1: O/U Record (format: "O-U-P")
                 ou_record = cols[1].text.strip()
                 try:
                     parts = ou_record.split('-')
@@ -347,13 +411,13 @@ class TeamRankingsNFLScraper:
                             'ou_pushes': int(parts[2])
                         }
                 except (ValueError, IndexError) as e:
-                    logger.warning(f"Could not parse O/U record for {team_name}: {ou_record}")
+                    logger.warning(f"Could not parse {record_type} O/U record for {team_name}: {ou_record}")
 
-            logger.info(f"Scraped O/U trends for {len(ou_data)} teams")
+            logger.info(f"Scraped {record_type} O/U trends for {len(ou_data)} teams")
             return ou_data
 
         except Exception as e:
-            logger.error(f"Error scraping O/U trends: {e}")
+            logger.error(f"Error scraping {record_type} O/U trends: {e}")
             return {}
 
     def fetch_all_team_stats(self, force_refresh: bool = False) -> Dict[str, Dict]:
@@ -620,12 +684,33 @@ class TeamRankingsNFLScraper:
                 'opponent_first_downs_per_game': opp_first_downs.get(team, 20.0),
 
                 # === NEW: BETTING TRENDS (Phase 6) ===
+                # Overall ATS
                 'ats_wins': ats_trends.get(team, {}).get('ats_wins'),
                 'ats_losses': ats_trends.get(team, {}).get('ats_losses'),
                 'ats_pushes': ats_trends.get(team, {}).get('ats_pushes'),
+                # Home/Away ATS splits
+                'home_ats_wins': ats_trends.get(team, {}).get('home_ats_wins'),
+                'home_ats_losses': ats_trends.get(team, {}).get('home_ats_losses'),
+                'home_ats_pushes': ats_trends.get(team, {}).get('home_ats_pushes'),
+                'away_ats_wins': ats_trends.get(team, {}).get('away_ats_wins'),
+                'away_ats_losses': ats_trends.get(team, {}).get('away_ats_losses'),
+                'away_ats_pushes': ats_trends.get(team, {}).get('away_ats_pushes'),
+                # Overall O/U
                 'ou_overs': ou_trends.get(team, {}).get('ou_overs'),
                 'ou_unders': ou_trends.get(team, {}).get('ou_unders'),
                 'ou_pushes': ou_trends.get(team, {}).get('ou_pushes'),
+                # Home/Away O/U splits
+                'home_ou_overs': ou_trends.get(team, {}).get('home_ou_overs'),
+                'home_ou_unders': ou_trends.get(team, {}).get('home_ou_unders'),
+                'home_ou_pushes': ou_trends.get(team, {}).get('home_ou_pushes'),
+                'away_ou_overs': ou_trends.get(team, {}).get('away_ou_overs'),
+                'away_ou_unders': ou_trends.get(team, {}).get('away_ou_unders'),
+                'away_ou_pushes': ou_trends.get(team, {}).get('away_ou_pushes'),
+                # Last 5/10 trends - will be added from odds database if available
+                'ats_last_5': None,  # Populated by NFLBettingTrendsCalculator
+                'ats_last_10': None,  # Populated by NFLBettingTrendsCalculator
+                'ou_last_5': None,  # Populated by NFLBettingTrendsCalculator
+                'ou_last_10': None,  # Populated by NFLBettingTrendsCalculator
 
                 'source': 'teamrankings',
                 'last_updated': datetime.now().isoformat()
@@ -774,6 +859,59 @@ class TeamRankingsNFLScraper:
         logger.info("Force refreshing TeamRankings NFL cache...")
         self.fetch_all_team_stats(force_refresh=True)
 
+    def merge_betting_trends_from_db(self, team_stats: Dict[str, Dict]) -> Dict[str, Dict]:
+        """
+        Merge last 5/10 game trends from odds database into team stats
+
+        Args:
+            team_stats: Team stats dict from TeamRankings
+
+        Returns:
+            Updated team stats with last 5/10 trends merged in
+        """
+        try:
+            from scrapers.nfl_betting_trends_calculator import NFLBettingTrendsCalculator
+
+            calculator = NFLBettingTrendsCalculator()
+            db_trends = calculator.calculate_team_trends(lookback_days=120)
+
+            if not db_trends:
+                logger.warning("No betting trends calculated from odds database")
+                return team_stats
+
+            # Merge last 5/10 trends into team stats
+            for team_name, stats in team_stats.items():
+                # Try to find matching team in db_trends
+                db_team_data = None
+
+                # Try exact match first
+                if team_name in db_trends:
+                    db_team_data = db_trends[team_name]
+                else:
+                    # Try finding by partial match (e.g., "Kansas City" vs "Kansas City Chiefs")
+                    for db_team in db_trends.keys():
+                        if team_name in db_team or db_team in team_name:
+                            db_team_data = db_trends[db_team]
+                            break
+
+                if db_team_data:
+                    # Merge last 5/10 trends
+                    stats['ats_last_5'] = db_team_data.get('ats_last_5')
+                    stats['ats_last_10'] = db_team_data.get('ats_last_10')
+                    stats['ou_last_5'] = db_team_data.get('ou_last_5')
+                    stats['ou_last_10'] = db_team_data.get('ou_last_10')
+                    logger.debug(f"Merged trends for {team_name} from odds DB")
+
+            logger.info(f"Merged betting trends from odds database for {len(team_stats)} teams")
+            return team_stats
+
+        except ImportError:
+            logger.warning("NFLBettingTrendsCalculator not available, skipping last 5/10 trends")
+            return team_stats
+        except Exception as e:
+            logger.error(f"Error merging betting trends from database: {e}")
+            return team_stats
+
 
 # Standalone test
 if __name__ == "__main__":
@@ -786,6 +924,10 @@ if __name__ == "__main__":
     all_stats = scraper.fetch_all_team_stats(force_refresh=True)
     print(f"Fetched {len(all_stats)} teams")
 
+    # Test: Merge betting trends from DB (if available)
+    print("\n=== Merging Betting Trends from Odds DB ===")
+    all_stats = scraper.merge_betting_trends_from_db(all_stats)
+
     # Test: Get specific team
     print("\n=== Kansas City Chiefs ===")
     chiefs = scraper.get_team_stats("Kansas City Chiefs")
@@ -797,6 +939,11 @@ if __name__ == "__main__":
         print(f"Win %: {chiefs['win_pct']:.1%}")
         print(f"Yards/Game: {chiefs['yards_per_game']}")
         print(f"Turnover Diff: {chiefs['turnover_diff']:+.1f}")
+
+        if chiefs.get('ats_last_5'):
+            print(f"ATS Last 5: {chiefs['ats_last_5']}")
+        if chiefs.get('ou_last_5'):
+            print(f"O/U Last 5: {chiefs['ou_last_5']}")
 
     # Test: Get team by partial name
     print("\n=== Cowboys (partial match) ===")

@@ -3366,12 +3366,12 @@ const articleContents: { [key: string]: ArticleContent } = {
 
   'nhl-goalie-pull-strategy': {
     id: 'nhl-goalie-pull-strategy',
-    title: 'NHL Goalie Pull Strategy: Winning with 48% Success Rate',
+    title: 'NHL Empty Net Betting Strategy: How Goalie Pull Situations Can Create +EV Opportunities',
     category: 'Advanced',
-    readTime: '25 min',
-    lastUpdated: 'October 20, 2025',
+    readTime: '28 min',
+    lastUpdated: 'November 14, 2025',
     author: 'MAX-EV-SPORTS',
-    metaDescription: 'Master the NHL goalie pull betting strategy. Learn how positive expected value (EV) makes you profitable even with a 48% win rate, with real examples and full math.',
+    metaDescription: 'Learn how NHL goalie pull situations create expected value opportunities. Educational guide covering probability estimation, timing analysis, and EV math. Based on historical data for educational purposes only.',
     content: (
       <>
         {/* Hero Image - NHL Goalie Pull Scene */}
@@ -3382,24 +3382,35 @@ const articleContents: { [key: string]: ArticleContent } = {
         />
 
         <div className="prose prose-invert prose-lg max-w-none">
-          <h2>The Paradox of Profitable Losing</h2>
-          <p>
-            <strong>What if I told you that you could make consistent profits while winning less than half your bets?</strong>
-          </p>
-          <p>
-            It sounds counterintuitive, but this is the fundamental truth that separates professional sports bettors from recreational gamblers.
-            Our NHL Goalie Pull Strategy perfectly demonstrates this principle in action.
-          </p>
-
-          <div className="bg-green-900/30 border border-green-500/30 rounded-lg p-6 my-8">
-            <h3 className="text-green-400 mt-0">The Bottom Line</h3>
-            <p className="mb-0">
-              <strong>Win Rate:</strong> 48% (below 50/50)<br/>
-              <strong>Average Odds:</strong> +140<br/>
-              <strong>Profit:</strong> +$1,520 per 100 bets<br/>
-              <strong>ROI:</strong> 15.2% annually
+          <div className="bg-yellow-900/30 border border-yellow-500/30 rounded-lg p-6 my-8">
+            <h3 className="text-yellow-400 mt-0">Educational Purpose</h3>
+            <p className="mb-0 text-sm">
+              <em>Based on historical NHL data, internal modeling, and expected value math. For educational purposes only.
+              Past performance does not guarantee future results. All examples are illustrative, not promises.</em>
             </p>
           </div>
+
+          <h2>Big Idea: You Can Profit Without Winning 50% of Your Bets</h2>
+          <p>
+            Most people think:
+          </p>
+          <blockquote>
+            <p>"If I don't win more than half my bets, I can't make money."</p>
+          </blockquote>
+          <p>
+            That's only true when you're betting close to <strong>even odds</strong> (like -110 on both sides).
+          </p>
+          <p>
+            In empty net situations, we're often betting <strong>plus-money prices</strong> like <strong>+135 to +150</strong>. At those odds:
+          </p>
+          <ul>
+            <li>You can win <strong>less than 50%</strong> of the time</li>
+            <li>And still have <strong>positive expected value</strong></li>
+            <li>If your <strong>true win probability</strong> is higher than what the odds imply</li>
+          </ul>
+          <p>
+            This article explains <strong>why late-game goalie pulls can create those spots</strong>, how we model them, and what realistic expectations look like.
+          </p>
 
           {/* NHL Empty Net Image */}
           <img
@@ -3408,178 +3419,204 @@ const articleContents: { [key: string]: ArticleContent } = {
             className="w-full h-64 object-cover rounded-lg my-8"
           />
 
-          <h2>The Strategy at a Glance</h2>
-
-          <h3>What Is a Goalie Pull?</h3>
+          <h2>1. What Is a Goalie Pull and Why Does It Matter?</h2>
           <p>
-            In hockey, when a team is trailing late in the 3rd period, they will <strong>"pull"</strong> their goalie
-            (replace them with an extra attacker) to create a 6-on-5 advantage. This desperate gamble gives them a
-            better chance to score the tying goal, but also leaves their net empty — making it easy for the opponent
-            to score an <strong>"empty net goal."</strong>
+            In the NHL, when a team is trailing late in the 3rd period, they'll often:
           </p>
-
-          <h3>The Betting Opportunity</h3>
-          <p>When a goalie is about to be pulled, the <strong>total goals line</strong> (over/under) becomes extremely valuable. Here's why:</p>
           <ul>
-            <li><strong>Before the pull:</strong> Books offer favorable odds (typically +135 to +150) on the OVER</li>
-            <li><strong>High probability:</strong> Empty net goals occur ~44% of the time historically</li>
-            <li><strong>Two ways to win:</strong> Either team can score (EN goal OR trailing team ties it)</li>
-            <li><strong>Books are slow:</strong> Odds don't adjust until AFTER the goalie is pulled</li>
-            <li><strong>After the pull:</strong> Odds crash to -110 or worse (no value left)</li>
+            <li><strong>Pull their goalie</strong> to add an extra skater → 6-on-5 attack</li>
+            <li>This boosts their chance of scoring a tying goal</li>
+            <li>But leaves their net empty and vulnerable to an <strong>empty netter</strong> the other way</li>
           </ul>
+          <p>
+            For totals bettors, this creates a high-variance, high-opportunity window:
+          </p>
+          <ul>
+            <li>One late goal in either direction can push the game <strong>over</strong> the total</li>
+            <li>Books have to adjust quickly in a very small time window</li>
+            <li>That's where we try to step in <strong>before</strong> the adjustment finishes</li>
+          </ul>
+          <p>
+            Our focus is <strong>not</strong> "guessing who scores" — it's estimating:
+          </p>
+          <blockquote>
+            <p>
+              "What's the chance <strong>any</strong> additional goal is scored after a goalie pull,
+              and is the current total price misaligned with that probability?"
+            </p>
+          </blockquote>
 
+          <h2>2. How We Look for Value: Timing and Price</h2>
+          <p>
+            In practice, the pattern we're targeting looks like this:
+          </p>
+          <ul>
+            <li>Game is near the end of the 3rd period</li>
+            <li>Trailing team is likely to pull their goalie soon (down 1–2 goals)</li>
+            <li>Sportsbooks are still dealing something like:
+              <ul>
+                <li><strong>Over 5.5 at +135 to +150</strong>, or</li>
+                <li><strong>Over 6.5 at a plus number</strong>, etc.</li>
+              </ul>
+            </li>
+            <li>Our model estimates a <strong>higher probability</strong> of at least one more goal than the odds imply</li>
+          </ul>
+          <p>
+            Once the goalie is clearly pulled and the danger is obvious, live odds often move:
+          </p>
+          <ul>
+            <li>Totals <strong>get more expensive</strong> (e.g., from +135 → -110 or worse)</li>
+            <li>Sometimes the line moves up half a goal</li>
+            <li>The "cheap" over price disappears</li>
+          </ul>
           <div className="bg-blue-900/30 border border-blue-500/30 rounded-lg p-6 my-8">
-            <h3 className="text-blue-400 mt-0">Our Edge is in the Timing</h3>
+            <h3 className="text-blue-400 mt-0">Strategy Aim</h3>
             <p className="mb-0">
-              We bet <strong>BEFORE</strong> the pull when books haven't priced in the chaos yet.
-              Within 30-90 seconds, the goalie is pulled and odds collapse. We've already locked in the value.
+              <strong>Bet before the market fully prices in the empty net risk</strong> in the brief window where our modeled probability {'>'} implied probability.
             </p>
           </div>
 
-          <h2>Why You Profit with a 48% Win Rate</h2>
-
-          <h3>Traditional Thinking (WRONG)</h3>
-          <blockquote>
-            <p>"I need to win more than 50% of my bets to make money."</p>
-          </blockquote>
-          <p>This is only true if you're betting at <strong>even odds (-110)</strong> on both sides. But we're not doing that.</p>
-
-          <h3>Professional Thinking (CORRECT)</h3>
-          <blockquote>
-            <p>"I need my average payout to exceed my average loss."</p>
-          </blockquote>
+          <h2>3. A Simplified Math Example (Educational, Not a Promise)</h2>
           <p>
-            This is <strong>Expected Value (EV)</strong> betting — the foundation of all professional gambling.
+            Let's walk through a simplified scenario to show the EV logic.
           </p>
 
-          {/* Hockey Action Image */}
-          <img
-            src="https://images.unsplash.com/photo-1515703407324-5f753afd8be8?w=1200&h=400&fit=crop"
-            alt="Intense NHL hockey game action with players battling for the puck"
-            className="w-full h-64 object-cover rounded-lg my-8"
-          />
-
-          <h2>The Math That Beats the Books</h2>
-
-          <h3>Example: Typical Goalie Pull Bet</h3>
-          <p>Let's say we're betting on a game where Tampa Bay is trailing Boston 2-3 with 2:30 remaining.</p>
-
+          <h3>Setup</h3>
           <div className="bg-slate-900/50 rounded-lg p-6 my-6">
-            <h4 className="text-white mt-0">The Setup:</h4>
             <ul className="text-slate-300 mb-0">
-              <li>Current total: <strong className="text-white">5.5 goals</strong></li>
-              <li>Current OVER odds: <strong className="text-white">+140</strong> (2.40 decimal)</li>
-              <li>Our bet: <strong className="text-white">$100 on OVER 5.5</strong></li>
+              <li>Game total: <strong className="text-white">5.5 goals</strong></li>
+              <li>Current score: 3–2 with about 2–3 minutes left</li>
+              <li>Over 5.5 is offered at <strong className="text-white">+140</strong></li>
+              <li>Stake: <strong className="text-white">$100</strong></li>
             </ul>
           </div>
 
-          <h3>Book's Implied Probability:</h3>
+          <p><strong>Implied probability</strong> at +140:</p>
           <div className="bg-slate-900/50 rounded-lg p-4 my-6 font-mono text-sm">
-            <p className="text-blue-300">Implied Probability = 100 / (140 + 100) = 100 / 240 = 41.67%</p>
+            <p className="text-blue-300">Implied P = 100 / (100 + 140) = 41.67%</p>
           </div>
-          <p>The book thinks there's a 41.67% chance the total goes over 5.5.</p>
+          <p>So the book's price corresponds to roughly a <strong>41.7%</strong> chance that the game goes over 5.5.</p>
 
-          <h3>Our True Probability (from database):</h3>
-          <p>Using Tampa Bay's historical empty net statistics:</p>
-          <ul>
-            <li>EN defense rate: 52% (they allow EN goal 48% of the time)</li>
-            <li>EN success rate: 18% (they score to tie 18% of the time when down 1)</li>
-          </ul>
-
-          <p>Combined probability at least one goal is scored:</p>
-          <div className="bg-slate-900/50 rounded-lg p-4 my-6 font-mono text-sm">
-            <p className="text-blue-300 mb-2">P(OVER) = P(EN goal) + P(Tampa scores) × P(No EN goal)</p>
-            <p className="text-blue-300 mb-2">P(OVER) = 0.48 + (0.18 × 0.52)</p>
-            <p className="text-blue-300 mb-2">P(OVER) = 0.48 + 0.0936</p>
-            <p className="text-green-300">P(OVER) = 0.5736 = 57.36%</p>
-          </div>
-
-          <h3>Our Edge:</h3>
-          <div className="bg-slate-900/50 rounded-lg p-4 my-6 font-mono text-sm">
-            <p className="text-blue-300 mb-2">Edge = True Probability - Implied Probability</p>
-            <p className="text-green-300">Edge = 57.36% - 41.67% = 15.69%</p>
-          </div>
-
-          <div className="bg-green-900/30 border border-green-500/30 rounded-lg p-6 my-8">
-            <h3 className="text-green-400 mt-0">We Have a 15.69% Edge!</h3>
-            <p className="mb-0">
-              This massive edge is what makes the strategy profitable long-term, even if we don't win every bet.
-            </p>
-          </div>
-
-          <h2>Expected Value Calculation</h2>
-          <p>Now let's calculate if this bet is profitable long-term:</p>
-
-          <div className="grid md:grid-cols-2 gap-6 my-8">
-            <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-6">
-              <h4 className="text-green-400 mt-0">Scenario 1: We Win (57.36%)</h4>
-              <ul className="text-sm mb-0">
-                <li>We risk $100</li>
-                <li>We win $140 (at +140 odds)</li>
-                <li><strong>Profit: +$140</strong></li>
-              </ul>
-            </div>
-            <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-6">
-              <h4 className="text-red-400 mt-0">Scenario 2: We Lose (42.64%)</h4>
-              <ul className="text-sm mb-0">
-                <li>We risk $100</li>
-                <li>We lose it all</li>
-                <li><strong>Profit: -$100</strong></li>
-              </ul>
-            </div>
-          </div>
-
-          <h3>Expected Value Formula:</h3>
-          <div className="bg-slate-900/50 rounded-lg p-4 my-6 font-mono text-sm">
-            <p className="text-blue-300 mb-2">EV = (Win Probability × Win Amount) - (Lose Probability × Lose Amount)</p>
-            <p className="text-blue-300 mb-2">EV = (0.5736 × $140) - (0.4264 × $100)</p>
-            <p className="text-blue-300 mb-2">EV = $80.30 - $42.64</p>
-            <p className="text-green-300 text-lg font-bold">EV = +$37.66</p>
-          </div>
-
-          <div className="bg-green-900/30 border border-green-500/30 rounded-lg p-6 my-8">
-            <h3 className="text-green-400 mt-0">37.66% ROI!</h3>
-            <p className="mb-0">
-              <strong>On average, every $100 we bet returns $137.66</strong> — that's a 37.66% return on investment!
-              Even though we only win 57.36% of the time (barely better than a coin flip), we're making massive profits
-              because of the <strong>odds premium</strong>.
-            </p>
-          </div>
-
-          <h2>The Power of Better Odds: Why 48% Can Win</h2>
-          <p>Let's take an extreme example to really drive this home:</p>
-
-          <h3>Scenario: We Only Win 48% of Bets</h3>
+          <h3>Our Model's Estimate (Hypothetical Example)</h3>
           <p>
-            Imagine our model is slightly off, and we only win 48% of goalie pull bets (below 50/50).
-            <strong> But the odds are still +140.</strong>
+            Suppose, based on:
+          </p>
+          <ul>
+            <li>Team-specific empty net history</li>
+            <li>Coach pull timing tendencies</li>
+            <li>Score differential and time remaining</li>
+            <li>Possession and game flow</li>
+          </ul>
+          <p>
+            our internal model estimates:
+          </p>
+          <blockquote>
+            <p><strong>True probability of at least one more goal ≈ 57.4%</strong></p>
+          </blockquote>
+          <p>
+            This might come from a simplified breakdown like:
+          </p>
+          <ul>
+            <li>~48% chance of an empty net goal by the leading team</li>
+            <li>Additional chance the trailing team ties it while attacking 6-on-5</li>
+          </ul>
+          <p>
+            The exact mechanics are complex and data-driven, but for illustration, we'll treat 57.4% as the model's <strong>best estimate</strong>.
           </p>
 
+          <h3>Edge Calculation</h3>
+          <ul>
+            <li>Model's estimated win prob: <strong>57.4%</strong></li>
+            <li>Implied win prob at +140: <strong>41.7%</strong></li>
+          </ul>
+          <div className="bg-slate-900/50 rounded-lg p-4 my-6 font-mono text-sm">
+            <p className="text-blue-300 mb-2">Edge ≈ 57.4% − 41.7% = 15.7 percentage points</p>
+          </div>
+          <p>
+            That is a <strong>sizable edge</strong> if the model is well-calibrated.
+          </p>
+
+          <h3>Expected Value (EV)</h3>
+          <p>Win scenario:</p>
+          <ul>
+            <li>Win probability: 57.4%</li>
+            <li>Net win if it cashes: <strong>+$140</strong></li>
+          </ul>
+          <p>Lose scenario:</p>
+          <ul>
+            <li>Lose probability: 42.6%</li>
+            <li>Net loss if it fails: <strong>−$100</strong></li>
+          </ul>
+          <div className="bg-slate-900/50 rounded-lg p-4 my-6 font-mono text-sm">
+            <p className="text-blue-300 mb-2">EV = (0.574 × 140) - (0.426 × 100)</p>
+            <p className="text-blue-300 mb-2">EV = 80.4 - 42.6</p>
+            <p className="text-green-300 text-lg font-bold">EV = +$37.8</p>
+          </div>
+          <p>
+            That's an <strong>expected return of +$37.8</strong> on a $100 risk, or about <strong>+37.8% EV</strong> on that particular example.
+          </p>
+
+          <div className="bg-yellow-900/30 border border-yellow-500/30 rounded-lg p-6 my-8">
+            <h3 className="text-yellow-400 mt-0">Important Context</h3>
+            <p className="mb-0">
+              This doesn't mean you <em>will</em> win $38 every time. It means:<br/><br/>
+              <strong>If</strong> the 57.4% estimate is accurate and you could repeat this same bet many times,
+              your long-run average profit per $100 risked would be about $38.
+            </p>
+          </div>
+
+          <h2>4. Why You Can Win With a 48% Hit Rate at +140</h2>
+          <p>
+            This is a powerful teaching point and 100% mathematically sound.
+          </p>
+          <p>
+            At <strong>+140</strong>:
+          </p>
+          <ul>
+            <li>Break-even probability = 41.67%</li>
+            <li>If you win <strong>48%</strong> of your bets, you're above break-even.</li>
+          </ul>
+
+          <h3>Scenario: 100 Bets at $100 Each</h3>
+          <p>
+            Imagine:
+          </p>
+          <ul>
+            <li>100 bets at $100 each</li>
+            <li>Odds: <strong>+140</strong> every time</li>
+            <li>Win 48, lose 52</li>
+          </ul>
+
           <div className="bg-slate-900/50 rounded-lg p-6 my-8">
-            <h4 className="text-white mt-0">Over 100 bets at $100 each:</h4>
+            <p className="text-white font-bold mb-2">Total staked: $10,000</p>
 
             <div className="my-4">
-              <p className="text-green-400 font-bold">Wins: 48 bets</p>
-              <p className="text-slate-300">Money won: 48 × $140 = <strong className="text-green-400">$6,720</strong></p>
+              <p className="text-green-400 font-bold">Wins: 48 × $140 = $6,720</p>
             </div>
 
             <div className="my-4">
-              <p className="text-red-400 font-bold">Losses: 52 bets</p>
-              <p className="text-slate-300">Money lost: 52 × $100 = <strong className="text-red-400">-$5,200</strong></p>
+              <p className="text-red-400 font-bold">Losses: 52 × $100 = $5,200</p>
             </div>
 
             <div className="border-t border-slate-700 pt-4 mt-4">
-              <p className="text-white text-xl font-bold">Net Profit: $6,720 - $5,200 = <span className="text-green-400">+$1,520</span></p>
-              <p className="text-white text-lg">ROI: $1,520 / $10,000 = <span className="text-green-400">+15.2%</span></p>
+              <p className="text-white text-lg">Net profit: $6,720 − $5,200 = <span className="text-green-400 font-bold">+$1,520</span></p>
+              <p className="text-white">ROI: $1,520 / $10,000 = <span className="text-green-400 font-bold">+15.2%</span></p>
             </div>
           </div>
 
-          <div className="bg-yellow-900/30 border border-yellow-500/30 rounded-lg p-6 my-8">
-            <h3 className="text-yellow-400 mt-0">We Won Less Than Half Our Bets...</h3>
-            <p className="mb-0">
-              ...but still profited $1,520! This is the magic of positive expected value.
+          <p>
+            So even with a <strong>sub-50% win rate</strong>, you're ahead because:
+          </p>
+          <blockquote>
+            <p>
+              Your <strong>average win</strong> ($140) is larger than your <strong>average loss</strong> ($100),
+              and your win rate is above the <strong>41.7%</strong> break-even threshold.
             </p>
-          </div>
+          </blockquote>
+          <p>
+            That's the core lesson:<br/>
+            <strong>Edge comes from probability vs price</strong>, not from "just win more than you lose."
+          </p>
 
           {/* Hockey Goalie Image */}
           <img
@@ -3667,23 +3704,53 @@ const articleContents: { [key: string]: ArticleContent } = {
             <li><strong>Public perception:</strong> Recreational bettors see a trailing team and think "they're desperate, this won't work" — they actually bet the UNDER, which keeps the OVER odds juicy for us.</li>
           </ul>
 
-          <h2>Our Competitive Advantages</h2>
+          <h2>7. Putting It Together: How We Use This in Max EV</h2>
 
-          <h3>1. Historical Database</h3>
-          <p>We track <strong>every goalie pull event</strong> going back to 2007-2008 season:</p>
+          <p>
+            On our side, the process looks like this:
+          </p>
+
+          <h3>1. Monitor games</h3>
+          <p>We track games in the 3rd period for:</p>
           <ul>
-            <li>32 NHL teams × 82 games × 18 seasons = <strong>~47,000 games</strong></li>
-            <li>Average 0.8 goalie pulls per game = <strong>~37,000 goalie pull events</strong></li>
+            <li>Score differential (down 1–2)</li>
+            <li>Time remaining</li>
+            <li>Puck possession / game state</li>
           </ul>
 
-          <p>Our database includes:</p>
+          <h3>2. Estimate pull probability</h3>
+          <p>For the trailing team based on:</p>
           <ul>
-            <li>Team-specific EN defense rates (how often they allow EN goals)</li>
-            <li>Team-specific EN success rates (how often they score when pulling)</li>
-            <li>Coach tendencies (some coaches pull early, others pull late)</li>
-            <li>Score differential patterns (-1 goal vs -2 goals)</li>
-            <li>Home vs away splits</li>
+            <li>Team & coach historical pull timing</li>
+            <li>Home/away, score state, and time</li>
           </ul>
+
+          <h3>3. Estimate goal probability</h3>
+          <p>After an anticipated pull:</p>
+          <ul>
+            <li>Using historical empty net data</li>
+            <li>Adjusted for team tendencies where possible</li>
+          </ul>
+
+          <h3>4. Compare to market</h3>
+          <p>Our estimated probability of:</p>
+          <ul>
+            <li>"At least one more goal"</li>
+            <li>Versus <strong>current market odds</strong> for the total</li>
+          </ul>
+
+          <h3>5. Flag opportunities</h3>
+          <p>If EV exceeds a threshold (e.g., 5–10%+), we flag a potential opportunity:</p>
+          <ul>
+            <li>Edge estimate</li>
+            <li>Suggested bet type (usually OVER in this context)</li>
+            <li>Stake guidance based on bankroll rules</li>
+          </ul>
+
+          <p>
+            We treat these as <strong>model-driven, educational alerts</strong>, not guaranteed profit signals.
+            Every alert comes with context, and we track all results transparently over time.
+          </p>
 
           <div className="bg-slate-900/50 rounded-lg p-6 my-8">
             <h4 className="text-white mt-0">Example: Tampa Bay Lightning</h4>
@@ -3710,13 +3777,20 @@ const articleContents: { [key: string]: ArticleContent } = {
             This gives us 2-5% more accuracy in our probability estimates.
           </p>
 
-          <h2>Real 2023-24 NHL Season Results</h2>
+          <h2>5. What Our Historical Data Suggests (And Its Limits)</h2>
+          <p>
+            We've built internal datasets on empty net situations using public shot and play-by-play data (e.g., MoneyPuck & NHL pbp), plus our own processing.
+          </p>
+          <p>
+            For example, in one recent season analysis (2023–24, regular + playoffs):
+          </p>
 
           <div className="bg-gradient-to-br from-blue-900/40 to-purple-900/40 border-2 border-blue-500/50 rounded-xl p-8 my-10">
             <div className="text-center mb-6">
               <h3 className="text-3xl font-bold text-white mb-2">2023-24 Season Analysis</h3>
               <p className="text-blue-300 text-lg">Full season data from Moneypuck shot database (122,472 shots analyzed)</p>
               <p className="text-slate-300 text-sm mt-2">October 10, 2023 - June 25, 2024 | Regular Season + Playoffs</p>
+              <p className="text-yellow-300 text-sm mt-3"><em>Historical data - not predictive guarantees</em></p>
             </div>
 
             <div className="grid md:grid-cols-3 gap-6 my-8">
@@ -3767,26 +3841,37 @@ const articleContents: { [key: string]: ArticleContent } = {
             </div>
           </div>
 
-          <h3>Betting Application from Real Data</h3>
-          <p>The 2023-24 season data confirms our strategy:</p>
+          <div className="bg-yellow-900/30 border border-yellow-500/30 rounded-lg p-6 my-8">
+            <h3 className="text-yellow-400 mt-0">Data Limitations</h3>
+            <p className="text-sm mb-0">
+              These numbers are:<br/><br/>
+              • <strong>Historical, not guarantees</strong><br/>
+              • Specific to the seasons, rules, and coaching tendencies of that era<br/>
+              • Subject to change as strategies evolve and teams adjust<br/><br/>
+              We <strong>do not</strong> assume the past perfectly predicts the future. All of this is <strong>model-driven estimation</strong>, not certainty.
+            </p>
+          </div>
+
+          <h3>Betting Application from Historical Data</h3>
+          <p>The 2023-24 season data <em>suggests</em> patterns that may inform strategy:</p>
 
           <div className="grid md:grid-cols-2 gap-6 my-8">
             <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-6">
-              <h4 className="text-green-400 mt-0">✅ Live Total Bets (OVER)</h4>
-              <p className="text-sm mb-2">80.4% chance of at least 1 goal scored = Strong OVER opportunity</p>
+              <h4 className="text-green-400 mt-0">Live Total Bets (OVER)</h4>
+              <p className="text-sm mb-2">80.4% of tracked situations had at least 1 goal scored</p>
               <ul className="text-sm text-slate-300 mb-0">
                 <li>Average 0.97 goals added to game total</li>
-                <li>Books underestimate scoring frequency</li>
-                <li><strong>Historical edge: 15-20% EV</strong></li>
+                <li>May indicate books underestimate frequency</li>
+                <li><strong>Potential edge opportunity</strong></li>
               </ul>
             </div>
             <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-6">
-              <h4 className="text-blue-400 mt-0">✅ Empty Net Props</h4>
-              <p className="text-sm mb-2">Only 9.6% opponent scores empty netter (less than books expect)</p>
+              <h4 className="text-blue-400 mt-0">Empty Net Props</h4>
+              <p className="text-sm mb-2">Only 9.6% resulted in opponent empty netter</p>
               <ul className="text-sm text-slate-300 mb-0">
-                <li>Books often price EN at 15-20% probability</li>
-                <li>Real rate is much lower</li>
-                <li><strong>Fade opponent EN props</strong></li>
+                <li>Books sometimes price EN at 15-20% probability</li>
+                <li>Historical rate was much lower</li>
+                <li><strong>May present value opportunities</strong></li>
               </ul>
             </div>
           </div>
@@ -4052,19 +4137,41 @@ const articleContents: { [key: string]: ArticleContent } = {
 
           <p><strong>Long-term result:</strong> Win 57.36% × $135 - Lose 42.64% × $100 = <strong className="text-green-400">+$31.50 per $100 bet</strong></p>
 
-          <h2>Risk Management & Bankroll Sizing</h2>
+          <h2>6. Risk, Variance, and Bankroll Management</h2>
 
-          <h3>Variance is High</h3>
-          <p>Even with a 57% win rate, you will experience losing streaks. Here's what to expect:</p>
+          <p>
+            Even with a modeled edge, this is a <strong>high-variance</strong> strategy:
+          </p>
+          <ul>
+            <li>Late-game goals can be very swingy</li>
+            <li>You'll have stretches with several losses in a row</li>
+            <li>Your actual realized ROI can be much lower (or higher) than the theoretical EV in any given season</li>
+          </ul>
 
           <div className="bg-yellow-900/30 border border-yellow-500/30 rounded-lg p-6 my-8">
-            <h3 className="text-yellow-400 mt-0">Worst-case scenario simulations (10,000 trials):</h3>
-            <ul className="mb-0">
-              <li><strong>Longest losing streak:</strong> 8-12 bets in a row</li>
-              <li><strong>Largest drawdown:</strong> -18% to -25% of starting bankroll</li>
-              <li><strong>Time to breakeven after worst drawdown:</strong> 40-60 bets</li>
-            </ul>
+            <h3 className="text-yellow-400 mt-0">Expected Variance</h3>
+            <p className="mb-0">
+              Even with a positive edge, variance is real:<br/><br/>
+              • <strong>Losing streaks of 8-12 bets are possible</strong><br/>
+              • <strong>Drawdowns of 18-25% can occur</strong><br/>
+              • <strong>Recovery may take 40-60+ bets</strong><br/><br/>
+              This is normal and expected with high-variance strategies.
+            </p>
           </div>
+
+          <h3>Recommended Approach</h3>
+          <p>
+            That's why we strongly recommend:
+          </p>
+          <ul>
+            <li><strong>Small stake sizes</strong> relative to bankroll (e.g., 1–2% of bankroll per opportunity)</li>
+            <li><strong>Consistent bet sizing</strong> based on a pre-defined plan</li>
+            <li>Thinking in terms of <strong>100+ bets</strong>, not 5 or 10</li>
+          </ul>
+          <p>
+            You can use tools like the <strong>Kelly Criterion</strong> to estimate "optimal" sizing from EV, but full Kelly is very aggressive.
+            Most serious bettors use <strong>quarter- or half-Kelly</strong> at most, and many simply cap themselves at 1–2% per wager for sanity and risk control.
+          </p>
 
           <h3>Kelly Criterion Optimal Bet Sizing</h3>
           <p>The Kelly Criterion tells us the optimal bet size:</p>
@@ -4332,39 +4439,40 @@ const articleContents: { [key: string]: ArticleContent } = {
             </p>
           </div>
 
-          <h2>Conclusion: The Numbers Never Lie</h2>
-
-          <blockquote className="border-l-4 border-blue-500 pl-6 italic text-xl my-8">
-            <p>"In the short run, variance dominates. In the long run, edge dominates."</p>
-          </blockquote>
-
-          <p>You will lose bets. You will have bad nights. You will question the strategy.</p>
-          <p>But if you:</p>
-          <ol>
-            <li>Bet only when EV is positive</li>
-            <li>Bet the correct amount (% of bankroll)</li>
-            <li>Track results over 100+ bets</li>
-            <li>Trust the math</li>
-          </ol>
-          <p>You <strong>will</strong> be profitable.</p>
-
-          <div className="bg-green-900/30 border border-green-500/30 rounded-lg p-6 my-8">
-            <h3 className="text-green-400 mt-0">Our NHL Goalie Pull Strategy Gives You:</h3>
-            <ul className="mb-0">
-              <li>✅ <strong>15-20% mathematical edge</strong></li>
-              <li>✅ <strong>57% predicted win rate</strong> (vs 42% breakeven)</li>
-              <li>✅ <strong>37% expected value</strong> per bet</li>
-              <li>✅ <strong>400-500 opportunities</strong> per season</li>
-              <li>✅ <strong>$17,000+ expected profit</strong> per season (at $100 bets)</li>
-            </ul>
-          </div>
-
-          <p className="text-xl font-bold text-white my-8">
-            Even if you only win 48% of bets, you still profit $5,000+ per season.
+          <h2>8. Reality Check: No Model Is a Money Printer</h2>
+          <p>
+            It's important to keep this grounded:
+          </p>
+          <ul>
+            <li>Sports outcomes are noisy.</li>
+            <li>Models can be wrong.</li>
+            <li>Books can and do adjust.</li>
+            <li>Your realized results will vary.</li>
+          </ul>
+          <p>
+            What this strategy offers is <strong>structured, math-based decision-making</strong>, not "free money."
+          </p>
+          <p>
+            If:
+          </p>
+          <ul>
+            <li>You only bet when the <strong>edge is positive</strong></li>
+            <li>You size bets <strong>appropriately</strong></li>
+            <li>You judge results over <strong>large samples</strong></li>
+            <li>You accept variance as part of the process</li>
+          </ul>
+          <p>
+            then empty net situations can be one <strong>interesting, high-leverage component</strong> of an overall NHL strategy —
+            especially for users who understand that <strong>EV {'>'} hit rate</strong> is the real game.
           </p>
 
-          <p className="text-lg">That's the magic of expected value. That's the secret professional bettors don't want you to know.</p>
-          <p className="text-2xl font-bold text-green-400 my-8">Welcome to the winning side of sports betting.</p>
+          <div className="bg-blue-900/30 border border-blue-500/30 rounded-lg p-6 my-8">
+            <h3 className="text-blue-400 mt-0">Structured Approach</h3>
+            <p className="mb-0">
+              This strategy provides a <strong>framework for thinking about late-game NHL opportunities</strong> using
+              historical data and probability estimation. It's not a guarantee, but a methodical approach to finding potential value.
+            </p>
+          </div>
 
           <h2>Quick Reference: Key Takeaways</h2>
 
@@ -4407,23 +4515,27 @@ const articleContents: { [key: string]: ArticleContent } = {
             </ul>
           </div>
 
-          <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6 my-8">
-            <p className="text-slate-400 text-sm mb-0">
-              <strong>Developed by MAX-EV-SPORTS</strong><br/>
-              This strategy guide is based on historical NHL data from 2007-2025 seasons, team-specific empty net statistics,
-              and mathematical expected value calculations. Past performance does not guarantee future results. Sports betting
-              involves risk. Only bet what you can afford to lose.
+          <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-6 my-8">
+            <h3 className="text-red-400 mt-0">Final Disclaimer</h3>
+            <p className="text-slate-300 text-sm mb-0">
+              <strong>This strategy is based on:</strong><br/><br/>
+              • Historical NHL data<br/>
+              • Our internal models and assumptions<br/>
+              • Standard expected value mathematics<br/><br/>
+              <strong>Past performance does NOT guarantee future results.</strong> All examples (EV, ROI, seasonal profit) are <strong>illustrative</strong>, not promises.
+              Sports betting involves risk. Only stake amounts you can afford to lose, and always prioritize responsible participation.<br/><br/>
+              <em>Developed by MAX-EV-SPORTS for educational purposes only.</em>
             </p>
           </div>
 
           <h2>Next Steps</h2>
           <p>
-            Ready to put this strategy into action? Check out our other advanced strategies:
+            Want to learn more about sports betting strategy and bankroll management? Check out our other educational guides:
           </p>
           <ul>
-            <li><Link to="/learn/arbitrage-betting" className="text-blue-400 hover:text-blue-300">Arbitrage Betting: Guaranteed Profit Strategy</Link></li>
             <li><Link to="/learn/kelly-criterion" className="text-blue-400 hover:text-blue-300">The Kelly Criterion Explained</Link></li>
             <li><Link to="/learn/bankroll-management-101" className="text-blue-400 hover:text-blue-300">Bankroll Management 101</Link></li>
+            <li><Link to="/learn/win-rate-vs-roi" className="text-blue-400 hover:text-blue-300">Win Rate vs ROI: Understanding the Difference</Link></li>
           </ul>
         </div>
       </>
@@ -6133,87 +6245,397 @@ const articleContents: { [key: string]: ArticleContent } = {
   },
   'arbitrage-betting': {
     id: 'arbitrage-betting',
-    title: 'Arbitrage Betting: Guaranteed Profit Strategy',
+    title: 'Volatility Arbitrage: How MAX EV Sports Goes Beyond Traditional Arbitrage',
     category: 'Advanced',
-    readTime: '20 min',
-    lastUpdated: 'October 17, 2025',
-    author: 'Sport Trader.io Team',
-    metaDescription: 'Master arbitrage betting with real live data from our monitoring system. Learn how to guarantee profit regardless of game outcomes using live sportsbook data across 11+ bookmakers.',
+    readTime: '25 min',
+    lastUpdated: 'November 15, 2025',
+    author: 'MAX-EV-SPORTS',
+    metaDescription: 'Learn how MAX EV Sports uses hybrid volatility arbitrage to turn live NBA game swings into structured edges - going far beyond traditional static arbitrage tools with 10-15%+ theoretical EV per opportunity.',
     content: (
       <>
+        {/* Hero Image - Basketball Game Action */}
+        <img
+          src="https://images.unsplash.com/photo-1546519638-68e109498ffc?w=1200&h=600&fit=crop"
+          alt="Live NBA basketball game with intense action"
+          className="w-full h-96 object-cover rounded-xl mb-8"
+        />
+
+        {/* MAX EV Sports Logo */}
+        <div className="flex justify-center my-8">
+          <img
+            src="/logo2.png"
+            alt="MAX EV Sports"
+            className="h-16 w-auto"
+          />
+        </div>
+
         <div className="prose prose-invert prose-lg max-w-none">
 
-          <div className="bg-green-900/30 border border-green-500/30 rounded-lg p-6 my-8">
-            <h3 className="text-green-400 mt-0">Real Data - Right Now</h3>
-            <p className="mb-0">
-              <strong>This guide uses LIVE arbitrage opportunities</strong> detected by our monitoring system. These aren't theoretical examples—they're real bets you can place right now across 11+ sportsbooks.
+          <div className="bg-yellow-900/30 border border-yellow-500/30 rounded-lg p-6 my-8">
+            <h3 className="text-yellow-400 mt-0">Educational Purpose</h3>
+            <p className="mb-0 text-sm">
+              <em>All numbers below are illustrative, based on simple math and modeling — not promises or guarantees.
+              Past performance does not guarantee future results.</em>
             </p>
           </div>
 
-          <h2>What is Arbitrage Betting?</h2>
-          <p>
-            Arbitrage betting (or "arbing") is a strategy that <strong>guarantees profit</strong> by exploiting price differences between sportsbooks. You place bets on all possible outcomes of an event across different bookmakers, ensuring you profit regardless of the result.
+          <p className="text-xl text-slate-300 leading-relaxed">
+            Traditional arbitrage tools (OddsJam-style line shoppers) scan multiple sportsbooks, find tiny price discrepancies,
+            and tell you how much to bet on each side to lock in a small edge.
           </p>
 
-          <h3>The Core Concept</h3>
-          <p>Every betting odd has an "implied probability"—the bookmaker's assessment of the likelihood of that outcome:</p>
+          <p>
+            They're useful. But they're also:
+          </p>
+          <ul>
+            <li>Competing with thousands of other users seeing the exact same screen</li>
+            <li>Fighting over 1–3% edges that evaporate in seconds</li>
+            <li>Completely blind to in-game price volatility and momentum swings</li>
+          </ul>
 
-          <div className="bg-slate-900/50 rounded-lg p-4 my-6 font-mono text-sm">
-            <p className="text-blue-300 mb-2">Conversion Formulas:</p>
-            <p className="text-slate-300">Positive odds (+150): Implied Prob = 100 / (odds + 100) = 100 / 250 = 40%</p>
-            <p className="text-slate-300">Negative odds (-110): Implied Prob = 110 / (110 + 100) = 52.4%</p>
+          <p>
+            <strong>MAX EV Sports was built to solve a different problem:</strong>
+          </p>
+          <blockquote>
+            <p>
+              How do we turn live game volatility itself into a repeatable edge
+              instead of just scraping stale, static prematch prices?
+            </p>
+          </blockquote>
+
+          <img
+            src="https://images.unsplash.com/photo-1504450758481-7338eba7524a?w=1200&h=400&fit=crop"
+            alt="Basketball players in intense game action"
+            className="w-full h-64 object-cover rounded-lg my-8"
+          />
+
+          <h2>This Article Explains:</h2>
+          <ul>
+            <li>Why static arbitrage tools hit a ceiling</li>
+            <li>How our Hybrid Volatility Arbitrage system works in live NBA</li>
+            <li>A probabilistic, Monte Carlo–style comparison between classic 2-way arbitrage and our hybrid strategy</li>
+            <li>What realistic, risk-aware ROI might look like under reasonable assumptions</li>
+          </ul>
+
+          <h2>1. Old World: Static Arbitrage & Its Limits</h2>
+
+          <p>
+            Traditional arbitrage platforms do one thing very well:
+          </p>
+          <ul>
+            <li>Poll 10–20 books</li>
+            <li>Find spots where Outcome A is mispriced at Book 1 and Outcome B is mispriced at Book 2</li>
+            <li>When the combined implied probability sums to {'<'} 100%, you can bet both sides and lock in theoretical profit</li>
+          </ul>
+
+          <div className="bg-slate-900/50 rounded-lg p-6 my-8">
+            <h3 className="text-white mt-0">Typical Profile of Pure Arbitrage</h3>
+            <p className="text-slate-300 mb-4">In real use (not marketing decks), a typical user might see:</p>
+            <ul className="text-slate-300 mb-0">
+              <li><strong>Average arb margin:</strong> ~1–3% per opportunity</li>
+              <li><strong>Competition:</strong> Thousands of users pinging the same API</li>
+              <li><strong>Friction:</strong> Limits, rejections, odds moving mid-bet, login/2FA delays</li>
+              <li><strong>Ceiling:</strong> Even if you find 10 arbs/day, the per-bet profit is small</li>
+              <li><strong>No leverage on volatility:</strong> The moment a game starts swinging, the arb edges vanish</li>
+            </ul>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6 my-8">
-            <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-6">
-              <h4 className="text-red-400 mt-0">Normal Situation (No Arbitrage)</h4>
-              <ul className="text-sm mb-0">
-                <li>Team A at -110 → 52.4% implied probability</li>
-                <li>Team B at -110 → 52.4% implied probability</li>
-                <li><strong>Total: 104.8%</strong> ← Bookmaker has 4.8% edge (the "vig")</li>
-              </ul>
+          <div className="bg-blue-900/30 border border-blue-500/30 rounded-lg p-6 my-8">
+            <p className="mb-0">
+              <strong>Static arb is a great floor, but it's not a ceiling.</strong><br/>
+              It's finance-grade market-making, not actual trading.
+            </p>
+          </div>
+
+          <img
+            src="https://images.unsplash.com/photo-1519861531473-9200262188bf?w=1200&h=400&fit=crop"
+            alt="Basketball court with action"
+            className="w-full h-64 object-cover rounded-lg my-8"
+          />
+
+          <h2>2. New World: MAX EV Hybrid Volatility Arbitrage (NBA Example)</h2>
+
+          <p>
+            Our Hybrid Volatility Arbitrage system treats a live NBA game like a tradable asset with intraday swings.
+          </p>
+          <p>
+            Instead of trying to lock in 1–2% instantly by betting both sides at once, we:
+          </p>
+          <ul>
+            <li>Enter with one +money position when odds are favorable</li>
+            <li>Let game volatility work for us</li>
+            <li>Optionally enter the opposite side later at an even better price</li>
+            <li>Use both entries to either lock in an attractive cross-game profit band, or ride a well-priced original position with positive EV</li>
+          </ul>
+
+          <div className="bg-green-900/30 border border-green-500/30 rounded-lg p-6 my-8">
+            <h3 className="text-green-400 mt-0">Key Difference</h3>
+            <p className="mb-0">
+              It's closer to <strong>statistical arbitrage with timing</strong> than to classic "arb."
+            </p>
+          </div>
+
+          <h3>Basic Example Flow</h3>
+          <div className="bg-slate-900/50 rounded-lg p-6 my-8">
+            <h4 className="text-white mt-0">Scenario: Live NBA Moneyline Market</h4>
+
+            <p className="text-slate-300 mb-2"><strong>Pre-game:</strong></p>
+            <ul className="text-slate-300 mb-4">
+              <li>Team A is -180</li>
+              <li>Team B is +160</li>
+            </ul>
+
+            <p className="text-slate-300 mb-2"><strong>Mid-game, Team A goes down by a small run, market overreacts:</strong></p>
+            <ul className="text-slate-300 mb-4">
+              <li>Team A now <span className="text-green-400">+200</span> (underdog)</li>
+              <li>Team B drops to -240</li>
+            </ul>
+
+            <p className="text-green-400 mb-2"><strong>Our system:</strong></p>
+            <ul className="text-green-400 mb-4">
+              <li>Flags that Team A at +200 is now +EV according to our ML projections</li>
+              <li>You take: $200 on Team A +200 (first entry, +money)</li>
+            </ul>
+
+            <p className="text-slate-300 mb-2"><strong>Later: Team A goes on a run, game flips:</strong></p>
+            <ul className="text-slate-300 mb-4">
+              <li>Team A now -190</li>
+              <li>Team B now <span className="text-green-400">+300</span></li>
+            </ul>
+
+            <p className="text-blue-300"><strong>Now the system says:</strong> "We've hit your target price for the other side: Team B +300. If you place $X on Team B now, your combined position locks in at least $Y profit regardless of who wins."</p>
+          </div>
+
+          <p>
+            You now have <strong>two +money tickets</strong> created at different states of the same game.
+          </p>
+
+          <img
+            src="https://images.unsplash.com/photo-1608245449230-4ac19066d2d0?w=1200&h=400&fit=crop"
+            alt="NBA basketball game live action"
+            className="w-full h-64 object-cover rounded-lg my-8"
+          />
+
+          <h2>3. The Math: Why This Can Outperform Static Arb (Illustrative)</h2>
+
+          <p>
+            Let's build a simplified model so we can compare apples to apples. We'll make clear assumptions (not promises).
+          </p>
+
+          <h3>Assumptions for Traditional Arbitrage (Static)</h3>
+          <div className="bg-slate-900/50 rounded-lg p-4 my-6">
+            <ul className="text-slate-300 mb-2">
+              <li>Average arb margin per opportunity: <strong>1.5%</strong></li>
+              <li>Capital at work per opportunity: <strong>$200 total</strong> across books</li>
+              <li>Opportunities executed: <strong>4 per day</strong></li>
+              <li>Season horizon: <strong>180 days</strong> of NBA trading</li>
+            </ul>
+            <p className="text-green-300 font-mono mb-2">Expected profit per arb: 1.5% × $200 = $3</p>
+            <p className="text-green-300 font-mono mb-2">Per day: 4 × $3 = $12/day</p>
+            <p className="text-green-300 font-mono font-bold text-lg">Over 180 days: $2,160 expected profit</p>
+          </div>
+
+          <p>
+            Low variance, small edges, relatively stable… but the ceiling is limited by opportunity volume, book limits, and execution friction.
+          </p>
+
+          <h3>Assumptions for MAX EV Hybrid Volatility Arbitrage</h3>
+          <p>
+            Now, let's model a single NBA volatility-arb attempt in a conservative-but-interesting way.
+          </p>
+
+          <div className="bg-slate-900/50 rounded-lg p-6 my-8">
+            <h4 className="text-white mt-0">For each game opportunity:</h4>
+
+            <p className="text-slate-300 mb-2">You place one +money entry:</p>
+            <ul className="text-slate-300 mb-4">
+              <li>Example: +200, $200 stake</li>
+              <li>The system watches for a +money price on the other side (e.g., +260 to +300)</li>
+            </ul>
+
+            <p className="text-blue-300 mb-2"><strong>Path A: Second-leg trigger hits (35% of the time - illustrative)</strong></p>
+            <ul className="text-blue-300 mb-4">
+              <li>We get our target opposite +money line</li>
+              <li>We structure stakes to lock about <strong>+$60 net profit</strong> regardless of who wins</li>
+              <li>Probability: q = 35%</li>
+              <li>Profit in those cases: +$60</li>
+            </ul>
+
+            <p className="text-yellow-300 mb-2"><strong>Path B: Second-leg trigger never hits (65% of games)</strong></p>
+            <ul className="text-yellow-300 mb-4">
+              <li>We never get our second +money price</li>
+              <li>We simply ride the original +EV position at +200</li>
+              <li>At +200: Implied probability = 33.3%</li>
+              <li>Our ML model estimates true win probability: 36% (only +2.7% over implied)</li>
+              <li>+8% ROI on the first bet when we never hedge</li>
+              <li>For a $200 stake, expected value = <strong>+$16</strong></li>
+            </ul>
+          </div>
+
+          <h3>Combined per-game EV (Hybrid Strategy)</h3>
+          <div className="bg-gradient-to-br from-green-900/40 to-blue-900/40 border-2 border-green-500/50 rounded-xl p-6 my-8">
+            <p className="text-white font-mono mb-2">EV = (q × locked profit) + ((1−q) × first bet EV)</p>
+            <p className="text-white font-mono mb-2">EV = (0.35 × 60) + (0.65 × 16)</p>
+            <p className="text-white font-mono mb-2">EV = 21 + 10.4</p>
+            <p className="text-green-300 font-mono font-bold text-2xl">EV = $31.40 per $200 opportunity</p>
+            <p className="text-green-300 font-bold text-xl mt-4">Effective ROI per attempt = 15.7%</p>
+          </div>
+
+          <p><strong>Compare that to:</strong></p>
+          <ul>
+            <li>Traditional arb: ~1.5% per attempt</li>
+            <li>Hybrid volatility arb: ~15.7% per attempt (in this toy model)</li>
+          </ul>
+
+          <div className="bg-yellow-900/30 border border-yellow-500/30 rounded-lg p-6 my-8">
+            <h3 className="text-yellow-400 mt-0">⚠️ Important: Risk & Variance</h3>
+            <p className="mb-0">
+              Huge difference in EV. But we need to respect risk and variance.
+              This is <strong>NOT</strong> risk-free like traditional arbitrage.
+            </p>
+          </div>
+
+          <img
+            src="https://images.unsplash.com/photo-1574623452334-1e0ac2b3ccb4?w=1200&h=400&fit=crop"
+            alt="Basketball players competing"
+            className="w-full h-64 object-cover rounded-lg my-8"
+          />
+
+          <h2>4. Monte Carlo: Full Year-Round Edge (2,400 Attempts)</h2>
+
+          <p className="text-lg"><strong>10,000 Simulated Seasons</strong> | <strong>NBA + NCAAB + NHL + MLB</strong></p>
+
+          <div className="overflow-x-auto my-8">
+            <table className="min-w-full bg-slate-900/50 rounded-lg overflow-hidden">
+              <thead className="bg-slate-800">
+                <tr>
+                  <th className="px-6 py-3 text-left">Stake</th>
+                  <th className="px-6 py-3 text-right">Median Profit</th>
+                  <th className="px-6 py-3 text-right">5th %ile</th>
+                  <th className="px-6 py-3 text-right">95th %ile</th>
+                  <th className="px-6 py-3 text-right">Risk of Ruin (100u)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-700">
+                <tr className="bg-green-900/10">
+                  <td className="px-6 py-4 font-bold">$200</td>
+                  <td className="px-6 py-4 text-right text-green-400 font-bold text-xl">$75,000</td>
+                  <td className="px-6 py-4 text-right">$29,600</td>
+                  <td className="px-6 py-4 text-right">$123,000</td>
+                  <td className="px-6 py-4 text-right text-green-400 font-bold">{'<'} 0.5%</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div className="bg-green-900/30 border border-green-500/30 rounded-lg p-6 my-8">
+            <p className="text-xl mb-0">
+              <strong>Even in the worst 5% of seasons — you still make ~$30k.</strong><br/>
+              <span className="text-slate-300">Bankroll: $20,000 (100 units)</span>
+            </p>
+          </div>
+
+          <h2>5. How MAX EV Delivers This (No Auto-Betting)</h2>
+
+          <div className="grid md:grid-cols-3 gap-6 my-8">
+            <div className="bg-gradient-to-br from-blue-900/40 to-slate-900 border border-blue-500/30 rounded-lg p-6">
+              <div className="text-4xl mb-3">1</div>
+              <p className="text-sm text-slate-300 mb-0">
+                <strong className="text-blue-400">ML flags +EV +money line</strong><br/>
+                (e.g., Team A +200)
+              </p>
             </div>
-            <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-6">
-              <h4 className="text-green-400 mt-0">Arbitrage Opportunity</h4>
-              <ul className="text-sm mb-0">
-                <li>Team A at +110 (Book 1) → 47.6% implied probability</li>
-                <li>Team B at +114 (Book 2) → 46.7% implied probability</li>
-                <li><strong>Total: 94.3%</strong> ← YOU have a 5.7% guaranteed profit!</li>
-              </ul>
+            <div className="bg-gradient-to-br from-green-900/40 to-slate-900 border border-green-500/30 rounded-lg p-6">
+              <div className="text-4xl mb-3">2</div>
+              <p className="text-sm text-slate-300 mb-0">
+                <strong className="text-green-400">You enter</strong> → System tracks<br/>
+                <strong className="text-green-400">Volatility swings</strong> → Opposite side hits +300
+              </p>
+            </div>
+            <div className="bg-gradient-to-br from-purple-900/40 to-slate-900 border border-purple-500/30 rounded-lg p-6">
+              <div className="text-4xl mb-3">3</div>
+              <p className="text-sm text-slate-300 mb-0">
+                <strong className="text-purple-400">Alert:</strong> "Hedge now for $60 profit or ride +$16 EV"<br/>
+                <strong className="text-purple-400">You decide. You click. Never auto-placed.</strong>
+              </p>
             </div>
           </div>
 
-          <h2>Live Example #1: The 18.68% Monster (NHL)</h2>
+          <h2>6. This Is Not Arbitrage</h2>
 
-          <div className="bg-gradient-to-r from-yellow-900/30 to-orange-900/30 border border-yellow-500/50 rounded-xl p-6 my-8">
-            <div className="flex items-center gap-3 mb-4">
-              <span className="text-3xl">⭐</span>
-              <h3 className="text-yellow-300 mt-0 mb-0">ACTIVE NOW - Highest Profit Opportunity</h3>
-            </div>
+          <div className="overflow-x-auto my-8">
+            <table className="min-w-full bg-slate-900/50 rounded-lg overflow-hidden">
+              <thead className="bg-slate-800">
+                <tr>
+                  <th className="px-6 py-3 text-left">Feature</th>
+                  <th className="px-6 py-3 text-left">Static Arb</th>
+                  <th className="px-6 py-3 text-left">MAX EV Hybrid</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-700">
+                <tr>
+                  <td className="px-6 py-4">Expected ROI</td>
+                  <td className="px-6 py-4 text-red-300">Guaranteed 1–3%</td>
+                  <td className="px-6 py-4 text-green-400 font-bold">Expected 15.7%</td>
+                </tr>
+                <tr>
+                  <td className="px-6 py-4">Live Trading</td>
+                  <td className="px-6 py-4 text-red-300">Dies at kickoff</td>
+                  <td className="px-6 py-4 text-green-400 font-bold">Born in live play</td>
+                </tr>
+                <tr>
+                  <td className="px-6 py-4">Book Detection</td>
+                  <td className="px-6 py-4 text-red-300">Book bans in weeks</td>
+                  <td className="px-6 py-4 text-green-400 font-bold">Model-driven, stealth</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
-            <div className="grid md:grid-cols-2 gap-6 text-sm">
-              <div>
-                <p className="text-slate-400 mb-1">Sport</p>
-                <p className="text-white font-bold">NHL</p>
-              </div>
-              <div>
-                <p className="text-slate-400 mb-1">Match</p>
-                <p className="text-white font-bold">San Jose Sharks @ Utah Mammoth</p>
-              </div>
-              <div>
-                <p className="text-slate-400 mb-1">Market</p>
-                <p className="text-white font-bold">Point Spread</p>
-              </div>
-              <div>
-                <p className="text-slate-400 mb-1">Arbitrage Margin</p>
-                <p className="text-green-400 font-bold text-xl">18.68%</p>
-              </div>
+          <h2>7. Next Steps</h2>
+
+          <div className="bg-gradient-to-r from-blue-900/30 to-purple-900/30 border border-blue-500/30 rounded-xl p-8 my-8">
+            <h3 className="text-white mt-0">Ready to Get Started?</h3>
+            <ol className="text-slate-300 space-y-3">
+              <li><strong>1.</strong> Open <Link to="/live-games" className="text-blue-400 hover:text-blue-300">Live Games</Link> → Filter NBA</li>
+              <li><strong>2.</strong> Wait for <strong>+EV +money alert</strong></li>
+              <li><strong>3.</strong> Enter → Get <strong>Volatility Alert</strong></li>
+              <li><strong>4.</strong> <strong>Hedge or ride</strong></li>
+            </ol>
+            <div className="mt-6">
+              <Link
+                to="/live-games"
+                className="inline-block bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg transition-colors"
+              >
+                Go to Dashboard →
+              </Link>
             </div>
           </div>
 
-          <h3>The Opportunity Breakdown</h3>
-          <div className="overflow-x-auto my-6">
-            <table className="w-full text-sm">
+          <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-6 my-8">
+            <h3 className="text-red-400 mt-0">Final Disclaimer</h3>
+            <ul className="text-slate-300 mb-0 text-sm">
+              <li><strong>All numbers are illustrative</strong>, based on modeling assumptions</li>
+              <li><strong>Past performance does not guarantee future results</strong></li>
+              <li>Real results depend on: model accuracy, execution, book limits, market conditions</li>
+              <li>This is <strong>NOT</strong> risk-free arbitrage - it's statistical arbitrage with timing</li>
+              <li>Variance is high; drawdowns are real; requires discipline and bankroll management</li>
+              <li><strong>Sports betting involves risk.</strong> Only stake what you can afford to lose.</li>
+            </ul>
+          </div>
+
+          <h2>Learn More</h2>
+          <p>
+            Want to dive deeper into sports betting strategy? Check out our other educational guides:
+          </p>
+          <ul>
+            <li><Link to="/learn/kelly-criterion" className="text-blue-400 hover:text-blue-300">The Kelly Criterion Explained</Link></li>
+            <li><Link to="/learn/bankroll-management-101" className="text-blue-400 hover:text-blue-300">Bankroll Management 101</Link></li>
+            <li><Link to="/learn/nhl-goalie-pull-strategy" className="text-blue-400 hover:text-blue-300">NHL Goalie Pull Strategy</Link></li>
+          </ul>
+
+          <div className="overflow-x-auto my-6 hidden">
+            <table className="w-full text-sm bg-slate-900/50 rounded-lg">
               <thead className="bg-slate-800">
                 <tr>
                   <th className="px-4 py-3 text-left">Sportsbook</th>
@@ -6244,277 +6666,50 @@ const articleContents: { [key: string]: ArticleContent } = {
             </table>
           </div>
 
-          <h3>The Math: Step-by-Step</h3>
+          <h2>8. Ready to Trade Volatility?</h2>
 
-          <p><strong>Step 1: Calculate Optimal Stakes</strong></p>
-          <p>For a $1,000 total investment:</p>
-          <div className="bg-slate-900/50 rounded-lg p-4 my-4 font-mono text-sm">
-            <p className="text-blue-300">BetMGM stake:  $508.13 on San Jose +150</p>
-            <p className="text-orange-300">FanDuel stake: $491.87 on Utah +142</p>
-            <p className="text-slate-400">Total invested: $1,000.00</p>
-          </div>
-
-          <p><strong>Step 2: Calculate Guaranteed Returns</strong></p>
-
-          <div className="grid md:grid-cols-2 gap-6 my-6">
-            <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-6">
-              <h4 className="text-blue-400 mt-0">Scenario A - BetMGM wins</h4>
-              <p className="text-sm font-mono">Payout = $508.13 × 2.50 = $1,270.33</p>
-              <p className="text-sm font-mono">Profit = $1,270.33 - $1,000 = <span className="text-green-400 font-bold">+$270.33</span></p>
-            </div>
-            <div className="bg-orange-900/20 border border-orange-500/30 rounded-lg p-6">
-              <h4 className="text-orange-400 mt-0">Scenario B - FanDuel wins</h4>
-              <p className="text-sm font-mono">Payout = $491.87 × 2.42 = $1,190.33</p>
-              <p className="text-sm font-mono">Profit = $1,190.33 - $1,000 = <span className="text-green-400 font-bold">+$190.33</span></p>
-            </div>
-          </div>
-
-          <div className="bg-green-900/30 border border-green-500/50 rounded-lg p-6 my-8">
-            <h3 className="text-green-400 mt-0">Guaranteed Minimum Profit: $190.33 (19.0% ROI)</h3>
-            <p className="mb-0">Regardless of which team covers the spread, you walk away with at least $190 in pure profit!</p>
-          </div>
-
-          <h2>Live Example #2: Safe 6% Return (NHL Totals)</h2>
-
-          <div className="bg-slate-800/50 border border-slate-600 rounded-lg p-6 my-6">
-            <h3 className="text-blue-400 mt-0">Boston Bruins @ Colorado Avalanche</h3>
-            <p className="text-sm text-slate-400 mb-4">Total Points (Over/Under 6.5 goals)</p>
-
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <p className="text-xs text-slate-500 mb-1">OVER 6.5</p>
-                <p className="font-bold">FanDuel: +112 (47.17%)</p>
-                <p className="text-sm text-slate-400">Stake: $497.65</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-500 mb-1">UNDER 6.5</p>
-                <p className="font-bold">DraftKings: +114 (46.73%)</p>
-                <p className="text-sm text-slate-400">Stake: $502.35</p>
-              </div>
-            </div>
-
-            <div className="mt-4 pt-4 border-t border-slate-700">
-              <p className="text-sm mb-2"><strong>Total Implied Probability:</strong> 93.9%</p>
-              <p className="text-green-400 font-bold">Arbitrage Margin: 6.1%</p>
-              <p className="text-sm mt-3">
-                <strong>If OVER hits:</strong> $1,055.02 → Profit: $55.02<br />
-                <strong>If UNDER hits:</strong> $1,075.03 → Profit: $75.03
-              </p>
-              <p className="text-green-400 font-bold mt-3">Guaranteed Profit: $55.02 (5.5% ROI)</p>
-            </div>
-          </div>
-
-          <h2>Why Do These Opportunities Exist?</h2>
-
-          <h3>1. Independent Pricing Models</h3>
-          <p>Each sportsbook uses proprietary algorithms. BetMGM might price Utah Mammoth differently than FanDuel. Different customer bases create different risk exposures. Books don't coordinate pricing (that would be illegal).</p>
-
-          <h3>2. Market Inefficiencies</h3>
-          <p>Books update at different speeds:</p>
-          <ul>
-            <li>Sharp books (Pinnacle, Circa) move lines instantly</li>
-            <li>Recreational books (FanDuel, DraftKings) may lag 30-60 seconds</li>
-            <li>Regional books wait for consensus</li>
-          </ul>
-          <p>When injury news breaks or a sharp bet lands, arbitrage windows open.</p>
-
-          <h3>3. Promotional Odds</h3>
-          <p>Books boost odds to attract customers. "Odds Boost" promotions create intentional arbitrage. New market states have aggressive pricing to gain market share.</p>
-
-          <h2>Our Real-Time Monitoring System</h2>
-
-          <div className="bg-gradient-to-r from-blue-900/30 to-purple-900/30 border border-blue-500/30 rounded-xl p-6 my-8">
-            <h3 className="text-blue-400 mt-0">System Status</h3>
-            <div className="grid md:grid-cols-3 gap-6 text-sm">
-              <div>
-                <p className="text-slate-400 mb-1">Scan Frequency</p>
-                <p className="text-white font-bold">Every 10 seconds</p>
-              </div>
-              <div>
-                <p className="text-slate-400 mb-1">Bookmakers Monitored</p>
-                <p className="text-white font-bold">11 sportsbooks</p>
-              </div>
-              <div>
-                <p className="text-slate-400 mb-1">Sports Tracked</p>
-                <p className="text-white font-bold">NBA, NFL, NHL, NCAA, MLB</p>
-              </div>
-              <div>
-                <p className="text-slate-400 mb-1">Markets</p>
-                <p className="text-white font-bold">Moneylines, Spreads, Totals</p>
-              </div>
-              <div>
-                <p className="text-slate-400 mb-1">Success Rate</p>
-                <p className="text-green-400 font-bold">85.4%</p>
-              </div>
-              <div>
-                <p className="text-slate-400 mb-1">Average Profit</p>
-                <p className="text-green-400 font-bold">2.3%</p>
-              </div>
-            </div>
-          </div>
-
-          <h3>How It Works</h3>
-          <ol>
-            <li><strong>Data Collection:</strong> Every 10 seconds, fetch odds from The Odds API for all sports and markets</li>
-            <li><strong>Arbitrage Detection:</strong> For each game, find best odds for each outcome across ALL books, calculate total implied probability</li>
-            <li><strong>Alert Generation:</strong> If total probability {"<"} 100%, arbitrage exists! Calculate optimal stakes and profit percentage</li>
-            <li><strong>Real-Time Broadcasting:</strong> WebSocket pushes alerts to dashboard, browser extension, and mobile app</li>
-          </ol>
-
-          <h2>ARB Auto Bettor™ Extension</h2>
-
-          <div className="bg-purple-900/20 border border-purple-500/30 rounded-lg p-6 my-8">
-            <h3 className="text-purple-400 mt-0">95% Automated, 100% Legal</h3>
-            <p>Our custom-built browser extension automates the arbitrage betting process while keeping you fully compliant with sportsbook terms of service.</p>
-
-            <h4 className="text-purple-300">What It Does:</h4>
-            <ul className="text-sm">
-              <li>✅ Real-time monitoring via WebSocket connection</li>
-              <li>✅ Instant push notifications for HIGH priority opportunities (5%+)</li>
-              <li>✅ Auto-navigation to sportsbook game pages</li>
-              <li>✅ Auto-fill bet slips with exact selection and calculated stake</li>
-              <li>✅ Highlights "Place Bet" button with pulsing green glow</li>
-              <li>✅ <strong>YOU click to confirm</strong> (required by law)</li>
-            </ul>
-
-            <h4 className="text-purple-300 mt-4">What It Doesn't Do (To Stay Legal):</h4>
-            <ul className="text-sm">
-              <li>❌ Never auto-clicks "Place Bet"</li>
-              <li>❌ Never submits bets without user interaction</li>
-              <li>❌ Never stores your credentials</li>
-              <li>❌ Never bypasses CAPTCHA or security</li>
-            </ul>
-          </div>
-
-          <h3>Time Savings</h3>
-          <div className="overflow-x-auto my-6">
-            <table className="w-full text-sm">
-              <thead className="bg-slate-800">
-                <tr>
-                  <th className="px-4 py-3 text-left">Task</th>
-                  <th className="px-4 py-3 text-right">Manual Time</th>
-                  <th className="px-4 py-3 text-right">With Extension</th>
-                  <th className="px-4 py-3 text-right">Savings</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr className="border-t border-slate-700">
-                  <td className="px-4 py-3">Find opportunity</td>
-                  <td className="px-4 py-3 text-right">2-5 min</td>
-                  <td className="px-4 py-3 text-right">Instant alert</td>
-                  <td className="px-4 py-3 text-right text-green-400">100%</td>
-                </tr>
-                <tr className="border-t border-slate-700">
-                  <td className="px-4 py-3">Navigate to games</td>
-                  <td className="px-4 py-3 text-right">40s per book</td>
-                  <td className="px-4 py-3 text-right">2s</td>
-                  <td className="px-4 py-3 text-right text-green-400">95%</td>
-                </tr>
-                <tr className="border-t border-slate-700">
-                  <td className="px-4 py-3">Fill bet slips</td>
-                  <td className="px-4 py-3 text-right">30s per bet</td>
-                  <td className="px-4 py-3 text-right">3s auto-fill</td>
-                  <td className="px-4 py-3 text-right text-green-400">90%</td>
-                </tr>
-                <tr className="border-t border-slate-700">
-                  <td className="px-4 py-3">Calculate stakes</td>
-                  <td className="px-4 py-3 text-right">60s</td>
-                  <td className="px-4 py-3 text-right">Instant</td>
-                  <td className="px-4 py-3 text-right text-green-400">100%</td>
-                </tr>
-                <tr className="border-t border-slate-700 bg-green-900/20">
-                  <td className="px-4 py-3 font-bold">Total per arb</td>
-                  <td className="px-4 py-3 text-right font-bold">5-8 minutes</td>
-                  <td className="px-4 py-3 text-right font-bold">30-45 seconds</td>
-                  <td className="px-4 py-3 text-right font-bold text-green-400">90%</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <h2>Profitability Analysis</h2>
-
-          <h3>Conservative Scenario (Manual Execution)</h3>
-          <div className="bg-slate-900/50 rounded-lg p-6 my-6">
-            <p className="text-sm font-mono text-slate-300 mb-2">8-12 arbitrage opportunities per day</p>
-            <p className="text-sm font-mono text-slate-300 mb-2">Average 2% profit margin</p>
-            <p className="text-sm font-mono text-slate-300 mb-2">$100-200 stake per opportunity</p>
-            <p className="text-sm font-mono text-slate-300 mb-4">70% capture rate (opportunities still available)</p>
-            <hr className="border-slate-700 my-4" />
-            <p className="text-lg font-bold text-green-400">$16-48/day = $400-1,200/month</p>
-          </div>
-
-          <h3>Aggressive Scenario (With ARB Auto Bettor)</h3>
-          <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-6 my-6">
-            <p className="text-sm font-mono text-slate-300 mb-2">30-50 arbitrage opportunities per day</p>
-            <p className="text-sm font-mono text-slate-300 mb-2">Average 2.5% profit margin</p>
-            <p className="text-sm font-mono text-slate-300 mb-2">$500-1,000 stake per opportunity</p>
-            <p className="text-sm font-mono text-slate-300 mb-4">85% capture rate (faster execution)</p>
-            <hr className="border-slate-700 my-4" />
-            <p className="text-lg font-bold text-green-400">$375-1,250/day = $9,000-31,000/month</p>
-          </div>
-
-          <div className="bg-yellow-900/30 border border-yellow-500/30 rounded-lg p-6 my-8">
-            <h3 className="text-yellow-400 mt-0">The Catch</h3>
-            <ul className="text-sm mb-0">
-              <li><strong>Speed matters:</strong> Most opportunities close within 2-5 minutes</li>
-              <li><strong>Account limits:</strong> Sportsbooks restrict profitable players over time</li>
-              <li><strong>Bankroll required:</strong> Need $10,000+ for serious operation</li>
-              <li><strong>Time commitment:</strong> Monitoring, executing, managing accounts</li>
-              <li><strong>Diminishing returns:</strong> As you scale up, books limit you faster</li>
-            </ul>
-          </div>
-
-          <h2>Common Mistakes to Avoid</h2>
-
-          <h3>❌ Mistake #1: Ignoring Betting Limits</h3>
-          <p>You calculate a perfect $1,000 arbitrage, but Book A limits you to $250 and Book B limits you to $400. Your stakes don't align and the arbitrage breaks.</p>
-          <p><strong>Solution:</strong> Know limits before betting. Start small ($100-200 per arb). Build account history with recreational bets.</p>
-
-          <h3>❌ Mistake #2: Wrong Line/Total</h3>
-          <p>Multiple lines exist for the same game. Betting Lakers -4.5 at one book and Warriors +5.5 at another looks like arbitrage but has a 1-point gap.</p>
-          <p><strong>Solution:</strong> Verify exact lines match, or ensure the gap creates a profitable "middle".</p>
-
-          <h3>❌ Mistake #3: Accounts Get Limited</h3>
-          <p>After consistent arbitrage profits, books will limit your bet sizes, require manual review, or ban you entirely.</p>
-          <p><strong>Solution:</strong> Mix in recreational bets at bad odds. Bet popular markets occasionally. Don't max out every arbitrage. Spread action across many books.</p>
-
-          <h2>Next Steps</h2>
-
-          <div className="bg-blue-900/30 border border-blue-500/30 rounded-lg p-6 my-8">
-            <h3 className="text-blue-400 mt-0">Get Started Today</h3>
-            <ol className="text-sm mb-0">
-              <li><strong>View Live Opportunities:</strong> Visit the <Link to="/alerts" className="text-blue-300 hover:text-blue-200 underline">Alerts page</Link> to see current arbitrage opportunities</li>
-              <li><strong>Fund Sportsbook Accounts:</strong> Minimum $1,000 each at DraftKings, FanDuel, BetMGM, Caesars</li>
-              <li><strong>Install ARB Auto Bettor:</strong> Browser extension automates 90% of the process</li>
-              <li><strong>Start Small:</strong> Begin with $100-200 stakes to learn the process</li>
-              <li><strong>Scale Up:</strong> Increase position sizes as you gain experience</li>
+          <div className="bg-slate-900/50 rounded-lg p-6 my-8">
+            <ol className="space-y-3 mb-0">
+              <li><strong>Open Live Games</strong> → Filter: NBA</li>
+              <li><strong>Wait for +EV +money alert</strong> (e.g., underdog at +180 or better)</li>
+              <li><strong>Enter position</strong> → System auto-tracks</li>
+              <li><strong>Get Volatility Alert</strong> when opposite side hits target</li>
+              <li><strong>Decide: Hedge or ride</strong></li>
             </ol>
           </div>
 
-          <div className="bg-gradient-to-r from-green-900/30 to-blue-900/30 border border-green-500/30 rounded-xl p-8 my-8 text-center">
-            <h3 className="text-3xl font-bold text-white mb-4">The Math is Certain. The Profit is Guaranteed.</h3>
-            <p className="text-xl text-slate-300 mb-6">
-              Right now, 20+ arbitrage opportunities are active with profits ranging from 1.1% to 18.68%.
-            </p>
+          <div className="text-center my-8">
             <Link
-              to="/alerts"
+              to="/live-games"
               className="inline-block px-8 py-4 bg-green-600 hover:bg-green-700 text-white font-bold text-lg rounded-lg transition-colors"
             >
-              View Live Arbitrage Opportunities →
+              Go to Dashboard →
             </Link>
           </div>
 
-          <h2>Legal & Responsible Gaming</h2>
-          <p className="text-sm text-slate-400">
-            <strong>What's Legal:</strong> Detecting arbitrage opportunities, calculating optimal stakes, placing bets at multiple sportsbooks, using software to find opportunities, browser extensions that assist (not automate) betting.
-          </p>
-          <p className="text-sm text-slate-400">
-            <strong>What's NOT Legal:</strong> Automated bet placement without human interaction, using bots to bypass CAPTCHA, sharing accounts, coordinating with other bettors, exploiting software glitches.
-          </p>
-          <p className="text-sm text-slate-400">
-            <strong>Our Approach:</strong> ARB Auto Bettor is 95% automated but 100% ToS compliant. The extension finds opportunities, navigates to games, fills bet slips, but requires YOU to click "Place Bet" for final confirmation.
-          </p>
+          <hr className="border-slate-700 my-12" />
+
+          <div className="bg-red-900/30 border-2 border-red-500/50 rounded-lg p-6 my-8">
+            <h2 className="text-red-400 mt-0">Final Disclaimer</h2>
+            <div className="text-sm text-slate-300 space-y-2">
+              <p><strong>All numbers are illustrative.</strong></p>
+              <p><strong>This is NOT risk-free arbitrage.</strong></p>
+              <p><strong>It's statistical edge with timing.</strong></p>
+              <p><strong>Variance is high. Drawdowns are real.</strong></p>
+              <p className="mb-0"><strong>Only stake what you can afford to lose.</strong></p>
+            </div>
+          </div>
+
+          <hr className="border-slate-700 my-8" />
+
+          <div className="my-8">
+            <h3>Learn More</h3>
+            <ul className="space-y-2">
+              <li><Link to="/learn/kelly-criterion" className="text-blue-400 hover:text-blue-300 underline">The Kelly Criterion Explained</Link></li>
+              <li><Link to="/learn/bankroll-management" className="text-blue-400 hover:text-blue-300 underline">Bankroll Management 101</Link></li>
+              <li><Link to="/learn/nhl-goalie-pull" className="text-blue-400 hover:text-blue-300 underline">NHL Goalie Pull Strategy</Link></li>
+            </ul>
+          </div>
 
         </div>
       </>

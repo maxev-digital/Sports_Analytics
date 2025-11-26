@@ -201,6 +201,144 @@ class TeamRankingsNCAAFScraper:
             logger.error(f"Error scraping standings: {e}")
             return {}
 
+    def scrape_ats_trends(self) -> Dict[str, Dict]:
+        """
+        Scrape ATS (Against The Spread) trends from TeamRankings
+        Scrapes overall ATS records (no home/away splits to avoid complications)
+
+        Returns:
+            Dict mapping team name -> ATS data:
+            {
+                'Alabama': {
+                    'ats_wins': 8,
+                    'ats_losses': 2,
+                    'ats_pushes': 0
+                },
+                ...
+            }
+        """
+        # Scrape overall ATS only (no home/away splits)
+        ats_data = self._scrape_ats_page(f"{self.BASE_URL}/trends/ats_trends/", 'overall')
+        logger.info(f"Scraped ATS trends for {len(ats_data)} NCAAF teams")
+        return ats_data
+
+    def _scrape_ats_page(self, url: str, record_type: str) -> Dict[str, Dict]:
+        """Helper to scrape a single ATS page"""
+        try:
+            response = self.session.get(url, timeout=10)
+            response.raise_for_status()
+
+            soup = BeautifulSoup(response.content, 'html.parser')
+
+            # Find the stats table
+            table = soup.find('table', {'class': 'datatable'})
+            if not table:
+                logger.error(f"Could not find ATS trends table on {url}")
+                return {}
+
+            ats_data = {}
+
+            # Parse table rows (skip header)
+            for row in table.find('tbody').find_all('tr'):
+                cols = row.find_all('td')
+                if len(cols) < 2:
+                    continue
+
+                # Column 0: Team name
+                team_link = cols[0].find('a')
+                if not team_link:
+                    continue
+                team_name = team_link.text.strip()
+
+                # Column 1: ATS Record (format: "W-L-P")
+                ats_record = cols[1].text.strip()
+                try:
+                    parts = ats_record.split('-')
+                    if len(parts) == 3:
+                        ats_data[team_name] = {
+                            'ats_wins': int(parts[0]),
+                            'ats_losses': int(parts[1]),
+                            'ats_pushes': int(parts[2])
+                        }
+                except (ValueError, IndexError) as e:
+                    logger.warning(f"Could not parse {record_type} ATS record for {team_name}: {ats_record}")
+
+            logger.info(f"Scraped {record_type} ATS trends for {len(ats_data)} teams")
+            return ats_data
+
+        except Exception as e:
+            logger.error(f"Error scraping {record_type} ATS trends: {e}")
+            return {}
+
+    def scrape_ou_trends(self) -> Dict[str, Dict]:
+        """
+        Scrape O/U (Over/Under) trends from TeamRankings
+        Scrapes overall O/U records (no home/away splits to avoid complications)
+
+        Returns:
+            Dict mapping team name -> O/U data:
+            {
+                'Alabama': {
+                    'ou_overs': 7,
+                    'ou_unders': 3,
+                    'ou_pushes': 0
+                },
+                ...
+            }
+        """
+        # Scrape overall O/U only (no home/away splits)
+        ou_data = self._scrape_ou_page(f"{self.BASE_URL}/trends/ou_trends/", 'overall')
+        logger.info(f"Scraped O/U trends for {len(ou_data)} NCAAF teams")
+        return ou_data
+
+    def _scrape_ou_page(self, url: str, record_type: str) -> Dict[str, Dict]:
+        """Helper to scrape a single O/U page"""
+        try:
+            response = self.session.get(url, timeout=10)
+            response.raise_for_status()
+
+            soup = BeautifulSoup(response.content, 'html.parser')
+
+            # Find the stats table
+            table = soup.find('table', {'class': 'datatable'})
+            if not table:
+                logger.error(f"Could not find O/U trends table on {url}")
+                return {}
+
+            ou_data = {}
+
+            # Parse table rows (skip header)
+            for row in table.find('tbody').find_all('tr'):
+                cols = row.find_all('td')
+                if len(cols) < 2:
+                    continue
+
+                # Column 0: Team name
+                team_link = cols[0].find('a')
+                if not team_link:
+                    continue
+                team_name = team_link.text.strip()
+
+                # Column 1: O/U Record (format: "O-U-P")
+                ou_record = cols[1].text.strip()
+                try:
+                    parts = ou_record.split('-')
+                    if len(parts) == 3:
+                        ou_data[team_name] = {
+                            'ou_overs': int(parts[0]),
+                            'ou_unders': int(parts[1]),
+                            'ou_pushes': int(parts[2])
+                        }
+                except (ValueError, IndexError) as e:
+                    logger.warning(f"Could not parse {record_type} O/U record for {team_name}: {ou_record}")
+
+            logger.info(f"Scraped {record_type} O/U trends for {len(ou_data)} teams")
+            return ou_data
+
+        except Exception as e:
+            logger.error(f"Error scraping {record_type} O/U trends: {e}")
+            return {}
+
     def fetch_all_team_stats(self, force_refresh: bool = False) -> Dict[str, Dict]:
         """
         Fetch all NCAAF team statistics from TeamRankings
@@ -218,7 +356,13 @@ class TeamRankingsNCAAFScraper:
                     'wins': 10,
                     'losses': 2,
                     'yards_per_game': 425.8,
-                    'yards_allowed': 298.3
+                    'yards_allowed': 298.3,
+                    'ats_wins': 8,
+                    'ats_losses': 2,
+                    'ats_pushes': 0,
+                    'ou_overs': 7,
+                    'ou_unders': 3,
+                    'ou_pushes': 0
                 },
                 ...
             }
@@ -265,8 +409,62 @@ class TeamRankingsNCAAFScraper:
         takeaways = self.scrape_stat_page('takeaways-per-game')
         time.sleep(1)
 
+        # NEW: Additional advanced stats (matching NFL)
+        yards_per_play = self.scrape_stat_page('yards-per-play')
+        time.sleep(1)
+
+        opp_yards_per_play = self.scrape_stat_page('opponent-yards-per-play')
+        time.sleep(1)
+
+        completion_pct = self.scrape_stat_page('completion-percentage')
+        time.sleep(1)
+
+        opp_completion_pct = self.scrape_stat_page('opponent-completion-percentage')
+        time.sleep(1)
+
+        fourth_down_pct = self.scrape_stat_page('fourth-down-conversion-pct')
+        time.sleep(1)
+
+        interceptions = self.scrape_stat_page('interceptions-per-game')
+        time.sleep(1)
+
+        fumbles_lost = self.scrape_stat_page('fumbles-lost-per-game')
+        time.sleep(1)
+
+        offensive_tds = self.scrape_stat_page('offensive-touchdowns-per-game')
+        time.sleep(1)
+
+        passing_tds = self.scrape_stat_page('passing-touchdowns-per-game')
+        time.sleep(1)
+
+        rushing_tds = self.scrape_stat_page('rushing-touchdowns-per-game')
+        time.sleep(1)
+
+        qb_sacked = self.scrape_stat_page('qb-sacked-per-game')
+        time.sleep(1)
+
+        penalty_yards = self.scrape_stat_page('penalty-yards-per-game')
+        time.sleep(1)
+
+        plays_per_game = self.scrape_stat_page('plays-per-game')
+        time.sleep(1)
+
+        first_downs = self.scrape_stat_page('first-downs-per-game')
+        time.sleep(1)
+
+        time_of_poss = self.scrape_stat_page('time-of-possession')
+        time.sleep(1)
+
         # Get W-L records from standings page
         records = self.scrape_standings()
+        time.sleep(1)
+
+        # NEW: Scrape betting trends (ATS and O/U)
+        ats_trends = self.scrape_ats_trends()
+        time.sleep(1)
+
+        ou_trends = self.scrape_ou_trends()
+        time.sleep(1)
 
         # Combine all stats
         all_teams = set(ppg.keys()) | set(opp_ppg.keys()) | set(point_diff.keys())
@@ -277,6 +475,10 @@ class TeamRankingsNCAAFScraper:
             w = records.get(team, {}).get('wins', 0)
             l = records.get(team, {}).get('losses', 0)
             games_played = w + l
+
+            # Get betting trends for this team
+            ats_data = ats_trends.get(team, {})
+            ou_data = ou_trends.get(team, {})
 
             team_stats[team] = {
                 'team_name': team,
@@ -301,6 +503,29 @@ class TeamRankingsNCAAFScraper:
                 'net_rating': point_diff.get(team, 0.0),
                 'off_rating': ppg.get(team, 25.0),  # Simplified
                 'def_rating': opp_ppg.get(team, 25.0),  # Simplified
+                # NEW: Additional advanced stats (matching NFL)
+                'yards_per_play': yards_per_play.get(team),
+                'opponent_yards_per_play': opp_yards_per_play.get(team),
+                'completion_pct': completion_pct.get(team),
+                'opponent_completion_pct': opp_completion_pct.get(team),
+                'fourth_down_conversion_pct': fourth_down_pct.get(team),
+                'interceptions_per_game': interceptions.get(team),
+                'fumbles_lost_per_game': fumbles_lost.get(team),
+                'offensive_touchdowns_per_game': offensive_tds.get(team),
+                'passing_touchdowns_per_game': passing_tds.get(team),
+                'rushing_touchdowns_per_game': rushing_tds.get(team),
+                'qb_sacked_per_game': qb_sacked.get(team),
+                'penalty_yards_per_game': penalty_yards.get(team),
+                'plays_per_game': plays_per_game.get(team),
+                'first_downs_per_game': first_downs.get(team),
+                'time_of_possession': time_of_poss.get(team),
+                # Betting trends (NEW)
+                'ats_wins': ats_data.get('ats_wins'),
+                'ats_losses': ats_data.get('ats_losses'),
+                'ats_pushes': ats_data.get('ats_pushes'),
+                'ou_overs': ou_data.get('ou_overs'),
+                'ou_unders': ou_data.get('ou_unders'),
+                'ou_pushes': ou_data.get('ou_pushes'),
                 'source': 'teamrankings',
                 'last_updated': datetime.now().isoformat()
             }

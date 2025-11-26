@@ -1,83 +1,120 @@
 import { useState, useEffect } from 'react';
 import { getApiUrl } from '../config';
 
-interface OverallStats {
-  win_rate: number;
-  roi: number;
-  total_bets: number;
-  total_profit: number;
+interface AlertTypeStats {
+  alert_type: string;
+  total_alerts: number;
+  settled_alerts: number;
+  pending_alerts: number;
   wins: number;
   losses: number;
+  pushes: number;
+  win_rate: number;
+  roi: number;
+  total_profit: number;
+  avg_odds: number;
+}
+
+interface AlertPerformance {
+  total_alerts: number;
+  settled_alerts: number;
+  pending_alerts: number;
+  by_alert_type: AlertTypeStats[];
 }
 
 export function AlertsOverallPerformance() {
-  const [stats, setStats] = useState<OverallStats | null>(null);
+  const [data, setData] = useState<AlertPerformance | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedBetType, setSelectedBetType] = useState<string>('all');
-  const [selectedSport, setSelectedSport] = useState<string>('all');
+  const [selectedAlertType, setSelectedAlertType] = useState<string>('ALL');
 
-  const betTypes = [
-    { key: 'all', name: 'ALL', emoji: '🎯' },
-    { key: 'totals', name: 'TOTALS', emoji: '📊' },
-    { key: 'spreads', name: 'SPREADS', emoji: '📈' },
-    { key: 'moneyline', name: 'MONEYLINE', emoji: '💰' },
-  ];
-
-  const sports = [
-    { key: 'all', name: 'ALL', emoji: '🎯' },
-    { key: 'NBA', name: 'NBA', emoji: '🏀' },
-    { key: 'NFL', name: 'NFL', emoji: '🏈' },
-    { key: 'NHL', name: 'NHL', emoji: '🏒' },
-    { key: 'NCAAB', name: 'NCAAB', emoji: '🏀' },
-    { key: 'NCAAF', name: 'NCAAF', emoji: '🏈' },
+  const alertTypes = [
+    { key: 'ALL', name: 'ALL ALERTS', emoji: '🎯' },
+    { key: 'ARBITRAGE', name: 'ARBITRAGE', emoji: '💰' },
+    { key: 'MIDDLE', name: 'MIDDLE', emoji: '🎯' },
+    { key: 'STEAM_MOVE', name: 'STEAM MOVES', emoji: '🚀' },
   ];
 
   useEffect(() => {
-    fetchOverallStats();
-  }, [selectedBetType, selectedSport]);
+    fetchAlertPerformance();
+  }, []);
 
-  const fetchOverallStats = async () => {
+  const fetchAlertPerformance = async () => {
     try {
       setLoading(true);
-      let url = 'performance/summary?days=365';
-
-      // Add filters if not 'all'
-      if (selectedBetType !== 'all') {
-        url += `&bet_type=${selectedBetType}`;
-      }
-      if (selectedSport !== 'all') {
-        url += `&sport=${selectedSport}`;
-      }
-
-      const response = await fetch(getApiUrl(url));
+      const response = await fetch(getApiUrl('alert-performance/overview'));
       if (response.ok) {
-        const data = await response.json();
-
-        // Calculate stats from the API response
-        const overall = data.overall || {};
-        setStats({
-          win_rate: overall.win_rate || 0,
-          roi: overall.roi || 0,
-          total_bets: overall.total_predictions || 0,
-          total_profit: overall.profit_loss || 0,
-          wins: overall.wins || 0,
-          losses: overall.losses || 0,
+        const responseData = await response.json();
+        // Map API response to expected format
+        setData({
+          total_alerts: responseData.overall_stats?.total_alerts || 0,
+          settled_alerts: responseData.overall_stats?.settled_alerts || 0,
+          pending_alerts: responseData.overall_stats?.pending_alerts || 0,
+          by_alert_type: responseData.by_alert_type || []
         });
       }
     } catch (error) {
-      console.error('Error fetching overall stats:', error);
+      console.error('Error fetching alert performance:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const getDisplayStats = () => {
+    if (!data) return null;
+
+    if (selectedAlertType === 'ALL') {
+      // Calculate combined stats from all alert types
+      const allAlerts = data.by_alert_type.reduce((acc, type) => {
+        return {
+          wins: acc.wins + type.wins,
+          losses: acc.losses + type.losses,
+          pushes: acc.pushes + type.pushes,
+          total_profit: acc.total_profit + type.total_profit,
+          settled_alerts: acc.settled_alerts + type.settled_alerts,
+        };
+      }, { wins: 0, losses: 0, pushes: 0, total_profit: 0, settled_alerts: 0 });
+
+      const winRate = allAlerts.settled_alerts > 0
+        ? (allAlerts.wins / (allAlerts.wins + allAlerts.losses)) * 100
+        : 0;
+
+      const roi = data.total_alerts > 0
+        ? (allAlerts.total_profit / (data.total_alerts * 100)) * 100
+        : 0;
+
+      return {
+        win_rate: winRate,
+        roi: roi,
+        total_bets: data.total_alerts,
+        total_profit: allAlerts.total_profit,
+        wins: allAlerts.wins,
+        losses: allAlerts.losses,
+      };
+    } else {
+      // Find specific alert type
+      const alertType = data.by_alert_type.find(t => t.alert_type === selectedAlertType);
+      if (!alertType) return null;
+
+      return {
+        win_rate: alertType.win_rate,
+        roi: alertType.roi,
+        total_bets: alertType.total_alerts,
+        total_profit: alertType.total_profit,
+        wins: alertType.wins,
+        losses: alertType.losses,
+      };
     }
   };
 
   if (loading) {
     return (
       <div className="bg-slate-900 border border-slate-700 rounded-lg p-4 mb-3">
-        <div className="text-white text-center text-sm">Loading overall performance...</div>
+        <div className="text-white text-center text-sm">Loading alert performance...</div>
       </div>
     );
   }
+
+  const stats = getDisplayStats();
 
   if (!stats) {
     return null;
@@ -85,44 +122,24 @@ export function AlertsOverallPerformance() {
 
   return (
     <div className="mb-3">
-      <h2 className="text-sm font-bold text-blue-300 mb-2">Overall Alerts Performance</h2>
+      <h2 className="text-sm font-bold text-green-300 mb-2">Alert Grading Performance</h2>
 
-      {/* Filter Buttons */}
-      <div className="mb-3 space-y-2">
-        {/* Bet Type Filters */}
+      {/* Alert Type Filter Buttons */}
+      <div className="mb-3">
         <div className="flex flex-wrap gap-2">
-          <span className="text-slate-400 text-xs font-semibold self-center mr-1">Bet Type:</span>
-          {betTypes.map((betType) => (
+          <span className="text-slate-400 text-xs font-semibold self-center mr-1">Alert Type:</span>
+          {alertTypes.map((alertType) => (
             <button
-              key={betType.key}
-              onClick={() => setSelectedBetType(betType.key)}
+              key={alertType.key}
+              onClick={() => setSelectedAlertType(alertType.key)}
               className={`px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 rounded ${
-                selectedBetType === betType.key
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
+                selectedAlertType === alertType.key
+                  ? 'bg-green-600 text-white shadow-lg shadow-green-600/50'
                   : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
               }`}
             >
-              <span className="text-sm">{betType.emoji}</span>
-              {betType.name}
-            </button>
-          ))}
-        </div>
-
-        {/* Sport Filters */}
-        <div className="flex flex-wrap gap-2">
-          <span className="text-slate-400 text-xs font-semibold self-center mr-1">Sport:</span>
-          {sports.map((sport) => (
-            <button
-              key={sport.key}
-              onClick={() => setSelectedSport(sport.key)}
-              className={`px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 rounded ${
-                selectedSport === sport.key
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
-                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
-              }`}
-            >
-              <span className="text-sm">{sport.emoji}</span>
-              {sport.name}
+              <span className="text-sm">{alertType.emoji}</span>
+              {alertType.name}
             </button>
           ))}
         </div>
@@ -142,31 +159,31 @@ export function AlertsOverallPerformance() {
         </div>
 
         {/* ROI */}
-        <div className="bg-gradient-to-br from-blue-900/50 to-blue-800/30 border border-blue-700 rounded-lg p-1.5">
-          <div className="text-blue-400 text-xs font-semibold mb-0">ROI</div>
+        <div className={`bg-gradient-to-br ${stats.roi >= 0 ? 'from-blue-900/50 to-blue-800/30 border-blue-700' : 'from-red-900/50 to-red-800/30 border-red-700'} border rounded-lg p-1.5`}>
+          <div className={`${stats.roi >= 0 ? 'text-blue-400' : 'text-red-400'} text-xs font-semibold mb-0`}>ROI</div>
           <div className="text-white text-3xl font-bold leading-tight">
             {stats.roi >= 0 ? '+' : ''}{stats.roi.toFixed(1)}%
           </div>
-          <div className="text-blue-300 text-xs mt-0">All-Time</div>
+          <div className={`${stats.roi >= 0 ? 'text-blue-300' : 'text-red-300'} text-xs mt-0`}>All-Time</div>
         </div>
 
-        {/* Total Bets */}
+        {/* Total Alerts */}
         <div className="bg-gradient-to-br from-purple-900/50 to-purple-800/30 border border-purple-700 rounded-lg p-1.5">
-          <div className="text-purple-400 text-xs font-semibold mb-0">Total Bets</div>
+          <div className="text-purple-400 text-xs font-semibold mb-0">Total Alerts</div>
           <div className="text-white text-3xl font-bold leading-tight">
             {stats.total_bets.toLocaleString()}
           </div>
           <div className="text-purple-300 text-xs mt-0">Graded</div>
         </div>
 
-        {/* Total Profit (in Units) */}
-        <div className="bg-gradient-to-br from-amber-900/50 to-amber-800/30 border border-amber-700 rounded-lg p-1.5">
-          <div className="text-amber-400 text-xs font-semibold mb-0">Total Profit</div>
+        {/* Total Profit */}
+        <div className={`bg-gradient-to-br ${stats.total_profit >= 0 ? 'from-amber-900/50 to-amber-800/30 border-amber-700' : 'from-red-900/50 to-red-800/30 border-red-700'} border rounded-lg p-1.5`}>
+          <div className={`${stats.total_profit >= 0 ? 'text-amber-400' : 'text-red-400'} text-xs font-semibold mb-0`}>Total Profit</div>
           <div className="text-white text-3xl font-bold leading-tight">
             {stats.total_profit >= 0 ? '+' : ''}${stats.total_profit.toFixed(0)}
           </div>
-          <div className="text-amber-300 text-xs mt-0">
-            {(stats.total_profit / 100).toFixed(1)} Units
+          <div className={`${stats.total_profit >= 0 ? 'text-amber-300' : 'text-red-300'} text-xs mt-0`}>
+            ${100} per alert
           </div>
         </div>
       </div>

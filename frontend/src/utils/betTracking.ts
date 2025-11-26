@@ -3,6 +3,8 @@
  * Functions for tracking user bets when they click bookmaker deep links
  */
 
+import { getApiUrl } from '../config';
+
 interface TrackBetClickParams {
   userId: string;
   gameId: string;
@@ -32,7 +34,7 @@ interface UserBet {
  */
 export async function trackBetClick(params: TrackBetClickParams): Promise<UserBet | null> {
   try {
-    const response = await fetch('/api/bets/track-click', {
+    const response = await fetch(getApiUrl('/bets/track-click'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -73,7 +75,7 @@ export async function trackBetClick(params: TrackBetClickParams): Promise<UserBe
  */
 export async function getPendingBets(userId: string): Promise<UserBet[]> {
   try {
-    const response = await fetch(`/api/bets/pending?user_id=${userId}`);
+    const response = await fetch(getApiUrl(`/bets/pending?user_id=${userId}`));
     if (!response.ok) {
       console.error('Failed to fetch pending bets');
       return [];
@@ -98,7 +100,7 @@ export async function getUserBets(
     if (status) params.append('status', status);
     if (sport) params.append('sport', sport);
 
-    const response = await fetch(`/api/bets/my-bets?${params}`);
+    const response = await fetch(getApiUrl(`/bets/my-bets?${params}`));
     if (!response.ok) {
       console.error('Failed to fetch user bets');
       return [];
@@ -115,7 +117,7 @@ export async function getUserBets(
  */
 export async function addStakeToBet(betId: string, stake: number): Promise<UserBet | null> {
   try {
-    const response = await fetch(`/api/bets/${betId}/add-stake`, {
+    const response = await fetch(getApiUrl(`/bets/${betId}/add-stake`), {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -150,7 +152,7 @@ export async function updateBet(
   }
 ): Promise<UserBet | null> {
   try {
-    const response = await fetch(`/api/bets/${betId}/update`, {
+    const response = await fetch(getApiUrl(`/bets/${betId}/update`), {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -185,12 +187,12 @@ export async function settleBet(
   result: 'win' | 'loss' | 'push'
 ): Promise<UserBet | null> {
   try {
-    const response = await fetch(`/api/bets/${betId}/settle`, {
+    const response = await fetch(getApiUrl(`/bets/${betId}/settle`), {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ result }),
+      body: JSON.stringify({ result: ({'win': 'won', 'loss': 'lost', 'push': 'push'}[result] || result) }),
     });
 
     if (!response.ok) {
@@ -210,7 +212,7 @@ export async function settleBet(
  */
 export async function deleteBet(betId: string): Promise<boolean> {
   try {
-    const response = await fetch(`/api/bets/${betId}`, {
+    const response = await fetch(getApiUrl(`/bets/${betId}`), {
       method: 'DELETE',
     });
 
@@ -226,7 +228,7 @@ export async function deleteBet(betId: string): Promise<boolean> {
  */
 export async function getUserBettingStats(userId: string) {
   try {
-    const response = await fetch(`/api/bets/user/${userId}/stats`);
+    const response = await fetch(getApiUrl(`/bets/user/${userId}/stats`));
     if (!response.ok) {
       console.error('Failed to fetch betting stats');
       return null;
@@ -257,7 +259,7 @@ export async function addManualBet(params: {
   notes?: string;
 }): Promise<UserBet | null> {
   try {
-    const response = await fetch('/api/bets/manual-entry', {
+    const response = await fetch(getApiUrl('/bets/manual-entry'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -290,3 +292,76 @@ export async function addManualBet(params: {
     return null;
   }
 }
+
+/**
+ * Get detailed performance data for charts and analytics
+ */
+export interface PerformanceData {
+  summary: {
+    total_bets: number;
+    wins: number;
+    losses: number;
+    pushes: number;
+    win_rate: number;
+    total_wagered: number;
+    net_profit_loss: number;
+    roi: number;
+    avg_stake: number;
+  };
+  history: Array<{
+    date: string;
+    wins: number;
+    losses: number;
+    pushes: number;
+    daily_pl: number;
+    cumulative_pl: number;
+    daily_wagered: number;
+    cumulative_wagered: number;
+  }>;
+  by_sport: Array<{
+    sport: string;
+    total: number;
+    wins: number;
+    losses: number;
+    pushes: number;
+    win_rate: number;
+    profit_loss: number;
+    roi: number;
+  }>;
+  by_bet_type: Array<{
+    bet_type: string;
+    total: number;
+    wins: number;
+    losses: number;
+    pushes: number;
+    win_rate: number;
+    profit_loss: number;
+    roi: number;
+  }>;
+  by_bookmaker: Array<{
+    bookmaker: string;
+    total: number;
+    wins: number;
+    profit_loss: number;
+  }>;
+  time_range: string;
+}
+
+export async function getUserPerformanceData(userId: string, days?: number): Promise<PerformanceData | null> {
+  try {
+    const params = new URLSearchParams();
+    if (days) params.append('days', days.toString());
+
+    const url = getApiUrl(`/bets/user/${userId}/performance${params.toString() ? '?' + params.toString() : ''}`);
+    const response = await fetch(url);
+    if (!response.ok) {
+      console.error('Failed to fetch performance data');
+      return null;
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching performance data:', error);
+    return null;
+  }
+}
+

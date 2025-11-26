@@ -48,9 +48,9 @@ export function Login() {
 
       <div className="max-w-md w-full space-y-6">
         <div className="text-center relative">
-          <img 
-            src="/logo2.png" 
-            alt="Max EV Sports - Bull Market Betting" 
+          <img
+            src="/logo2.png"
+            alt="Max EV Sports - Bull Market Betting"
             className={`mx-auto h-64 w-auto mb-6 transition-all duration-500 ${showFireRing ? 'scale-110 brightness-125 drop-shadow-[0_0_30px_rgba(239,68,68,0.8)]' : 'drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)]'}`}
           />
           <h2 className="text-center text-4xl font-bold text-white">

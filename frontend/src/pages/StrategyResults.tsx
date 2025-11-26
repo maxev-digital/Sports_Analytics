@@ -68,7 +68,7 @@ const Tooltip = ({ children, text }: { children: React.ReactNode; text: string }
         {children}
       </div>
       {show && (
-        <div className="absolute z-[9999] top-full left-1/2 transform -translate-x-1/2 mt-2 px-3 py-2 bg-slate-900 border-2 border-blue-500 rounded-lg shadow-2xl whitespace-nowrap text-sm text-white min-w-max">
+        <div className="absolute z-[9999] top-full left-1/2 transform -translate-x-1/2 mt-2 px-3 py-2 bg-slate-900 border border-blue-500 rounded-lg shadow-2xl whitespace-nowrap text-sm text-white min-w-max">
           {text}
           <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-[-1px]">
             <div className="border-8 border-transparent border-b-blue-500"></div>
@@ -106,7 +106,7 @@ const AlertModal = ({ strategy, onClose }: { strategy: Strategy; onClose: () => 
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-slate-900 border-2 border-slate-700 rounded-lg p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-slate-900 border border-slate-700 rounded-lg p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
         <h2 className="text-2xl font-bold text-white mb-2">Subscribe to Alerts</h2>
         <p className="text-slate-400 mb-4">Get notified when "{strategy.name}" entry signals are detected</p>
 
@@ -542,7 +542,7 @@ export function StrategyResults() {
             <div className="h-16 bg-slate-800/50 border border-slate-700 rounded-lg mb-3 animate-pulse"></div>
 
             {/* Table Skeleton */}
-            <div className="bg-slate-900 border-2 border-slate-700 rounded-lg p-4">
+            <div className="bg-slate-900 border border-slate-700 rounded-lg p-4">
               <div className="space-y-3">
                 {[...Array(8)].map((_, i) => (
                   <div key={i} className="h-16 bg-slate-800 rounded animate-pulse"></div>
@@ -758,7 +758,7 @@ export function StrategyResults() {
                 Loading strategies...
               </div>
             ) : filteredStrategies.length === 0 ? (
-              <div className="bg-slate-900 border-2 border-slate-700 shadow-2xl rounded-lg p-12 text-center">
+              <div className="bg-slate-900 border border-slate-700 shadow-2xl rounded-lg p-12 text-center">
                 <div className="text-6xl mb-4">🔍</div>
                 <h3 className="text-2xl font-bold text-white mb-2">No strategies found</h3>
                 <p className="text-slate-400 text-lg mb-4">
@@ -788,7 +788,7 @@ export function StrategyResults() {
                 </div>
               </div>
             ) : (
-              <div className="bg-slate-900 border-2 border-slate-700 shadow-2xl rounded-lg overflow-visible">
+              <div className="bg-slate-900 border border-slate-700 shadow-2xl rounded-lg overflow-visible">
                 {/* Mobile scroll hint */}
                 <div className="md:hidden bg-blue-900/40 border-b-2 border-blue-600 px-4 py-2 text-center">
                   <span className="text-blue-300 text-xs font-semibold">← Scroll horizontally to see all columns →</span>
@@ -1039,7 +1039,7 @@ export function StrategyResults() {
             </div>
 
             {/* Explanatory Section */}
-            <div className="mt-8 bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-blue-600 rounded-lg p-6">
+            <div className="mt-8 bg-gradient-to-br from-slate-900 to-slate-800 border border-blue-600 rounded-lg p-6">
               <h2 className="text-xl font-bold text-blue-300 mb-4 flex items-center gap-2">
                 <span>🧠</span>
                 Understanding the Strategy Results

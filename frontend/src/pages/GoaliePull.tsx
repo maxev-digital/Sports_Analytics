@@ -43,17 +43,42 @@ interface PerformanceMetrics {
   avg_ev_entry_pct: number;
 }
 
+interface TeamStats {
+  team_abbr: string;
+  Team: string;
+  en_goals_for: number;
+  en_goals_against: number;
+  en_differential: number;
+  en_situations: number;
+  en_success_rate: number;
+  en_goals_for_offensive: number;
+  goals_for_offensive_rank: number;
+  en_goals_against_offensive: number;
+  goals_against_offensive_rank: number;
+  en_situations_offensive: number;
+  situations_offensive_rank: number;
+  en_goals_for_defensive: number;
+  goals_for_defensive_rank: number;
+  en_goals_against_defensive: number;
+  goals_against_defensive_rank: number;
+  en_situations_defensive: number;
+  situations_defensive_rank: number;
+}
+
 const GoaliePull: React.FC = () => {
   const [status, setStatus] = useState<MonitorStatus | null>(null);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [performance, setPerformance] = useState<PerformanceMetrics | null>(null);
+  const [teamStats, setTeamStats] = useState<TeamStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showRankings, setShowRankings] = useState(false);
 
   useEffect(() => {
     fetchStatus();
     fetchAlerts();
     fetchPerformance();
+    fetchTeamStats();
 
     // Poll status every 10 seconds
     const interval = setInterval(() => {
@@ -96,6 +121,17 @@ const GoaliePull: React.FC = () => {
       setPerformance(data);
     } catch (err: any) {
       console.error('Error fetching performance:', err);
+    }
+  };
+
+  const fetchTeamStats = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/goalie-pull/team-stats`);
+      if (!response.ok) throw new Error('Failed to fetch team stats');
+      const data = await response.json();
+      setTeamStats(data.teams || []);
+    } catch (err: any) {
+      console.error('Error fetching team stats:', err);
     }
   };
 
@@ -281,6 +317,164 @@ const GoaliePull: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* Team Rankings */}
+        <div className="bg-gradient-to-br from-purple-900 via-slate-900 to-slate-950 border-4 border-purple-700 rounded-lg p-6 mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-white">Empty Net Team Rankings</h2>
+            <button
+              onClick={() => setShowRankings(!showRankings)}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors"
+            >
+              {showRankings ? '▼ Hide Rankings' : '▶ Show Rankings'}
+            </button>
+          </div>
+
+          {showRankings && teamStats.length > 0 && (
+            <div className="space-y-6">
+              {/* Top/Bottom 10 by Differential */}
+              <div>
+                <h3 className="text-xl font-bold text-purple-400 mb-4">Overall Empty Net Performance</h3>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* Top 10 */}
+                  <div className="bg-slate-950 border-2 border-green-700 rounded-lg p-4">
+                    <h4 className="text-lg font-bold text-green-500 mb-3">Top 10 Teams (Best Differential)</h4>
+                    <div className="space-y-2">
+                      {teamStats.slice(0, 10).map((team, idx) => (
+                        <div key={team.team_abbr} className="flex items-center justify-between text-sm bg-slate-900 p-2 rounded">
+                          <div className="flex items-center gap-3">
+                            <span className="text-slate-400 font-bold w-6">#{idx + 1}</span>
+                            <span className="text-white font-semibold w-48">{team.Team}</span>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <span className="text-green-500 font-bold w-12 text-right">{team.en_differential >= 0 ? '+' : ''}{team.en_differential}</span>
+                            <span className="text-slate-400 text-xs w-24 text-right">{team.en_goals_for}F / {team.en_goals_against}A</span>
+                            <span className="text-blue-400 text-xs w-16 text-right">{(team.en_success_rate * 100).toFixed(1)}%</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Bottom 10 */}
+                  <div className="bg-slate-950 border-2 border-red-700 rounded-lg p-4">
+                    <h4 className="text-lg font-bold text-red-500 mb-3">Bottom 10 Teams (Worst Differential)</h4>
+                    <div className="space-y-2">
+                      {teamStats.slice(-10).reverse().map((team, idx) => (
+                        <div key={team.team_abbr} className="flex items-center justify-between text-sm bg-slate-900 p-2 rounded">
+                          <div className="flex items-center gap-3">
+                            <span className="text-slate-400 font-bold w-6">#{32 - idx}</span>
+                            <span className="text-white font-semibold w-48">{team.Team}</span>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <span className="text-red-500 font-bold w-12 text-right">{team.en_differential >= 0 ? '+' : ''}{team.en_differential}</span>
+                            <span className="text-slate-400 text-xs w-24 text-right">{team.en_goals_for}F / {team.en_goals_against}A</span>
+                            <span className="text-blue-400 text-xs w-16 text-right">{(team.en_success_rate * 100).toFixed(1)}%</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Offensive Rankings */}
+              <div>
+                <h3 className="text-xl font-bold text-purple-400 mb-4">Offensive Empty Net Leaders</h3>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* Most Goals Scored (Offensive) */}
+                  <div className="bg-slate-950 border-2 border-blue-700 rounded-lg p-4">
+                    <h4 className="text-lg font-bold text-blue-500 mb-3">Most EN Goals Scored (When Attacking)</h4>
+                    <div className="space-y-2">
+                      {[...teamStats].sort((a, b) => b.en_goals_for_offensive - a.en_goals_for_offensive).slice(0, 10).map((team) => (
+                        <div key={team.team_abbr} className="flex items-center justify-between text-sm bg-slate-900 p-2 rounded">
+                          <div className="flex items-center gap-3">
+                            <span className="text-blue-400 font-bold w-8">#{team.goals_for_offensive_rank}</span>
+                            <span className="text-white font-semibold flex-1">{team.Team}</span>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <span className="text-green-500 font-bold w-12 text-right">{team.en_goals_for_offensive}</span>
+                            <span className="text-slate-400 text-xs w-20 text-right">{team.en_situations_offensive} sits</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Fewest Goals Allowed (Offensive) */}
+                  <div className="bg-slate-950 border-2 border-green-700 rounded-lg p-4">
+                    <h4 className="text-lg font-bold text-green-500 mb-3">Fewest EN Goals Allowed (When Attacking)</h4>
+                    <div className="space-y-2">
+                      {[...teamStats].sort((a, b) => a.en_goals_against_offensive - b.en_goals_against_offensive).slice(0, 10).map((team) => (
+                        <div key={team.team_abbr} className="flex items-center justify-between text-sm bg-slate-900 p-2 rounded">
+                          <div className="flex items-center gap-3">
+                            <span className="text-green-400 font-bold w-8">#{team.goals_against_offensive_rank}</span>
+                            <span className="text-white font-semibold flex-1">{team.Team}</span>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <span className="text-green-500 font-bold w-12 text-right">{team.en_goals_against_offensive}</span>
+                            <span className="text-slate-400 text-xs w-20 text-right">{team.en_situations_offensive} sits</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Defensive Rankings */}
+              <div>
+                <h3 className="text-xl font-bold text-purple-400 mb-4">Defensive Empty Net Leaders</h3>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* Most Goals Scored (Defensive) */}
+                  <div className="bg-slate-950 border-2 border-yellow-700 rounded-lg p-4">
+                    <h4 className="text-lg font-bold text-yellow-500 mb-3">Most EN Goals Scored (When Defending)</h4>
+                    <div className="space-y-2">
+                      {[...teamStats].sort((a, b) => b.en_goals_for_defensive - a.en_goals_for_defensive).slice(0, 10).map((team) => (
+                        <div key={team.team_abbr} className="flex items-center justify-between text-sm bg-slate-900 p-2 rounded">
+                          <div className="flex items-center gap-3">
+                            <span className="text-yellow-400 font-bold w-8">#{team.goals_for_defensive_rank}</span>
+                            <span className="text-white font-semibold flex-1">{team.Team}</span>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <span className="text-green-500 font-bold w-12 text-right">{team.en_goals_for_defensive}</span>
+                            <span className="text-slate-400 text-xs w-20 text-right">{team.en_situations_defensive} sits</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Fewest Goals Allowed (Defensive) */}
+                  <div className="bg-slate-950 border-2 border-red-700 rounded-lg p-4">
+                    <h4 className="text-lg font-bold text-red-500 mb-3">Most EN Goals Allowed (When Defending)</h4>
+                    <div className="space-y-2">
+                      {[...teamStats].sort((a, b) => b.en_goals_against_defensive - a.en_goals_against_defensive).slice(0, 10).map((team) => (
+                        <div key={team.team_abbr} className="flex items-center justify-between text-sm bg-slate-900 p-2 rounded">
+                          <div className="flex items-center gap-3">
+                            <span className="text-red-400 font-bold w-8">#{team.goals_against_defensive_rank}</span>
+                            <span className="text-white font-semibold flex-1">{team.Team}</span>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <span className="text-red-500 font-bold w-12 text-right">{team.en_goals_against_defensive}</span>
+                            <span className="text-slate-400 text-xs w-20 text-right">{team.en_situations_defensive} sits</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {showRankings && teamStats.length === 0 && (
+            <div className="text-center py-8 text-slate-400">
+              <div className="text-4xl mb-2">📊</div>
+              <div>No team stats available</div>
+            </div>
+          )}
+        </div>
 
         {/* Recent Alerts */}
         <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 border-4 border-slate-700 rounded-lg p-6">

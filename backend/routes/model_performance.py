@@ -25,6 +25,15 @@ def safe_float(value):
     except (ValueError, TypeError):
         return None
 
+def safe_value(value):
+    """Convert pandas values to JSON-serializable types, handling NaN"""
+    if pd.isna(value):
+        return None
+    # Convert numpy types to Python types
+    if hasattr(value, 'item'):
+        return value.item()
+    return value
+
 router = APIRouter(prefix="/api/model-performance", tags=["model-performance"])
 
 # Data paths
@@ -62,33 +71,25 @@ async def get_performance_overview(
                 "total_results": 0
             }
 
-        # Load predictions and results
-        predictions_df = pd.read_csv(PREDICTIONS_LOG)
-        results_df = pd.read_csv(RESULTS_LOG)
+        # Load results (self-contained with all prediction data + corrected grades)
+        merged_df = pd.read_csv(RESULTS_LOG)
 
         # Filter by date
         cutoff_date = pd.Timestamp.now() - pd.Timedelta(days=days)
-        predictions_df['date_predicted'] = pd.to_datetime(predictions_df['date_predicted'], format='mixed', errors='coerce')
-        predictions_df = predictions_df[predictions_df['date_predicted'] >= cutoff_date]
+        merged_df['game_date'] = pd.to_datetime(merged_df['game_date'], format='mixed', errors='coerce')
+        merged_df = merged_df[merged_df['game_date'] >= cutoff_date]
 
         # Apply filters
         if sport:
-            predictions_df = predictions_df[predictions_df['sport'].str.lower() == sport.lower()]
+            merged_df = merged_df[merged_df['sport'].str.lower() == sport.lower()]
         if model:
-            predictions_df = predictions_df[predictions_df['model'].str.lower() == model.lower()]
+            merged_df = merged_df[merged_df['model'].str.lower() == model.lower()]
         if bet_type:
-            predictions_df = predictions_df[predictions_df['bet_type'].str.lower() == bet_type.lower()]
+            merged_df = merged_df[merged_df['bet_type'].str.lower() == bet_type.lower()]
 
-        # Drop duplicate columns from results before merging
-        results_cols_to_keep = ['prediction_id', 'away_score', 'home_score', 'actual_total', 'result', 'profit_loss']
-        results_df_clean = results_df[results_cols_to_keep]
-
-        # Merge predictions with results
-        merged_df = predictions_df.merge(
-            results_df_clean,
-            on='prediction_id',
-            how='inner'
-        )
+        # Add edge column if not present (for compatibility with frontend)
+        if 'edge' not in merged_df.columns:
+            merged_df['edge'] = merged_df['predicted_total'] - merged_df['market_total']
 
         if len(merged_df) == 0:
             return {
@@ -117,6 +118,9 @@ async def get_performance_overview(
         # Average edge
         avg_edge = merged_df['edge'].abs().mean()
 
+        # Get last updated date (most recent game date)
+        last_updated = merged_df['game_date'].max() if 'game_date' in merged_df.columns else None
+
         # Performance by confidence level
         confidence_levels = ['HIGH', 'MEDIUM', 'LOW']
         confidence_stats = {}
@@ -135,6 +139,9 @@ async def get_performance_overview(
         # Performance by sport
         sports_stats = {}
         for sport_name in merged_df['sport'].unique():
+            # Skip NaN values
+            if pd.isna(sport_name):
+                continue
             sport_df = merged_df[merged_df['sport'] == sport_name]
             sport_wins = len(sport_df[sport_df['result'] == 'WIN'])
             sport_total = len(sport_df[sport_df['result'].isin(['WIN', 'LOSS'])])
@@ -147,6 +154,9 @@ async def get_performance_overview(
         # Performance by model
         models_stats = {}
         for model_name in merged_df['model'].unique():
+            # Skip NaN values
+            if pd.isna(model_name):
+                continue
             model_df = merged_df[merged_df['model'] == model_name]
             model_wins = len(model_df[model_df['result'] == 'WIN'])
             model_total = len(model_df[model_df['result'].isin(['WIN', 'LOSS'])])
@@ -165,7 +175,8 @@ async def get_performance_overview(
                 "win_rate": round(win_rate, 4),
                 "roi": round(roi, 2),
                 "avg_edge": round(avg_edge, 2),
-                "units_won": round(total_profit_loss, 2) if 'profit_loss' in merged_df.columns else 0
+                "units_won": round(total_profit_loss, 2) if 'profit_loss' in merged_df.columns else 0,
+                "last_updated": last_updated
             },
             "by_confidence": confidence_stats,
             "by_sport": sports_stats,
@@ -205,23 +216,11 @@ async def get_performance_history(
                 "history": []
             }
 
-        # Load predictions and results
-        predictions_df = pd.read_csv(PREDICTIONS_LOG)
-        results_df = pd.read_csv(RESULTS_LOG)
+        # Load results (self-contained with all prediction data + corrected grades)
+        merged_df = pd.read_csv(RESULTS_LOG)
 
         # Convert dates
-        predictions_df['game_date_dt'] = pd.to_datetime(predictions_df['game_date'], format='mixed', errors='coerce')
-
-        # Drop duplicate columns from results before merging
-        results_cols_to_keep = ['prediction_id', 'away_score', 'home_score', 'actual_total', 'result', 'profit_loss']
-        results_df_clean = results_df[results_cols_to_keep]
-
-        # Merge with results FIRST
-        merged_df = predictions_df.merge(
-            results_df_clean,
-            on='prediction_id',
-            how='inner'
-        )
+        merged_df['game_date_dt'] = pd.to_datetime(merged_df['game_date'], format='mixed', errors='coerce')
 
         # Filter by game_date (not prediction date)
         if days > 0:
@@ -397,38 +396,33 @@ async def get_individual_predictions(
 ):
     """
     Get individual predictions with results for detailed analysis
-    
+
     Args:
         days: Number of days to look back
-        limit: Maximum number of predictions to return  
+        limit: Maximum number of predictions to return
         sport: Filter by sport (nba, ncaab, nhl, etc.)
         model: Filter by model (ensemble, xgboost, etc.)
         bet_type: Filter by bet type (totals, spreads, moneyline)
-        
+
     Returns:
         Individual predictions with game details and results
     """
     try:
-        # Load predictions log
-        predictions_file = TRACKING_DIR / "predictions_log_multi_bet.csv"
-        results_file = TRACKING_DIR / "results_log.csv"
-        
-        if not predictions_file.exists():
+        # Read directly from results_log.csv (self-contained with all columns)
+        if not RESULTS_LOG.exists():
             return {
                 "predictions": [],
                 "total": 0,
-                "message": "No predictions data available"
+                "message": "No results data available yet"
             }
-        
-        # Load data
-        predictions_df = pd.read_csv(predictions_file)
-        
-        # Convert date columns
-        if 'date_predicted' in predictions_df.columns:
-            predictions_df['date_predicted'] = pd.to_datetime(predictions_df['date_predicted'])
+
+        # Load results data
+        predictions_df = pd.read_csv(RESULTS_LOG)
+
+        # Convert date column
         if 'game_date' in predictions_df.columns:
-            predictions_df['game_date'] = pd.to_datetime(predictions_df['game_date'])
-        
+            predictions_df['game_date'] = pd.to_datetime(predictions_df['game_date'], format='mixed', errors='coerce')
+
         # Filter by date range
         cutoff_date = datetime.now() - timedelta(days=days)
         if 'game_date' in predictions_df.columns:
@@ -442,60 +436,51 @@ async def get_individual_predictions(
         if bet_type:
             predictions_df = predictions_df[predictions_df['bet_type'].str.lower() == bet_type.lower()]
 
-        # Load results for merging - ONLY show graded predictions
-        results_df = None
-        if results_file.exists():
-            results_df = pd.read_csv(results_file)
-            # INNER JOIN to show only predictions that have been graded
-            predictions_df = pd.merge(
-                predictions_df,
-                results_df[['prediction_id', 'actual_total', 'away_score', 'home_score', 'result', 'profit_loss']],
-                on='prediction_id',
-                how='inner'  # Changed from 'left' to 'inner' - only show graded predictions
-            )
-        
+        # 🛡️ SAFEGUARD #1: Filter out UNKNOWN results (games not yet graded)
+        predictions_df = predictions_df[predictions_df['result'].isin(['WIN', 'LOSS', 'PUSH'])]
+
         # Sort by date descending
         predictions_df = predictions_df.sort_values('game_date', ascending=False)
-        
+
         # Limit results
         total_count = len(predictions_df)
         predictions_df = predictions_df.head(limit)
-        
+
         # Convert to list of dicts
         predictions = []
         for idx, row in predictions_df.iterrows():
             try:
                 pred = {
-                    'prediction_id': row.get('prediction_id'),
+                    'prediction_id': safe_value(row.get('prediction_id')),
                     'game_date': row.get('game_date').strftime('%Y-%m-%d') if pd.notna(row.get('game_date')) else None,
-                    'game_time': row.get('game_time'),
-                    'sport': row.get('sport'),
-                    'away_team': row.get('away_team'),
-                    'home_team': row.get('home_team'),
-                    'bet_type': row.get('bet_type'),
-                    'model': row.get('model'),
-                    'predicted_value': safe_float(row.get('predicted_value')),
-                    'market_value': safe_float(row.get('market_value')),
-                    'edge': safe_float(row.get('edge')),
-                    'recommendation': row.get('recommendation'),
-                    'confidence': row.get('confidence'),
-                    'bet_placed': row.get('bet_placed'),
+                    'game_time': safe_value(row.get('game_time')),
+                    'sport': safe_value(row.get('sport')),
+                    'away_team': safe_value(row.get('away_team')),
+                    'home_team': safe_value(row.get('home_team')),
+                    'bet_type': safe_value(row.get('bet_type')),
+                    'model': safe_value(row.get('model')),
+                    'predicted_value': safe_float(row.get('predicted_total')),  # Use predicted_total from results_log
+                    'market_value': safe_float(row.get('market_total')),  # Use market_total from results_log
+                    'edge': safe_float(row.get('predicted_total')) - safe_float(row.get('market_total')) if pd.notna(row.get('predicted_total')) and pd.notna(row.get('market_total')) else None,
+                    'recommendation': safe_value(row.get('recommendation')),
+                    'confidence': safe_value(row.get('confidence')),
+                    'bet_placed': safe_value(row.get('bet_placed')),
                     'actual_total': safe_float(row.get('actual_total')),
                     'away_score': safe_float(row.get('away_score')),
                     'home_score': safe_float(row.get('home_score')),
-                    'result': row.get('result') if pd.notna(row.get('result')) else None,
+                    'result': safe_value(row.get('result')),
                     'profit_loss': safe_float(row.get('profit_loss')) or 0
                 }
                 predictions.append(pred)
             except Exception as e:
                 logger.error(f"Error processing row {idx}: {str(e)}, row data: {row.to_dict()}")
                 raise
-        
+
         return {
             "predictions": predictions,
             "total": total_count
         }
-    
+
     except Exception as e:
         logger.error(f"Error getting predictions: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))

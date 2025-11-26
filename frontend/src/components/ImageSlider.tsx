@@ -10,12 +10,12 @@ const SLIDER_IMAGES: SlideImage[] = [
   { src: '/SliderImages/Analytics.JPG', alt: 'Analytics Dashboard', caption: 'Advanced Analytics & Performance Tracking' },
   { src: '/SliderImages/ExtensionImage.JPG', alt: 'Extension Features', caption: 'Browser Extension Live Odds Integration' },
   { src: '/SliderImages/BookmakerSettings.JPG', alt: 'Bookmaker Settings', caption: 'Customize Your Sportsbook Preferences' },
-  { src: '/SliderImages/Education.JPG', alt: 'Education Center', caption: 'Learn Winning Betting Strategies' },
+  { src: '/SliderImages/Education.JPG', alt: 'Education Center', caption: 'Learn Winning Analytical Strategies' },
   { src: '/SliderImages/GameCardNFL.JPG', alt: 'NFL Game Card', caption: 'NFL Live Game Tracking' },
-  { src: '/SliderImages/GameCardNHL.JPG', alt: 'NHL Game Card', caption: 'NHL In-Game Betting Opportunities' },
+  { src: '/SliderImages/GameCardNHL.JPG', alt: 'NHL Game Card', caption: 'NHL In-Game Data Opportunities' },
   { src: '/SliderImages/GettingStarted.JPG', alt: 'Getting Started', caption: 'Quick Start Guide & Onboarding' },
   { src: '/SliderImages/Props.JPG', alt: 'Player Props', caption: 'Player Props Analysis & Projections' },
-  { src: '/SliderImages/Strategies.JPG', alt: 'Betting Strategies', caption: 'Pre-Game & Live Betting Strategies' },
+  { src: '/SliderImages/Strategies.JPG', alt: 'Analytical Strategies', caption: 'Pre-Game & Live Analytical Strategies' },
 ];
 
 export function ImageSlider() {

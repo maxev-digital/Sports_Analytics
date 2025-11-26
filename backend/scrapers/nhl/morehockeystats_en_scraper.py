@@ -76,6 +76,7 @@ class MoreHockeyStatsENScraper:
             "https://morehockeystats.com/teams/en?withagainst=1",  # Binary flag
             "https://morehockeystats.com/teams/en?mode=against",  # Mode parameter
         ]
+        self.url_against = self.url_against_options[0]  # Use first option as default
         self.data_dir = Path(__file__).parent.parent.parent / "data" / "raw" / "nhl"
         self.data_dir.mkdir(parents=True, exist_ok=True)
 

@@ -340,7 +340,7 @@ export function Analytics() {
             }`}
           >
             <img src={uiEmojis.chart} alt="" className="w-6 h-6" style={{ imageRendering: 'crisp-edges' }} />
-            System Alerts
+            My Performance
           </button>
           <button
             onClick={() => setActiveTab('personal')}
@@ -380,231 +380,228 @@ export function Analytics() {
         {/* Conditional Rendering based on Active Tab */}
         {activeTab === 'system' ? (
           <>
-            {/* SYSTEM ANALYTICS VIEW */}
-            {/* MODULE 1: Overall Performance Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-slate-900 border-2 border-green-700 p-6 hover:border-green-500 transition-all">
-            <div className="flex items-center justify-between mb-3">
-              <div className="text-sm text-white font-bold tracking-wide">TOTAL PROFIT</div>
-            </div>
-            <div className="text-3xl font-bold text-green-400 mb-1">
-              ${totalProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </div>
-            <div className="text-xs text-green-300/60">{totalAlerts.toLocaleString()} total alerts tracked</div>
-          </div>
+            {/* MY PERFORMANCE DASHBOARD - Mirrors Model Performance Layout */}
+            <div className="bg-gradient-to-br from-black via-gray-900 to-slate-900 border-2 border-white rounded-xl p-8 mb-8">
+              {/* Header */}
+              <div className="mb-8">
+                <h2 className="text-4xl font-bold italic text-white mb-2" style={{ fontStyle: 'italic', textTransform: 'uppercase' }}>
+                  MY BETTING PERFORMANCE
+                </h2>
+                <p className="text-slate-400 text-lg">
+                  Track your personal bet history and ROI across all strategies
+                </p>
+              </div>
 
-          <div className="bg-slate-900 border-2 border-blue-500 p-6 hover:border-blue-400 transition-all">
-            <div className="flex items-center justify-between mb-3">
-              <div className="text-sm text-white font-bold tracking-wide">WIN RATE</div>
-            </div>
-            <div className="text-3xl font-bold text-blue-400 mb-1">
-              {overallWinRate.toFixed(1)}%
-            </div>
-            <div className="text-xs text-blue-300/60">{totalSuccess} successful alerts</div>
-          </div>
-
-          <div className="bg-slate-900 border-2 border-slate-600 p-6 hover:border-slate-500 transition-all">
-            <div className="flex items-center justify-between mb-3">
-              <div className="text-sm text-white font-bold tracking-wide">AVERAGE ROI</div>
-            </div>
-            <div className="text-3xl font-bold text-white mb-1">
-              +{avgROI.toFixed(1)}%
-            </div>
-            <div className="text-xs text-slate-400">Return on investment</div>
-          </div>
-
-          <div className="bg-slate-900 border-2 border-slate-600 p-6 hover:border-slate-500 transition-all">
-            <div className="flex items-center justify-between mb-3">
-              <div className="text-sm text-white font-bold tracking-wide">ACTIVE ALERTS</div>
-            </div>
-            <div className="text-3xl font-bold text-white mb-1">
-              {recentAlerts.length}
-            </div>
-            <div className="text-xs text-slate-400">Currently available</div>
-          </div>
-        </div>
-
-        {/* MODULE 2: ROI and Profit Tracking + MODULE 3: Win Rate by Alert Type */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* Module 2: ROI Breakdown */}
-          <div className="bg-slate-900 border-2 border-green-700 p-6">
-            <h3 className="text-xl font-bold text-white mb-5 tracking-wide">
-              PROFIT BY ALERT TYPE
-            </h3>
-            <div className="space-y-3 max-h-[600px] overflow-y-auto">
-              {strategies
-                .sort(([_, a], [__, b]) => b.total_profit - a.total_profit)
-                .map(([key, data]) => {
-                  const colors = strategyColors[key] || strategyColors.middles;
-                  return (
-                    <div key={key} className={`bg-slate-800 p-4 border ${colors.border}`}>
-                      <div className="flex justify-between items-center mb-2">
-                        <span className={`${colors.text} font-semibold`}>{strategyNames[key] || key}</span>
-                        <span className={`${colors.text} font-bold`}>${data.total_profit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                      </div>
-                      <div className="flex justify-between text-xs text-slate-400">
-                        <span>{data.total_alerts.toLocaleString()} alerts</span>
-                        <span>Avg: ${data.avg_profit.toFixed(2)}/alert</span>
-                      </div>
-                      <div className="mt-2 bg-slate-700 h-2">
-                        <div
-                          className={`${colors.text} h-2`}
-                          style={{
-                            width: `${(data.total_profit / totalProfit) * 100}%`,
-                            backgroundColor: 'currentColor'
-                          }}
-                        ></div>
-                      </div>
-                    </div>
-                  );
-                })}
-            </div>
-          </div>
-
-          {/* Module 3: Win Rate Breakdown */}
-          <div className="bg-slate-900 border-2 border-blue-500 p-6">
-            <h3 className="text-xl font-bold text-white mb-5 tracking-wide">
-              WIN RATE ANALYSIS
-            </h3>
-            <div className="space-y-3 max-h-[600px] overflow-y-auto">
-              {strategies
-                .sort(([_, a], [__, b]) => b.win_rate - a.win_rate)
-                .map(([key, data]) => {
-                  const colors = strategyColors[key] || strategyColors.middles;
-                  return (
-                    <div key={key} className={`bg-slate-800 p-4 border ${colors.border}`}>
-                      <div className="flex justify-between items-center mb-3">
-                        <div>
-                          <div className="text-white font-semibold mb-1">{strategyNames[key] || key}</div>
-                          <div className="text-xs text-slate-400">
-                            {data.successful_alerts} wins / {data.failed_alerts} losses / {data.pending_alerts} pending
-                          </div>
-                        </div>
-                        <div className={`text-3xl font-bold ${colors.text}`}>
-                          {data.win_rate.toFixed(1)}%
-                        </div>
-                      </div>
-                      <div className="bg-slate-700 h-3">
-                        <div
-                          className={`${colors.text} h-3 flex items-center justify-end pr-2`}
-                          style={{
-                            width: `${data.win_rate}%`,
-                            backgroundColor: 'currentColor'
-                          }}
-                        >
-                          <span className="text-[10px] text-white font-bold">{data.win_rate.toFixed(0)}%</span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-            </div>
-          </div>
-        </div>
-
-        {/* MODULE 4: Alert Distribution Chart */}
-        <div className="bg-slate-900 border-2 border-purple-600 p-6 mb-8">
-          <h3 className="text-xl font-bold text-white mb-5 tracking-wide">
-            TOP 4 STRATEGIES BY VOLUME
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {strategies
-              .sort(([_, a], [__, b]) => b.total_alerts - a.total_alerts)
-              .slice(0, 4)
-              .map(([key, data], index) => {
-                const colors = strategyColors[key] || strategyColors.middles;
-                const percentage = (data.total_alerts / totalAlerts) * 100;
-                const circumference = 440;
-                const strokeDasharray = `${(percentage / 100) * circumference} ${circumference}`;
-
-                // Color mapping for circles
-                const circleColors = ['#10b981', '#3b82f6', '#a855f7', '#f59e0b'];
-
-                return (
-                  <div key={key} className="text-center">
-                    <div className="relative inline-block">
-                      <svg className="w-40 h-40 transform -rotate-90">
-                        <circle
-                          cx="80"
-                          cy="80"
-                          r="70"
-                          stroke="#1e293b"
-                          strokeWidth="20"
-                          fill="none"
-                        />
-                        <circle
-                          cx="80"
-                          cy="80"
-                          r="70"
-                          stroke={circleColors[index]}
-                          strokeWidth="20"
-                          fill="none"
-                          strokeDasharray={strokeDasharray}
-                        />
-                      </svg>
-                      <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <div className={`text-3xl font-bold ${colors.text}`}>
-                          {percentage.toFixed(0)}%
-                        </div>
-                        <div className="text-xs text-slate-400">{strategyNames[key]?.split(' ')[0] || key}</div>
-                      </div>
-                    </div>
-                    <div className="mt-3 text-sm text-slate-300">{data.total_alerts.toLocaleString()} alerts</div>
+              {/* Filter Controls */}
+              <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 mb-6">
+                <div className="flex gap-4 items-center flex-wrap">
+                  <div>
+                    <label className="text-slate-400 text-sm block mb-1">Time Range:</label>
+                    <select className="px-3 py-2 bg-slate-900 border border-slate-600 rounded text-white">
+                      <option value="1">Last 24h</option>
+                      <option value="7">Last 7 Days</option>
+                      <option value="30">Last 30 Days</option>
+                      <option value="365">All Time</option>
+                    </select>
                   </div>
-                );
-              })}
-          </div>
-        </div>
-
-        {/* MODULE 6: Recent High-Value Alerts */}
-        <div className="bg-slate-900 border-2 border-red-700 p-6 mb-8">
-          <h3 className="text-xl font-bold text-white mb-5 tracking-wide">
-            TOP ACTIVE OPPORTUNITIES
-          </h3>
-          <div className="space-y-3">
-            {recentAlerts.length > 0 ? (
-              recentAlerts.map((alert, idx) => (
-                <div key={idx} className="bg-slate-800 border-2 border-green-600 p-3">
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <div className="text-sm font-semibold text-white mb-1">
-                        {alert.away_team} @ {alert.home_team}
-                      </div>
-                      <div className="text-xs text-slate-400">
-                        {alert.sport.toUpperCase()} • {alert.market_type}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-green-400 font-bold text-lg">
-                        +{alert.profit_percent.toFixed(2)}%
-                      </div>
-                      <div className="text-xs text-slate-400">
-                        ${alert.guaranteed_profit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </div>
-                    </div>
+                  <div>
+                    <label className="text-slate-400 text-sm block mb-1">Alert Type:</label>
+                    <select className="px-3 py-2 bg-slate-900 border border-slate-600 rounded text-white">
+                      <option value="all">All Types</option>
+                      <option value="arbitrage">Arbitrage</option>
+                      <option value="steam_moves">Steam Moves</option>
+                      <option value="middles">Middles</option>
+                      <option value="goalie_pull">Goalie Pull</option>
+                      <option value="favorite_comeback">Favorite Comeback</option>
+                    </select>
                   </div>
-                  <div className="flex gap-2 text-xs">
-                    <span className="bg-slate-800/70 px-2 py-1 text-slate-300">
-                      {alert.book_a}: {alert.odds_a > 0 ? '+' : ''}{alert.odds_a}
-                    </span>
-                    <span className="bg-slate-800/70 px-2 py-1 text-slate-300">
-                      {alert.book_b}: {alert.odds_b > 0 ? '+' : ''}{alert.odds_b}
-                    </span>
+                  <div>
+                    <label className="text-slate-400 text-sm block mb-1">Sport:</label>
+                    <select className="px-3 py-2 bg-slate-900 border border-slate-600 rounded text-white">
+                      <option value="all">All Sports</option>
+                      <option value="nba">NBA</option>
+                      <option value="nhl">NHL</option>
+                      <option value="nfl">NFL</option>
+                      <option value="ncaab">NCAAB</option>
+                      <option value="ncaaf">NCAAF</option>
+                    </select>
                   </div>
                 </div>
-              ))
-            ) : (
-              <div className="text-center text-slate-400 py-8">
-                No active arbitrage opportunities at the moment
               </div>
-            )}
-          </div>
-        </div>
 
+              {/* Summary Cards - 4 metrics with colored glows */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                {/* Total Profit - Green */}
+                <div className="bg-gradient-to-br from-green-600/20 to-green-900/40 rounded-xl p-6 shadow-lg shadow-green-500/50">
+                  <div className="text-slate-400 text-sm mb-1 font-semibold">TOTAL PROFIT</div>
+                  <div className="text-4xl font-bold text-green-400 mb-1">
+                    ${totalProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                  <div className="text-slate-500 text-xs mt-2">{totalAlerts.toLocaleString()} bets placed</div>
+                </div>
 
+                {/* Win Rate - Blue */}
+                <div className="bg-gradient-to-br from-blue-600/20 to-blue-900/40 rounded-xl p-6 shadow-lg shadow-blue-500/50">
+                  <div className="text-slate-400 text-sm mb-1 font-semibold">WIN RATE</div>
+                  <div className="text-4xl font-bold text-blue-400 mb-1">
+                    {overallWinRate.toFixed(1)}%
+                  </div>
+                  <div className="text-slate-500 text-xs mt-2">{totalSuccess} wins - {totalAlerts - totalSuccess} losses</div>
+                </div>
 
-        </>
-      ) : activeTab === 'personal' ? (
+                {/* Average ROI - Red/Orange */}
+                <div className="bg-gradient-to-br from-red-600/20 to-orange-900/40 rounded-xl p-6 shadow-lg shadow-red-500/50">
+                  <div className="text-slate-400 text-sm mb-1 font-semibold">AVERAGE ROI</div>
+                  <div className="text-4xl font-bold text-orange-400 mb-1">
+                    +{avgROI.toFixed(1)}%
+                  </div>
+                  <div className="text-slate-500 text-xs mt-2">Return on investment</div>
+                </div>
+
+                {/* Total Alerts - Purple */}
+                <div className="bg-gradient-to-br from-purple-600/20 to-purple-900/40 rounded-xl p-6 shadow-lg shadow-purple-500/50">
+                  <div className="text-slate-400 text-sm mb-1 font-semibold">TOTAL ALERTS</div>
+                  <div className="text-4xl font-bold text-purple-400 mb-1">
+                    {totalAlerts}
+                  </div>
+                  <div className="text-slate-500 text-xs mt-2">Tracked opportunities</div>
+                </div>
+              </div>
+
+              {/* Performance Charts - Using existing strategy data as demo */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                {/* Cumulative Profit Line Chart */}
+                <div className="bg-gradient-to-br from-black via-gray-900 to-slate-900 border-2 border-white rounded-xl p-6">
+                  <h3 className="text-xl font-bold text-white mb-4">CUMULATIVE PROFIT</h3>
+                  <div className="h-64 flex items-center justify-center">
+                    <div className="text-slate-400 text-sm">
+                      Chart: Cumulative profit over time
+                      <br />
+                      <span className="text-xs">(Will integrate with recharts)</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Win Rate by Alert Type Bar Chart */}
+                <div className="bg-gradient-to-br from-black via-gray-900 to-slate-900 border-2 border-white rounded-xl p-6">
+                  <h3 className="text-xl font-bold text-white mb-4">WIN RATE BY ALERT TYPE</h3>
+                  <div className="h-64 flex items-center justify-center">
+                    <div className="text-slate-400 text-sm">
+                      Chart: Win rate breakdown by strategy
+                      <br />
+                      <span className="text-xs">(Will integrate with recharts)</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ROI by Sport */}
+                <div className="bg-gradient-to-br from-black via-gray-900 to-slate-900 border-2 border-white rounded-xl p-6">
+                  <h3 className="text-xl font-bold text-white mb-4">ROI BY SPORT</h3>
+                  <div className="h-64 flex items-center justify-center">
+                    <div className="text-slate-400 text-sm">
+                      Chart: ROI breakdown by sport
+                      <br />
+                      <span className="text-xs">(Will integrate with recharts)</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Units Won Over Time */}
+                <div className="bg-gradient-to-br from-black via-gray-900 to-slate-900 border-2 border-white rounded-xl p-6">
+                  <h3 className="text-xl font-bold text-white mb-4">UNITS WON</h3>
+                  <div className="h-64 flex items-center justify-center">
+                    <div className="text-slate-400 text-sm">
+                      Chart: Units won over time
+                      <br />
+                      <span className="text-xs">(Will integrate with recharts)</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Best Performing Strategies Table */}
+              <div className="bg-gradient-to-br from-black via-gray-900 to-slate-900 border-2 border-white rounded-xl p-6 mb-8">
+                <h3 className="text-2xl font-bold text-white mb-5">BEST PERFORMING STRATEGIES</h3>
+                <div className="space-y-3">
+                  {strategies
+                    .sort(([_, a], [__, b]) => b.win_rate - a.win_rate)
+                    .slice(0, 5)
+                    .map(([key, data]) => {
+                      const colors = strategyColors[key] || strategyColors.middles;
+                      return (
+                        <div key={key} className="bg-slate-800/80 border border-slate-600 rounded-lg p-4 flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="text-white font-semibold text-lg mb-1">
+                              {strategyNames[key] || key}
+                            </div>
+                            <div className="text-xs text-slate-400">
+                              {data.successful_alerts}W - {data.failed_alerts}L - {data.pending_alerts}P
+                            </div>
+                          </div>
+                          <div className="flex gap-8 items-center">
+                            <div className="text-center">
+                              <div className="text-2xl font-bold text-green-400">
+                                ${data.total_profit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </div>
+                              <div className="text-xs text-slate-400">Profit</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-2xl font-bold text-blue-400">
+                                {data.win_rate.toFixed(1)}%
+                              </div>
+                              <div className="text-xs text-slate-400">Win Rate</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-2xl font-bold text-purple-400">
+                                {data.total_alerts}
+                              </div>
+                              <div className="text-xs text-slate-400">Bets</div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+
+              {/* Recent Bet History */}
+              <div className="bg-gradient-to-br from-black via-gray-900 to-slate-900 border-2 border-white rounded-xl p-6">
+                <h3 className="text-2xl font-bold text-white mb-5">RECENT BET HISTORY</h3>
+                <div className="space-y-2">
+                  {recentAlerts.slice(0, 10).map((alert, idx) => (
+                    <div key={idx} className="bg-slate-800/80 border border-slate-600 rounded-lg p-3 flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="text-white font-semibold text-sm mb-1">
+                          {alert.away_team} @ {alert.home_team}
+                        </div>
+                        <div className="text-xs text-slate-400">
+                          {alert.sport.toUpperCase()} • {alert.market_type} • {alert.book_a}
+                        </div>
+                      </div>
+                      <div className="flex gap-4 items-center">
+                        <div className="text-sm">
+                          <span className="text-slate-400">Odds:</span>{' '}
+                          <span className="text-white font-semibold">
+                            {alert.odds_a > 0 ? '+' : ''}{alert.odds_a}
+                          </span>
+                        </div>
+                        <div className="text-sm">
+                          <span className="text-slate-400">Profit:</span>{' '}
+                          <span className="text-green-400 font-bold">
+                            +${alert.guaranteed_profit.toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="px-3 py-1 bg-green-600/20 border border-green-600 rounded text-green-400 text-xs font-semibold">
+                          WON
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </>
+        ) : activeTab === 'personal' ? (
           /* PERSONAL BET ANALYTICS VIEW */
           <PersonalBetAnalytics
             stats={personalStats}

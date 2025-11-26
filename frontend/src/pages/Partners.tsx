@@ -1,9 +1,11 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getApiUrl } from '../config';
+import { PartnerImageSlider } from '../components/PartnerImageSlider';
 
 export function Partners() {
   const navigate = useNavigate();
+  const [followerCount, setFollowerCount] = useState(10000);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -18,10 +20,10 @@ export function Partners() {
 
   // Calculate potential earnings based on followers
   const revenueProjection = useMemo(() => {
-    const followers = parseInt(formData.followers) || 0;
+    const followers = followerCount;
     const conversionRate = 0.02; // 2% conversion rate (conservative)
-    const avgSubscription = 99; // Average $99/month plan
-    const commission = 0.25; // 25% commission
+    const avgSubscription = 19.99; // Average $19.99/month plan
+    const commission = 0.25; // 25% commission (25% of user's monthly subscription)
 
     const expectedSignups = Math.floor(followers * conversionRate);
     const monthlyRevenue = expectedSignups * avgSubscription * commission;
@@ -32,7 +34,7 @@ export function Partners() {
       monthly: monthlyRevenue,
       yearly: yearlyRevenue
     };
-  }, [formData.followers]);
+  }, [followerCount]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,11 +70,10 @@ export function Partners() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center p-4">
-        <div className="max-w-2xl w-full bg-gradient-to-br from-green-600 to-green-900 rounded-xl shadow-2xl p-12 text-center border-4 border-green-500 animate-pulse">
-          <div className="text-6xl mb-6">🔥</div>
-          <h2 className="text-4xl font-bold text-white mb-4">PARTNER APPROVED!</h2>
-          <p className="text-green-100 text-xl mb-6">
+      <div className="min-h-screen bg-gradient-to-br from-black via-slate-900 to-black flex items-center justify-center p-4" style={{ fontFamily: 'Rubik, sans-serif' }}>
+        <div className="max-w-2xl w-full bg-slate-800/50 border-2 border-green-600 rounded-lg p-12 text-center">
+          <h2 className="text-4xl font-bold italic text-green-400 mb-4" style={{ fontStyle: 'italic', textTransform: 'uppercase' }}>PARTNER APPROVED</h2>
+          <p className="text-slate-300 text-xl mb-6">
             Redirecting to complete setup...
           </p>
         </div>
@@ -81,34 +82,52 @@ export function Partners() {
   }
 
   return (
-    <div className="min-h-screen bg-black py-8 px-4 overflow-hidden relative">
-      {/* Background Effects */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-black to-green-900/20"></div>
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl"></div>
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-green-600/10 rounded-full blur-3xl"></div>
-
-      <div className="max-w-7xl mx-auto relative z-10">
+    <div className="min-h-screen bg-gradient-to-br from-black via-slate-900 to-black py-8 px-4" style={{ fontFamily: 'Rubik, sans-serif' }}>
+      <div className="max-w-7xl mx-auto">
         {/* Logo + Header */}
         <div className="text-center mb-12">
           <img
             src="/logo2.png"
             alt="Max EV Sports"
-            className="mx-auto h-48 w-auto mb-8 drop-shadow-[0_0_30px_rgba(59,130,246,0.6)]"
+            className="mx-auto h-48 w-auto mb-8"
           />
-          <h1 className="text-6xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-green-400 to-blue-400 mb-4 tracking-tight">
+          <h1 className="text-5xl md:text-6xl font-bold italic text-slate-100 mb-4" style={{ fontStyle: 'italic', textTransform: 'uppercase' }}>
             PARTNER PROGRAM
           </h1>
-          <p className="text-2xl text-slate-400 font-bold">
-            Turn Your Audience Into <span className="text-green-400">Recurring Revenue</span>
+          <p className="text-xl text-slate-400">
+            Turn Your Audience Into Recurring Revenue
           </p>
         </div>
 
         {/* Revenue Calculator - Front and Center */}
         <div className="max-w-4xl mx-auto mb-12">
-          <div className="bg-gradient-to-br from-slate-900 to-black border-4 border-blue-500 rounded-2xl p-8 shadow-2xl">
-            <h2 className="text-3xl font-bold text-white mb-6 text-center">
-              💰 REVENUE CALCULATOR
+          <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-8">
+            <h2 className="text-3xl font-bold italic text-slate-100 mb-6 text-center" style={{ fontStyle: 'italic', textTransform: 'uppercase' }}>
+              REVENUE CALCULATOR
             </h2>
+
+            {/* Interactive Slider */}
+            <div className="mb-8">
+              <label className="block text-lg font-medium text-slate-300 mb-4 text-center">
+                Adjust Your Follower Count: <span className="text-blue-400 font-bold">{followerCount.toLocaleString()}</span>
+              </label>
+              <input
+                type="range"
+                min="1000"
+                max="500000"
+                step="1000"
+                value={followerCount}
+                onChange={(e) => setFollowerCount(parseInt(e.target.value))}
+                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
+                style={{
+                  background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((followerCount - 1000) / (500000 - 1000)) * 100}%, #334155 ${((followerCount - 1000) / (500000 - 1000)) * 100}%, #334155 100%)`
+                }}
+              />
+              <div className="flex justify-between text-xs text-slate-500 mt-2">
+                <span>1,000</span>
+                <span>500,000</span>
+              </div>
+            </div>
 
             <div className="grid md:grid-cols-3 gap-6 mb-8">
               <div className="text-center">
@@ -133,58 +152,63 @@ export function Partners() {
               </div>
             </div>
 
-            <div className="bg-slate-950/50 rounded-lg p-4 border-2 border-slate-800">
-              <div className="text-xs text-slate-500 mb-2 uppercase tracking-wide">Based on 2% conversion rate • 25% commission</div>
+            <div className="bg-black/40 rounded-lg p-4 border border-slate-700">
+              <div className="text-sm text-slate-400 mb-2 text-center font-semibold">
+                Calculations based on average user subscription at <span className="text-green-400">$19.99/month</span>
+              </div>
+              <div className="text-xs text-slate-500 mb-2 uppercase tracking-wide text-center">2% conversion rate • 25% commission per subscriber</div>
               <div className="grid grid-cols-3 gap-4 text-center text-xs text-slate-400">
-                <div>
-                  <span className="text-green-400 font-bold">✓</span> Recurring Monthly
-                </div>
-                <div>
-                  <span className="text-blue-400 font-bold">✓</span> Free Elite Access ($199/mo)
-                </div>
-                <div>
-                  <span className="text-purple-400 font-bold">✓</span> Real-Time Dashboard
-                </div>
+                <div>Recurring Monthly</div>
+                <div>Free Elite Access ($199/mo)</div>
+                <div>Real-Time Dashboard</div>
               </div>
             </div>
           </div>
         </div>
 
+        {/* Partner Dashboard Preview */}
+        <div className="max-w-4xl mx-auto mb-12">
+          <h2 className="text-3xl font-bold italic text-slate-100 mb-6 text-center" style={{ fontStyle: 'italic', textTransform: 'uppercase' }}>
+            YOUR PARTNER PORTAL
+          </h2>
+          <PartnerImageSlider />
+        </div>
+
         {/* Application Form */}
-        <div className="max-w-3xl mx-auto bg-gradient-to-br from-slate-900 to-black border-4 border-green-500 rounded-2xl p-10 shadow-2xl">
-          <h2 className="text-4xl font-black text-center mb-2 text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-400">
+        <div className="max-w-3xl mx-auto bg-slate-800/50 border border-slate-700 rounded-lg p-10">
+          <h2 className="text-3xl font-bold italic text-slate-100 text-center mb-2" style={{ fontStyle: 'italic', textTransform: 'uppercase' }}>
             START EARNING TODAY
           </h2>
           <p className="text-center text-slate-400 mb-8">Fill out the form below to get instant access</p>
 
           {error && (
-            <div className="bg-red-900/50 border-2 border-red-500 rounded-lg p-4 mb-6 text-red-200 font-bold">
-              ⚠️ {error}
+            <div className="bg-red-900/50 border border-red-500 rounded-lg p-4 mb-6 text-red-200 font-bold">
+              {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="grid md:grid-cols-2 gap-5">
               <div>
-                <label className="block text-blue-400 font-bold mb-2 uppercase text-sm tracking-wider">Full Name</label>
+                <label className="block text-slate-300 font-medium mb-2 text-sm">Full Name</label>
                 <input
                   type="text"
                   required
                   value={formData.name}
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  className="w-full px-4 py-3 bg-black text-white border-2 border-blue-600 rounded-lg focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/50 transition-all"
+                  className="w-full px-4 py-3 bg-black text-white border border-slate-600 rounded-lg focus:border-blue-500 focus:outline-none transition-all"
                   placeholder="John Doe"
                 />
               </div>
 
               <div>
-                <label className="block text-blue-400 font-bold mb-2 uppercase text-sm tracking-wider">Email</label>
+                <label className="block text-slate-300 font-medium mb-2 text-sm">Email</label>
                 <input
                   type="email"
                   required
                   value={formData.email}
                   onChange={(e) => setFormData({...formData, email: e.target.value})}
-                  className="w-full px-4 py-3 bg-black text-white border-2 border-blue-600 rounded-lg focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/50 transition-all"
+                  className="w-full px-4 py-3 bg-black text-white border border-slate-600 rounded-lg focus:border-blue-500 focus:outline-none transition-all"
                   placeholder="you@example.com"
                 />
               </div>
@@ -192,27 +216,25 @@ export function Partners() {
 
             <div className="grid md:grid-cols-2 gap-5">
               <div>
-                <label className="block text-blue-400 font-bold mb-2 uppercase text-sm tracking-wider">X/Twitter Handle</label>
+                <label className="block text-slate-300 font-medium mb-2 text-sm">X/Twitter Handle</label>
                 <input
                   type="text"
                   required
                   value={formData.handle}
                   onChange={(e) => setFormData({...formData, handle: e.target.value})}
-                  className="w-full px-4 py-3 bg-black text-white border-2 border-blue-600 rounded-lg focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/50 transition-all"
+                  className="w-full px-4 py-3 bg-black text-white border border-slate-600 rounded-lg focus:border-blue-500 focus:outline-none transition-all"
                   placeholder="@yourusername"
                 />
               </div>
 
               <div>
-                <label className="block text-blue-400 font-bold mb-2 uppercase text-sm tracking-wider">
-                  Followers {formData.followers && <span className="text-green-400">• ${revenueProjection.monthly.toLocaleString()}/mo</span>}
-                </label>
+                <label className="block text-slate-300 font-medium mb-2 text-sm">Followers</label>
                 <input
                   type="number"
                   required
                   value={formData.followers}
                   onChange={(e) => setFormData({...formData, followers: e.target.value})}
-                  className="w-full px-4 py-3 bg-black text-white border-2 border-blue-600 rounded-lg focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/50 transition-all"
+                  className="w-full px-4 py-3 bg-black text-white border border-slate-600 rounded-lg focus:border-blue-500 focus:outline-none transition-all"
                   placeholder="10000"
                 />
               </div>
@@ -220,11 +242,11 @@ export function Partners() {
 
             <div className="grid md:grid-cols-2 gap-5">
               <div>
-                <label className="block text-blue-400 font-bold mb-2 uppercase text-sm tracking-wider">Platform</label>
+                <label className="block text-slate-300 font-medium mb-2 text-sm">Platform</label>
                 <select
                   value={formData.platform}
                   onChange={(e) => setFormData({...formData, platform: e.target.value})}
-                  className="w-full px-4 py-3 bg-black text-white border-2 border-blue-600 rounded-lg focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/50 transition-all"
+                  className="w-full px-4 py-3 bg-black text-white border border-slate-600 rounded-lg focus:border-blue-500 focus:outline-none transition-all"
                 >
                   <option value="twitter">Twitter/X</option>
                   <option value="youtube">YouTube</option>
@@ -236,11 +258,11 @@ export function Partners() {
               </div>
 
               <div>
-                <label className="block text-blue-400 font-bold mb-2 uppercase text-sm tracking-wider">Niche</label>
+                <label className="block text-slate-300 font-medium mb-2 text-sm">Niche</label>
                 <select
                   value={formData.niche}
                   onChange={(e) => setFormData({...formData, niche: e.target.value})}
-                  className="w-full px-4 py-3 bg-black text-white border-2 border-blue-600 rounded-lg focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/50 transition-all"
+                  className="w-full px-4 py-3 bg-black text-white border border-slate-600 rounded-lg focus:border-blue-500 focus:outline-none transition-all"
                 >
                   <option value="sports_betting">Sports Betting</option>
                   <option value="nba">NBA</option>
@@ -258,9 +280,9 @@ export function Partners() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-green-600 via-green-500 to-blue-600 hover:from-green-500 hover:via-green-600 hover:to-blue-500 text-white font-black py-5 px-8 rounded-xl transition-all border-2 border-green-400 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-green-500/50 text-xl uppercase tracking-wider"
+              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-8 rounded-lg transition-all border border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-lg uppercase"
             >
-              {loading ? '⏳ Processing...' : '🚀 Become a Partner'}
+              {loading ? 'Processing...' : 'Become a Partner'}
             </button>
           </form>
 
@@ -271,30 +293,27 @@ export function Partners() {
 
         {/* Why Partner With Us */}
         <div className="mt-16 max-w-5xl mx-auto">
-          <h2 className="text-5xl font-black text-center mb-12 text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-400">
+          <h2 className="text-4xl font-bold italic text-slate-100 text-center mb-12" style={{ fontStyle: 'italic', textTransform: 'uppercase' }}>
             WHY MAX EV SPORTS?
           </h2>
 
           <div className="grid md:grid-cols-3 gap-6">
-            <div className="bg-gradient-to-br from-green-900/50 to-black border-2 border-green-600 rounded-xl p-6 hover:border-green-400 transition-all">
-              <div className="text-4xl mb-4">💵</div>
-              <h3 className="text-2xl font-bold text-green-400 mb-3">Highest Payouts</h3>
+            <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6 hover:border-green-500 transition-all">
+              <h3 className="text-xl font-bold text-green-400 mb-3">Highest Payouts</h3>
               <p className="text-slate-300">
                 25% recurring commission - one of the highest in the industry. Average partners earn $500-2k/month.
               </p>
             </div>
 
-            <div className="bg-gradient-to-br from-blue-900/50 to-black border-2 border-blue-600 rounded-xl p-6 hover:border-blue-400 transition-all">
-              <div className="text-4xl mb-4">🎯</div>
-              <h3 className="text-2xl font-bold text-blue-400 mb-3">Premium Product</h3>
+            <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6 hover:border-blue-500 transition-all">
+              <h3 className="text-xl font-bold text-blue-400 mb-3">Premium Product</h3>
               <p className="text-slate-300">
                 Elite sports betting analytics that actually work. High retention = recurring income for life.
               </p>
             </div>
 
-            <div className="bg-gradient-to-br from-purple-900/50 to-black border-2 border-purple-600 rounded-xl p-6 hover:border-purple-400 transition-all">
-              <div className="text-4xl mb-4">📊</div>
-              <h3 className="text-2xl font-bold text-purple-400 mb-3">Real-Time Portal</h3>
+            <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6 hover:border-purple-500 transition-all">
+              <h3 className="text-xl font-bold text-purple-400 mb-3">Real-Time Portal</h3>
               <p className="text-slate-300">
                 Track every click, signup, and dollar earned. Full transparency with instant payout reports.
               </p>
@@ -302,9 +321,9 @@ export function Partners() {
           </div>
 
           {/* Bottom CTA */}
-          <div className="mt-12 text-center bg-gradient-to-r from-green-600/20 to-blue-600/20 border-2 border-green-500 rounded-xl p-8">
+          <div className="mt-12 text-center bg-slate-800/50 border border-slate-700 rounded-lg p-8">
             <p className="text-slate-300 text-lg mb-4">
-              Questions? Email us at <a href="mailto:partners@max-ev-sports.com" className="text-green-400 font-bold hover:text-green-300">partners@max-ev-sports.com</a>
+              Questions? Email us at <a href="mailto:partners@max-ev-sports.com" className="text-blue-400 font-bold hover:text-blue-300">partners@max-ev-sports.com</a>
             </p>
             <p className="text-slate-500 text-sm">
               Instant approval • No hidden fees • Paid monthly via PayPal or bank transfer
