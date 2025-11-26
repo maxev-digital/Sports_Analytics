@@ -87,16 +87,12 @@ class PropsResultsTracker:
                     continue
 
                 # Get games from target date
-                # NOTE: Database has 2025 dates but we need 2024 season data
-                # Map to equivalent date in current season
-                real_season_date = target_date.replace(year=2024) if target_date.year == 2025 else target_date
-
-                # Fetch stats for the real season date
+                # Fetch stats for the target date directly
                 url = f"{self.stats_client.BASE_URL}/stats"
                 params = {
                     'player_ids[]': player['id'],
-                    'start_date': (real_season_date - timedelta(days=1)).strftime("%Y-%m-%d"),
-                    'end_date': (real_season_date + timedelta(days=1)).strftime("%Y-%m-%d"),
+                    'start_date': target_date.strftime("%Y-%m-%d"),
+                    'end_date': target_date.strftime("%Y-%m-%d"),
                     'per_page': 10
                 }
 
@@ -110,21 +106,8 @@ class PropsResultsTracker:
                     skipped_count += 1
                     continue
 
-                # Find game from real season date
-                target_game = None
-                for game in games:
-                    game_date_str = game.get('game', {}).get('date', '')[:10]
-                    game_date = datetime.fromisoformat(game_date_str).date()
-
-                    # Match on month/day (ignore year due to 2024/2025 mapping)
-                    if game_date.month == real_season_date.month and game_date.day == real_season_date.day:
-                        target_game = game
-                        break
-
-                if not target_game:
-                    print(f"  [SKIP] No game on exact date for {player_name}")
-                    skipped_count += 1
-                    continue
+                # Use the first game result
+                target_game = games[0]
 
                 # Extract actual stat value
                 actual_value = self._get_stat_value(target_game, prop_type)

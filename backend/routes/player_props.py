@@ -33,9 +33,11 @@ def get_predictor():
 
 
 def get_todays_date_cst() -> str:
-    """Get today's date in CST (hardcoded to 2025-11-13 for now)"""
-    # TODO: Use actual CST timezone when in production
-    return "2025-11-13"
+    """Get today's date in CST timezone"""
+    from datetime import timezone, timedelta
+    # CST is UTC-6
+    cst = timezone(timedelta(hours=-6))
+    return datetime.now(cst).strftime("%Y-%m-%d")
 
 
 @router.get("/api/player-props/nba/edges")
@@ -101,10 +103,14 @@ async def get_props_with_edge(
         lines = cursor.fetchall()
         conn.close()
 
+        from datetime import timezone, timedelta
+        cst = timezone(timedelta(hours=-6))
+        current_time_cst = datetime.now(cst).strftime("%Y-%m-%d %I:%M %p CST")
+
         print(f"\n{'='*70}")
         print(f"GENERATING PREDICTIONS FOR {len(lines)} PROPS")
         print(f"Date: {today}")
-        print(f"Time: 2025-11-13 9:30 PM CST")
+        print(f"Time: {current_time_cst}")
         print(f"{'='*70}\n")
 
         # Generate predictions for each prop
@@ -184,7 +190,7 @@ async def get_props_with_edge(
 
         return {
             'date': today,
-            'time_generated': "2025-11-13 21:30:00 CST",
+            'time_generated': current_time_cst,
             'total_props_analyzed': len(lines),
             'props_with_edge': len(results),
             'min_edge_pct': min_edge_pct,
@@ -259,10 +265,14 @@ async def get_props_status():
         predictor = get_predictor()
         models_loaded = len(predictor.models)
 
+        from datetime import timezone, timedelta
+        cst = timezone(timedelta(hours=-6))
+        current_time_cst = datetime.now(cst).strftime("%Y-%m-%d %I:%M:%S %p CST")
+
         return {
             'status': 'operational',
             'date': today,
-            'current_time_cst': '2025-11-13 21:30:00 CST',
+            'current_time_cst': current_time_cst,
             'data': {
                 'total_props_lines': total_lines,
                 'total_players': total_players,

@@ -102,30 +102,28 @@ export function PropsPerformance() {
   const [modelsInfo, setModelsInfo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [selectedPropType, setSelectedPropType] = useState('all');
-  const [_unused_model, setSelectedModel] = useState('all');
-  const [_unused_bettype, setSelectedBetType] = useState('all');
   const [days, setDays] = useState(30);
 
-  const sports = [
-    { key: 'all', name: 'All PropTypes', emoji: '🎯' },
-    { key: 'nba', name: 'NBA', emoji: '🏀' },
-    { key: 'ncaab', name: 'NCAAB', emoji: '🏀' },
-    { key: 'nfl', name: 'NFL', emoji: '🏈' },
-    { key: 'nhl', name: 'NHL', emoji: '🏒' },
-    { key: 'ncaaf', name: 'NCAAF', emoji: '🏈' },
+  const propTypes = [
+    { key: 'all', name: 'All Props', emoji: '🎯' },
+    { key: 'points', name: 'Points', emoji: '🏀' },
+    { key: 'rebounds', name: 'Rebounds', emoji: '📊' },
+    { key: 'assists', name: 'Assists', emoji: '🤝' },
+    { key: 'threes', name: '3-Pointers', emoji: '🎯' },
+    { key: 'blocks', name: 'Blocks', emoji: '🛡️' },
+    { key: 'steals', name: 'Steals', emoji: '🔥' },
+    { key: 'PRA', name: 'PRA', emoji: '📈' },
   ];
 
   useEffect(() => {
     fetchData();
-  }, [selectedPropType, _unused_model, _unused_bettype, days]);
+  }, [selectedPropType, days]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams({ days: days.toString() });
-      if (selectedPropType !== 'all') params.append('sport', selectedPropType);
-      if (_unused_model !== 'all') params.append('model', _unused_model);
-      if (_unused_bettype !== 'all') params.append('bet_type', _unused_bettype);
+      if (selectedPropType !== 'all') params.append('prop_type', selectedPropType);
 
       // Fetch overview
       const overviewRes = await fetch(getApiUrl(`props-performance/overview?${params.toString()}`));
@@ -139,9 +137,7 @@ export function PropsPerformance() {
 
       // Fetch individual predictions
       const predictionsParams = new URLSearchParams({ days: days.toString(), limit: '50' });
-      if (selectedPropType !== 'all') predictionsParams.append('sport', selectedPropType);
-      if (_unused_model !== 'all') predictionsParams.append('model', _unused_model);
-      if (_unused_bettype !== 'all') predictionsParams.append('bet_type', _unused_bettype);
+      if (selectedPropType !== 'all') predictionsParams.append('prop_type', selectedPropType);
 
       const predictionsRes = await fetch(getApiUrl(`props-performance/predictions?${predictionsParams.toString()}`));
       const predictionsData = await predictionsRes.json();
@@ -188,10 +184,10 @@ export function PropsPerformance() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-5xl font-bold italic text-slate-100 mb-2" style={{ fontStyle: 'italic', textTransform: 'uppercase' }}>
-            MAX-EV MODEL PERFORMANCE
+            PLAYER PROPS PERFORMANCE
           </h1>
           <p className="text-slate-400 text-lg">
-            Track prediction accuracy and improvement across all models & sports
+            Track NBA player prop prediction accuracy across all prop types
           </p>
         </div>
 
@@ -199,43 +195,15 @@ export function PropsPerformance() {
         <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 mb-6">
           <div className="flex gap-4 items-center flex-wrap">
             <div>
-              <label className="text-slate-400 text-sm block mb-1">PropType:</label>
+              <label className="text-slate-400 text-sm block mb-1">Prop Type:</label>
               <select
                 value={selectedPropType}
                 onChange={(e) => setSelectedPropType(e.target.value)}
                 className="px-3 py-2 bg-slate-900 border border-slate-600 rounded text-white"
               >
-                {sports.map(sport => (
-                  <option key={sport.key} value={sport.key}>{sport.emoji} {sport.name}</option>
+                {propTypes.map(pt => (
+                  <option key={pt.key} value={pt.key}>{pt.emoji} {pt.name}</option>
                 ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-slate-400 text-sm block mb-1">Model:</label>
-              <select
-                value={_unused_model}
-                onChange={(e) => setSelectedModel(e.target.value)}
-                className="px-3 py-2 bg-slate-900 border border-slate-600 rounded text-white"
-              >
-                <option value="all">All Models</option>
-                <option value="ensemble">Ensemble</option>
-                <option value="xgboost">XGBoost</option>
-                <option value="random_forest">Random Forest</option>
-                <option value="lightgbm">LightGBM</option>
-                <option value="linear_regression">Linear Regression</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-slate-400 text-sm block mb-1">Bet Type:</label>
-              <select
-                value={_unused_bettype}
-                onChange={(e) => setSelectedBetType(e.target.value)}
-                className="px-3 py-2 bg-slate-900 border border-slate-600 rounded text-white"
-              >
-                <option value="all">All Types</option>
-                <option value="totals">Totals</option>
-                <option value="spreads">Spreads</option>
-                <option value="moneyline">Moneyline</option>
               </select>
             </div>
             <div>
