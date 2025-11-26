@@ -138,7 +138,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
   const { openBetSlip } = useBetSlip();
 
   // Stats view toggle: 'stats' (raw stats), 'rankings' (ranks only), 'combined' (stats + ranks), 'advanced' (betting analytics), 'emptynet' (empty net stats)
-  const [statsView, setStatsView] = useState<'stats' | 'rankings' | 'combined' | 'advanced' | 'emptynet'>('stats');
+  const [statsView, setStatsView] = useState<'stats' | 'rankings' | 'combined' | 'advanced' | 'emptynet' | 'trends'>('stats');
 
   // Market type toggle: 'spread', 'moneyline', 'totals'
   const [selectedMarket, setSelectedMarket] = useState<'spread' | 'moneyline' | 'totals' | 'halves'>('totals');
@@ -1400,7 +1400,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                           home_nhl_stats && away_nhl_stats.power_play_pct > home_nhl_stats.power_play_pct
                             ? 'text-blue-600'
                             : `${textValue}`
-                        }>{(away_nhl_stats.power_play_pct * 100).toFixed(1)}%</span>
+                        }>{away_nhl_stats.power_play_pct.toFixed(1)}%</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>PK%:</span>
@@ -1408,7 +1408,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                           home_nhl_stats && away_nhl_stats.penalty_kill_pct > home_nhl_stats.penalty_kill_pct
                             ? 'text-blue-600'
                             : `${textValue}`
-                        }>{(away_nhl_stats.penalty_kill_pct * 100).toFixed(1)}%</span>
+                        }>{away_nhl_stats.penalty_kill_pct.toFixed(1)}%</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>SV%:</span>
@@ -1416,7 +1416,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                           home_nhl_stats && away_nhl_stats.save_pct > home_nhl_stats.save_pct
                             ? 'text-blue-600'
                             : `${textValue}`
-                        }>{(away_nhl_stats.save_pct * 100).toFixed(1)}%</span>
+                        }>{away_nhl_stats.save_pct.toFixed(1)}%</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>Shots/G:</span>
@@ -1554,7 +1554,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                           away_nhl_stats && home_nhl_stats.power_play_pct > away_nhl_stats.power_play_pct
                             ? 'text-blue-600'
                             : `${textValue}`
-                        }>{(home_nhl_stats.power_play_pct * 100).toFixed(1)}%</span>
+                        }>{home_nhl_stats.power_play_pct.toFixed(1)}%</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>PK%:</span>
@@ -1562,7 +1562,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                           away_nhl_stats && home_nhl_stats.penalty_kill_pct > away_nhl_stats.penalty_kill_pct
                             ? 'text-blue-600'
                             : `${textValue}`
-                        }>{(home_nhl_stats.penalty_kill_pct * 100).toFixed(1)}%</span>
+                        }>{home_nhl_stats.penalty_kill_pct.toFixed(1)}%</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>SV%:</span>
@@ -1570,7 +1570,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                           away_nhl_stats && home_nhl_stats.save_pct > away_nhl_stats.save_pct
                             ? 'text-blue-600'
                             : `${textValue}`
-                        }>{(home_nhl_stats.save_pct * 100).toFixed(1)}%</span>
+                        }>{home_nhl_stats.save_pct.toFixed(1)}%</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className={`${textLabel}`}>Shots/G:</span>
@@ -1702,6 +1702,16 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                 }`}
               >
                 BASELINE
+              </button>
+              <button
+                onClick={() => setStatsView('trends')}
+                className={`flex-1 px-3 py-2 rounded-lg text-lg font-semibold italic uppercase transition-all ${
+                  statsView === 'trends'
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
+                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                }`}
+              >
+                TRENDS
               </button>
             </div>
           </div>
@@ -1914,6 +1924,61 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                   )}
                 </>
               )}
+
+                  {/* TRENDS VIEW - Betting Trends (ATS & O/U) */}
+                  {statsView === 'trends' && (
+                    <>
+                      {/* ATS (Against The Spread) Trends */}
+                      <div className="mt-2 mb-1 pt-2 border-t-2 border-purple-600/40">
+                        <span className={`text-xs font-bold text-purple-400`}>AGAINST THE SPREAD</span>
+                      </div>
+
+                      {displayAwayFootballStats.ats_wins !== null && displayAwayFootballStats.ats_wins !== undefined ? (
+                        <>
+                          <div className="flex items-center justify-between">
+                            <span className={`${textLabel} font-semibold`}>ATS Record:</span>
+                            <span className={`font-bold text-base ${textValue}`}>
+                              {displayAwayFootballStats.ats_wins}-{displayAwayFootballStats.ats_losses}-{displayAwayFootballStats.ats_pushes}
+                              <span className={`text-sm ml-1 ${
+                                (displayAwayFootballStats.ats_wins / (displayAwayFootballStats.ats_wins + displayAwayFootballStats.ats_losses)) > 0.55 ? 'text-green-400' :
+                                (displayAwayFootballStats.ats_wins / (displayAwayFootballStats.ats_wins + displayAwayFootballStats.ats_losses)) < 0.45 ? 'text-red-400' :
+                                'text-slate-400'
+                              }`}>
+                                ({((displayAwayFootballStats.ats_wins / (displayAwayFootballStats.ats_wins + displayAwayFootballStats.ats_losses)) * 100).toFixed(1)}%)
+                              </span>
+                            </span>
+                          </div>
+                        </>
+                      ) : (
+                        <div className={`text-sm ${textMuted} italic`}>No ATS data available</div>
+                      )}
+
+                      {/* O/U (Over/Under) Trends */}
+                      <div className="mt-2 mb-1 pt-2 border-t border-cyan-600/40">
+                        <span className={`text-xs font-semibold text-cyan-400`}>OVER/UNDER</span>
+                      </div>
+
+                      {displayAwayFootballStats.ou_overs !== null && displayAwayFootballStats.ou_overs !== undefined ? (
+                        <>
+                          <div className="flex items-center justify-between">
+                            <span className={`${textLabel} font-semibold`}>O/U Record:</span>
+                            <span className={`font-bold text-base ${textValue}`}>
+                              {displayAwayFootballStats.ou_overs}O-{displayAwayFootballStats.ou_unders}U-{displayAwayFootballStats.ou_pushes}P
+                              <span className={`text-sm ml-1 ${
+                                (displayAwayFootballStats.ou_overs / (displayAwayFootballStats.ou_overs + displayAwayFootballStats.ou_unders)) > 0.55 ? 'text-orange-400' :
+                                (displayAwayFootballStats.ou_overs / (displayAwayFootballStats.ou_overs + displayAwayFootballStats.ou_unders)) < 0.45 ? 'text-blue-400' :
+                                'text-slate-400'
+                              }`}>
+                                ({((displayAwayFootballStats.ou_overs / (displayAwayFootballStats.ou_overs + displayAwayFootballStats.ou_unders)) * 100).toFixed(1)}% O)
+                              </span>
+                            </span>
+                          </div>
+                        </>
+                      ) : (
+                        <div className={`text-sm ${textMuted} italic`}>No O/U data available</div>
+                      )}
+                    </>
+                  )}
                 </>
               )}
             </div>
@@ -2124,6 +2189,61 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                             'bg-slate-700 ${textSecondary}'
                           }`}>{displayHomeFootballStats.form_trend}</span>
                         </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* TRENDS VIEW - Betting Trends (ATS & O/U) */}
+                  {statsView === 'trends' && (
+                    <>
+                      {/* ATS (Against The Spread) Trends */}
+                      <div className="mt-2 mb-1 pt-2 border-t-2 border-purple-600/40">
+                        <span className={`text-xs font-bold text-purple-400`}>AGAINST THE SPREAD</span>
+                      </div>
+
+                      {displayHomeFootballStats.ats_wins !== null && displayHomeFootballStats.ats_wins !== undefined ? (
+                        <>
+                          <div className="flex items-center justify-between">
+                            <span className={`${textLabel} font-semibold`}>ATS Record:</span>
+                            <span className={`font-bold text-base ${textValue}`}>
+                              {displayHomeFootballStats.ats_wins}-{displayHomeFootballStats.ats_losses}-{displayHomeFootballStats.ats_pushes}
+                              <span className={`text-sm ml-1 ${
+                                (displayHomeFootballStats.ats_wins / (displayHomeFootballStats.ats_wins + displayHomeFootballStats.ats_losses)) > 0.55 ? 'text-green-400' :
+                                (displayHomeFootballStats.ats_wins / (displayHomeFootballStats.ats_wins + displayHomeFootballStats.ats_losses)) < 0.45 ? 'text-red-400' :
+                                'text-slate-400'
+                              }`}>
+                                ({((displayHomeFootballStats.ats_wins / (displayHomeFootballStats.ats_wins + displayHomeFootballStats.ats_losses)) * 100).toFixed(1)}%)
+                              </span>
+                            </span>
+                          </div>
+                        </>
+                      ) : (
+                        <div className={`text-sm ${textMuted} italic`}>No ATS data available</div>
+                      )}
+
+                      {/* O/U (Over/Under) Trends */}
+                      <div className="mt-2 mb-1 pt-2 border-t border-cyan-600/40">
+                        <span className={`text-xs font-semibold text-cyan-400`}>OVER/UNDER</span>
+                      </div>
+
+                      {displayHomeFootballStats.ou_overs !== null && displayHomeFootballStats.ou_overs !== undefined ? (
+                        <>
+                          <div className="flex items-center justify-between">
+                            <span className={`${textLabel} font-semibold`}>O/U Record:</span>
+                            <span className={`font-bold text-base ${textValue}`}>
+                              {displayHomeFootballStats.ou_overs}O-{displayHomeFootballStats.ou_unders}U-{displayHomeFootballStats.ou_pushes}P
+                              <span className={`text-sm ml-1 ${
+                                (displayHomeFootballStats.ou_overs / (displayHomeFootballStats.ou_overs + displayHomeFootballStats.ou_unders)) > 0.55 ? 'text-orange-400' :
+                                (displayHomeFootballStats.ou_overs / (displayHomeFootballStats.ou_overs + displayHomeFootballStats.ou_unders)) < 0.45 ? 'text-blue-400' :
+                                'text-slate-400'
+                              }`}>
+                                ({((displayHomeFootballStats.ou_overs / (displayHomeFootballStats.ou_overs + displayHomeFootballStats.ou_unders)) * 100).toFixed(1)}% O)
+                              </span>
+                            </span>
+                          </div>
+                        </>
+                      ) : (
+                        <div className={`text-sm ${textMuted} italic`}>No O/U data available</div>
                       )}
                     </>
                   )}
