@@ -67,7 +67,7 @@ async def get_props_with_edge(
         conn.row_factory = sqlite3.Row  # Return rows as dicts
         cursor = conn.cursor()
 
-        # Build query
+        # Build query - filter for NBA sport
         query = """
             SELECT
                 l.player_id,
@@ -80,9 +80,11 @@ async def get_props_with_edge(
                 l.over_odds,
                 l.under_odds,
                 l.bookmaker,
-                l.date
+                l.date,
+                l.sport
             FROM player_props_lines l
             WHERE l.date = ?
+              AND l.sport = 'nba'
         """
 
         params = [today]
@@ -243,17 +245,17 @@ async def get_props_status():
         conn = sqlite3.connect(str(db_path))
         cursor = conn.cursor()
 
-        # Count today's props
-        cursor.execute("SELECT COUNT(*) FROM player_props_lines WHERE date = ?", (today,))
+        # Count today's NBA props
+        cursor.execute("SELECT COUNT(*) FROM player_props_lines WHERE date = ? AND sport = 'nba'", (today,))
         total_lines = cursor.fetchone()[0]
 
-        cursor.execute("SELECT COUNT(DISTINCT player_name) FROM player_props_lines WHERE date = ?", (today,))
+        cursor.execute("SELECT COUNT(DISTINCT player_name) FROM player_props_lines WHERE date = ? AND sport = 'nba'", (today,))
         total_players = cursor.fetchone()[0]
 
-        cursor.execute("SELECT COUNT(DISTINCT prop_type) FROM player_props_lines WHERE date = ?", (today,))
+        cursor.execute("SELECT COUNT(DISTINCT prop_type) FROM player_props_lines WHERE date = ? AND sport = 'nba'", (today,))
         prop_type_count = cursor.fetchone()[0]
 
-        cursor.execute("SELECT DISTINCT prop_type FROM player_props_lines WHERE date = ?", (today,))
+        cursor.execute("SELECT DISTINCT prop_type FROM player_props_lines WHERE date = ? AND sport = 'nba'", (today,))
         prop_types = [row[0] for row in cursor.fetchall()]
 
         cursor.execute("SELECT COUNT(*) FROM player_stats_cache")

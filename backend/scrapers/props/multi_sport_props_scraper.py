@@ -292,8 +292,8 @@ class MultiSportPropsScraper:
                 cursor.execute("""
                     INSERT OR REPLACE INTO player_props_lines
                     (date, game_id, player_id, player_name, team, opponent,
-                     home_away, prop_type, market_line, over_odds, under_odds, bookmaker)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     home_away, prop_type, market_line, over_odds, under_odds, bookmaker, sport)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     today,
                     prop['event_id'],
@@ -306,7 +306,8 @@ class MultiSportPropsScraper:
                     prop['line'],
                     prop['over_odds'],
                     prop['under_odds'],
-                    prop['bookmaker']
+                    prop['bookmaker'],
+                    sport
                 ))
                 stored += 1
             except Exception as e:
