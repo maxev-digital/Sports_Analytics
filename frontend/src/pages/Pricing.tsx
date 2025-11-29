@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { getApiUrl } from '../config';
 import { ImageSlider } from '../components/ImageSlider';
 import { DesktopClientSlider } from '../components/DesktopClientSlider';
+import { PricingToastSequence } from '../components/PricingToastSequence';
 
 interface SubscriptionStatus {
   tier: string;
@@ -205,6 +207,8 @@ export function Pricing() {
     {
       name: 'Starter',
       price: 29,
+      discountedPrice: 15,  // Exact discounted price
+      fullPrice: 29,
       period: 'month',
       description: 'Essential sports data analytics tools',
       edge: '2-4%',
@@ -232,11 +236,13 @@ export function Pricing() {
       popular: false,
       color: 'green',
       annualPrice: 278,
+      discountedAnnualPrice: 139,  // 50% off annual
       annualSavings: 70,
     },
     {
       name: 'Semi Pro',
-      price: 79,
+      price: 99,
+      discountedPrice: 49,  // Exact discounted price - MOST POPULAR
       period: 'month',
       description: 'For serious sports data analysts',
       edge: '4-6%',
@@ -262,12 +268,14 @@ export function Pricing() {
       cta: 'Sign Me Up for 50% Off',
       popular: true,
       color: 'blue',
-      annualPrice: 758,
-      annualSavings: 190,
+      annualPrice: 950,
+      discountedAnnualPrice: 475,  // 50% off annual
+      annualSavings: 238,
     },
     {
       name: 'Professional',
-      price: 149,
+      price: 199,
+      discountedPrice: 99,  // Exact discounted price
       period: 'month',
       description: 'Maximum sports data analytics firepower',
       edge: '6-8%',
@@ -295,12 +303,14 @@ export function Pricing() {
       cta: 'Sign Me Up for 50% Off',
       popular: false,
       color: 'purple',
-      annualPrice: 1430,
-      annualSavings: 358,
+      annualPrice: 1910,
+      discountedAnnualPrice: 955,  // 50% off annual
+      annualSavings: 478,
     },
     {
       name: 'Elite',
-      price: 299,
+      price: 499,
+      discountedPrice: 249,  // Exact discounted price
       period: 'month',
       description: 'For professional operations and serious analysts',
       edge: '8-10%',
@@ -328,13 +338,15 @@ export function Pricing() {
       cta: 'Contact Sales',
       popular: false,
       color: 'amber',
-      annualPrice: 2870,
-      annualSavings: 718,
+      annualPrice: 4790,
+      discountedAnnualPrice: 2395,  // 50% off annual
+      annualSavings: 1198,
       enterprise: false,
     },
     {
       name: 'Elite Pro',
       price: 799,
+      discountedPrice: 400,  // Exact discounted price - TOP 2% ONLY
       period: 'month',
       description: 'Ultra-premium tier for the top 2% of analysts',
       edge: '10-15%',
@@ -363,11 +375,19 @@ export function Pricing() {
       popular: false,
       color: 'red',
       annualPrice: 7670,
+      discountedAnnualPrice: 3835,  // 50% off annual
       annualSavings: 1918,
       enterprise: true,
       exclusive: true,
     },
   ];
+
+  // Pricing after 50% discount:
+  // Starter: $29 → $15
+  // Semi Pro: $99 → $49 (MOST POPULAR)
+  // Professional: $199 → $99
+  // Elite: $499 → $249
+  // Elite Pro: $799 → $400 (TOP 2% ONLY)
 
   const faqs = [
     {
@@ -396,8 +416,27 @@ export function Pricing() {
     },
   ];
 
+  const navigate = useNavigate();
+
+  // Handle upgrade click from toast sequence
+  const handleUpgradeClick = () => {
+    // Scroll to pricing cards or navigate to signup
+    const pricingSection = document.getElementById('pricing-cards');
+    if (pricingSection) {
+      pricingSection.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      navigate('/signup');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-slate-900 to-black py-12 px-4">
+      {/* Pricing Page Toast Sequence - Psychological triggers for conversion */}
+      <PricingToastSequence
+        enabled={!isAuthenticated} // Only show for non-authenticated users
+        onUpgradeClick={handleUpgradeClick}
+      />
+
       <div className="max-w-7xl mx-auto">
         {/* Loading State */}
         {loadingStatus && (
@@ -567,7 +606,7 @@ export function Pricing() {
                           {/* Discounted price */}
                           <div className="flex items-baseline gap-1">
                             <span className="text-5xl font-bold text-white">
-                              ${Math.round(plan.price * (1 - discountPercent / 100))}
+                              ${plan.discountedPrice || Math.round(plan.price * (1 - discountPercent / 100))}
                             </span>
                             <span className="text-slate-400 text-sm">/ month</span>
                           </div>
@@ -591,7 +630,7 @@ export function Pricing() {
                           {/* Discounted annual price */}
                           <div className="flex items-baseline gap-1">
                             <span className="text-5xl font-bold text-white">
-                              ${Math.round(plan.annualPrice * (1 - discountPercent / 100))}
+                              ${plan.discountedAnnualPrice || Math.round(plan.annualPrice * (1 - discountPercent / 100))}
                             </span>
                             <span className="text-slate-400 text-sm">/ year</span>
                           </div>

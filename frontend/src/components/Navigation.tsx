@@ -244,7 +244,7 @@ export function Navigation() {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`px-5 py-2.5 rounded-lg font-bold transition-all text-base flex items-center gap-2 italic whitespace-nowrap ${
+                className={`px-5 py-2.5 rounded-lg font-bold transition-all text-base flex items-center gap-2 italic whitespace-nowrap relative ${
                   isActive(item.path)
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
                     : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
@@ -259,6 +259,16 @@ export function Navigation() {
                   />
                 ) */}
                 {item.label}
+                {/* Pulsing LIVE dot for ALERTS nav item */}
+                {item.path === '/alerts' && (
+                  <span className="flex items-center gap-1 ml-1">
+                    <span className="relative flex h-2.5 w-2.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+                    </span>
+                    <span className="text-xs text-red-400 font-bold">LIVE</span>
+                  </span>
+                )}
               </Link>
             ))}
 
