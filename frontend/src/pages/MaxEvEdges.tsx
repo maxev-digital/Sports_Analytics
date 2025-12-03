@@ -153,7 +153,8 @@ export function MaxEvEdges() {
           min_edge: debouncedMinEdge.toString(),
           min_confidence: debouncedMinConfidence.toString(),
           limit: '50',
-          projection_type: 'pregame' // Only show pregame projections on this page
+          projection_type: 'pregame', // Only show pregame projections on this page
+          _t: Date.now().toString() // Cache buster
         });
 
         if (selectedSport !== 'all') {
@@ -193,30 +194,6 @@ export function MaxEvEdges() {
         play.home_team.toLowerCase().includes(searchQuery.toLowerCase()) ||
         play.away_team.toLowerCase().includes(searchQuery.toLowerCase()) ||
         play.model_name.toLowerCase().includes(searchQuery.toLowerCase());
-
-      // Filter for today/tomorrow's games for daily sports (NBA, NHL, NCAAB)
-      const dailySports = ['basketball_nba', 'icehockey_nhl', 'basketball_ncaab'];
-      if (dailySports.includes(play.sport)) {
-        try {
-          // Get today and tomorrow in CST
-          const nowCST = new Date(new Date().getTime() - 6 * 60 * 60 * 1000);
-          const todayCST = nowCST.toISOString().split('T')[0];
-          const tomorrowCST = new Date(nowCST.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-
-          // Parse game time (UTC) and convert to CST (UTC-6)
-          const gameTimeUTC = new Date(play.game_time);
-          const gameTimeCST = new Date(gameTimeUTC.getTime() - 6 * 60 * 60 * 1000);
-          const gameDate = gameTimeCST.toISOString().split('T')[0]; // YYYY-MM-DD
-
-          // Only show games for today or tomorrow
-          if (gameDate !== todayCST && gameDate !== tomorrowCST) {
-            return false;
-          }
-        } catch (error) {
-          console.error('Error parsing game time:', error);
-          return false;
-        }
-      }
 
       return matchesSearch;
     })
