@@ -10,6 +10,7 @@ export function SignUp() {
     password: '',
     confirmPassword: '',
     referralCode: '',
+    promoCode: '',
   });
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [showFireRing, setShowFireRing] = useState(false);
@@ -17,6 +18,8 @@ export function SignUp() {
   const [loading, setLoading] = useState(false);
   const [referralValidation, setReferralValidation] = useState<{valid: boolean, message: string} | null>(null);
   const [checkingCode, setCheckingCode] = useState(false);
+  const [promoValidation, setPromoValidation] = useState<{valid: boolean, message: string} | null>(null);
+  const [checkingPromo, setCheckingPromo] = useState(false);
   const navigate = useNavigate();
   const audioRef = useRef<HTMLAudioElement>(null);
   const [searchParams] = useSearchParams();
@@ -60,6 +63,13 @@ export function SignUp() {
     } else if (name === 'referralCode' && value.length < 3) {
       setReferralValidation(null);
     }
+
+    // Validate promo code when it changes
+    if (name === 'promoCode' && value.length >= 3) {
+      validatePromoCode(value);
+    } else if (name === 'promoCode' && value.length < 3) {
+      setPromoValidation(null);
+    }
   };
 
   const validateReferralCode = async (code: string) => {
@@ -77,6 +87,24 @@ export function SignUp() {
       setReferralValidation(null);
     } finally {
       setCheckingCode(false);
+    }
+  };
+
+  const validatePromoCode = async (code: string) => {
+    setCheckingPromo(true);
+    try {
+      const response = await fetch(getApiUrl('/auth/validate-promo'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      });
+      const result = await response.json();
+      setPromoValidation(result);
+    } catch (err) {
+      console.error('Error validating promo code:', err);
+      setPromoValidation(null);
+    } finally {
+      setCheckingPromo(false);
     }
   };
 
@@ -114,6 +142,7 @@ export function SignUp() {
           username: formData.username,
           password: formData.password,
           referral_code: formData.referralCode || undefined,
+          promo_code: formData.promoCode || undefined,
         }),
       });
 
@@ -171,10 +200,10 @@ export function SignUp() {
             className={`mx-auto h-64 w-auto mb-6 transition-all duration-500 ${showFireRing ? 'scale-110 brightness-125 drop-shadow-[0_0_30px_rgba(59,130,246,0.8)]' : 'drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)]'}`}
           />
           <h2 className="text-center text-4xl font-bold text-white">
-            Sign Me up for Early Subscriber 50% Off for Life
+            Sign Me up for Early Subscriber Access for Free
           </h2>
           <p className="mt-2 text-center text-sm text-slate-400">
-            Lock in 50% off forever • Cancel anytime
+            Free trial access • Cancel anytime
           </p>
         </div>
 
@@ -269,6 +298,49 @@ export function SignUp() {
                 placeholder="Confirm your password"
                 disabled={loading}
               />
+            </div>
+
+            {/* Promo Code Field */}
+            <div>
+              <label htmlFor="promoCode" className="block text-sm font-medium text-slate-300 mb-2">
+                Promo Code (Optional) 🎉
+              </label>
+              <div className="relative">
+                <input
+                  id="promoCode"
+                  name="promoCode"
+                  type="text"
+                  value={formData.promoCode}
+                  onChange={handleChange}
+                  className="appearance-none relative block w-full px-4 py-3 border-2 border-slate-600 bg-slate-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 uppercase"
+                  placeholder="Enter SPLASH for 2 months free!"
+                  disabled={loading}
+                  maxLength={20}
+                />
+                {formData.promoCode.length >= 3 && (
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    {checkingPromo ? (
+                      <svg className="animate-spin h-5 w-5 text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    ) : promoValidation?.valid ? (
+                      <svg className="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : promoValidation && !promoValidation.valid ? (
+                      <svg className="h-5 w-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    ) : null}
+                  </div>
+                )}
+              </div>
+              {promoValidation && (
+                <p className={`mt-1 text-xs ${promoValidation.valid ? 'text-green-400' : 'text-red-400'}`}>
+                  {promoValidation.message}
+                </p>
+              )}
             </div>
 
             {/* Referral Code Field */}
@@ -385,7 +457,7 @@ export function SignUp() {
                     Creating your account...
                   </span>
                 ) : (
-                  '🔥 Create Account & Get 50% Off'
+                  '🔥 Create Account & Get Free Access'
                 )}
               </button>
             </div>
@@ -393,7 +465,7 @@ export function SignUp() {
 
           <div className="mt-6 text-center">
             <div className="text-xs text-slate-400 mb-4 space-y-1">
-              <p>✓ 50% off for life - locked in forever</p>
+              <p>✓ Free early subscriber access</p>
               <p>✓ Choose your plan after signup</p>
               <p>✓ Cancel anytime</p>
             </div>

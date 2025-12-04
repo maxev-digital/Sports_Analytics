@@ -79,7 +79,7 @@ class BallDontLieClient:
 
         return None
 
-    def get_player_season_averages(self, player_id: int, season: int = 2024) -> Optional[Dict]:
+    def get_player_season_averages(self, player_id: int, season: int = 2026) -> Optional[Dict]:
         """
         Get player's season averages
         Response time: <500ms
@@ -175,12 +175,12 @@ class BallDontLieClient:
     def get_player_stats_vs_team(self,
                                  player_id: int,
                                  opponent_team_id: int,
-                                 season: int = 2024) -> List[Dict]:
+                                 season: int = 2026) -> List[Dict]:
         """
         Get player's stats in games against specific opponent this season
         """
         # Fetch all games for player this season
-        start_date = datetime(season, 10, 1)  # Season starts Oct 1
+        start_date = datetime(season - 1, 10, 1)  # Season starts Oct 1 of previous year
         end_date = datetime.now()
 
         url = f"{self.BASE_URL}/stats"
@@ -301,7 +301,7 @@ def test_client():
 
         # Test 2: Get season averages
         print(f"\nTest 2: Get season averages...")
-        season_avg = client.get_player_season_averages(player['id'], season=2024)
+        season_avg = client.get_player_season_averages(player['id'], season=2025)
         if season_avg:
             print(f"  Games Played: {season_avg.get('games_played')}")
             print(f"  PPG: {season_avg.get('pts')}")

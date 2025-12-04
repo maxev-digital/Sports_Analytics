@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
+import { TierGate } from '../components/TierGate';
 import { GoaliePullAlerts } from '../components/GoaliePullAlert';
 import { FavoriteComebackAlerts } from '../components/FavoriteComebackAlert';
 import { HalftimeTrackerAlerts } from '../components/HalftimeTrackerAlert';
@@ -11,6 +12,7 @@ import { AlertsOverallPerformance } from '../components/AlertsOverallPerformance
 import { GenericStrategyAlert } from '../components/GenericStrategyAlert';
 import { getApiUrl } from '../config';
 import { useSoundEffect } from '../hooks/useSoundEffect';
+import { useAuth } from '../contexts/AuthContext';
 // Toast notifications removed - no longer needed
 
 interface StrategyInfo {
@@ -179,6 +181,7 @@ interface AlertsData {
 
 export function Alerts() {
   const location = useLocation();
+  const { username } = useAuth();
   const [alertsData, setAlertsData] = useState<AlertsData | null>(null);
   const [goaliePullCount, setGoaliePullCount] = useState(0);
   const [favoriteComebackCount, setFavoriteComebackCount] = useState(0);
@@ -213,7 +216,7 @@ export function Alerts() {
   const fetchAlerts = async () => {
     try {
       const [alertsResponse, goalieResponse, comebackResponse, halftimeResponse, momentumResponse, paceResponse, weatherResponse] = await Promise.all([
-        fetch(getApiUrl('alerts/all?user_id=default')),
+        fetch(getApiUrl(`alerts/all?user_id=${username || 'default'}`)),
         fetch(getApiUrl('goalie-pull-opportunities')),
         fetch(getApiUrl('favorite-comeback-opportunities')),
         fetch(getApiUrl('halftime-opportunities')),
@@ -418,8 +421,9 @@ export function Alerts() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-slate-900 to-black py-8 px-4">
-      <div className="max-w-7xl mx-auto">
+    <TierGate feature="alerts_page">
+      <div className="min-h-screen bg-gradient-to-br from-black via-slate-900 to-black py-8 px-4">
+        <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
@@ -967,5 +971,6 @@ export function Alerts() {
         ))}
       </div>
     </div>
+    </TierGate>
   );
 }

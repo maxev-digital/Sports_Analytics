@@ -374,7 +374,7 @@ class EnhancedPropsPredictor:
             SELECT player_id, player_name, team, opponent, prop_type, market_line, home_away, bookmaker
             FROM player_props_lines
             WHERE date = ?
-            AND bookmaker != 'HISTORICAL_BACKFILL'
+            AND sport = "nba"
         """, (target_date.isoformat(),))
 
         props = cursor.fetchall()

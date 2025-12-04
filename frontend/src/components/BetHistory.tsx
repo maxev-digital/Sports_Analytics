@@ -32,7 +32,7 @@ interface Bet {
   stake: number;
   bookmaker: string;
   confidence?: string;
-  status: 'pending' | 'active' | 'won' | 'lost' | 'push' | 'cancelled';
+  status: 'win' | 'loss' | 'push';
   result?: string;
   profit_loss: number;
   commence_time: string;
@@ -71,7 +71,7 @@ export function BetHistory() {
         const allBets = await response.json();
         // Filter for only graded/settled bets
         const gradedBets = allBets.filter((bet: Bet) =>
-          ['won', 'lost', 'push'].includes(bet.status)
+          ['win', 'loss', 'push'].includes(bet.status)
         );
         setBets(gradedBets);
       } else {
@@ -285,8 +285,8 @@ export function BetHistory() {
                   </td>
                   <td className="py-3 px-4 text-center">
                     <span className={`px-3 py-1 text-xs font-bold rounded ${
-                      bet.status === 'won' ? 'bg-green-900 text-green-300 border border-green-600' :
-                      bet.status === 'lost' ? 'bg-red-900 text-red-300 border border-red-600' :
+                      bet.status === 'win' ? 'bg-green-900 text-green-300 border border-green-600' :
+                      bet.status === 'loss' ? 'bg-red-900 text-red-300 border border-red-600' :
                       'bg-slate-700 text-slate-300 border border-slate-600'
                     }`}>
                       {bet.status.toUpperCase()}
@@ -331,7 +331,7 @@ export function BetHistory() {
         <div className="bg-slate-900 border-2 border-blue-700 p-4">
           <div className="text-xs text-slate-400 mb-1">Win Rate</div>
           <div className="text-2xl font-bold text-blue-400">
-            {((bets.filter(b => b.status === 'won').length / bets.filter(b => b.status !== 'push').length) * 100).toFixed(1)}%
+            {((bets.filter(b => b.status === 'win').length / bets.filter(b => b.status !== 'push').length) * 100).toFixed(1)}%
           </div>
         </div>
         <div className="bg-slate-900 border-2 border-purple-700 p-4">
@@ -417,8 +417,8 @@ export function BetHistory() {
                   <div>
                     <div className="text-xs text-slate-400">Result</div>
                     <div className={`text-sm font-bold ${
-                      editingBet.status === 'won' ? 'text-green-400' :
-                      editingBet.status === 'lost' ? 'text-red-400' :
+                      editingBet.status === 'win' ? 'text-green-400' :
+                      editingBet.status === 'loss' ? 'text-red-400' :
                       'text-slate-400'
                     }`}>
                       {editingBet.status.toUpperCase()}

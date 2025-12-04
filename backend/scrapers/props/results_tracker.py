@@ -22,7 +22,7 @@ class PropsResultsTracker:
     Grades player props by fetching actual game stats
     """
 
-    def __init__(self, db_path: str = "D:/backend/data/player_props.db"):
+    def __init__(self, db_path: str = "/root/sporttrader/backend/ml/predictions.db"):
         self.db_path = db_path
         self.stats_client = BallDontLieClient()
 

@@ -33,7 +33,7 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-black px-4 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-white px-4 relative overflow-hidden">
       {/* Hidden audio elements for sound effects */}
       <audio
         ref={audioRef}
@@ -49,14 +49,14 @@ export function Login() {
       <div className="max-w-md w-full space-y-6">
         <div className="text-center relative">
           <img
-            src="/logo2.png"
+            src="/assets/12225.png"
             alt="Max EV Sports - Bull Market Betting"
-            className={`mx-auto h-64 w-auto mb-6 transition-all duration-500 ${showFireRing ? 'scale-110 brightness-125 drop-shadow-[0_0_30px_rgba(239,68,68,0.8)]' : 'drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)]'}`}
+            className={`mx-auto h-64 w-auto mb-6 transition-all duration-500 ${showFireRing ? 'scale-110 brightness-125 drop-shadow-[0_0_30px_rgba(239,68,68,0.8)]' : ''}`}
           />
-          <h2 className="text-center text-4xl font-bold text-white">
-            Max-EV-Bettors Only
+          <h2 className="text-center text-4xl font-bold text-slate-900">
+            Max-EV Members Only
           </h2>
-          <p className="mt-2 text-center text-sm text-slate-400">
+          <p className="mt-2 text-center text-sm text-slate-600">
             Authorized Access Required
           </p>
         </div>
@@ -180,7 +180,7 @@ export function Login() {
           </div>
         </div>
 
-        <div className="text-center text-xs text-slate-600 mt-4">
+        <div className="text-center text-xs text-slate-500 mt-4">
           <p>© 2025 Max EV Holdings, LLC. All rights reserved.</p>
         </div>
       </div>

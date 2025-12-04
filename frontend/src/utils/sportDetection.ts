@@ -59,11 +59,9 @@ export const uiEmojis = {
   trophy: 'https://em-content.zobj.net/source/microsoft-teams/363/trophy_1f3c6.png',
   wrench: 'https://em-content.zobj.net/source/microsoft-teams/363/wrench_1f527.png',
   star: 'https://em-content.zobj.net/source/microsoft-teams/363/star_2b50.png',
-  // Baseline Comparison Emojis
   snowflake: 'https://em-content.zobj.net/source/microsoft-teams/363/snowflake_2744-fe0f.png',
-  turtle: 'https://em-content.zobj.net/source/microsoft-teams/363/turtle_1f422.png',
-  thermometer: 'https://em-content.zobj.net/source/microsoft-teams/363/thermometer_1f321-fe0f.png',
-  checkMark: 'https://em-content.zobj.net/source/microsoft-teams/363/check-mark_2714-fe0f.png'
+  checkMark: 'https://em-content.zobj.net/source/microsoft-teams/363/check-mark-button_2705.png',
+  turtle: 'https://em-content.zobj.net/source/microsoft-teams/363/turtle_1f422.png'
 };
 
 /**

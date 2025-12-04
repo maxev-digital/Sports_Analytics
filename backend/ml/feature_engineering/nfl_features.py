@@ -12,9 +12,9 @@ NFL-specific considerations:
 - Turnover differential critical
 
 Feature counts by model type:
-- Totals: 21 features (scoring, yards, pace, turnovers)
-- Spreads: 25 features (differentials, home advantage, key numbers)
-- Moneyline: 29 features (all stats, win probability indicators)
+- Totals: 20 features (scoring, yards, pace, turnovers)
+- Spreads: 20 features (same as totals)
+- Moneyline: 20 features (same as totals)
 """
 
 import numpy as np
@@ -34,17 +34,16 @@ class NFLFeatureEngineer:
     @staticmethod
     def get_totals_features(row: pd.Series) -> np.ndarray:
         """
-        Extract 21 features for totals prediction
+        Extract 20 features for totals prediction
 
         Features:
         - Offensive production (6)
         - Defensive efficiency (6)
         - Scoring pace (3)
         - Turnovers (2)
-        - Game situation (2)
-        - Weather (2)
+        - Game situation (3)
         """
-        features = np.zeros(21)
+        features = np.zeros(20)
 
         # Offensive production [0-5]
         features[0] = row.get('home_ppg', NFLFeatureEngineer.LEAGUE_AVG_PPG)
@@ -71,76 +70,33 @@ class NFLFeatureEngineer:
         features[15] = row.get('home_turnover_margin', 0.0)
         features[16] = row.get('away_turnover_margin', 0.0)
 
-        # Game situation [17-18]
+        # Game situation [17-19]
         features[17] = row.get('is_division_game', 0)  # Division games tend lower scoring
         features[18] = row.get('is_primetime', 0)  # Primetime games can be different
-
-        # Weather [19-20] (if available)
-        features[19] = row.get('temperature', 70.0) / 100.0  # Normalize 0-100
-        features[20] = row.get('wind_speed', 5.0) / 30.0  # Normalize 0-30 mph
+        features[19] = 1.0  # Home field indicator
 
         return features.reshape(1, -1)
 
     @staticmethod
     def get_spreads_features(row: pd.Series) -> np.ndarray:
         """
-        Extract 25 features for spreads prediction
-
-        Additional features beyond totals:
-        - Power rating differentials (2)
-        - Home field advantage (1)
-        - Rest advantage (1)
+        Extract 20 features for spreads prediction
+        
+        Spreads models are trained on same features as totals
         """
-        features = np.zeros(25)
-
-        # Start with totals features (first 21)
-        totals_features = NFLFeatureEngineer.get_totals_features(row).flatten()
-        features[:21] = totals_features
-
-        # Spreads-specific features [21-24]
-        # Power rating differential (most important for spreads)
-        home_ppg = row.get('home_ppg', NFLFeatureEngineer.LEAGUE_AVG_PPG)
-        away_ppg = row.get('away_ppg', NFLFeatureEngineer.LEAGUE_AVG_PPG)
-        home_pa = row.get('home_points_allowed_per_game', NFLFeatureEngineer.LEAGUE_AVG_PPG)
-        away_pa = row.get('away_points_allowed_per_game', NFLFeatureEngineer.LEAGUE_AVG_PPG)
-
-        features[21] = home_ppg - away_ppg  # Offensive differential
-        features[22] = away_pa - home_pa  # Defensive differential (lower PA is better)
-
-        # Home field advantage
-        features[23] = 1.0  # Binary home indicator
-
-        # Rest advantage
-        home_rest = row.get('home_rest_days', 7)
-        away_rest = row.get('away_rest_days', 7)
-        features[24] = (home_rest - away_rest) / 7.0  # Normalized rest differential
-
+        # Just use totals features (20 features)
+        features = NFLFeatureEngineer.get_totals_features(row).flatten()
         return features.reshape(1, -1)
 
     @staticmethod
     def get_moneyline_features(row: pd.Series) -> np.ndarray:
         """
-        Extract 29 features for moneyline prediction
-
-        Additional features beyond spreads:
-        - Win rates (2)
-        - Recent form (2)
+        Extract 20 features for moneyline prediction
+        
+        Moneyline models are trained on same features as totals
         """
-        features = np.zeros(29)
-
-        # Start with spreads features (first 25)
-        spreads_features = NFLFeatureEngineer.get_spreads_features(row).flatten()
-        features[:25] = spreads_features
-
-        # Moneyline-specific features [25-28]
-        # Win rates
-        features[25] = row.get('home_win_pct', 0.5)
-        features[26] = row.get('away_win_pct', 0.5)
-
-        # Recent form (last 4 games in NFL is meaningful)
-        features[27] = row.get('home_last_4_win_pct', 0.5)
-        features[28] = row.get('away_last_4_win_pct', 0.5)
-
+        # Just use totals features (20 features)
+        features = NFLFeatureEngineer.get_totals_features(row).flatten()
         return features.reshape(1, -1)
 
     def create_feature_matrix(self, df: pd.DataFrame, model_type: str) -> np.ndarray:
@@ -156,15 +112,14 @@ class NFLFeatureEngineer:
         """
         if model_type == 'totals':
             feature_func = self.get_totals_features
-            n_features = 21
         elif model_type == 'spreads':
             feature_func = self.get_spreads_features
-            n_features = 25
         elif model_type == 'moneyline':
             feature_func = self.get_moneyline_features
-            n_features = 29
         else:
             raise ValueError(f"Unknown model type: {model_type}")
+
+        n_features = 20  # All bet types use 20 features
 
         features = np.zeros((len(df), n_features))
 
@@ -183,7 +138,8 @@ class NFLFeatureEngineer:
         Returns:
             List of feature names
         """
-        totals_names = [
+        # All model types use same features
+        return [
             # Offensive [0-5]
             'home_ppg', 'away_ppg', 'home_yards_per_play', 'away_yards_per_play',
             'home_third_down_pct', 'away_third_down_pct',
@@ -195,33 +151,6 @@ class NFLFeatureEngineer:
             'combined_ppg', 'expected_home_scoring', 'expected_away_scoring',
             # Turnovers [15-16]
             'home_turnover_margin', 'away_turnover_margin',
-            # Game situation [17-18]
-            'is_division_game', 'is_primetime',
-            # Weather [19-20]
-            'temperature_normalized', 'wind_speed_normalized'
+            # Game situation [17-19]
+            'is_division_game', 'is_primetime', 'home_field_indicator'
         ]
-
-        spreads_names = totals_names + [
-            # Power ratings [21-22]
-            'offensive_differential', 'defensive_differential',
-            # Home advantage [23]
-            'home_field_indicator',
-            # Rest [24]
-            'rest_differential'
-        ]
-
-        moneyline_names = spreads_names + [
-            # Win rates [25-26]
-            'home_win_pct', 'away_win_pct',
-            # Recent form [27-28]
-            'home_last_4_win_pct', 'away_last_4_win_pct'
-        ]
-
-        if model_type == 'totals':
-            return totals_names
-        elif model_type == 'spreads':
-            return spreads_names
-        elif model_type == 'moneyline':
-            return moneyline_names
-        else:
-            raise ValueError(f"Unknown model type: {model_type}")

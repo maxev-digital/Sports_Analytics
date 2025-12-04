@@ -192,7 +192,7 @@ export async function settleBet(
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ result: ({'win': 'won', 'loss': 'lost', 'push': 'push'}[result] || result) }),
+      body: JSON.stringify({ result }),
     });
 
     if (!response.ok) {
@@ -292,76 +292,3 @@ export async function addManualBet(params: {
     return null;
   }
 }
-
-/**
- * Get detailed performance data for charts and analytics
- */
-export interface PerformanceData {
-  summary: {
-    total_bets: number;
-    wins: number;
-    losses: number;
-    pushes: number;
-    win_rate: number;
-    total_wagered: number;
-    net_profit_loss: number;
-    roi: number;
-    avg_stake: number;
-  };
-  history: Array<{
-    date: string;
-    wins: number;
-    losses: number;
-    pushes: number;
-    daily_pl: number;
-    cumulative_pl: number;
-    daily_wagered: number;
-    cumulative_wagered: number;
-  }>;
-  by_sport: Array<{
-    sport: string;
-    total: number;
-    wins: number;
-    losses: number;
-    pushes: number;
-    win_rate: number;
-    profit_loss: number;
-    roi: number;
-  }>;
-  by_bet_type: Array<{
-    bet_type: string;
-    total: number;
-    wins: number;
-    losses: number;
-    pushes: number;
-    win_rate: number;
-    profit_loss: number;
-    roi: number;
-  }>;
-  by_bookmaker: Array<{
-    bookmaker: string;
-    total: number;
-    wins: number;
-    profit_loss: number;
-  }>;
-  time_range: string;
-}
-
-export async function getUserPerformanceData(userId: string, days?: number): Promise<PerformanceData | null> {
-  try {
-    const params = new URLSearchParams();
-    if (days) params.append('days', days.toString());
-
-    const url = getApiUrl(`/bets/user/${userId}/performance${params.toString() ? '?' + params.toString() : ''}`);
-    const response = await fetch(url);
-    if (!response.ok) {
-      console.error('Failed to fetch performance data');
-      return null;
-    }
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching performance data:', error);
-    return null;
-  }
-}
-

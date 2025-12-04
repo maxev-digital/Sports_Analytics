@@ -79,6 +79,7 @@ export function Navigation() {
   const propsItems = [
     { path: '/props', label: 'PROPS', emoji: uiEmojis.book },
     { path: '/props-performance', label: 'PERFORMANCE', emoji: uiEmojis.chart },
+    { path: '/dfs-crusher', label: 'DFS CRUSHER', emoji: uiEmojis.fire },
   ];
 
   // Edges dropdown items (ML Model Edges)

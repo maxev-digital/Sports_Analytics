@@ -288,7 +288,7 @@ class BrevoClient:
             website_url = os.getenv("WEBSITE_URL", "https://max-ev-sports.com")
             extension_download_url = f"{website_url}/downloads/MAX-EV_Sports_Extension.zip"
             guide_download_url = f"{website_url}/downloads/Installation_Guide.pdf"
-            logo_url = f"{website_url}/logo2.png"
+            logo_url = f"{website_url}/assets/12225.png"
 
             # Email HTML content
             html_content = f"""
@@ -298,21 +298,21 @@ class BrevoClient:
 
             <h2>Hi {firstname},</h2>
 
-            <p>Welcome to MAX-EV Sports! 🎉</p>
+            <p>Welcome to MAX-EV Sports! 🏀⚾🏈</p>
 
-            <p>You now have access to our professional sports betting analytics platform and exclusive Chrome extension for real-time opportunity alerts.</p>
+            <p>You now have access to our professional sports betting analytics platform with advanced ML predictions and real-time betting opportunities.</p>
 
             <h3>What's Included:</h3>
             <ul>
-                <li>✅ <strong>Web Platform</strong> - Access live odds, projections, and analytics at <a href="https://www.max-ev-sports.com/">https://www.max-ev-sports.com/</a></li>
-                <li>✅ <strong>Chrome Extension</strong> - Get instant alerts for arbitrage, middles, steam moves, and more</li>
-                <li>✅ <strong>Real-Time Data</strong> - Updated every 10 seconds with the latest opportunities</li>
-                <li>✅ <strong>Professional Tools</strong> - Built by professional sports bettors for serious players</li>
+                <li>🏀 <strong>Web Platform</strong> - Access live odds, projections, and analytics at <a href="https://www.max-ev-sports.com/">https://www.max-ev-sports.com/</a></li>
+                <li>🏈 <strong>ML Predictions</strong> - Advanced machine learning models for NBA, NHL, NFL, and more</li>
+                <li>⚾ <strong>Real-Time Data</strong> - Updated every 10 seconds with the latest opportunities</li>
+                <li>🏒 <strong>Professional Tools</strong> - Built by professional sports bettors for serious players</li>
             </ul>
 
             <hr>
 
-            <h3>Get Started in 3 Steps:</h3>
+            <h3>Get Started in 2 Steps:</h3>
 
             <h4>1. Access Your Account</h4>
             <ul>
@@ -320,41 +320,22 @@ class BrevoClient:
                 <li><strong>Email:</strong> {email}</li>
             </ul>
 
-            <h4>2. Install the Chrome Extension</h4>
-            <p><strong>Download your files:</strong></p>
-
-            <p style="margin: 20px 0;">
-                <a href="{extension_download_url}" style="display: inline-block; background-color: #4CAF50; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">📦 Download Chrome Extension</a>
-            </p>
-
-            <p style="margin: 20px 0;">
-                <a href="{guide_download_url}" style="display: inline-block; background-color: #2196F3; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">📄 Download Installation Guide</a>
-            </p>
-
-            <p><strong>Quick Install:</strong></p>
-            <ol>
-                <li>Extract the zip file</li>
-                <li>Open Chrome → Extensions (chrome://extensions/)</li>
-                <li>Enable "Developer mode"</li>
-                <li>Click "Load unpacked" and select the "extension" folder</li>
-                <li>Done! The extension icon will appear in your toolbar</li>
-            </ol>
-
-            <h4>3. Start Finding Opportunities</h4>
+            <h4>2. Start Finding Opportunities</h4>
             <ul>
-                <li>Open 2-3 sportsbook tabs (DraftKings, FanDuel, BetMGM)</li>
-                <li>Click the extension icon to see live opportunities</li>
-                <li>Enable audio alerts in settings for instant notifications</li>
+                <li>Browse today's predictions and edges on the dashboard</li>
+                <li>Check out player props with our advanced ML models</li>
+                <li>Explore betting strategies and performance analytics</li>
+                <li>Track your bets and analyze your performance</li>
             </ul>
 
             <hr>
 
             <h3>What You'll Find:</h3>
             <ul>
-                <li>🟢 <strong>Arbitrage Opportunities</strong> - Risk-free profits (2-5% returns)</li>
-                <li>🔵 <strong>Middle Opportunities</strong> - Bet both sides with a gap (potential to win both)</li>
-                <li>🟠 <strong>Steam Moves</strong> - Sharp money detection (follow the pros)</li>
-                <li>🔴 <strong>Goalie Pull Alerts</strong> - NHL empty net betting (8-12% edge)</li>
+                <li>🏀 <strong>Arbitrage Opportunities</strong> - Risk-free profits (2-5% returns)</li>
+                <li>🏈 <strong>Middle Opportunities</strong> - Bet both sides with a gap (potential to win both)</li>
+                <li>⚾ <strong>Steam Moves</strong> - Sharp money detection (follow the pros)</li>
+                <li>🏒 <strong>Goalie Pull Alerts</strong> - NHL empty net betting (8-12% edge)</li>
             </ul>
 
             <hr>
@@ -362,10 +343,10 @@ class BrevoClient:
             <h3>Pro Tips for Success:</h3>
             <ol>
                 <li><strong>Have Multiple Books</strong> - At least 3-5 accounts (DraftKings, FanDuel, BetMGM, Caesars, BetRivers)</li>
-                <li><strong>Act Quickly</strong> - Arbitrage disappears in 30-60 seconds</li>
-                <li><strong>Start Small</strong> - Test with smaller amounts until you're comfortable</li>
-                <li><strong>Keep Tabs Ready</strong> - Have sportsbook tabs open for faster execution</li>
-                <li><strong>Track Your Bets</strong> - Use our bet tracking feature to monitor performance</li>
+                <li><strong>Start Small</strong> - Test with smaller amounts until you're comfortable with the platform</li>
+                <li><strong>Review Model Performance</strong> - Check our model performance page to see historical accuracy</li>
+                <li><strong>Use the Filters</strong> - Filter predictions by sport, confidence level, and edge percentage</li>
+                <li><strong>Track Your Bets</strong> - Use our bet tracking feature to monitor your performance</li>
             </ol>
 
             <hr>
@@ -379,7 +360,7 @@ class BrevoClient:
 
             <hr>
 
-            <p><em>P.S. The extension auto-updates, so you'll always have the latest features. No reinstallation needed!</em></p>
+            <p><em>P.S. Our platform is constantly updated with new features and improvements. Stay tuned for exciting updates!</em></p>
             """
 
             # Create email object (without attachments - users download from website)
@@ -387,7 +368,7 @@ class BrevoClient:
             send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
                 to=[{"email": email, "name": full_name}],
                 sender={"email": sender_email, "name": "MAX-EV Sports"},
-                subject="Welcome to MAX-EV Sports - Your Chrome Extension is Ready!",
+                subject="Welcome to MAX-EV Sports - Your Account is Ready!",
                 html_content=html_content
                 # Note: No 'attachment' parameter - users download from website instead
             )
@@ -428,7 +409,7 @@ class BrevoClient:
             # Get admin email from environment
             admin_email = os.getenv("ADMIN_EMAIL", "gte.apw@gmail.com")
             website_url = os.getenv("WEBSITE_URL", "https://max-ev-sports.com")
-            logo_url = f"{website_url}/logo2.png"
+            logo_url = f"{website_url}/assets/12225.png"
 
             # Build HTML content based on notification type
             if notification_type == "signup":
@@ -437,7 +418,7 @@ class BrevoClient:
                     <img src="{logo_url}" alt="Max EV Sports" style="width: 150px; height: auto; max-width: 100%;" />
                 </div>
 
-                <h2>🎉 New User Signup</h2>
+                <h2>🏀 New User Signup</h2>
                 <p>A new user just signed up for MAX-EV Sports!</p>
 
                 <table style="border-collapse: collapse; width: 100%; max-width: 500px;">
@@ -470,7 +451,7 @@ class BrevoClient:
                     <img src="{logo_url}" alt="Max EV Sports" style="width: 150px; height: auto; max-width: 100%;" />
                 </div>
 
-                <h2>💰 New Payment Received</h2>
+                <h2>🏈 New Payment Received</h2>
                 <p>A user just completed a payment!</p>
 
                 <table style="border-collapse: collapse; width: 100%; max-width: 500px;">
@@ -507,7 +488,7 @@ class BrevoClient:
                     <img src="{logo_url}" alt="Max EV Sports" style="width: 150px; height: auto; max-width: 100%;" />
                 </div>
 
-                <h2>📋 New Waitlist Signup</h2>
+                <h2>⚾ New Waitlist Signup</h2>
                 <p>Someone just joined the pricing page waitlist!</p>
 
                 <table style="border-collapse: collapse; width: 100%; max-width: 500px;">

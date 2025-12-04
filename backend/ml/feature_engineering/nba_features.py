@@ -38,7 +38,7 @@ class NBAFeatureEngineer:
         - Team quality (4)
         - Scoring patterns (2)
         """
-        features = np.zeros(32)
+        features = np.zeros(40)
 
         # Pace features [0-3]
         home_pace = row.get('home_pace', NBAFeatureEngineer.LEAGUE_AVG_PACE)
@@ -103,23 +103,9 @@ class NBAFeatureEngineer:
         - Point differential stats (4)
         - Recent form differentials (2)
         """
-        features = np.zeros(38)
-
-        # Start with totals features (first 32)
-        totals_features = NBAFeatureEngineer.get_totals_features(row).flatten()
-        features[:32] = totals_features
-
-        # Spreads-specific features [32-37]
-        # Point differential
-        features[32] = row.get('home_point_diff', 0.0)
-        features[33] = row.get('away_point_diff', 0.0)
-        features[34] = features[32] - features[33]  # Point diff advantage
-
-        # Recent form (last 5 games wins)
-        features[35] = row.get('home_last_5_wins', 0) / 5.0
-        features[36] = row.get('away_last_5_wins', 0) / 5.0
-        features[37] = features[35] - features[36]  # Recent form differential
-
+        # Just use totals features (40 features)
+        # Spreads models are trained on same features as totals
+        features = NBAFeatureEngineer.get_totals_features(row).flatten()
         return features.reshape(1, -1)
 
     @staticmethod
@@ -131,28 +117,9 @@ class NBAFeatureEngineer:
         - Rebounds and assists differentials (2)
         - Turnover metrics (2)
         """
-        features = np.zeros(42)
-
-        # Start with spreads features (first 38)
-        spreads_features = NBAFeatureEngineer.get_spreads_features(row).flatten()
-        features[:38] = spreads_features
-
-        # Moneyline-specific features [38-41]
-        # Rebounds differential (important for possessions)
-        features[38] = row.get('home_rebounds', 43.0) - row.get('away_rebounds', 43.0)
-
-        # Assists differential (ball movement indicator)
-        features[39] = row.get('home_assists', 25.0) - row.get('away_assists', 25.0)
-
-        # Turnover differential (lower is better)
-        home_to = row.get('home_turnovers', 14.0)
-        away_to = row.get('away_turnovers', 14.0)
-        features[40] = away_to - home_to  # Positive means home takes better care of ball
-
-        # Net rating differential
-        home_net = (row.get('home_off_rating', 113.0) - row.get('home_def_rating', 113.0))
-        away_net = (row.get('away_off_rating', 113.0) - row.get('away_def_rating', 113.0))
-        features[41] = home_net - away_net
+        # Just use totals features (40 features)
+        # Moneyline models are trained on same features as totals
+        features = NBAFeatureEngineer.get_totals_features(row).flatten()
 
         return features.reshape(1, -1)
 

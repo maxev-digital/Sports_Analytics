@@ -1,0 +1,828 @@
+#!/usr/bin/env python3
+"""
+BULLETPROOF PLAYER PROPS - ENHANCED FEATURE ENGINEERING
+========================================================
+68-72 features for ML model training and prediction
+
+This mirrors the main model architecture with identical philosophy:
+- Same feature categories as main 78-feature system
+- Pre-computed features ready for 7-model ensemble
+- Single source of truth for all props ML models
+
+Feature Categories (70 total):
+1. Player Stats Features (28) - Season averages, recent form, splits, trends
+2. Matchup Features (22) - Opponent defense, pace, historical performance
+3. Context Features (15) - Rest days, venue, game importance
+4. Market Features (5) - Line analysis, implied probabilities
+
+IMPORTANT: This file is BULLETPROOF. Do not simplify or rename.
+"""
+
+import sys
+import sqlite3
+import pandas as pd
+import numpy as np
+from pathlib import Path
+from datetime import datetime, date, timedelta
+from typing import Dict, List, Optional, Tuple, Any
+import logging
+
+# Add parent directories to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+
+# Setup logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s | %(levelname)s | %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# Try to import BallDontLie client
+try:
+    from scrapers.props.balldontlie_client import BallDontLieClient
+    BALLDONTLIE_AVAILABLE = True
+except ImportError:
+    logger.warning("BallDontLieClient not available, using mock data")
+    BALLDONTLIE_AVAILABLE = False
+
+
+class PropsFeatureEngineer:
+    """
+    BULLETPROOF Props Feature Engineering
+
+    Extracts 68-72 features per player prop:
+    - Player Stats (28 features)
+    - Matchup Features (22 features)
+    - Context Features (15 features)
+    - Market Features (5 features)
+
+    Total: 70 features (within 68-72 range)
+    """
+
+    # ==========================================================================
+    # FEATURE NAME CONSTANTS (For validation and consistency)
+    # ==========================================================================
+
+    PLAYER_STAT_FEATURES = [
+        # Season averages (5)
+        'season_avg', 'season_mins', 'season_games_played',
+        'season_std', 'season_per_minute',
+
+        # Recent form - Last 5 games (5)
+        'last_5_avg', 'last_5_mins', 'last_5_std',
+        'last_5_over_pct', 'last_5_per_minute',
+
+        # Recent form - Last 10 games (5)
+        'last_10_avg', 'last_10_mins', 'last_10_std',
+        'last_10_over_pct', 'last_10_per_minute',
+
+        # Trends (5)
+        'last_3_avg', 'trend_l3_vs_l10', 'trend_l5_vs_season',
+        'mins_trend_5g', 'hot_streak_indicator',
+
+        # Splits (4)
+        'home_avg', 'away_avg', 'home_away_diff',
+        'day_night_preference',
+
+        # Advanced (4)
+        'consistency_score', 'ceiling_games_pct', 'floor_games_pct',
+        'hit_rate_at_current_line'
+    ]  # 28 features
+
+    MATCHUP_FEATURES = [
+        # Opponent team stats (6)
+        'opp_pace', 'opp_def_rating', 'opp_off_rating',
+        'opp_win_pct', 'opp_recent_form_10g', 'opp_home_away_record',
+
+        # Opponent vs prop type (6)
+        'opp_def_rank_vs_prop', 'opp_def_rate_vs_prop',
+        'opp_allowed_per_game_prop', 'opp_vs_position_rank',
+        'opp_recent_vs_prop_trend', 'opp_pts_allowed_variance',
+
+        # Historical vs opponent (5)
+        'vs_opp_avg', 'vs_opp_games', 'vs_opp_over_pct',
+        'vs_opp_last_game', 'vs_opp_career_hit_rate',
+
+        # Matchup composite (5)
+        'matchup_difficulty', 'pace_differential',
+        'implied_team_total', 'game_total_line',
+        'spread_absolute'
+    ]  # 22 features
+
+    CONTEXT_FEATURES = [
+        # Rest and schedule (5)
+        'rest_days', 'is_back_to_back', 'opp_rest_days',
+        'rest_advantage', 'games_in_last_7',
+
+        # Venue and travel (4)
+        'is_home', 'travel_distance', 'altitude_factor',
+        'timezone_shift',
+
+        # Game importance (3)
+        'days_into_season', 'season_month', 'playoff_implications',
+
+        # Team context (3)
+        'teammate_injury_boost', 'primetime_game',
+        'division_rivalry'
+    ]  # 15 features
+
+    MARKET_FEATURES = [
+        # Line analysis (3)
+        'line_vs_season_avg', 'line_vs_last_10_avg',
+        'line_pct_of_season',
+
+        # Odds analysis (2)
+        'implied_over_prob', 'value_indicator'
+    ]  # 5 features
+
+    # Total: 28 + 22 + 15 + 5 = 70 features
+
+    def __init__(self, props_db_path: str = None, predictions_db_path: str = None):
+        """
+        Initialize feature engineer with database connections
+        """
+        if props_db_path is None:
+            props_db_path = Path(__file__).parent.parent.parent / 'data' / 'player_props.db'
+        if predictions_db_path is None:
+            predictions_db_path = Path(__file__).parent.parent / 'predictions.db'
+
+        self.props_db_path = str(props_db_path)
+        self.predictions_db_path = str(predictions_db_path)
+
+        if BALLDONTLIE_AVAILABLE:
+            self.stats_client = BallDontLieClient()
+        else:
+            self.stats_client = None
+
+        self.current_season = 2026  # 2024-25 season
+
+        logger.info(f"PropsFeatureEngineer initialized")
+        logger.info(f"  Props DB: {self.props_db_path}")
+        logger.info(f"  Total features: {self.get_feature_count()}")
+
+    def get_feature_count(self) -> int:
+        """Return total number of features"""
+        return (
+            len(self.PLAYER_STAT_FEATURES) +
+            len(self.MATCHUP_FEATURES) +
+            len(self.CONTEXT_FEATURES) +
+            len(self.MARKET_FEATURES)
+        )
+
+    def get_all_feature_names(self) -> List[str]:
+        """Return all feature names in order"""
+        return (
+            self.PLAYER_STAT_FEATURES +
+            self.MATCHUP_FEATURES +
+            self.CONTEXT_FEATURES +
+            self.MARKET_FEATURES
+        )
+
+    # ==========================================================================
+    # MAIN FEATURE EXTRACTION
+    # ==========================================================================
+
+    def extract_features_for_prop(
+        self,
+        player_name: str,
+        team: str,
+        opponent: str,
+        prop_type: str,
+        market_line: float,
+        game_date: date,
+        home_away: str = "HOME",
+        **kwargs
+    ) -> Dict[str, float]:
+        """
+        Extract all 70 features for a single prop
+        """
+        logger.debug(f"Extracting features: {player_name} {prop_type} O/U {market_line} vs {opponent}")
+
+        features = {}
+
+        # 1. Player Stats Features (28)
+        player_features = self._extract_player_stats_features(
+            player_name, prop_type, market_line, game_date
+        )
+        features.update(player_features)
+
+        # 2. Matchup Features (22)
+        matchup_features = self._extract_matchup_features(
+            player_name, team, opponent, prop_type, game_date, **kwargs
+        )
+        features.update(matchup_features)
+
+        # 3. Context Features (15)
+        context_features = self._extract_context_features(
+            player_name, team, opponent, home_away, game_date, **kwargs
+        )
+        features.update(context_features)
+
+        # 4. Market Features (5)
+        market_features = self._extract_market_features(
+            player_name, prop_type, market_line, features
+        )
+        features.update(market_features)
+
+        # Validate feature count
+        assert len(features) >= 68, f"Expected 68+ features, got {len(features)}"
+
+        return features
+
+    # ==========================================================================
+    # 1. PLAYER STATS FEATURES (28 features)
+    # ==========================================================================
+
+    def _extract_player_stats_features(
+        self,
+        player_name: str,
+        prop_type: str,
+        market_line: float,
+        game_date: date
+    ) -> Dict[str, float]:
+        """Extract 28 player statistics features"""
+        features = {}
+
+        player_data = self._get_player_data(player_name)
+        recent_games = self._get_recent_games(player_name, prop_type, game_date, limit=15)
+
+        # Season Averages (5 features)
+        if player_data:
+            features['season_avg'] = player_data.get('season_avg', 0.0)
+            features['season_mins'] = player_data.get('season_mins', 0.0)
+            features['season_games_played'] = player_data.get('games_played', 0)
+            features['season_std'] = player_data.get('season_std', 0.0)
+            if features['season_mins'] > 0:
+                features['season_per_minute'] = features['season_avg'] / features['season_mins']
+            else:
+                features['season_per_minute'] = 0.0
+        else:
+            features.update({
+                'season_avg': 0.0, 'season_mins': 0.0, 'season_games_played': 0,
+                'season_std': 0.0, 'season_per_minute': 0.0
+            })
+
+        # Last 5 Games (5 features)
+        last_5 = recent_games[:5] if len(recent_games) >= 5 else recent_games
+        if last_5:
+            l5_values = [g['stat_value'] for g in last_5]
+            l5_mins = [g.get('minutes', 30) for g in last_5]
+
+            features['last_5_avg'] = np.mean(l5_values)
+            features['last_5_mins'] = np.mean(l5_mins)
+            features['last_5_std'] = np.std(l5_values) if len(l5_values) > 1 else 0.0
+            features['last_5_over_pct'] = sum(1 for v in l5_values if v > market_line) / len(l5_values)
+            features['last_5_per_minute'] = features['last_5_avg'] / features['last_5_mins'] if features['last_5_mins'] > 0 else 0.0
+        else:
+            features.update({
+                'last_5_avg': features['season_avg'], 'last_5_mins': features['season_mins'],
+                'last_5_std': 0.0, 'last_5_over_pct': 0.5, 'last_5_per_minute': features['season_per_minute']
+            })
+
+        # Last 10 Games (5 features)
+        last_10 = recent_games[:10] if len(recent_games) >= 10 else recent_games
+        if last_10:
+            l10_values = [g['stat_value'] for g in last_10]
+            l10_mins = [g.get('minutes', 30) for g in last_10]
+
+            features['last_10_avg'] = np.mean(l10_values)
+            features['last_10_mins'] = np.mean(l10_mins)
+            features['last_10_std'] = np.std(l10_values) if len(l10_values) > 1 else 0.0
+            features['last_10_over_pct'] = sum(1 for v in l10_values if v > market_line) / len(l10_values)
+            features['last_10_per_minute'] = features['last_10_avg'] / features['last_10_mins'] if features['last_10_mins'] > 0 else 0.0
+        else:
+            features.update({
+                'last_10_avg': features['season_avg'], 'last_10_mins': features['season_mins'],
+                'last_10_std': 0.0, 'last_10_over_pct': 0.5, 'last_10_per_minute': features['season_per_minute']
+            })
+
+        # Trends (5 features)
+        last_3 = recent_games[:3] if len(recent_games) >= 3 else recent_games
+        if last_3:
+            l3_values = [g['stat_value'] for g in last_3]
+            features['last_3_avg'] = np.mean(l3_values)
+            features['trend_l3_vs_l10'] = features['last_3_avg'] - features['last_10_avg']
+        else:
+            features['last_3_avg'] = features['season_avg']
+            features['trend_l3_vs_l10'] = 0.0
+
+        features['trend_l5_vs_season'] = features['last_5_avg'] - features['season_avg']
+
+        if len(last_5) >= 5:
+            mins_5 = [g.get('minutes', 30) for g in last_5]
+            features['mins_trend_5g'] = mins_5[0] - mins_5[-1]
+        else:
+            features['mins_trend_5g'] = 0.0
+
+        features['hot_streak_indicator'] = 1.0 if features['trend_l3_vs_l10'] > 0 else 0.0
+
+        # Splits (4 features)
+        home_games = [g for g in recent_games if g.get('is_home', False)]
+        away_games = [g for g in recent_games if not g.get('is_home', False)]
+
+        features['home_avg'] = np.mean([g['stat_value'] for g in home_games]) if home_games else features['season_avg']
+        features['away_avg'] = np.mean([g['stat_value'] for g in away_games]) if away_games else features['season_avg']
+        features['home_away_diff'] = features['home_avg'] - features['away_avg']
+        features['day_night_preference'] = 0.0
+
+        # Advanced (4 features)
+        if features['last_10_avg'] > 0:
+            cv = features['last_10_std'] / features['last_10_avg']
+            features['consistency_score'] = 1.0 / (1.0 + cv)
+        else:
+            features['consistency_score'] = 0.5
+
+        if recent_games:
+            all_values = [g['stat_value'] for g in recent_games]
+            threshold_90 = np.percentile(all_values, 90) if len(all_values) >= 5 else max(all_values)
+            threshold_10 = np.percentile(all_values, 10) if len(all_values) >= 5 else min(all_values)
+
+            features['ceiling_games_pct'] = sum(1 for v in l5_values if v >= threshold_90) / len(l5_values) if last_5 else 0.0
+            features['floor_games_pct'] = sum(1 for v in l5_values if v <= threshold_10) / len(l5_values) if last_5 else 0.0
+        else:
+            features['ceiling_games_pct'] = 0.0
+            features['floor_games_pct'] = 0.0
+
+        features['hit_rate_at_current_line'] = self._get_historical_hit_rate(player_name, prop_type, market_line)
+
+        return features
+
+    # ==========================================================================
+    # 2. MATCHUP FEATURES (22 features)
+    # ==========================================================================
+
+    def _extract_matchup_features(
+        self,
+        player_name: str,
+        team: str,
+        opponent: str,
+        prop_type: str,
+        game_date: date,
+        **kwargs
+    ) -> Dict[str, float]:
+        """Extract 22 matchup features"""
+        features = {}
+
+        opp_stats = self._get_team_stats(opponent)
+
+        # Opponent Team Stats (6 features)
+        features['opp_pace'] = opp_stats.get('pace', 100.0)
+        features['opp_def_rating'] = opp_stats.get('def_rating', 110.0)
+        features['opp_off_rating'] = opp_stats.get('off_rating', 110.0)
+        features['opp_win_pct'] = opp_stats.get('win_pct', 0.500)
+        features['opp_recent_form_10g'] = opp_stats.get('recent_form', 0.500)
+        features['opp_home_away_record'] = opp_stats.get('road_win_pct', 0.400)
+
+        # Opponent vs Prop Type (6 features)
+        opp_def_vs_prop = self._get_opponent_defense_vs_prop(opponent, prop_type)
+
+        features['opp_def_rank_vs_prop'] = opp_def_vs_prop.get('rank', 15.0)
+        features['opp_def_rate_vs_prop'] = opp_def_vs_prop.get('rate', 0.0)
+        features['opp_allowed_per_game_prop'] = opp_def_vs_prop.get('allowed_per_game', 0.0)
+        features['opp_vs_position_rank'] = opp_def_vs_prop.get('vs_position_rank', 15.0)
+        features['opp_recent_vs_prop_trend'] = opp_def_vs_prop.get('recent_trend', 0.0)
+        features['opp_pts_allowed_variance'] = opp_def_vs_prop.get('variance', 0.0)
+
+        # Historical vs Opponent (5 features)
+        vs_opp_history = self._get_vs_opponent_history(player_name, opponent, prop_type)
+
+        features['vs_opp_avg'] = vs_opp_history.get('avg', 0.0)
+        features['vs_opp_games'] = vs_opp_history.get('games', 0)
+        features['vs_opp_over_pct'] = vs_opp_history.get('over_pct', 0.5)
+        features['vs_opp_last_game'] = vs_opp_history.get('last_game', 0.0)
+        features['vs_opp_career_hit_rate'] = vs_opp_history.get('hit_rate', 0.5)
+
+        # Matchup Composite (5 features)
+        features['matchup_difficulty'] = (
+            (features['opp_def_rating'] / 120.0) * 0.4 +
+            (features['opp_win_pct']) * 0.3 +
+            ((30 - features['opp_def_rank_vs_prop']) / 30.0) * 0.3
+        )
+
+        team_stats = self._get_team_stats(team)
+        features['pace_differential'] = team_stats.get('pace', 100.0) - features['opp_pace']
+        features['implied_team_total'] = kwargs.get('implied_team_total', 110.0)
+        features['game_total_line'] = kwargs.get('game_total', 220.0)
+        features['spread_absolute'] = abs(kwargs.get('spread', 0.0))
+
+        return features
+
+    # ==========================================================================
+    # 3. CONTEXT FEATURES (15 features)
+    # ==========================================================================
+
+    def _extract_context_features(
+        self,
+        player_name: str,
+        team: str,
+        opponent: str,
+        home_away: str,
+        game_date: date,
+        **kwargs
+    ) -> Dict[str, float]:
+        """Extract 15 context features"""
+        features = {}
+
+        # Rest and Schedule (5 features)
+        features['rest_days'] = kwargs.get('rest_days', 1.0)
+        features['is_back_to_back'] = 1.0 if features['rest_days'] == 0 else 0.0
+        features['opp_rest_days'] = kwargs.get('opp_rest_days', 1.0)
+        features['rest_advantage'] = features['rest_days'] - features['opp_rest_days']
+        features['games_in_last_7'] = kwargs.get('games_last_7', 3.0)
+
+        # Venue and Travel (4 features)
+        features['is_home'] = 1.0 if home_away == "HOME" else 0.0
+        features['travel_distance'] = kwargs.get('travel_distance', 0.0)
+        features['altitude_factor'] = self._get_altitude_factor(team if home_away == "HOME" else opponent)
+        features['timezone_shift'] = kwargs.get('timezone_shift', 0.0)
+
+        # Game Importance (3 features)
+        season_start = date(2025, 10, 22)
+        features['days_into_season'] = (game_date - season_start).days
+        features['season_month'] = game_date.month - 10 if game_date.month >= 10 else game_date.month + 2
+        features['playoff_implications'] = kwargs.get('playoff_implications', 0.5)
+
+        # Team Context (3 features)
+        features['teammate_injury_boost'] = kwargs.get('injury_boost', 0.0)
+        features['primetime_game'] = kwargs.get('primetime', 0.0)
+        features['division_rivalry'] = 1.0 if self._is_division_rivalry(team, opponent) else 0.0
+
+        return features
+
+    # ==========================================================================
+    # 4. MARKET FEATURES (5 features)
+    # ==========================================================================
+
+    def _extract_market_features(
+        self,
+        player_name: str,
+        prop_type: str,
+        market_line: float,
+        player_features: Dict[str, float]
+    ) -> Dict[str, float]:
+        """Extract 5 market-based features"""
+        features = {}
+
+        season_avg = player_features.get('season_avg', market_line)
+        features['line_vs_season_avg'] = market_line - season_avg
+
+        last_10_avg = player_features.get('last_10_avg', market_line)
+        features['line_vs_last_10_avg'] = market_line - last_10_avg
+
+        if season_avg > 0:
+            features['line_pct_of_season'] = market_line / season_avg
+        else:
+            features['line_pct_of_season'] = 1.0
+
+        features['implied_over_prob'] = 0.524
+        features['value_indicator'] = last_10_avg - market_line
+
+        return features
+
+    # ==========================================================================
+    # HELPER METHODS
+    # ==========================================================================
+
+    def _get_player_data(self, player_name: str) -> Optional[Dict]:
+        """Get player season data from database or API"""
+        try:
+            conn = sqlite3.connect(self.props_db_path)
+            cursor = conn.cursor()
+
+            cursor.execute("""
+                SELECT AVG(actual_value), COUNT(*)
+                FROM player_props_results
+                WHERE player_name = ?
+                AND date >= date('now', '-90 days')
+            """, (player_name,))
+
+            result = cursor.fetchone()
+            conn.close()
+
+            if result and result[1] > 0:
+                return {
+                    'season_avg': result[0] or 0.0,
+                    'season_std': 0.0,
+                    'games_played': result[1],
+                    'season_mins': 30.0
+                }
+        except Exception as e:
+            logger.warning(f"DB error getting player data: {e}")
+
+        if self.stats_client:
+            try:
+                player = self.stats_client.get_player_by_name(player_name)
+                if player:
+                    season_avg = self.stats_client.get_player_season_averages(
+                        player['id'], self.current_season
+                    )
+                    if season_avg:
+                        return {
+                            'season_avg': season_avg.get('pts', 0.0),
+                            'season_mins': season_avg.get('min', 0.0),
+                            'games_played': season_avg.get('games_played', 0),
+                            'season_std': 0.0
+                        }
+            except Exception as e:
+                logger.warning(f"API error getting player data: {e}")
+
+        return None
+
+    def _get_recent_games(
+        self,
+        player_name: str,
+        prop_type: str,
+        game_date: date,
+        limit: int = 15
+    ) -> List[Dict]:
+        """Get recent games from database"""
+        games = []
+
+        try:
+            conn = sqlite3.connect(self.props_db_path)
+            cursor = conn.cursor()
+
+            cursor.execute("""
+                SELECT actual_value, date AS game_date, opponent
+                FROM player_props_results
+                WHERE player_name = ?
+                AND prop_type = ?
+                AND date < ?
+                ORDER BY date DESC
+                LIMIT ?
+            """, (player_name, prop_type, str(game_date), limit))
+
+            for row in cursor.fetchall():
+                games.append({
+                    'stat_value': row[0] or 0.0,
+                    'game_date': row[1],
+                    'opponent': row[2],
+                    'is_home': row[3] == 'HOME',
+                    'minutes': 30.0
+                })
+
+            conn.close()
+        except Exception as e:
+            logger.warning(f"Error getting recent games: {e}")
+
+        return games
+
+    def _get_team_stats(self, team: str) -> Dict:
+        """Get team statistics"""
+        return {
+            'pace': 100.0,
+            'off_rating': 110.0,
+            'def_rating': 110.0,
+            'win_pct': 0.500,
+            'recent_form': 0.500,
+            'road_win_pct': 0.400
+        }
+
+    def _get_opponent_defense_vs_prop(self, opponent: str, prop_type: str) -> Dict:
+        """Get opponent's defensive stats vs specific prop type"""
+        return {
+            'rank': 15.0,
+            'rate': 0.0,
+            'allowed_per_game': 0.0,
+            'vs_position_rank': 15.0,
+            'recent_trend': 0.0,
+            'variance': 0.0
+        }
+
+    def _get_vs_opponent_history(
+        self,
+        player_name: str,
+        opponent: str,
+        prop_type: str
+    ) -> Dict:
+        """Get player's historical performance vs opponent"""
+        try:
+            conn = sqlite3.connect(self.props_db_path)
+            cursor = conn.cursor()
+
+            cursor.execute("""
+                SELECT AVG(actual_value), COUNT(*),
+                       MAX(CASE WHEN date = (
+                           SELECT MAX(date) FROM player_props_results
+                           WHERE player_name = ? AND opponent = ? AND prop_type = ?
+                       ) THEN actual_value END)
+                FROM player_props_results
+                WHERE player_name = ?
+                AND opponent = ?
+                AND prop_type = ?
+            """, (player_name, opponent, prop_type, player_name, opponent, prop_type))
+
+            result = cursor.fetchone()
+            conn.close()
+
+            if result and result[1] > 0:
+                return {
+                    'avg': result[0] or 0.0,
+                    'games': result[1],
+                    'over_pct': 0.5,
+                    'last_game': result[2] or 0.0,
+                    'hit_rate': 0.5
+                }
+        except Exception as e:
+            logger.warning(f"Error getting vs opponent history: {e}")
+
+        return {'avg': 0.0, 'games': 0, 'over_pct': 0.5, 'last_game': 0.0, 'hit_rate': 0.5}
+
+    def _get_historical_hit_rate(
+        self,
+        player_name: str,
+        prop_type: str,
+        line: float
+    ) -> float:
+        """Get historical hit rate at similar line"""
+        try:
+            conn = sqlite3.connect(self.props_db_path)
+            cursor = conn.cursor()
+
+            cursor.execute("""
+                SELECT
+                    SUM(CASE WHEN actual_value > ? THEN 1 ELSE 0 END) * 1.0 / COUNT(*)
+                FROM player_props_results
+                WHERE player_name = ?
+                AND prop_type = ?
+            """, (line, player_name, prop_type))
+
+            result = cursor.fetchone()
+            conn.close()
+
+            if result and result[0] is not None:
+                return result[0]
+        except Exception as e:
+            logger.warning(f"Error getting hit rate: {e}")
+
+        return 0.5
+
+    def _get_altitude_factor(self, team: str) -> float:
+        """Get altitude adjustment factor for team's city"""
+        high_altitude_teams = ['DEN', 'UTA']
+        if team in high_altitude_teams:
+            return 1.0
+        return 0.0
+
+    def _is_division_rivalry(self, team: str, opponent: str) -> bool:
+        """Check if teams are division rivals"""
+        divisions = {
+            'Atlantic': ['BOS', 'BKN', 'NYK', 'PHI', 'TOR'],
+            'Central': ['CHI', 'CLE', 'DET', 'IND', 'MIL'],
+            'Southeast': ['ATL', 'CHA', 'MIA', 'ORL', 'WAS'],
+            'Northwest': ['DEN', 'MIN', 'OKC', 'POR', 'UTA'],
+            'Pacific': ['GSW', 'LAC', 'LAL', 'PHX', 'SAC'],
+            'Southwest': ['DAL', 'HOU', 'MEM', 'NOP', 'SAS']
+        }
+
+        for division, teams in divisions.items():
+            if team in teams and opponent in teams:
+                return True
+        return False
+
+    # ==========================================================================
+    # BATCH PROCESSING
+    # ==========================================================================
+
+    def extract_features_batch(
+        self,
+        props_date: date,
+        limit: int = None
+    ) -> pd.DataFrame:
+        """
+        Extract features for all props on a given date
+
+        Returns DataFrame with 70 features per prop
+        """
+        logger.info(f"{'='*70}")
+        logger.info(f"BULLETPROOF PROPS - FEATURE EXTRACTION")
+        logger.info(f"{'='*70}")
+        logger.info(f"Date: {props_date}")
+
+        try:
+            conn = sqlite3.connect(self.props_db_path)
+            cursor = conn.cursor()
+
+            query = """
+                SELECT player_name, team, opponent, home_away,
+                       prop_type, market_line, game_id
+                FROM player_props_lines
+                WHERE date = ?
+            """
+
+            if limit:
+                query += f" LIMIT {limit}"
+
+            cursor.execute(query, (str(props_date),))
+            props = cursor.fetchall()
+            conn.close()
+        except Exception as e:
+            logger.error(f"Error fetching props: {e}")
+            return pd.DataFrame()
+
+        logger.info(f"Found {len(props)} props to process")
+
+        if not props:
+            return pd.DataFrame()
+
+        all_features = []
+
+        for i, prop in enumerate(props, 1):
+            player_name, team, opponent, home_away, prop_type, market_line, game_id = prop
+
+            if i % 100 == 0:
+                logger.info(f"Progress: {i}/{len(props)} ({i/len(props)*100:.1f}%)")
+
+            try:
+                features = self.extract_features_for_prop(
+                    player_name=player_name,
+                    team=team,
+                    opponent=opponent,
+                    prop_type=prop_type,
+                    market_line=market_line,
+                    game_date=props_date,
+                    home_away=home_away
+                )
+
+                features['player_name'] = player_name
+                features['team'] = team
+                features['opponent'] = opponent
+                features['prop_type'] = prop_type
+                features['market_line'] = market_line
+                features['game_date'] = str(props_date)
+                features['game_id'] = game_id
+
+                all_features.append(features)
+
+            except Exception as e:
+                logger.error(f"Error extracting features for {player_name} {prop_type}: {e}")
+
+        df = pd.DataFrame(all_features)
+
+        logger.info(f"{'='*70}")
+        logger.info(f"FEATURE EXTRACTION COMPLETE")
+        logger.info(f"{'='*70}")
+        logger.info(f"Props processed: {len(all_features)}/{len(props)}")
+        logger.info(f"Features per prop: {self.get_feature_count()}")
+        logger.info(f"DataFrame shape: {df.shape}")
+
+        return df
+
+    def validate_features(self, features: Dict[str, float]) -> Tuple[bool, List[str]]:
+        """Validate that all required features are present"""
+        expected = set(self.get_all_feature_names())
+        actual = set(features.keys())
+
+        missing = expected - actual
+
+        return len(missing) == 0, list(missing)
+
+
+# =============================================================================
+# TESTING
+# =============================================================================
+
+def test_feature_engineering():
+    """Test the enhanced feature engineering"""
+    from datetime import date
+
+    print("\n" + "="*70)
+    print("BULLETPROOF PROPS - FEATURE ENGINEERING TEST")
+    print("="*70)
+
+    engineer = PropsFeatureEngineer()
+
+    print(f"\nFeature Counts:")
+    print(f"  Player Stats: {len(engineer.PLAYER_STAT_FEATURES)}")
+    print(f"  Matchup: {len(engineer.MATCHUP_FEATURES)}")
+    print(f"  Context: {len(engineer.CONTEXT_FEATURES)}")
+    print(f"  Market: {len(engineer.MARKET_FEATURES)}")
+    print(f"  TOTAL: {engineer.get_feature_count()}")
+
+    print("\nExtracting features for test prop...")
+
+    features = engineer.extract_features_for_prop(
+        player_name="LeBron James",
+        team="LAL",
+        opponent="BOS",
+        prop_type="points",
+        market_line=25.5,
+        game_date=date.today(),
+        home_away="HOME"
+    )
+
+    print(f"\nExtracted {len(features)} features")
+    print("\nSample features:")
+    for key, value in list(features.items())[:15]:
+        print(f"  {key}: {value}")
+
+    is_valid, missing = engineer.validate_features(features)
+    print(f"\nValidation: {'PASSED' if is_valid else 'FAILED'}")
+    if missing:
+        print(f"  Missing features: {missing}")
+
+    print("\n" + "="*70)
+
+
+if __name__ == "__main__":
+    test_feature_engineering()

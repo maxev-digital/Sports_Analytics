@@ -80,7 +80,7 @@ class NCAABFeatureEngineer:
         features[23] = abs(home_rank - away_rank)  # Rank differential
         features[24] = 1 if min(home_rank, away_rank) <= 25 else 0  # Top 25 team present
 
-        return features.reshape(1, -1)
+        return features.flatten()
 
     @staticmethod
     def get_spreads_features(row: pd.Series) -> np.ndarray:
@@ -110,7 +110,7 @@ class NCAABFeatureEngineer:
         # Ranking advantage (positive = home favored)
         features[26] = away_rank - home_rank
 
-        return features.reshape(1, -1)
+        return features.flatten()
 
     @staticmethod
     def get_moneyline_features(row: pd.Series) -> np.ndarray:
@@ -155,7 +155,7 @@ class NCAABFeatureEngineer:
         # Elite team indicator
         features[33] = 1 if home_rank <= 10 or away_rank <= 10 else 0
 
-        return features.reshape(1, -1)
+        return features.flatten()
 
     def create_feature_matrix(self, df: pd.DataFrame, model_type: str) -> np.ndarray:
         """

@@ -5,8 +5,10 @@ import { LiveGamesTicker } from '../components/LiveGamesTicker';
 import { sportEmojis } from '../utils/sportDetection';
 import { getApiUrl } from '../config';
 import { useAlertMonitoring } from '../hooks/useAlertMonitoring';
+import { useAuth } from '../contexts/AuthContext';
 
 export function LiveGames() {
+  const { username } = useAuth();
   const [games, setGames] = useState<LiveGame[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSport, setSelectedSport] = useState<string>('live');
@@ -45,7 +47,8 @@ export function LiveGames() {
 
   const fetchGames = async () => {
     try {
-      const url = getApiUrl('games?user_id=default');
+      const userId = username || 'default';
+      const url = getApiUrl(`games?user_id=${userId}`);
       console.log('🔄 Fetching games from:', url);
       const response = await fetch(url);
       console.log('✅ Response received:', response.status, response.statusText);

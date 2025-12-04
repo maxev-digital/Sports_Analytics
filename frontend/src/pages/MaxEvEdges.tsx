@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { getApiUrl } from '../config';
+import { TierGate } from '../components/TierGate';
 
 // Interfaces
 interface BestPlay {
   id: string;
   sport: string;
   game_id: string;
+  game_date: string;
   game_time: string;
   home_team: string;
   away_team: string;
@@ -106,12 +108,12 @@ export function MaxEvEdges() {
 
   const sports = [
     { key: 'all', name: 'ALL', emoji: '🎯', apiKey: 'all' },
-    { key: 'nba', name: 'NBA', emoji: '🏀', apiKey: 'basketball_nba' },
-    { key: 'ncaab', name: 'NCAAB', emoji: '🏀', apiKey: 'basketball_ncaab' },
-    { key: 'nfl', name: 'NFL', emoji: '🏈', apiKey: 'americanfootball_nfl' },
-    { key: 'nhl', name: 'NHL', emoji: '🏒', apiKey: 'icehockey_nhl' },
-    { key: 'mlb', name: 'MLB', emoji: '⚾', apiKey: 'baseball_mlb' },
-    { key: 'ncaaf', name: 'NCAAF', emoji: '🏈', apiKey: 'americanfootball_ncaaf' },
+    { key: 'nba', name: 'NBA', emoji: '🏀', apiKey: 'nba' },
+    { key: 'ncaab', name: 'NCAAB', emoji: '🏀', apiKey: 'ncaab' },
+    { key: 'nfl', name: 'NFL', emoji: '🏈', apiKey: 'nfl' },
+    { key: 'nhl', name: 'NHL', emoji: '🏒', apiKey: 'nhl' },
+    { key: 'mlb', name: 'MLB', emoji: '⚾', apiKey: 'mlb' },
+    { key: 'ncaaf', name: 'NCAAF', emoji: '🏈', apiKey: 'ncaaf' },
   ];
 
   // Debounce minEdge and minConfidence inputs (wait 800ms after user stops typing)
@@ -129,21 +131,6 @@ export function MaxEvEdges() {
     return () => clearTimeout(timer);
   }, [minConfidence]);
 
-  // Fetch available sports
-  useEffect(() => {
-    const fetchSports = async () => {
-      try {
-        const response = await fetch(getApiUrl('edge-scanner/sports'));
-        const data: AvailableSportsResponse = await response.json();
-        setAvailableSports(data.sports);
-        setTotalModels(data.total_models || 60);
-      } catch (error) {
-        console.error('Error fetching sports:', error);
-      }
-    };
-    fetchSports();
-  }, []);
-
   // Fetch best plays (uses debounced values to avoid flickering while typing)
   useEffect(() => {
     const fetchBestPlays = async () => {
@@ -153,7 +140,6 @@ export function MaxEvEdges() {
           min_edge: debouncedMinEdge.toString(),
           min_confidence: debouncedMinConfidence.toString(),
           limit: '50',
-          projection_type: 'pregame', // Only show pregame projections on this page
           _t: Date.now().toString() // Cache buster
         });
 
@@ -170,7 +156,7 @@ export function MaxEvEdges() {
           params.append('model', selectedModel);
         }
 
-        const response = await fetch(getApiUrl(`edge-scanner/best-plays?${params.toString()}`));
+        const response = await fetch(getApiUrl(`ui/best-plays?${params.toString()}`));
         const data: EdgeScannerResponse = await response.json();
         setPlays(data.plays);
         setShowingMockData(false); // Never show mock data banner
@@ -195,6 +181,7 @@ export function MaxEvEdges() {
         play.away_team.toLowerCase().includes(searchQuery.toLowerCase()) ||
         play.model_name.toLowerCase().includes(searchQuery.toLowerCase());
 
+      // No date filtering - show all available games from database
       return matchesSearch;
     })
     .sort((a, b) => {
@@ -214,8 +201,8 @@ export function MaxEvEdges() {
           bVal = b.kelly_fraction;
           break;
         case 'game_time':
-          aVal = new Date(a.game_time).getTime();
-          bVal = new Date(b.game_time).getTime();
+          aVal = new Date(a.game_date).getTime();
+          bVal = new Date(b.game_date).getTime();
           break;
         case 'consensus':
           aVal = a.consensus.models_agree / a.consensus.models_total;
@@ -243,15 +230,21 @@ export function MaxEvEdges() {
     return <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>;
   };
 
-  // Format game time - always show consistent date/time format
-  const formatGameTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit'
-    });
+  // Format game time - combine game_date and game_time from API
+  const formatGameTime = (play: BestPlay) => {
+    try {
+      // API returns game_date (YYYY-MM-DD) and game_time (HH:MM AM/PM) separately
+      // Parse as local date to avoid timezone offset issues
+      const [year, month, day] = play.game_date.split('-').map(Number);
+      const date = new Date(year, month - 1, day);
+      const dateStr = date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric'
+      });
+      return `${dateStr} ${play.game_time}`;
+    } catch (error) {
+      return 'TBD';
+    }
   };
 
   // Round to nearest half point (standard betting lines)
@@ -358,8 +351,9 @@ export function MaxEvEdges() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-slate-900 to-black p-4" style={{ fontFamily: 'Rubik, sans-serif' }}>
-      <div className="w-full mx-auto">
+    <TierGate feature="max_ev_edges">
+      <div className="min-h-screen bg-gradient-to-br from-black via-slate-900 to-black p-4" style={{ fontFamily: 'Rubik, sans-serif' }}>
+        <div className="w-full mx-auto">
         {/* Header */}
         <div className="mb-4">
           <h1 className="text-4xl font-bold italic text-slate-100 mb-2" style={{ fontStyle: 'italic', textTransform: 'uppercase' }}>MAX EV MODEL EDGES</h1>
@@ -402,7 +396,7 @@ export function MaxEvEdges() {
           {/* Sport Tabs - Vertical */}
           <div className="flex flex-col gap-2">
             {sports.map((sport) => {
-              const sportInfo = availableSports.find(s => s.id === sport.key);
+              const sportInfo = availableSports?.find(s => s.id === sport.key);
               const isActive = sportInfo?.active ?? true;
 
               return (
@@ -626,7 +620,7 @@ export function MaxEvEdges() {
                                 )}
                               </div>
                               <div className="text-slate-400 text-sm mt-0.5">
-                                {formatGameTime(play.game_time)}
+                                {formatGameTime(play)}
                               </div>
                             </td>
                             <td className="py-3 px-3 text-center border-r border-slate-600">
@@ -678,7 +672,7 @@ export function MaxEvEdges() {
                               <span className="text-slate-300 text-xs">{play.model_name}</span>
                             </td>
                             <td className="py-3 px-3 text-center">
-                              <ConsensusBadge consensus={play.consensus} />
+                              {play.consensus ? <ConsensusBadge consensus={play.consensus} /> : <span className="text-slate-500 text-xs">-</span>}
                             </td>
                           </tr>
                         );
@@ -699,5 +693,6 @@ export function MaxEvEdges() {
         </div>
       </div>
     </div>
+    </TierGate>
   );
 }

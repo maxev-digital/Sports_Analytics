@@ -60,14 +60,15 @@ export function Odds() {
 
   useEffect(() => {
     fetchGames();
-  }, [activeSport]);
+  }, [activeSport, username]);
 
   const fetchGames = async () => {
     setLoading(true);
     console.log('🎮 Loading games for sport:', activeSport);
 
     try {
-      const response = await fetch(getApiUrl('games'));
+      const userId = username || 'default';
+      const response = await fetch(getApiUrl(`games?user_id=${userId}`));
       if (!response.ok) throw new Error('API not available');
 
       const apiGames = await response.json();
@@ -352,11 +353,6 @@ export function Odds() {
                       {getSportDisplayName(activeSport)} Games
                     </div>
                   </th>
-                  <th className="py-2 px-3 text-center min-w-[140px] border-r border-b-2 border-slate-600 bg-slate-800">
-                    <div className="flex flex-col items-center gap-1">
-                      <span className="text-slate-300 font-bold text-xs uppercase tracking-wider">📈 Opening Line</span>
-                    </div>
-                  </th>
                   <th className="py-2 px-3 text-center min-w-[120px] border-r border-b-2 border-slate-600 bg-slate-800">
                     <div className="flex flex-col items-center gap-1">
                       <span className="text-slate-300 font-bold text-xs uppercase tracking-wider">⭐ Best Line</span>
@@ -431,36 +427,27 @@ export function Odds() {
                       <div className="flex flex-col justify-center h-full">
                         {/* Teams */}
                         <div className="space-y-0.5">
-                          <div className="flex items-center justify-between">
-                            <span className="text-2xl font-light text-slate-50 tracking-wide leading-tight">
-                              {formatTeamName(game.away_team, game.sport_key)}
+                          <div className="flex items-center gap-2">
+                            <span className="text-white font-semibold text-base">
+                              <span className="text-slate-400 text-sm">(A)</span> {formatTeamName(game.away_team, game.sport_key)}
                             </span>
                             {game.away_score !== undefined && (
-                              <span className="text-2xl font-normal text-blue-400 ml-2 tabular-nums leading-tight">
+                              <span className="text-base font-semibold text-blue-400 ml-2 tabular-nums">
                                 {game.away_score}
                               </span>
                             )}
                           </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-2xl font-light text-slate-50 tracking-wide leading-tight">
-                              {formatTeamName(game.home_team, game.sport_key)}
+                          <div className="flex items-center gap-2">
+                            <span className="text-white font-semibold text-base">
+                              <span className="text-slate-400 text-sm">(H)</span> {formatTeamName(game.home_team, game.sport_key)}
                             </span>
                             {game.home_score !== undefined && (
-                              <span className="text-2xl font-normal text-blue-400 ml-2 tabular-nums leading-tight">
+                              <span className="text-base font-semibold text-blue-400 ml-2 tabular-nums">
                                 {game.home_score}
                               </span>
                             )}
                           </div>
                         </div>
-                      </div>
-                    </td>
-
-                    {/* Opening Line Column */}
-                    <td className="py-2 px-1 text-center border-r border-slate-600">
-                      <div className="flex flex-col items-center gap-1">
-                        <span className="text-xs font-light text-slate-400">
-                          Coming Soon
-                        </span>
                       </div>
                     </td>
 

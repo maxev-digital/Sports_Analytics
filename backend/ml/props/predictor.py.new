@@ -1,0 +1,582 @@
+"""
+Daily Player Props Predictor - REAL DATA ONLY
+==============================================
+
+This module generates daily player props predictions using REAL data:
+- REAL features from enhanced_feature_engineering.py
+- REAL models trained in trainer.py
+- REAL market lines from player_props_lines table
+- REAL predictions (NO random numbers)
+
+Workflow:
+1. Load all trained models from ml/props/models/
+2. Fetch today's props from player_props_lines table
+3. Extract 70 features for each prop (REAL data)
+4. Generate predictions from all available models
+5. Calculate weighted ensemble prediction
+6. Calculate edge vs market line
+7. Assign confidence level
+8. Save to player_props_predictions table
+9. Trigger correlation_engine for DFS combos
+
+SACRED ARCHITECTURE:
+- Uses same 70 features as trainer
+- Loads models trained by trainer.py
+- Saves to unified predictions.db
+- Runs daily at 10:30 AM CST
+
+Usage:
+    python -c "from ml.props.predictor import generate_all_props_edges; generate_all_props_edges()"
+
+Author: Max EV Sports ML Team
+Date: December 2025
+Version: 1.0 - REAL DATA ONLY
+"""
+
+import sys
+import os
+import sqlite3
+import logging
+import joblib
+from pathlib import Path
+from datetime import datetime, timedelta
+from typing import List, Dict, Tuple, Optional
+
+import numpy as np
+import pandas as pd
+
+# Setup logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# Optional PyTorch
+try:
+    import torch
+    PYTORCH_AVAILABLE = True
+except ImportError:
+    PYTORCH_AVAILABLE = False
+    logger.warning("PyTorch not available - will use 4 base models only")
+
+# Add parent to path
+sys.path.insert(0, str(Path(__file__).parent))
+from enhanced_feature_engineering import PropsFeatureEngineer
+
+# Paths
+MODELS_DIR = Path(__file__).parent / "models"
+DB_PATH = Path(__file__).parent.parent / "predictions.db"
+
+
+class PropsPredictor:
+    """
+    Daily player props predictor using REAL data.
+    NO random numbers - all predictions from trained models.
+    """
+
+    def __init__(self, sport: str = 'nba'):
+        self.sport = sport.lower()
+        self.models = {}
+        self.ensemble_weighter = None
+        self.feature_engineer = PropsFeatureEngineer(sport=self.sport)
+
+        # Load models
+        self.load_models()
+
+    def load_models(self):
+        """Load all trained models from disk"""
+        logger.info("Loading trained models...")
+
+        # XGBoost
+        xgb_path = MODELS_DIR / "xgb_props.pkl"
+        if xgb_path.exists():
+            self.models['xgboost'] = joblib.load(xgb_path)
+            logger.info(f"Loaded: {xgb_path.name}")
+        else:
+            logger.error(f"XGBoost model not found: {xgb_path}")
+
+        # LightGBM
+        lgb_path = MODELS_DIR / "lgb_props.pkl"
+        if lgb_path.exists():
+            self.models['lightgbm'] = joblib.load(lgb_path)
+            logger.info(f"Loaded: {lgb_path.name}")
+        else:
+            logger.error(f"LightGBM model not found: {lgb_path}")
+
+        # Random Forest
+        rf_path = MODELS_DIR / "random_forest_props.pkl"
+        if rf_path.exists():
+            self.models['random_forest'] = joblib.load(rf_path)
+            logger.info(f"Loaded: {rf_path.name}")
+        else:
+            logger.error(f"Random Forest model not found: {rf_path}")
+
+        # Linear
+        linear_path = MODELS_DIR / "linear_props.pkl"
+        if linear_path.exists():
+            self.models['linear'] = joblib.load(linear_path)
+            logger.info(f"Loaded: {linear_path.name}")
+        else:
+            logger.error(f"Linear model not found: {linear_path}")
+
+        # PyTorch (optional)
+        if PYTORCH_AVAILABLE:
+            pytorch_path = MODELS_DIR / "pytorch_tabular_props.pt"
+            if pytorch_path.exists():
+                try:
+                    # Load PyTorch model
+                    import sys
+                    sys.path.insert(0, str(Path(__file__).parent))
+                    from trainer import TabularNet
+                    model = TabularNet(input_dim=70)
+                    model.load_state_dict(torch.load(pytorch_path, weights_only=True))
+                    model.eval()
+                    self.models['pytorch'] = model
+                    logger.info(f"Loaded: {pytorch_path.name}")
+                except Exception as e:
+                    logger.warning(f"Failed to load PyTorch model: {e}")
+            else:
+                logger.warning("PyTorch model not found")
+
+        # CatBoost (optional)
+        try:
+            from catboost import CatBoostRegressor
+            catboost_path = MODELS_DIR / "catboost_props.cbm"
+            if catboost_path.exists():
+                try:
+                    model = CatBoostRegressor()
+                    model.load_model(str(catboost_path))
+                    self.models['catboost'] = model
+                    logger.info(f"Loaded: {catboost_path.name}")
+                except Exception as e:
+                    logger.warning(f"Failed to load CatBoost model: {e}")
+            else:
+                logger.warning("CatBoost model not found")
+        except ImportError:
+            logger.warning("CatBoost not installed")
+
+        # Neural Ensemble Weighter (7th model - meta-learner)
+        if PYTORCH_AVAILABLE:
+            ensemble_path = MODELS_DIR / "neural_ensemble_weighter_props.pt"
+            if ensemble_path.exists():
+                try:
+                    import sys
+                    sys.path.insert(0, str(Path(__file__).parent))
+                    from trainer import NeuralEnsembleWeighter
+                    weighter = NeuralEnsembleWeighter(num_models=len(self.models))
+                    weighter.load_state_dict(torch.load(ensemble_path, weights_only=True))
+                    weighter.eval()
+                    self.ensemble_weighter = weighter
+                    logger.info(f"Loaded: {ensemble_path.name}")
+                    logger.info("Using Neural Ensemble Weighter for predictions")
+                except Exception as e:
+                    logger.warning(f"Failed to load Neural Ensemble Weighter: {e}")
+                    logger.info("Falling back to simple averaging")
+            else:
+                logger.warning("Neural Ensemble Weighter not found - using simple averaging")
+
+        logger.info(f"Total models loaded: {len(self.models)}")
+
+        if len(self.models) == 0:
+            raise RuntimeError("No models loaded! Run trainer.py first.")
+
+    def fetch_todays_props(self) -> pd.DataFrame:
+        """
+        Fetch today's props from player_props_lines table.
+
+        Returns:
+            DataFrame with columns:
+                - player_name, team, opponent, prop_type, market_line
+                - over_odds, under_odds, bookmaker, home_away
+        """
+        logger.info("Fetching today's props from database...")
+
+        conn = sqlite3.connect(str(DB_PATH))
+
+        # Query today's props
+        query = """
+            SELECT
+                player_name,
+                team,
+                opponent,
+                home_away,
+                prop_type,
+                market_line,
+                over_odds,
+                under_odds,
+                bookmaker,
+                sport
+            FROM player_props_lines
+            WHERE date = date('now')
+            AND sport = ?
+            ORDER BY player_name, prop_type
+        """
+
+        df = pd.read_sql_query(query, conn, params=[self.sport])
+        conn.close()
+
+        logger.info(f"Found {len(df)} props for today")
+
+        if len(df) == 0:
+            logger.warning("No props found for today. You may need to:")
+            logger.warning("  1. Populate player_props_lines table with today's data")
+            logger.warning("  2. Run the props scraper to fetch lines")
+            logger.warning("  3. Check that the 'date' column matches today's date")
+
+        return df
+
+    def extract_features_for_props(self, props_df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Extract 70 features for each prop using REAL data.
+
+        Args:
+            props_df: DataFrame with player_name, team, opponent, prop_type, market_line
+
+        Returns:
+            DataFrame with 70 feature columns (REAL data, no random numbers)
+        """
+        logger.info(f"Extracting features for {len(props_df)} props...")
+
+        all_features = []
+
+        for idx, prop in props_df.iterrows():
+            # Extract 70 REAL features
+            features = self.feature_engineer.extract_all_features(
+                player_name=prop['player_name'],
+                team=prop['team'],
+                opponent=prop['opponent'],
+                prop_type=prop['prop_type'],
+                market_line=prop['market_line'],
+                home_away=prop.get('home_away', 'home')
+            )
+
+            all_features.append(features)
+
+        features_df = pd.DataFrame(all_features)
+
+        logger.info(f"Extracted features shape: {features_df.shape}")
+        logger.info(f"Features are REAL data from player_stats_cache and team_stats_cache")
+
+        return features_df
+
+    def generate_predictions(self, features_df: pd.DataFrame) -> Dict[str, np.ndarray]:
+        """
+        Generate REAL predictions from all models.
+        NO random numbers - actual model predictions.
+
+        Args:
+            features_df: DataFrame with 70 features
+
+        Returns:
+            Dictionary with model predictions:
+                {'xgboost': array, 'lightgbm': array, ...}
+        """
+        logger.info("Generating REAL predictions from trained models...")
+
+        # Rename columns to match training format (feature_0, feature_1, ...)
+        # Models were trained with generic names, so we convert
+        features_renamed = features_df.copy()
+        features_renamed.columns = [f'feature_{i}' for i in range(len(features_renamed.columns))]
+
+        predictions = {}
+
+        # Get predictions from each model
+        for model_name, model in self.models.items():
+            if model_name == 'pytorch':
+                # PyTorch needs special handling
+                X_tensor = torch.FloatTensor(features_renamed.values)
+                with torch.no_grad():
+                    pred = model(X_tensor).squeeze().numpy()
+            else:
+                # Sklearn-style models (XGBoost, LightGBM, RF, Linear, CatBoost)
+                pred = model.predict(features_renamed)
+
+            predictions[model_name] = pred
+            logger.info(f"{model_name}: Predicted {len(pred)} values (range: {pred.min():.2f} - {pred.max():.2f})")
+
+        return predictions
+
+    def calculate_ensemble_prediction(self, predictions: Dict[str, np.ndarray]) -> np.ndarray:
+        """
+        Calculate weighted ensemble prediction.
+
+        Uses Neural Ensemble Weighter if available, otherwise simple averaging.
+
+        Args:
+            predictions: Dictionary of model predictions
+
+        Returns:
+            Ensemble prediction (REAL values from models)
+        """
+        logger.info("Calculating ensemble prediction...")
+
+        # Stack predictions into array (num_samples x num_models)
+        pred_array = np.array(list(predictions.values())).T  # Transpose to get (samples, models)
+
+        if self.ensemble_weighter is not None:
+            # Use neural ensemble weighter
+            try:
+                X_tensor = torch.FloatTensor(pred_array)
+                with torch.no_grad():
+                    ensemble_pred = self.ensemble_weighter(X_tensor).squeeze().numpy()
+                logger.info("Used Neural Ensemble Weighter for predictions")
+            except Exception as e:
+                logger.warning(f"Failed to use Neural Ensemble Weighter: {e}")
+                logger.info("Falling back to simple averaging")
+                ensemble_pred = pred_array.mean(axis=1)
+        else:
+            # Simple average (fallback)
+            ensemble_pred = pred_array.mean(axis=1)
+            logger.info("Used simple averaging (no ensemble weighter)")
+
+        logger.info(f"Ensemble prediction range: {ensemble_pred.min():.2f} - {ensemble_pred.max():.2f}")
+
+        return ensemble_pred
+
+    def calculate_edge(
+        self,
+        predicted_value: float,
+        market_line: float,
+        prop_type: str
+    ) -> Tuple[float, float, str]:
+        """
+        Calculate edge vs market line.
+
+        Args:
+            predicted_value: Model's prediction
+            market_line: Market line
+            prop_type: Type of prop (points, rebounds, etc.)
+
+        Returns:
+            (edge, edge_pct, recommendation)
+        """
+        # Edge = predicted - market
+        edge = predicted_value - market_line
+        edge_pct = (edge / market_line) * 100 if market_line > 0 else 0
+
+        # Recommendation
+        if edge >= 0.5:
+            recommendation = 'OVER'
+        elif edge <= -0.5:
+            recommendation = 'UNDER'
+        else:
+            recommendation = 'NO BET'
+
+        return edge, edge_pct, recommendation
+
+    def assign_confidence(
+        self,
+        edge_pct: float,
+        predictions: Dict[str, np.ndarray],
+        idx: int
+    ) -> str:
+        """
+        Assign confidence level based on edge and model agreement.
+
+        Args:
+            edge_pct: Edge percentage
+            predictions: All model predictions
+            idx: Index of current prop
+
+        Returns:
+            Confidence level: 'ULTRA', 'HIGH', 'MEDIUM', 'LOW'
+        """
+        abs_edge = abs(edge_pct)
+
+        # Get all predictions for this prop
+        pred_values = [preds[idx] for preds in predictions.values()]
+        std_dev = np.std(pred_values)
+
+        # Confidence logic
+        if abs_edge >= 8 and std_dev < 2:
+            return 'ULTRA'
+        elif abs_edge >= 5 and std_dev < 3:
+            return 'HIGH'
+        elif abs_edge >= 3:
+            return 'MEDIUM'
+        else:
+            return 'LOW'
+
+    def save_predictions(
+        self,
+        props_df: pd.DataFrame,
+        predictions: Dict[str, np.ndarray],
+        ensemble_pred: np.ndarray
+    ):
+        """
+        Save predictions to player_props_predictions table.
+
+        Args:
+            props_df: Original props data
+            predictions: Individual model predictions
+            ensemble_pred: Ensemble predictions
+        """
+        logger.info("Saving predictions to database...")
+
+        conn = sqlite3.connect(str(DB_PATH))
+        cursor = conn.cursor()
+
+        prediction_date = datetime.now().strftime('%Y-%m-%d')
+        timestamp = datetime.now().isoformat()
+
+        saved_count = 0
+
+        for idx, prop in props_df.iterrows():
+            # Get predictions for this prop (convert to Python float)
+            xgb_pred = float(predictions.get('xgboost', [None])[idx]) if 'xgboost' in predictions else None
+            lgb_pred = float(predictions.get('lightgbm', [None])[idx]) if 'lightgbm' in predictions else None
+            rf_pred = float(predictions.get('random_forest', [None])[idx]) if 'random_forest' in predictions else None
+            linear_pred = float(predictions.get('linear', [None])[idx]) if 'linear' in predictions else None
+            pytorch_pred = float(predictions.get('pytorch', [None])[idx]) if 'pytorch' in predictions else None
+            catboost_pred = float(predictions.get('catboost', [None])[idx]) if 'catboost' in predictions else None
+            final_pred = float(ensemble_pred[idx])
+
+            # Calculate edge
+            edge, edge_pct, recommendation = self.calculate_edge(
+                final_pred,
+                prop['market_line'],
+                prop['prop_type']
+            )
+
+            # Assign confidence
+            confidence_level = self.assign_confidence(edge_pct, predictions, idx)
+
+            # Insert into database
+            cursor.execute("""
+                INSERT OR REPLACE INTO player_props_predictions (
+                    prediction_date, player_name, team, opponent, home_away,
+                    prop_type, market_line, predicted_value,
+                    edge, edge_pct, confidence_level, recommendation,
+                    over_odds, under_odds, bookmaker, model_type, sport,
+                    xgboost_pred, lightgbm_pred, rf_pred, linear_pred,
+                    pytorch_pred, catboost_pred, ensemble_pred,
+                    timestamp
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                prediction_date,
+                prop['player_name'],
+                prop['team'],
+                prop['opponent'],
+                prop.get('home_away', 'home'),
+                prop['prop_type'],
+                prop['market_line'],
+                final_pred,
+                edge,
+                edge_pct,
+                confidence_level,
+                recommendation,
+                prop.get('over_odds'),
+                prop.get('under_odds'),
+                prop.get('bookmaker', 'Unknown'),
+                f'enhanced_ensemble_{len(self.models)}_models',  # Model type
+                self.sport,
+                xgb_pred,
+                lgb_pred,
+                rf_pred,
+                linear_pred,
+                pytorch_pred,
+                catboost_pred,
+                final_pred,
+                timestamp
+            ))
+
+            saved_count += 1
+
+        conn.commit()
+        conn.close()
+
+        logger.info(f"Saved {saved_count} predictions to database")
+
+    def generate_all_props_edges(self):
+        """
+        Main entry point: Generate all props edges for today.
+
+        This is the function called by cron job daily at 10:30 AM CST.
+        """
+        logger.info("=" * 80)
+        logger.info("GENERATING PLAYER PROPS EDGES - REAL DATA ONLY")
+        logger.info("=" * 80)
+        logger.info(f"Sport: {self.sport}")
+        logger.info(f"Date: {datetime.now().strftime('%Y-%m-%d')}")
+        logger.info(f"Time: {datetime.now().strftime('%H:%M:%S')}")
+        logger.info("")
+
+        try:
+            # Step 1: Fetch today's props
+            props_df = self.fetch_todays_props()
+
+            if len(props_df) == 0:
+                logger.warning("No props to predict. Exiting.")
+                return
+
+            # Step 2: Extract REAL features
+            features_df = self.extract_features_for_props(props_df)
+
+            # Step 3: Generate REAL predictions from models
+            predictions = self.generate_predictions(features_df)
+
+            # Step 4: Calculate ensemble prediction
+            ensemble_pred = self.calculate_ensemble_prediction(predictions)
+
+            # Step 5: Save predictions to database
+            self.save_predictions(props_df, predictions, ensemble_pred)
+
+            logger.info("")
+            logger.info("=" * 80)
+            logger.info("PREDICTION GENERATION COMPLETE")
+            logger.info("=" * 80)
+            logger.info(f"Total props processed: {len(props_df)}")
+            logger.info(f"Models used: {', '.join(self.models.keys())}")
+            logger.info(f"Predictions saved to: player_props_predictions table")
+            logger.info("")
+
+            # Step 6: Trigger correlation engine (Phase 2)
+            logger.info("Triggering correlation engine...")
+            try:
+                import sys
+                sys.path.insert(0, str(Path(__file__).parent))
+                from correlation_engine import generate_todays_correlated_combos
+                generate_todays_correlated_combos(sport=self.sport)
+                logger.info("Correlation engine completed")
+            except Exception as e:
+                logger.warning(f"Correlation engine failed: {e}")
+
+        except Exception as e:
+            logger.error(f"Error generating predictions: {e}", exc_info=True)
+            raise
+
+
+# ============================================================================
+# STANDALONE FUNCTIONS (for cron job)
+# ============================================================================
+
+def generate_all_props_edges(sport: str = 'nba'):
+    """
+    Standalone function for cron job.
+
+    Usage:
+        python -c "from ml.props.predictor import generate_all_props_edges; generate_all_props_edges()"
+    """
+    predictor = PropsPredictor(sport=sport)
+    predictor.generate_all_props_edges()
+
+
+# ============================================================================
+# CLI
+# ============================================================================
+
+def main():
+    import argparse
+
+    parser = argparse.ArgumentParser(description='Generate player props predictions')
+    parser.add_argument('--sport', type=str, default='nba', help='Sport (nba, nfl, nhl)')
+
+    args = parser.parse_args()
+
+    # Generate predictions
+    generate_all_props_edges(sport=args.sport)
+
+
+if __name__ == "__main__":
+    main()

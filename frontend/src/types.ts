@@ -454,6 +454,12 @@ export interface LiveGame {
   ncaaf_analytics?: AdvancedAnalytics | null;  // NCAAF custom analytics
   mlb_analytics?: AdvancedAnalytics | null;  // MLB custom analytics
   nhl_analytics?: AdvancedAnalytics | null;  // NHL custom analytics
+  // B2B / Rest day fatigue fields
+  away_rest_days?: number | null;
+  home_rest_days?: number | null;
+  fatigue_edge?: number | null;
+  fatigue_edge_points?: number | null;
+  rest_differential?: number | null;
 }
 
 export interface AlternateMarketLine {

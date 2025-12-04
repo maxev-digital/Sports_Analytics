@@ -38,7 +38,7 @@ class DailyPropsWorkflow:
         self.scraper = DailyPropsLineScraper()
         self.tracker = PropsResultsTracker()
         # Use D: drive database (production)
-        self.db_path = "D:/backend/data/player_props.db"
+        self.db_path = "/root/sporttrader/backend/data/player_props.db"
 
     async def morning_workflow(self):
         """
@@ -120,15 +120,12 @@ class DailyPropsWorkflow:
         print(f"{'='*70}\n")
 
         import sqlite3
-        from ml.predictions.daily_props_predictor_fast import EnhancedPropsPredictor
+        from ml.props.predictor import PropsPredictor
 
         try:
             # Initialize predictor
             print("[1/4] Loading ML predictor...")
-            predictor = EnhancedPropsPredictor(db_path=self.db_path)
-            predictor.load_models()
-            predictor.load_team_stats()
-            print(f"  [OK] Loaded {len(predictor.models)} models\n")
+            predictor = PropsPredictor()
 
             # Get today's date
             today = date.today().strftime('%Y-%m-%d')
@@ -164,69 +161,45 @@ class DailyPropsWorkflow:
             for prop in props:
                 player_id, player_name, team, opponent, home_away, prop_type, market_line, over_odds, under_odds, bookmaker, game_date = prop
 
-                # Generate prediction
                 try:
-                    features = predictor.extract_enhanced_features(
-                        player_id=player_id,
+                    # Convert game_date to date object if needed
+                    if isinstance(game_date, str):
+                        game_date_obj = datetime.strptime(game_date, '%Y-%m-%d').date()
+                    else:
+                        game_date_obj = game_date
+                    
+                    # NEW: Single clean call to predictor.predict_single_prop()
+                    prediction = predictor.predict_single_prop(
                         player_name=player_name,
+                        team=team,
+                        opponent=opponent,
                         prop_type=prop_type,
                         market_line=market_line,
-                        home_away=home_away,
-                        opponent=opponent
+                        game_date=game_date_obj,
+                        home_away=home_away or "HOME"
                     )
-
-                    # Find best model for this prop type
-                    best_model_key = None
-                    best_prediction = None
-                    best_confidence = 0
-
-                    for model_key in predictor.models.keys():
-                        if model_key.startswith(prop_type):
-                            model_data = predictor.models[model_key]
-                            model = model_data['model']
-
-                            # Create feature vector
-                            feature_values = [features[f] for f in model_data['features']]
-                            X = [feature_values]
-
-                            # Predict
-                            prediction = model.predict(X)[0]
-
-                            # Use model's test accuracy as confidence proxy
-                            confidence = model_data.get('test_accuracy', 50) / 100.0
-
-                            if confidence > best_confidence:
-                                best_confidence = confidence
-                                best_prediction = prediction
-                                best_model_key = model_key
-
-                    if best_prediction is not None:
-                        # Calculate edge
-                        edge = best_prediction - market_line
-                        edge_pct = (edge / market_line) * 100
-
-                        # Determine recommendation
-                        if edge > 0:
-                            recommendation = 'OVER'
-                        else:
-                            recommendation = 'UNDER'
-
-                        # Save to database
-                        cursor.execute("""
-                            INSERT OR REPLACE INTO player_props_predictions
-                            (prediction_date, game_date, player_id, player_name, team, opponent,
-                             prop_type, market_line, predicted_value, confidence, model_type,
-                             edge_pct, recommendation)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                        """, (
-                            prediction_date, game_date, player_id, player_name, team, opponent,
-                            prop_type, market_line, best_prediction, best_confidence, best_model_key,
-                            edge_pct, recommendation
-                        ))
-
-                        predictions_saved += 1
-                    else:
-                        predictions_skipped += 1
+                    
+                    # Extract values from prediction dictionary
+                    predicted_value = prediction.get('predicted_value', 0)
+                    confidence = prediction.get('confidence', 0) / 100.0  # Convert percentage to decimal
+                    edge_pct = prediction.get('edge', 0)
+                    recommendation = prediction.get('recommendation', 'NO_PLAY')
+                    model_type = prediction.get('ensemble_model', 'ensemble')
+                    
+                    # Save to database
+                    cursor.execute("""
+                        INSERT OR REPLACE INTO player_props_predictions
+                        (prediction_date, game_date, player_id, player_name, team, opponent,
+                         prop_type, market_line, predicted_value, confidence, model_type,
+                         edge_pct, recommendation)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """, (
+                        prediction_date, game_date, player_id, player_name, team, opponent,
+                        prop_type, market_line, predicted_value, confidence, model_type,
+                        edge_pct, recommendation
+                    ))
+                    
+                    predictions_saved += 1
 
                 except Exception as e:
                     predictions_skipped += 1

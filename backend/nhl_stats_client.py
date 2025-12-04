@@ -556,41 +556,29 @@ class NHLStatsClient:
                     save_pct = 0.0
                     pdo = 100.0
 
-                    if self.balldontlie_client:
+                    # Load stats from CSV file instead of BallDontLie
+                    if not hasattr(self, '_team_stats_cache') or self._team_stats_cache is None:
                         try:
-                            bdl_team_id = self.balldontlie_client.get_team_id_by_abbr(team_abbr)
-                            if bdl_team_id:
-                                bdl_stats = await self.balldontlie_client.get_team_season_stats(bdl_team_id)
-                                if bdl_stats and 'data' in bdl_stats and bdl_stats['data']:
-                                    # Convert array of {name, value} objects to dict
-                                    stats_dict = {item['name']: item['value'] for item in bdl_stats['data']}
-
-                                    # Extract advanced stats (convert percentages from decimals to %)
-                                    power_play_pct = float(stats_dict.get('power_play_percentage', 0.0)) * 100
-                                    penalty_kill_pct = float(stats_dict.get('penalty_kill_percentage', 0.0)) * 100
-                                    shots_per_game = float(stats_dict.get('shots_for_per_game', 0.0))
-                                    shots_against_per_game = float(stats_dict.get('shots_against_per_game', 0.0))
-                                    faceoff_win_pct = float(stats_dict.get('faceoff_win_percentage', 0.0)) * 100
-
-                                    # Calculate shooting% and save% from goals and shots
-                                    if 'goals_for' in stats_dict and shots_per_game > 0:
-                                        games = stats_dict.get('games_played', 1)
-                                        total_shots = shots_per_game * games
-                                        shooting_pct = (stats_dict['goals_for'] / total_shots) * 100 if total_shots > 0 else 0.0
-
-                                    if 'goals_against' in stats_dict and shots_against_per_game > 0:
-                                        games = stats_dict.get('games_played', 1)
-                                        total_shots_against = shots_against_per_game * games
-                                        saves = total_shots_against - stats_dict['goals_against']
-                                        save_pct = (saves / total_shots_against) * 100 if total_shots_against > 0 else 0.0
-
-                                    # Calculate PDO (shooting% + save%)
-                                    if shooting_pct > 0 and save_pct > 0:
-                                        pdo = shooting_pct + save_pct
-
-                                    logger.info(f"✅ BallDontLie stats for {team_abbr}: PP%={power_play_pct:.1f}, PK%={penalty_kill_pct:.1f}, Shots/G={shots_per_game:.1f}")
+                            import pandas as pd
+                            stats_file = Path(__file__).parent / "data" / "raw" / "nhl" / "current_team_stats_manual.csv"
+                            df = pd.read_csv(stats_file)
+                            self._team_stats_cache = df.set_index('team_abbr').to_dict('index')
+                            logger.info(f"✅ Loaded NHL stats for {len(self._team_stats_cache)} teams from CSV")
                         except Exception as e:
-                            logger.warning(f"Failed to fetch BallDontLie stats for {team_abbr}: {e}")
+                            logger.error(f"Failed to load NHL stats CSV: {e}")
+                            self._team_stats_cache = {}
+                    
+                    team_stats = self._team_stats_cache.get(team_abbr, {})
+                    if team_stats:
+                        power_play_pct = float(team_stats.get('power_play_pct', 0.0))
+                        penalty_kill_pct = float(team_stats.get('penalty_kill_pct', 0.0))
+                        shots_per_game = float(team_stats.get('shots_per_game', 0.0))
+                        shots_against_per_game = float(team_stats.get('shots_against_per_game', 0.0))
+                        faceoff_win_pct = float(team_stats.get('faceoff_win_pct', 0.0))
+                        shooting_pct = float(team_stats.get('shooting_pct', 0.0))
+                        save_pct = float(team_stats.get('save_pct', 0.0))
+                        pdo = shooting_pct + save_pct
+                        logger.info(f"✅ Loaded stats for {team_abbr.upper()}: PP%={power_play_pct:.1f}, PK%={penalty_kill_pct:.1f}, Shots/G={shots_per_game:.1f}")
 
                     # Get empty net stats for this team
                     team_en_stats = en_stats.get(team_abbr, {})

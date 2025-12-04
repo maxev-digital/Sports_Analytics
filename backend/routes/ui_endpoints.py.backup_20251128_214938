@@ -1,0 +1,407 @@
+"""
+UI Endpoints - Pre-formatted, display-ready data for frontend
+Following Grok's recommendation: Backend is single source of truth
+Frontend should be 100% dumb - just render, zero math
+"""
+
+from fastapi import APIRouter, Query
+from datetime import datetime, timedelta
+from pathlib import Path
+import pandas as pd
+import logging
+
+logger = logging.getLogger(__name__)
+router = APIRouter(prefix="/api/ui", tags=["UI Endpoints"])
+
+TRACKING_DIR = Path("/root/sporttrader/backend/data/tracking")
+RESULTS_LOG = TRACKING_DIR / "results_log_COMBINED.csv"
+
+
+def format_percentage(value: float, include_sign: bool = False) -> str:
+    """Format a decimal as percentage string"""
+    if value is None:
+        return "N/A"
+    pct = value * 100 if abs(value) < 1 else value
+    sign = "+" if include_sign and pct > 0 else ""
+    return f"{sign}{pct:.1f}%"
+
+
+def format_units(value: float) -> str:
+    """Format units won/lost"""
+    if value is None:
+        return "N/A"
+    sign = "+" if value > 0 else ""
+    return f"{sign}{value:.2f}u"
+
+
+def format_money(value: float) -> str:
+    """Format as currency"""
+    if value is None:
+        return "N/A"
+    sign = "+" if value > 0 else "-"
+    return f"{sign}${abs(value):,.0f}"
+
+
+def format_record(wins: int, losses: int) -> str:
+    """Format W-L record"""
+    return f"{wins}W-{losses}L"
+
+
+def calculate_kelly(edge_pct: float, odds: int = -110) -> dict:
+    """Calculate Kelly criterion fractions"""
+    if edge_pct is None or edge_pct <= 0:
+        return {"full": 0, "half": 0, "quarter": 0}
+
+    decimal_odds = (odds / 100) + 1 if odds > 0 else (100 / abs(odds)) + 1
+    implied_prob = 1 / decimal_odds
+    true_prob = implied_prob + (edge_pct / 100)
+    b = decimal_odds - 1
+
+    kelly_pct = max(0, (b * true_prob - (1 - true_prob)) / b)
+    full_kelly = min(kelly_pct * 100, 25)  # Cap at 25%
+
+    return {
+        "full": full_kelly,
+        "half": full_kelly * 0.5,
+        "quarter": full_kelly * 0.25
+    }
+
+
+@router.get("/model-performance")
+async def get_ui_model_performance(
+    sport: str = Query(None),
+    model: str = Query(None),
+    bet_type: str = Query(None),
+    days: int = Query(30),
+    unit_size: int = Query(100),
+    bankroll: int = Query(10000)
+):
+    """
+    Returns FULLY FORMATTED model performance data.
+    Frontend should just render this - no calculations needed.
+    """
+    try:
+        if not RESULTS_LOG.exists():
+            return {"error": "No data available", "generated_at": datetime.utcnow().isoformat()}
+
+        df = pd.read_csv(RESULTS_LOG)
+        df['game_date'] = pd.to_datetime(df['game_date'], format='mixed', errors='coerce')
+
+        cutoff = datetime.now() - timedelta(days=days)
+        df = df[df['game_date'] >= cutoff]
+
+        # Apply filters
+        if sport:
+            df = df[df['sport'].str.lower() == sport.lower()]
+        if model:
+            df = df[df['model'].str.lower() == model.lower()]
+        if bet_type:
+            df = df[df['bet_type'].str.lower() == bet_type.lower()]
+
+        if len(df) == 0:
+            return {"error": "No data for selected filters", "generated_at": datetime.utcnow().isoformat()}
+
+        # Calculate raw metrics
+        total = len(df)
+        wins = len(df[df['result'] == 'WIN'])
+        losses = len(df[df['result'] == 'LOSS'])
+        pushes = len(df[df['result'] == 'PUSH'])
+        decided = wins + losses
+        win_rate = wins / decided if decided > 0 else 0
+
+        # Use ensemble only for P&L to avoid counting same game 5x (one per model)
+        ensemble_df = df[df['model'] == 'ensemble'] if 'model' in df.columns else df
+        # Cap outliers from bad data, divide by 100 to convert dollars to units
+        capped_pnl = ensemble_df['profit_loss'].clip(lower=-100, upper=500) if 'profit_loss' in ensemble_df.columns else 0
+        units_won = (capped_pnl.sum() / 100) if hasattr(capped_pnl, 'sum') else 0
+        roi = (units_won / total) * 100 if total > 0 else 0
+        avg_edge = df['edge_accuracy'].abs().mean() if 'edge_accuracy' in df.columns else (df['edge'].abs().mean() if 'edge' in df.columns else 0)
+
+        # Calculate Kelly based on average edge
+        kelly = calculate_kelly(avg_edge)
+
+        # P&L based on unit size
+        pnl_dollars = units_won * unit_size
+
+        # Build by_sport with pre-formatted data
+        by_sport = {}
+        for sport_name in df['sport'].dropna().unique():
+            s_df = df[df['sport'] == sport_name]
+            s_wins = len(s_df[s_df['result'] == 'WIN'])
+            s_losses = len(s_df[s_df['result'] == 'LOSS'])
+            s_decided = s_wins + s_losses
+            s_wr = s_wins / s_decided if s_decided > 0 else 0
+            s_units = s_df['profit_loss'].sum() if 'profit_loss' in s_df.columns else 0
+            s_roi = (s_units / len(s_df)) * 100 if len(s_df) > 0 else 0
+
+            by_sport[sport_name.upper()] = {
+                "total": len(s_df),
+                "wins": s_wins,
+                "losses": s_losses,
+                "record": format_record(s_wins, s_losses),
+                "win_rate": s_wr,
+                "display_win_rate": format_percentage(s_wr),
+                "units": round(s_units, 2),
+                "display_units": format_units(s_units),
+                "roi": round(s_roi, 2),
+                "display_roi": format_percentage(s_roi, include_sign=True),
+                "pnl_dollars": round(s_units * unit_size, 0),
+                "display_pnl": format_money(s_units * unit_size)
+            }
+
+        # Build by_model with pre-formatted data
+        by_model = {}
+        for model_name in df['model'].dropna().unique():
+            m_df = df[df['model'] == model_name]
+            m_wins = len(m_df[m_df['result'] == 'WIN'])
+            m_losses = len(m_df[m_df['result'] == 'LOSS'])
+            m_decided = m_wins + m_losses
+            m_wr = m_wins / m_decided if m_decided > 0 else 0
+            m_units = m_df['profit_loss'].sum() if 'profit_loss' in m_df.columns else 0
+            m_roi = (m_units / len(m_df)) * 100 if len(m_df) > 0 else 0
+
+            by_model[model_name.lower()] = {
+                "total": len(m_df),
+                "wins": m_wins,
+                "losses": m_losses,
+                "record": format_record(m_wins, m_losses),
+                "win_rate": m_wr,
+                "display_win_rate": format_percentage(m_wr),
+                "units": round(m_units, 2),
+                "display_units": format_units(m_units),
+                "roi": round(m_roi, 2),
+                "display_roi": format_percentage(m_roi, include_sign=True)
+            }
+
+        # Build by_confidence with pre-formatted data
+        by_confidence = {}
+        for conf in ['HIGH', 'MEDIUM', 'LOW']:
+            c_df = df[df['confidence'] == conf]
+            if len(c_df) > 0:
+                c_wins = len(c_df[c_df['result'] == 'WIN'])
+                c_losses = len(c_df[c_df['result'] == 'LOSS'])
+                c_decided = c_wins + c_losses
+                c_wr = c_wins / c_decided if c_decided > 0 else 0
+                c_units = c_df['profit_loss'].sum() if 'profit_loss' in c_df.columns else 0
+                c_roi = (c_units / len(c_df)) * 100 if len(c_df) > 0 else 0
+
+                by_confidence[conf.lower()] = {
+                    "total": len(c_df),
+                    "wins": c_wins,
+                    "losses": c_losses,
+                    "record": format_record(c_wins, c_losses),
+                    "win_rate": c_wr,
+                    "display_win_rate": format_percentage(c_wr),
+                    "units": round(c_units, 2),
+                    "display_units": format_units(c_units),
+                    "roi": round(c_roi, 2),
+                    "display_roi": format_percentage(c_roi, include_sign=True)
+                }
+
+
+        # Build splits for detailed analysis (Grok recommendation: pre-compute everything)
+        splits = {}
+        
+        # Moneyline: Favorite vs Underdog splits
+        ml_df = df[df["bet_type"].str.lower() == "moneyline"]
+        if len(ml_df) > 0 and "market_total" in ml_df.columns:
+            for split_type, condition in [("favorite", ml_df["market_total"] >= 0.5), ("underdog", ml_df["market_total"] < 0.5)]:
+                split_df = ml_df[condition].copy()
+                if len(split_df) > 0:
+                    s_wins = len(split_df[split_df["result"] == "WIN"])
+                    s_losses = len(split_df[split_df["result"] == "LOSS"])
+                    s_decided = s_wins + s_losses
+                    s_wr = s_wins / s_decided if s_decided > 0 else 0
+                    s_units = split_df["profit_loss"].sum() if "profit_loss" in split_df.columns else 0
+                    s_roi = (s_units / len(split_df)) * 100 if len(split_df) > 0 else 0
+                    splits[f"moneyline_{split_type}"] = {
+                        "total": len(split_df), "wins": s_wins, "losses": s_losses,
+                        "record": format_record(s_wins, s_losses), "win_rate": s_wr,
+                        "display_win_rate": format_percentage(s_wr),
+                        "units": round(s_units, 2), "display_units": format_units(s_units),
+                        "roi": round(s_roi, 2), "display_roi": format_percentage(s_roi, include_sign=True),
+                        "pnl_dollars": round(s_units * unit_size, 0), "display_pnl": format_money(s_units * unit_size)
+                    }
+        
+        # Totals: Over vs Under splits
+        totals_df = df[df["bet_type"].str.lower() == "totals"]
+        if len(totals_df) > 0:
+            for split_type in ["OVER", "UNDER"]:
+                split_df = totals_df[totals_df["recommendation"].str.upper() == split_type].copy()
+                if len(split_df) > 0:
+                    s_wins = len(split_df[split_df["result"] == "WIN"])
+                    s_losses = len(split_df[split_df["result"] == "LOSS"])
+                    s_decided = s_wins + s_losses
+                    s_wr = s_wins / s_decided if s_decided > 0 else 0
+                    s_units = split_df["profit_loss"].sum() if "profit_loss" in split_df.columns else 0
+                    s_roi = (s_units / len(split_df)) * 100 if len(split_df) > 0 else 0
+                    splits[f"totals_{split_type.lower()}"] = {
+                        "total": len(split_df), "wins": s_wins, "losses": s_losses,
+                        "record": format_record(s_wins, s_losses), "win_rate": s_wr,
+                        "display_win_rate": format_percentage(s_wr),
+                        "units": round(s_units, 2), "display_units": format_units(s_units),
+                        "roi": round(s_roi, 2), "display_roi": format_percentage(s_roi, include_sign=True),
+                        "pnl_dollars": round(s_units * unit_size, 0), "display_pnl": format_money(s_units * unit_size)
+                    }
+
+        return {
+            "splits": splits,
+            "summary": {
+                "total_predictions": total,
+                "wins": wins,
+                "losses": losses,
+                "pushes": pushes,
+                "record": format_record(wins, losses),
+                "win_rate": round(win_rate, 4),
+                "display_win_rate": format_percentage(win_rate),
+                "units_won": round(units_won, 2),
+                "display_units": format_units(units_won),
+                "roi": round(roi, 2),
+                "display_roi": format_percentage(roi, include_sign=True),
+                "avg_edge": round(avg_edge, 2),
+                "display_avg_edge": f"{avg_edge:.1f}%",
+                "pnl_dollars": round(pnl_dollars, 0),
+                "display_pnl": format_money(pnl_dollars)
+            },
+            "kelly": {
+                "full_pct": round(kelly['full'], 2),
+                "half_pct": round(kelly['half'], 2),
+                "quarter_pct": round(kelly['quarter'], 2),
+                "display_full": f"{kelly['full']:.2f}%",
+                "display_half": f"{kelly['half']:.2f}%",
+                "display_quarter": f"{kelly['quarter']:.2f}%",
+                "full_bet": round(bankroll * kelly['full'] / 100, 0),
+                "half_bet": round(bankroll * kelly['half'] / 100, 0),
+                "quarter_bet": round(bankroll * kelly['quarter'] / 100, 0),
+                "display_full_bet": format_money(bankroll * kelly['full'] / 100),
+                "display_half_bet": format_money(bankroll * kelly['half'] / 100),
+                "display_quarter_bet": format_money(bankroll * kelly['quarter'] / 100)
+            },
+            "by_sport": by_sport,
+            "by_model": by_model,
+            "by_confidence": by_confidence,
+            "filters": {
+                "sport": sport or "all",
+                "model": model or "all",
+                "bet_type": bet_type or "all",
+                "days": days,
+                "unit_size": unit_size,
+                "bankroll": bankroll
+            },
+            "generated_at": datetime.utcnow().isoformat() + 'Z',
+            "cache_buster": int(datetime.utcnow().timestamp() / 60)
+        }
+
+    except Exception as e:
+        logger.error(f"Error in UI model performance: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return {"error": str(e), "generated_at": datetime.utcnow().isoformat()}
+
+
+@router.get("/daily-edges")
+async def get_ui_daily_edges(
+    sport: str = Query(None),
+    bet_type: str = Query(None),
+    model: str = Query(None),
+    min_edge: float = Query(2.0),
+    min_confidence: float = Query(0.6),
+    sort_by: str = Query("edge"),
+    limit: int = Query(50)
+):
+    """
+    Returns FULLY FORMATTED, PRE-SORTED daily edges.
+    Frontend should just render this - no sorting or calculations needed.
+    """
+    try:
+        # Import the edge scanner function
+        import sys
+        sys.path.insert(0, '/root/sporttrader/backend')
+        from routes.edge_scanner import get_best_plays
+
+        # Get raw plays from edge scanner
+        result = await get_best_plays(
+            sport=sport if sport and sport.upper() != "ALL" else None,
+            min_edge=min_edge,
+            bet_type=bet_type if bet_type and bet_type.upper() != "ALL" else None,
+            model=model if model and model.upper() != "ALL" else None,
+            min_confidence=min_confidence,
+            projection_type="pregame",
+            limit=limit
+        )
+
+        plays = result.get("plays", [])
+
+        # Sort plays
+        if sort_by == "edge":
+            plays = sorted(plays, key=lambda x: abs(x.get("edge", 0)), reverse=True)
+        elif sort_by == "confidence":
+            plays = sorted(plays, key=lambda x: x.get("model_confidence", 0), reverse=True)
+        elif sort_by == "kelly":
+            plays = sorted(plays, key=lambda x: x.get("kelly_fraction", 0), reverse=True)
+        elif sort_by == "game_time":
+            plays = sorted(plays, key=lambda x: x.get("game_time", ""))
+
+        # Pre-format each play for display
+        formatted_plays = []
+        for p in plays[:limit]:
+            edge = p.get("edge", 0)
+            edge_pct = p.get("edge_percentage", 0)
+            confidence = p.get("model_confidence", 0)
+            kelly = p.get("kelly_fraction", 0)
+
+            formatted_plays.append({
+                # Raw values (for any filtering/logic frontend might need)
+                "id": p.get("id"),
+                "sport": p.get("sport", "").replace("basketball_", "").replace("icehockey_", "").replace("americanfootball_", "").upper(),
+                "game_time": p.get("game_time"),
+                "home_team": p.get("home_team"),
+                "away_team": p.get("away_team"),
+                "bet_type": p.get("bet_type"),
+                "market_line": p.get("market_line"),
+                "model_name": p.get("model_name"),
+                "recommendation": p.get("recommendation"),
+                "edge": edge,
+                "edge_percentage": edge_pct,
+                "model_confidence": confidence,
+                "kelly_fraction": kelly,
+                "probability": p.get("probability"),
+                "consensus": p.get("consensus", {}),
+
+                # Pre-formatted display strings
+                "display_matchup": f"{p.get('away_team', '')} @ {p.get('home_team', '')}",
+                "display_edge": f"{'+' if edge > 0 else ''}{edge:.1f} pts",
+                "display_edge_pct": f"{edge_pct:.1f}%",
+                "display_confidence": f"{confidence * 100:.0f}%",
+                "display_kelly": f"{kelly * 100:.1f}%",
+                "display_line": f"{p.get('market_line', 'N/A')}",
+                "display_recommendation": f"{p.get('recommendation', '')} {p.get('market_line', '')}",
+                "display_model": p.get("model_name", "").replace("_", " ").title(),
+                "display_bet_type": p.get("bet_type", "").title(),
+
+                # Styling hints
+                "edge_tier": "high" if abs(edge) >= 5 else "medium" if abs(edge) >= 3 else "low",
+                "confidence_tier": "high" if confidence >= 0.8 else "medium" if confidence >= 0.7 else "low"
+            })
+
+        return {
+            "total_plays": len(formatted_plays),
+            "plays": formatted_plays,
+            "filters": {
+                "sport": sport or "all",
+                "bet_type": bet_type or "all",
+                "model": model or "all",
+                "min_edge": min_edge,
+                "min_confidence": min_confidence,
+                "sort_by": sort_by,
+                "limit": limit
+            },
+            "generated_at": datetime.utcnow().isoformat() + 'Z',
+            "cache_buster": int(datetime.utcnow().timestamp() / 60)
+        }
+
+    except Exception as e:
+        logger.error(f"Error in UI daily edges: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return {"error": str(e), "plays": [], "generated_at": datetime.utcnow().isoformat()}

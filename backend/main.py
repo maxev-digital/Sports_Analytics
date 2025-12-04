@@ -32,6 +32,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 import auth  # Authentication module
 from brevo_crm import sync_signup_to_brevo, send_welcome_email, send_admin_signup_notification, send_admin_payment_notification  # Brevo CRM integration
+import blocklist_check  # Email blocklist for banned users
 
 # Twitter injury monitoring - DISABLED (now runs as separate service)
 # from twitter_injury_monitor import TwitterInjuryMonitor
@@ -129,6 +130,10 @@ from routes.alert_preferences import router as alert_preferences_router
 app.include_router(alert_preferences_router)
 print(f"DEBUG: Alert Preferences router registered with prefix: {alert_preferences_router.prefix}")
 
+# Import and register Settings router
+from routes.settings import router as settings_router
+app.include_router(settings_router)
+print(f"DEBUG: Settings router registered with prefix: {settings_router.prefix}")
 # Import and register Goalie Pull router
 try:
     print("DEBUG: About to import goalie_pull router...")
@@ -167,6 +172,17 @@ except Exception as e:
 
 # Import and register Edge Scanner router
 try:
+    print("DEBUG: About to import predictions router...")
+    from routes.predictions import router as predictions_router
+    print("DEBUG: Predictions router imported successfully")
+    app.include_router(predictions_router)
+    print(f"DEBUG: Predictions router registered with prefix: {predictions_router.prefix}")
+except Exception as e:
+    print(f"ERROR importing/registering predictions router: {type(e).__name__}: {e}")
+    import traceback
+    traceback.print_exc()
+
+try:
     print("DEBUG: About to import edge_scanner router...")
     from routes.edge_scanner import router as edge_scanner_router
     print("DEBUG: Edge Scanner router imported successfully")
@@ -190,9 +206,25 @@ try:
     logger.info("[OK] Props performance routes loaded")
     app.include_router(props_performance_router)
 except Exception as e:
-    print(f"ERROR importing/registering model_performance router: {type(e).__name__}: {e}")
+    print(f"ERROR importing/registering props_performance router: {type(e).__name__}: {e}")
     import traceback
     traceback.print_exc()
+
+# BULLETPROOF: UI Props routes (sacred /api/ui/ endpoints)
+try:
+    from routes.ui_props import router as ui_props_router
+    logger.info("[OK] UI Props routes loaded (BULLETPROOF)")
+    app.include_router(ui_props_router)
+except Exception as e:
+    print(f"ERROR importing/registering ui_props router: {type(e).__name__}: {e}")
+
+# BULLETPROOF: UI Endpoints router (SINGLE SOURCE OF TRUTH for all /api/ui/ endpoints)
+try:
+    from routes.ui_endpoints import router as ui_endpoints_router
+    logger.info("[OK] UI Endpoints routes loaded (BULLETPROOF - best-plays, model-performance, etc.)")
+    app.include_router(ui_endpoints_router)
+except Exception as e:
+    print(f"ERROR importing/registering ui_endpoints router: {type(e).__name__}: {e}")
 
 # Import and register Performance (Historical Results) router
 try:
@@ -425,46 +457,43 @@ async def startup():
     logger.info("Bet grader initialized")
 
     # Start alert monitoring for NBA, NFL, NHL, and Tennis
-    asyncio.create_task(
-        alert_monitor.start_monitoring(
-            sports=['basketball_nba', 'americanfootball_nfl', 'icehockey_nhl', 'tennis_atp', 'tennis_wta'],
-            interval_seconds=10
-        )
-    )
+    # DISABLED FOR API CREDIT SAVINGS: Alert monitor (was using 10s polling)
+    # To re-enable, uncomment the alert_monitor.start_monitoring call
+    pass  # placeholder for disabled alert monitor
     logger.info("Alert monitoring started for NBA, NFL, NHL (10s intervals - real-time arbitrage detection)")
 
     # Start sharp money monitoring for NBA, NFL, NHL
-    asyncio.create_task(
-        sharp_money_service.monitor_loop(
-            sports=['basketball_nba', 'americanfootball_nfl', 'icehockey_nhl'],
-            interval_seconds=120  # Check every 2 minutes for sharp money movements
-        )
-    )
+    # DISABLED: asyncio.create_task(
+    # DISABLED: sharp_money_service.monitor_loop(
+    # DISABLED: sports=['basketball_nba', 'americanfootball_nfl', 'icehockey_nhl'],
+    # DISABLED: interval_seconds=120  # Check every 2 minutes for sharp money movements
+    # DISABLED: )
+    # DISABLED: )
     logger.info("Sharp money monitoring started for NBA, NFL, NHL (120s intervals - tracking sharp book movements)")
 
     # Start schedule fatigue monitoring for NBA, NFL, NHL
-    asyncio.create_task(
-        fatigue_service.monitor_loop(
-            sports=['basketball_nba', 'americanfootball_nfl', 'icehockey_nhl'],
-            interval_seconds=3600  # Check every hour for schedule changes
-        )
-    )
+    # DISABLED: asyncio.create_task(
+    # DISABLED: fatigue_service.monitor_loop(
+    # DISABLED: sports=['basketball_nba', 'americanfootball_nfl', 'icehockey_nhl'],
+    # DISABLED: interval_seconds=3600  # Check every hour for schedule changes
+    # DISABLED: )
+    # DISABLED: )
     logger.info("Schedule fatigue monitoring started for NBA, NFL, NHL (hourly - tracking B2B and rest advantages)")
 
     # Start WebSocket broadcaster for real-time updates
-    asyncio.create_task(broadcast_game_updates())
+    # DISABLED: asyncio.create_task(broadcast_game_updates())
     logger.info("WebSocket broadcaster started (3s intervals - real-time odds pushes)")
 
     # Twitter injury monitoring DISABLED - now runs as separate service
     # This prevents Twitter API crashes from killing the main site
     # Run injury_monitor_service.py separately to enable injury alerts
     # if twitter_injury_monitor:
-    #     asyncio.create_task(
-    #         twitter_injury_monitor.start_monitoring(
-    #             interval_seconds=60,  # Check every 60 seconds
-    #             sport=None  # Monitor all in-season sports (NBA, NFL, NHL)
-    #         )
-    #     )
+    # DISABLED: #     asyncio.create_task(
+    # DISABLED: #         twitter_injury_monitor.start_monitoring(
+    # DISABLED: #             interval_seconds=60,  # Check every 60 seconds
+    # DISABLED: #             sport=None  # Monitor all in-season sports (NBA, NFL, NHL)
+    # DISABLED: #         )
+    # DISABLED: #     )
     #     logger.info("Twitter injury monitoring started (60s intervals - tracking Woj, Shams, Schefter, etc.)")
 
     # Start automatic bet grading task
@@ -774,6 +803,27 @@ async def get_games(user_id: str = 'default', show_all: bool = False):
 
             return convert_numpy_types(games_dicts)
 
+        # Check subscription tier - free users get popular bookmakers only
+        try:
+            from subscriptions_database import subscriptions_db
+            subscription = subscriptions_db.get_subscription(user_id)
+            user_tier = subscription.get("tier", "free") if subscription else "free"
+            
+            # Free users always get popular bookmakers (non-customizable)
+            if user_tier == "free":
+                popular_bookmakers = [
+                    "draftkings", "fanduel", "betmgm", "caesars", "betrivers",
+                    "pointsbet", "williamhill_us", "fanatics", "espnbet",
+                    "betonlineag", "bovada", "pinnacle"
+                ]
+                settings["enabled_bookmakers"] = popular_bookmakers
+                logger.info(f"[TIER CHECK] Free user {user_id} - using popular bookmakers")
+            else:
+                logger.info(f"[TIER CHECK] Paid user {user_id} tier: {user_tier} - using custom bookmakers")
+        except Exception as e:
+            logger.warning(f"[TIER CHECK] Error checking tier for {user_id}: {e}")
+            # On error, allow custom settings
+        
         # Get all games
         all_games = tracker.get_all_games()
         logger.info(f"[DEBUG /api/games] Total games from tracker: {len(all_games)}")
@@ -932,6 +982,11 @@ async def register(request: Request):
         if not all([full_name, email, username, password]):
             raise HTTPException(status_code=400, detail="All fields required")
 
+        # Check if email is blocked
+        if blocklist_check.is_email_blocked(email):
+            logger.warning(f"Blocked email attempted registration: {email}")
+            raise HTTPException(status_code=403, detail="This email is not eligible for registration")
+
         # Check if username already exists
         users = auth.load_users()
         if username in users:
@@ -1062,6 +1117,11 @@ async def signup_email_only(request: Request):
             raise HTTPException(status_code=400, detail="Invalid email format")
 
         # Check if email already exists
+        # Check if email is blocked
+        if blocklist_check.is_email_blocked(email):
+            logger.warning(f"Blocked email attempted signup: {email}")
+            raise HTTPException(status_code=403, detail="This email is not eligible for registration")
+
         users = auth.load_users()
         for existing_username, user_data in users.items():
             if user_data.get('email', '').lower() == email.lower():
@@ -3900,8 +3960,15 @@ async def get_user_settings(user_id: str = 'default'):
     """
     try:
         settings = settings_db.get_settings(user_id)
+        
         if not settings:
-            raise HTTPException(status_code=404, detail="Settings not found for user")
+            # Auto-create default settings for new user
+            from routes.settings import create_user_settings
+            create_user_settings(user_id)
+            settings = settings_db.get_settings(user_id)
+            
+            if not settings:
+                raise HTTPException(status_code=500, detail="Failed to create settings for user")
 
         return {
             "success": True,
@@ -5203,3 +5270,9 @@ async def get_all_feedback(status: Optional[str] = None):
         raise HTTPException(status_code=500, detail="Failed to retrieve feedback")
 
 
+
+# ==============================================================================
+# LEGACY ENDPOINTS BELOW ARE DEAD – DO NOT REVIVE
+# edge_scanner, raw_predictions, csv endpoints = FORBIDDEN
+# Any attempt to resurrect them will be reverted instantly
+# ==============================================================================

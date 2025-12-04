@@ -10,6 +10,7 @@ import pandas as pd
 from pathlib import Path
 import numpy as np
 import math
+import sqlite3
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +42,7 @@ TRACKING_DIR = Path(__file__).parent.parent / "data" / "tracking"
 PREDICTIONS_LOG = TRACKING_DIR / "predictions_log_multi_bet.csv"
 RESULTS_LOG = TRACKING_DIR / "results_log.csv"
 PERFORMANCE_SUMMARY = TRACKING_DIR / "performance_summary.csv"
+PREDICTIONS_DB = Path(__file__).parent.parent / "ml" / "predictions.db"  # SINGLE SOURCE OF TRUTH
 
 
 @router.get("/overview")
@@ -63,16 +65,28 @@ async def get_performance_overview(
         Overall performance metrics including win rate, ROI, accuracy by confidence level
     """
     try:
-        if not PREDICTIONS_LOG.exists() or not RESULTS_LOG.exists():
+        # Read from predictions.db - SINGLE SOURCE OF TRUTH
+        if not PREDICTIONS_DB.exists():
             return {
                 "error": "No tracking data available yet",
-                "message": "Model performance tracking will begin once predictions are logged",
+                "message": "Database not found",
                 "total_predictions": 0,
                 "total_results": 0
             }
 
-        # Load results (self-contained with all prediction data + corrected grades)
-        merged_df = pd.read_csv(RESULTS_LOG)
+        # Load results from database (contains all predictions with results)
+        conn = sqlite3.connect(str(PREDICTIONS_DB))
+        merged_df = pd.read_sql_query("SELECT * FROM results", conn)
+        conn.close()
+
+        # Add aliased columns for compatibility (database uses predicted_value/market_value)
+        if 'predicted_total' not in merged_df.columns and 'predicted_value' in merged_df.columns:
+            merged_df['predicted_total'] = merged_df['predicted_value']
+        if 'market_total' not in merged_df.columns and 'market_value' in merged_df.columns:
+            merged_df['market_total'] = merged_df['market_value']
+
+        # Calculate edge column
+        merged_df['edge'] = merged_df['predicted_total'] - merged_df['market_total']
 
         # Filter by date
         cutoff_date = pd.Timestamp.now() - pd.Timedelta(days=days)
@@ -86,10 +100,6 @@ async def get_performance_overview(
             merged_df = merged_df[merged_df['model'].str.lower() == model.lower()]
         if bet_type:
             merged_df = merged_df[merged_df['bet_type'].str.lower() == bet_type.lower()]
-
-        # Add edge column if not present (for compatibility with frontend)
-        if 'edge' not in merged_df.columns:
-            merged_df['edge'] = merged_df['predicted_total'] - merged_df['market_total']
 
         if len(merged_df) == 0:
             return {
@@ -112,8 +122,12 @@ async def get_performance_overview(
         win_rate = wins / (wins + losses) if (wins + losses) > 0 else 0
 
         # ROI calculation
-        total_profit_loss = merged_df['profit_loss'].sum() if 'profit_loss' in merged_df.columns else 0
-        roi = (total_profit_loss / total_bets) * 100 if total_bets > 0 else 0
+        # profit_loss is in dollars, convert to units by dividing by 100 (standard unit size)
+        total_profit_loss_dollars = merged_df['profit_loss'].sum() if 'profit_loss' in merged_df.columns else 0
+        units_won = total_profit_loss_dollars / 100  # Convert dollars to units
+        # ROI should be calculated on graded bets only (wins + losses), not including pushes
+        graded_bets = wins + losses
+        roi = (units_won / graded_bets) * 100 if graded_bets > 0 else 0
 
         # Average edge
         avg_edge = merged_df['edge'].abs().mean()
@@ -129,11 +143,13 @@ async def get_performance_overview(
             if len(conf_df) > 0:
                 conf_wins = len(conf_df[conf_df['result'] == 'WIN'])
                 conf_total = len(conf_df[conf_df['result'].isin(['WIN', 'LOSS'])])
+                # Convert profit_loss from dollars to units for confidence stats
+                conf_units_won = conf_df['profit_loss'].sum() / 100 if 'profit_loss' in conf_df.columns else 0
                 confidence_stats[conf.lower()] = {
                     "total": len(conf_df),
                     "wins": conf_wins,
                     "win_rate": conf_wins / conf_total if conf_total > 0 else 0,
-                    "roi": (conf_df['profit_loss'].sum() / len(conf_df)) * 100 if 'profit_loss' in conf_df.columns else 0
+                    "roi": (conf_units_won / len(conf_df)) * 100 if len(conf_df) > 0 else 0
                 }
 
         # Performance by sport
@@ -175,7 +191,7 @@ async def get_performance_overview(
                 "win_rate": round(win_rate, 4),
                 "roi": round(roi, 2),
                 "avg_edge": round(avg_edge, 2),
-                "units_won": round(total_profit_loss, 2) if 'profit_loss' in merged_df.columns else 0,
+                "units_won": round(units_won, 2),
                 "last_updated": last_updated
             },
             "by_confidence": confidence_stats,
@@ -210,14 +226,17 @@ async def get_performance_history(
     Returns daily/weekly performance metrics to show improvement over time
     """
     try:
-        if not PREDICTIONS_LOG.exists() or not RESULTS_LOG.exists():
+        # Read from predictions.db - SINGLE SOURCE OF TRUTH
+        if not PREDICTIONS_DB.exists():
             return {
                 "error": "No tracking data available yet",
                 "history": []
             }
 
-        # Load results (self-contained with all prediction data + corrected grades)
-        merged_df = pd.read_csv(RESULTS_LOG)
+        # Load results from database
+        conn = sqlite3.connect(str(PREDICTIONS_DB))
+        merged_df = pd.read_sql_query("SELECT * FROM results", conn)
+        conn.close()
 
         # Convert dates
         merged_df['game_date_dt'] = pd.to_datetime(merged_df['game_date'], format='mixed', errors='coerce')
@@ -256,12 +275,14 @@ async def get_performance_history(
             day_losses = len(day_df[day_df['result'] == 'LOSS'])
             day_total = day_wins + day_losses
             day_win_rate = day_wins / day_total if day_total > 0 else 0
-            day_profit = day_df['profit_loss'].sum() if 'profit_loss' in day_df.columns else 0
+            # profit_loss is in dollars, convert to units
+            day_profit_dollars = day_df['profit_loss'].sum() if 'profit_loss' in day_df.columns else 0
+            day_profit_units = day_profit_dollars / 100
 
             # Update cumulative stats
             cumulative_wins += day_wins
             cumulative_total += day_total
-            cumulative_profit += day_profit
+            cumulative_profit += day_profit_units  # Now accumulating units, not dollars
 
             # Calculate cumulative win rate
             cumulative_win_rate = cumulative_wins / cumulative_total if cumulative_total > 0 else 0
@@ -273,8 +294,8 @@ async def get_performance_history(
                 "losses": day_losses,
                 "win_rate": round(cumulative_win_rate, 4),  # Use cumulative for trend
                 "daily_win_rate": round(day_win_rate, 4),  # Daily for reference
-                "roi": round((cumulative_profit / (cumulative_wins + cumulative_total - cumulative_wins)) * 100, 2) if cumulative_total > 0 else 0,
-                "daily_roi": round((day_profit / len(day_df)) * 100, 2) if len(day_df) > 0 else 0,
+                "roi": round((cumulative_profit / cumulative_total) * 100, 2) if cumulative_total > 0 else 0,
+                "daily_roi": round((day_profit_units / len(day_df)) * 100, 2) if len(day_df) > 0 else 0,
                 "units_won": round(cumulative_profit, 2)
             })
 
@@ -408,16 +429,24 @@ async def get_individual_predictions(
         Individual predictions with game details and results
     """
     try:
-        # Read directly from results_log.csv (self-contained with all columns)
-        if not RESULTS_LOG.exists():
+        # Read from predictions.db - SINGLE SOURCE OF TRUTH
+        if not PREDICTIONS_DB.exists():
             return {
                 "predictions": [],
                 "total": 0,
                 "message": "No results data available yet"
             }
 
-        # Load results data
-        predictions_df = pd.read_csv(RESULTS_LOG)
+        # Load results from database (contains all predictions with results)
+        conn = sqlite3.connect(str(PREDICTIONS_DB))
+        predictions_df = pd.read_sql_query("SELECT * FROM results", conn)
+        conn.close()
+
+        # Add aliased columns for compatibility (database uses predicted_value/market_value)
+        if 'predicted_total' not in predictions_df.columns and 'predicted_value' in predictions_df.columns:
+            predictions_df['predicted_total'] = predictions_df['predicted_value']
+        if 'market_total' not in predictions_df.columns and 'market_value' in predictions_df.columns:
+            predictions_df['market_total'] = predictions_df['market_value']
 
         # Convert date column
         if 'game_date' in predictions_df.columns:
@@ -459,8 +488,8 @@ async def get_individual_predictions(
                     'home_team': safe_value(row.get('home_team')),
                     'bet_type': safe_value(row.get('bet_type')),
                     'model': safe_value(row.get('model')),
-                    'predicted_value': safe_float(row.get('predicted_total')),  # Use predicted_total from results_log
-                    'market_value': safe_float(row.get('market_total')),  # Use market_total from results_log
+                    'predicted_value': safe_float(row.get('predicted_total')),  # Use predicted_total alias
+                    'market_value': safe_float(row.get('market_total')),  # Use market_total alias
                     'edge': safe_float(row.get('predicted_total')) - safe_float(row.get('market_total')) if pd.notna(row.get('predicted_total')) and pd.notna(row.get('market_total')) else None,
                     'recommendation': safe_value(row.get('recommendation')),
                     'confidence': safe_value(row.get('confidence')),

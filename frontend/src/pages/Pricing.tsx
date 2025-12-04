@@ -26,8 +26,7 @@ export function Pricing() {
   const [signupSubmitted, setSignupSubmitted] = useState(false);
   const [signupLoading, setSignupLoading] = useState(false);
 
-  // Early adopter promotion - flat 50% off for all early members
-  const discountPercent = 50;
+  // No discounts - standard pricing
 
   const toggleCardExpansion = (planName: string) => {
     setExpandedCards(prev => {
@@ -146,7 +145,6 @@ export function Pricing() {
     subscriptionStatus.tier !== 'free';
 
   // Stripe Price IDs - LIVE MODE (Correct Account - Final)
-  // EARLY50 promo code auto-applied for 50% OFF FOR LIFE
   const STRIPE_PRICE_IDS = {
     beta: 'price_1SQEZcR1TzxiBDhGeZgpoWVN', // $9.99/mo Beta Launch (NO EARLY50)
     starter: 'price_1SNuPeR1TzxiBDhG2poLUgpO',
@@ -206,9 +204,7 @@ export function Pricing() {
   const plans = [
     {
       name: 'Starter',
-      price: 29,
-      discountedPrice: 15,  // Exact discounted price
-      fullPrice: 29,
+      price: 19,
       period: 'month',
       description: 'Essential sports data analytics tools',
       edge: '2-4%',
@@ -232,17 +228,15 @@ export function Pricing() {
         'No advanced models',
         'No API access',
       ],
-      cta: 'Sign Me Up for 50% Off',
+      cta: 'Get Started',
       popular: false,
       color: 'green',
-      annualPrice: 278,
-      discountedAnnualPrice: 139,  // 50% off annual
-      annualSavings: 70,
+      annualPrice: 199,
+      annualSavings: 29,
     },
     {
       name: 'Semi Pro',
-      price: 99,
-      discountedPrice: 49,  // Exact discounted price - MOST POPULAR
+      price: 49,
       period: 'month',
       description: 'For serious sports data analysts',
       edge: '4-6%',
@@ -265,17 +259,15 @@ export function Pricing() {
         'Position sizing calculator',
       ],
       limitations: [],
-      cta: 'Sign Me Up for 50% Off',
+      cta: 'Get Started',
       popular: true,
       color: 'blue',
-      annualPrice: 950,
-      discountedAnnualPrice: 475,  // 50% off annual
-      annualSavings: 238,
+      annualPrice: 499,
+      annualSavings: 89,
     },
     {
       name: 'Professional',
-      price: 199,
-      discountedPrice: 99,  // Exact discounted price
+      price: 99,
       period: 'month',
       description: 'Maximum sports data analytics firepower',
       edge: '6-8%',
@@ -300,17 +292,15 @@ export function Pricing() {
         'Multi-account tracking',
       ],
       limitations: [],
-      cta: 'Sign Me Up for 50% Off',
+      cta: 'Get Started',
       popular: false,
       color: 'purple',
-      annualPrice: 1910,
-      discountedAnnualPrice: 955,  // 50% off annual
-      annualSavings: 478,
+      annualPrice: 999,
+      annualSavings: 189,
     },
     {
       name: 'Elite',
-      price: 499,
-      discountedPrice: 249,  // Exact discounted price
+      price: 249,
       period: 'month',
       description: 'For professional operations and serious analysts',
       edge: '8-10%',
@@ -338,15 +328,13 @@ export function Pricing() {
       cta: 'Contact Sales',
       popular: false,
       color: 'amber',
-      annualPrice: 4790,
-      discountedAnnualPrice: 2395,  // 50% off annual
-      annualSavings: 1198,
+      annualPrice: 2499,
+      annualSavings: 489,
       enterprise: false,
     },
     {
       name: 'Elite Pro',
-      price: 799,
-      discountedPrice: 400,  // Exact discounted price - TOP 2% ONLY
+      price: 499,
       period: 'month',
       description: 'Ultra-premium tier for the top 2% of analysts',
       edge: '10-15%',
@@ -374,20 +362,12 @@ export function Pricing() {
       cta: 'Apply for Access',
       popular: false,
       color: 'red',
-      annualPrice: 7670,
-      discountedAnnualPrice: 3835,  // 50% off annual
-      annualSavings: 1918,
+      annualPrice: 4999,
+      annualSavings: 989,
       enterprise: true,
       exclusive: true,
     },
   ];
-
-  // Pricing after 50% discount:
-  // Starter: $29 → $15
-  // Semi Pro: $99 → $49 (MOST POPULAR)
-  // Professional: $199 → $99
-  // Elite: $499 → $249
-  // Elite Pro: $799 → $400 (TOP 2% ONLY)
 
   const faqs = [
     {
@@ -404,7 +384,7 @@ export function Pricing() {
     },
     {
       q: 'Is there a discount for annual plans?',
-      a: 'Yes! Save 20% when you pay annually. Semi Pro: $758/year (save $190), Professional: $1,430/year (save $358), Elite: $2,870/year (save $718), Elite Pro: $7,670/year (save $1,918)'
+      a: 'Yes! Save by paying annually. Starter: $199/year (save $29), Semi Pro: $499/year (save $89), Professional: $999/year (save $189), Elite: $2,499/year (save $489), Elite Pro: $4,999/year (save $989)'
     },
     {
       q: 'Do you have an API?',
@@ -471,7 +451,7 @@ export function Pricing() {
         {!loadingStatus && (
           <div className="mb-12 rounded-2xl overflow-hidden shadow-2xl bg-black">
             <img
-              src="/MainBannerPrice.png"
+              src={`/assets/BANNER.png?v=${Date.now()}`}
               alt="Max EV Sports Analytics Dashboard"
               className="w-full h-auto"
               style={{ imageRendering: 'crisp-edges' }}
@@ -485,10 +465,10 @@ export function Pricing() {
         {!loadingStatus && (
           <div className="mb-16">
             <h2 className="text-4xl font-bold text-slate-100 mb-4 text-center">
-              Maximizing Expected Value Through Sports Data Analysis By Monitoring All Games Systematically Through Automation and Machine Learning
+              Maximizing Expected Value Through Game State Data Analysis Through Automation and Machine Learning Models
             </h2>
             <p className="text-xl text-slate-300 mb-8 text-center max-w-4xl mx-auto">
-              Explore our powerful platform features - Proprietary Sports Analytics Engine - 50+ Analytical Strategies
+              Explore our powerful platform features - Proprietary Sports Analytics Engine - 50+ Strategies
             </p>
             <ImageSlider />
           </div>
@@ -599,20 +579,11 @@ export function Pricing() {
                     <div className="flex flex-col items-center gap-1">
                       {plan.price > 0 ? (
                         <>
-                          {/* Original price struck through */}
-                          <div className="text-slate-500 text-xl line-through">
-                            ${plan.price}/mo
-                          </div>
-                          {/* Discounted price */}
                           <div className="flex items-baseline gap-1">
                             <span className="text-5xl font-bold text-white">
-                              ${plan.discountedPrice || Math.round(plan.price * (1 - discountPercent / 100))}
+                              ${plan.price}
                             </span>
                             <span className="text-slate-400 text-sm">/ month</span>
-                          </div>
-                          {/* Discount badge */}
-                          <div className="text-sm font-bold px-3 py-1 rounded-full bg-green-500 text-white">
-                            {discountPercent}% OFF FOR LIFE
                           </div>
                         </>
                       ) : (
@@ -623,20 +594,11 @@ export function Pricing() {
                     <div className="flex flex-col items-center gap-1">
                       {plan.annualPrice ? (
                         <>
-                          {/* Original annual price struck through */}
-                          <div className="text-slate-500 text-xl line-through">
-                            ${plan.annualPrice}/yr
-                          </div>
-                          {/* Discounted annual price */}
                           <div className="flex items-baseline gap-1">
                             <span className="text-5xl font-bold text-white">
-                              ${plan.discountedAnnualPrice || Math.round(plan.annualPrice * (1 - discountPercent / 100))}
+                              ${plan.annualPrice}
                             </span>
                             <span className="text-slate-400 text-sm">/ year</span>
-                          </div>
-                          {/* Discount badge */}
-                          <div className="text-sm font-bold px-3 py-1 rounded-full bg-green-500 text-white">
-                            {discountPercent}% OFF FOR LIFE
                           </div>
                         </>
                       ) : (
@@ -772,7 +734,7 @@ export function Pricing() {
                   <th className="text-left py-4 px-4 text-slate-100 font-bold">Feature</th>
                   <th className="text-center py-4 px-4 bg-blue-900/30">
                     <div className="font-bold text-blue-300 text-xl">Max EV Sports</div>
-                    <div className="text-sm text-blue-200 mt-1">Semi Pro $79/mo</div>
+                    <div className="text-sm text-blue-200 mt-1">Semi Pro $49/mo</div>
                   </th>
                   <th className="text-center py-4 px-4 text-slate-300">
                     <div className="font-bold text-slate-100 text-lg">OddsJam</div>
@@ -797,7 +759,7 @@ export function Pricing() {
                 <tr className="border-b border-slate-700/50">
                   <td className="py-4 px-4 font-semibold text-slate-100 text-base">Monthly Price</td>
                   <td className="text-center py-4 px-4 bg-blue-900/10">
-                    <span className="text-green-400 font-bold text-xl">$79</span>
+                    <span className="text-green-400 font-bold text-xl">$49</span>
                   </td>
                   <td className="text-center py-4 px-4 text-slate-200 text-base">$99</td>
                   <td className="text-center py-4 px-4 text-slate-200 text-base">$149</td>
@@ -985,9 +947,9 @@ export function Pricing() {
           {/* Value Proposition Callout */}
           <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-green-900/30 border-2 border-green-600 rounded-xl p-6 text-center">
-              <div className="text-3xl font-bold text-green-400 mb-2">$20-70</div>
-              <div className="text-sm text-green-300 font-semibold">CHEAPER per month than competitors</div>
-              <div className="text-xs text-slate-400 mt-2">Same tier features at lower cost</div>
+              <div className="text-3xl font-bold text-green-400 mb-2">Equal or Better</div>
+              <div className="text-sm text-green-300 font-semibold">VALUE per month than competitors</div>
+              <div className="text-xs text-slate-400 mt-2">More features, better coverage</div>
             </div>
             <div className="bg-blue-900/30 border-2 border-blue-600 rounded-xl p-6 text-center">
               <div className="text-3xl font-bold text-blue-400 mb-2">50-75%</div>
@@ -999,10 +961,10 @@ export function Pricing() {
           {/* Bottom CTA */}
           <div className="mt-8 text-center">
             <p className="text-lg text-slate-300 mb-4">
-              <span className="font-bold text-blue-400">Bottom Line:</span> Get more features, more coverage, and better support — all for less money.
+              <span className="font-bold text-blue-400">Bottom Line:</span> Get more features, more coverage, and better support.
             </p>
             <p className="text-sm text-slate-400">
-              Our Semi Pro tier at $79/mo beats OddsJam Premium ($99), Unabated Elite ($99), and BetQL Premium ($49) on every metric that matters.
+              Our Semi Pro tier at $49/mo matches BetQL pricing while delivering features comparable to OddsJam Premium ($99) and Unabated Elite ($99).
             </p>
           </div>
         </div>
@@ -1064,7 +1026,7 @@ export function Pricing() {
                     <td className="py-4 px-4">
                       <span className="font-bold text-green-400">Starter</span>
                     </td>
-                    <td className="py-4 px-4 text-slate-300">$19.99/mo</td>
+                    <td className="py-4 px-4 text-slate-300">$19/mo</td>
                     <td className="py-4 px-4 text-slate-300 text-xs">
                       The Odds API Starter<br />
                       <span className="text-slate-500">(30-45s polling)</span>
@@ -1085,7 +1047,7 @@ export function Pricing() {
                         <span className="text-xs bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full">Most Popular</span>
                       </div>
                     </td>
-                    <td className="py-4 px-4 text-slate-300">$59.99/mo</td>
+                    <td className="py-4 px-4 text-slate-300">$49/mo</td>
                     <td className="py-4 px-4 text-slate-300 text-xs">
                       SportsGameOdds<br />
                       <span className="text-slate-500">(&lt;1s WebSocket option)</span>
@@ -1103,7 +1065,7 @@ export function Pricing() {
                     <td className="py-4 px-4">
                       <span className="font-bold text-purple-400">Professional</span>
                     </td>
-                    <td className="py-4 px-4 text-slate-300">$129.99/mo</td>
+                    <td className="py-4 px-4 text-slate-300">$99/mo</td>
                     <td className="py-4 px-4 text-slate-300 text-xs">
                       Advanced Data<br />
                       <span className="text-slate-500">(Real-time updates)</span>
@@ -1121,7 +1083,7 @@ export function Pricing() {
                     <td className="py-4 px-4">
                       <span className="font-bold text-amber-400">Elite</span>
                     </td>
-                    <td className="py-4 px-4 text-slate-300">$249.99/mo</td>
+                    <td className="py-4 px-4 text-slate-300">$249/mo</td>
                     <td className="py-4 px-4 text-slate-300 text-xs">
                       Sportradar Full<br />
                       <span className="text-slate-500">(Sub-1s push)</span>
@@ -1142,7 +1104,7 @@ export function Pricing() {
                         <span className="text-xs bg-red-500/20 text-red-300 px-2 py-0.5 rounded-full">Invite-only</span>
                       </div>
                     </td>
-                    <td className="py-4 px-4 text-slate-300">$599.99/mo</td>
+                    <td className="py-4 px-4 text-slate-300">$499/mo</td>
                     <td className="py-4 px-4 text-slate-300 text-xs">
                       Sportradar Elite<br />
                       <span className="text-slate-500">(Sub-50ms)</span>

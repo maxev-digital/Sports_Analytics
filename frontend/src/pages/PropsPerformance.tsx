@@ -135,31 +135,25 @@ export function PropsPerformance() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const params = new URLSearchParams({ days: days.toString() });
+      const params = new URLSearchParams({
+        days: days.toString(),
+        limit: '50',
+        unit_size: unitSize.toString(),
+        bankroll: startingBankroll.toString()
+      });
       if (selectedSport !== 'all') params.append('sport', selectedSport);
       if (selectedPropType !== 'all') params.append('prop_type', selectedPropType);
       if (selectedModel !== 'all') params.append('model', selectedModel);
 
-      // Fetch overview
-      const overviewRes = await fetch(getApiUrl(`props-performance/overview?${params.toString()}`));
-      const overviewData = await overviewRes.json();
-      setOverview(overviewData);
+      // BULLETPROOF: Single /api/ui/props-performance call returns everything
+      const response = await fetch(getApiUrl(`props-performance?${params.toString()}`));
+      const data = await response.json();
 
-      // Fetch history
-      const historyRes = await fetch(getApiUrl(`props-performance/history?${params.toString()}`));
-      const historyData = await historyRes.json();
-      setHistory(historyData.history || []);
-
-      // Fetch individual predictions
-      const predictionsParams = new URLSearchParams({ days: days.toString(), limit: '50' });
-      if (selectedSport !== 'all') predictionsParams.append('sport', selectedSport);
-      if (selectedPropType !== 'all') predictionsParams.append('prop_type', selectedPropType);
-      if (selectedModel !== 'all') predictionsParams.append('model', selectedModel);
-
-      const predictionsRes = await fetch(getApiUrl(`props-performance/predictions?${predictionsParams.toString()}`));
-      const predictionsData = await predictionsRes.json();
-      setPredictions(predictionsData.predictions || []);
-      setPredictionsTotal(predictionsData.total || 0);
+      // Backend returns all data pre-calculated
+      setOverview(data);
+      setHistory(data.history || []);
+      setPredictions(data.predictions || []);
+      setPredictionsTotal(data.predictions_total || 0);
 
       setLoading(false);
     } catch (error) {

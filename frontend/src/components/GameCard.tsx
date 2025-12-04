@@ -8,8 +8,6 @@ import { trackBetClick } from '../utils/betTracking';
 import { useAuth } from '../contexts/AuthContext';
 import { useBetSlip } from '../contexts/BetSlipContext';
 import { MomentumBar } from './MomentumBar';
-import { AdvancedSystemsDropdown } from './AdvancedSystemsDropdown';
-import { EdgeLabDropdown } from './EdgeLabDropdown';
 import { formatTeamName } from '../utils/teamNames';
 
 interface GameCardProps {
@@ -301,6 +299,23 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
     ? (odds.reduce((sum, o) => sum + o.total, 0) / odds.length).toFixed(1)
     : '---';
 
+  // Extract FanDuel opening lines (static - never changes)
+  const fanduelOdds = odds.find(odd => {
+    const bookmakerName = odd.bookmaker?.toLowerCase() || '';
+    return bookmakerName === 'fanduel' || bookmakerName.includes('fanduel');
+  });
+
+  const fanduelOpeningLines = fanduelOdds ? {
+    spread: fanduelOdds.home_spread !== null && fanduelOdds.home_spread !== undefined
+      ? { away: -fanduelOdds.home_spread, home: fanduelOdds.home_spread }
+      : null,
+    moneyline: {
+      away: fanduelOdds.away_ml || null,
+      home: fanduelOdds.home_ml || null
+    },
+    total: fanduelOdds.total || null
+  } : null;
+
   // Determine card styling based on edge
   const hasEdge = projection.edge !== null && Math.abs(projection.edge) >= 5;
   const edgeClass = hasEdge
@@ -500,21 +515,23 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
               <span className={`text-3xl font-bold ${textPrimary}`}>{state.away_team.score}</span>
             )}
           </div>
-          <div className="flex gap-4 text-base">
-            {state.away_team.spread !== null && state.away_team.spread !== undefined && (
-              <div className={textSecondary}>
-                <span className={textTertiary}>{isNHL ? "Puck Line: " : "Spread: "}</span>
-                <span className="font-bold">{state.away_team.spread > 0 ? '+' : ''}{state.away_team.spread}</span>
-                {state.away_team.spread_price && <span className="font-bold"> ({state.away_team.spread_price > 0 ? '+' : ''}{state.away_team.spread_price})</span>}
-              </div>
-            )}
-            {state.away_team.money_line !== null && state.away_team.money_line !== undefined && (
-              <div className={textSecondary}>
-                <span className={textTertiary}>ML: </span>
-                <span className="font-bold">{state.away_team.money_line > 0 ? '+' : ''}{state.away_team.money_line}</span>
-              </div>
-            )}
-          </div>
+          {/* FanDuel Opening Lines (Static) */}
+          {fanduelOpeningLines && (
+            <div className="flex gap-4 text-base">
+              {fanduelOpeningLines.spread?.away !== null && fanduelOpeningLines.spread?.away !== undefined && (
+                <div className={textSecondary}>
+                  <span className={textTertiary}>{isNHL ? "Puck Line: " : "Spread: "}</span>
+                  <span className="font-bold">{fanduelOpeningLines.spread.away > 0 ? '+' : ''}{fanduelOpeningLines.spread.away}</span>
+                </div>
+              )}
+              {fanduelOpeningLines.moneyline?.away !== null && fanduelOpeningLines.moneyline?.away !== undefined && (
+                <div className={textSecondary}>
+                  <span className={textTertiary}>ML: </span>
+                  <span className="font-bold">{fanduelOpeningLines.moneyline.away > 0 ? '+' : ''}{fanduelOpeningLines.moneyline.away}</span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Home Team */}
@@ -527,76 +544,35 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
               <span className={`text-3xl font-bold ${textPrimary}`}>{state.home_team.score}</span>
             )}
           </div>
-          <div className="flex gap-4 text-base">
-            {state.home_team.spread !== null && state.home_team.spread !== undefined && (
-              <div className={textSecondary}>
-                <span className={textTertiary}>{isNHL ? "Puck Line: " : "Spread: "}</span>
-                <span className="font-bold">{state.home_team.spread > 0 ? '+' : ''}{state.home_team.spread}</span>
-                {state.home_team.spread_price && <span className="font-bold"> ({state.home_team.spread_price > 0 ? '+' : ''}${state.home_team.spread_price})</span>}
-              </div>
-            )}
-            {state.home_team.money_line !== null && state.home_team.money_line !== undefined && (
-              <div className={textSecondary}>
-                <span className={textTertiary}>ML: </span>
-                <span className="font-bold">{state.home_team.money_line > 0 ? '+' : ''}{state.home_team.money_line}</span>
-              </div>
-            )}
-          </div>
+          {/* FanDuel Opening Lines (Static) */}
+          {fanduelOpeningLines && (
+            <div className="flex gap-4 text-base">
+              {fanduelOpeningLines.spread?.home !== null && fanduelOpeningLines.spread?.home !== undefined && (
+                <div className={textSecondary}>
+                  <span className={textTertiary}>{isNHL ? "Puck Line: " : "Spread: "}</span>
+                  <span className="font-bold">{fanduelOpeningLines.spread.home > 0 ? '+' : ''}{fanduelOpeningLines.spread.home}</span>
+                </div>
+              )}
+              {fanduelOpeningLines.moneyline?.home !== null && fanduelOpeningLines.moneyline?.home !== undefined && (
+                <div className={textSecondary}>
+                  <span className={textTertiary}>ML: </span>
+                  <span className="font-bold">{fanduelOpeningLines.moneyline.home > 0 ? '+' : ''}{fanduelOpeningLines.moneyline.home}</span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
+
+        {/* FanDuel Opening Total (Static) */}
+        {fanduelOpeningLines?.total !== null && fanduelOpeningLines?.total !== undefined && (
+          <div className="text-center border-t border-slate-700/50 pt-2">
+            <div className={textSecondary}>
+              <span className={textTertiary}>Total (O/U): </span>
+              <span className="font-bold">{fanduelOpeningLines.total}</span>
+            </div>
+          </div>
+        )}
       </div>
-
-      {/* Max Ev Boost Alerts - Advanced Systems Dropdown */}
-      <AdvancedSystemsDropdown
-        sportKey={state.sport_key}
-        gameId={state.id}
-      />
-
-      {/* Edge Lab - Multi-Model Predictions (NBA/NCAAB only for now) */}
-      {(sportBadge === 'NBA' || sportBadge === 'NCAAB') && (() => {
-        // Construct real game data for ML models
-        const edgeLabGameData = {
-          game_id: state.id,
-          home_team: state.home_team.name,
-          away_team: state.away_team.name,
-          home_stats: {
-            pace: home_team_stats?.pace || 100,
-            off_rating: home_team_stats?.off_rating || 110,
-            def_rating: home_team_stats?.def_rating || 108,
-            rest_days: 1  // Could calculate from schedule if available
-          },
-          away_stats: {
-            pace: away_team_stats?.pace || 98,
-            off_rating: away_team_stats?.off_rating || 108,
-            def_rating: away_team_stats?.def_rating || 110,
-            rest_days: 1  // Could calculate from schedule if available
-          },
-          market_total: state.status === 'live' && projection.current_total
-            ? projection.current_total
-            : projection.pregame_total,
-          sport: sportBadge === 'NBA' ? 'nba' : 'ncaab',
-          // Live game state for in-game projections
-          is_live: state.status === 'live',
-          current_score: state.status === 'live'
-            ? (state.home_team.score || 0) + (state.away_team.score || 0)
-            : null,
-          quarter: state.status === 'live' ? state.quarter : null,
-          time_remaining: state.status === 'live' ? state.time_remaining : null
-        };
-
-        return (
-          <>
-            <EdgeLabDropdown
-              gameId={state.id}
-              marketLine={state.status === 'live' && projection.current_total
-                ? projection.current_total
-                : projection.pregame_total}
-              sport={sportBadge === 'NBA' ? 'nba' : 'ncaab'}
-              betType="totals"
-              gameData={edgeLabGameData}
-            />
-          </>
-        );
-      })()}
 
       {/* Team Momentum Bar (NBA/NCAAB only, live games) */}
       {(sportBadge === 'NBA' || sportBadge === 'NCAAB') && state.status === 'live' && (state.home_team.momentum !== null || state.away_team.momentum !== null) && (
@@ -1293,7 +1269,7 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                       <span className={`text-sm px-2 py-0.5 rounded ${
                         home_nhl_momentum.possession_indicator === 'ATTACKING' ? 'bg-green-900 text-green-200' :
                         home_nhl_momentum.possession_indicator === 'DEFENDING' ? 'bg-red-900 text-red-200' :
-                        'bg-slate-700 ${textSecondary}'
+                        `bg-slate-700 ${textSecondary}`
                       }`}>
                         {home_nhl_momentum.possession_indicator}
                       </span>
@@ -2351,6 +2327,14 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
         </div>
       )}
 
+      {/* MAX-EV-Alerts Section */}
+      <div className={`${dividerClass} mt-2 pt-2`}>
+        <div className={`text-lg ${textSecondary} font-bold mb-2`}>MAX-EV-Alerts</div>
+        <div className={`text-sm ${textMuted} italic`}>
+          Real-time edge alerts coming soon...
+        </div>
+      </div>
+
       {/* Best Available Lines Section (Replaces Live Betting Lines) */}
       {odds.length > 0 && (
         <div className={`${dividerClass} mt-2 pt-2`}>
@@ -2625,32 +2609,47 @@ export function GameCard({ game, isPinned = false, onTogglePin }: GameCardProps)
                       )}
                       {shouldHighlight && <span className="text-blue-300">⭐</span>}
                     </div>
-                    {/* Display based on selected market */}
-                    {selectedMarket === 'totals' && (
-                      <span className={`${shouldHighlight ? 'text-blue-200 font-bold text-base' : `${textSecondary} font-bold`}`}>
-                        O/U <span className="font-extrabold text-lg">{odd.total}</span> (<span className="font-bold">{odd.over_price > 0 ? '+' : ''}{odd.over_price}/{odd.under_price > 0 ? '+' : ''}{odd.under_price}</span>)
-                      </span>
-                    )}
-                    {selectedMarket === 'spread' && (
-                      <div className={`${shouldHighlight ? 'text-blue-200' : textSecondary} text-base font-bold flex gap-3`}>
-                        <span>
-                          {formatTeamName(state.home_team.name, state.sport_key).split(' ').pop()}: <span className="font-extrabold text-base">{odd.home_spread > 0 ? '+' : ''}{odd.home_spread}</span> <span className="text-sm">({odd.home_spread_price > 0 ? '+' : ''}{odd.home_spread_price})</span>
+
+                    <div className="flex items-center gap-3">
+                      {/* Display based on selected market */}
+                      {selectedMarket === 'totals' && (
+                        <span className={`${shouldHighlight ? 'text-blue-200 font-bold text-base' : `${textSecondary} font-bold`}`}>
+                          O/U <span className="font-extrabold text-lg">{odd.total}</span> (<span className="font-bold">{odd.over_price > 0 ? '+' : ''}{odd.over_price}/{odd.under_price > 0 ? '+' : ''}{odd.under_price}</span>)
                         </span>
-                        <span>
-                          {formatTeamName(state.away_team.name, state.sport_key).split(' ').pop()}: <span className="font-extrabold text-base">{odd.away_spread > 0 ? '+' : ''}{odd.away_spread}</span> <span className="text-sm">({odd.away_spread_price > 0 ? '+' : ''}{odd.away_spread_price})</span>
-                        </span>
-                      </div>
-                    )}
-                    {selectedMarket === 'moneyline' && (
-                      <div className={`${shouldHighlight ? 'text-blue-200' : textSecondary} text-base font-bold flex gap-3`}>
-                        <span>
-                          {formatTeamName(state.home_team.name, state.sport_key).split(' ').pop()}: <span className="font-extrabold text-base">{odd.home_ml > 0 ? '+' : ''}{odd.home_ml}</span>
-                        </span>
-                        <span>
-                          {formatTeamName(state.away_team.name, state.sport_key).split(' ').pop()}: <span className="font-extrabold text-base">{odd.away_ml > 0 ? '+' : ''}{odd.away_ml}</span>
-                        </span>
-                      </div>
-                    )}
+                      )}
+                      {selectedMarket === 'spread' && (
+                        <div className={`${shouldHighlight ? 'text-blue-200' : textSecondary} text-base font-bold flex gap-3`}>
+                          <span>
+                            {formatTeamName(state.home_team.name, state.sport_key).split(' ').pop()}: <span className="font-extrabold text-base">{odd.home_spread > 0 ? '+' : ''}{odd.home_spread}</span> <span className="text-sm">({odd.home_spread_price > 0 ? '+' : ''}{odd.home_spread_price})</span>
+                          </span>
+                          <span>
+                            {formatTeamName(state.away_team.name, state.sport_key).split(' ').pop()}: <span className="font-extrabold text-base">{odd.away_spread > 0 ? '+' : ''}{odd.away_spread}</span> <span className="text-sm">({odd.away_spread_price > 0 ? '+' : ''}{odd.away_spread_price})</span>
+                          </span>
+                        </div>
+                      )}
+                      {selectedMarket === 'moneyline' && (
+                        <div className={`${shouldHighlight ? 'text-blue-200' : textSecondary} text-base font-bold flex gap-3`}>
+                          <span>
+                            {formatTeamName(state.home_team.name, state.sport_key).split(' ').pop()}: <span className="font-extrabold text-base">{odd.home_ml > 0 ? '+' : ''}{odd.home_ml}</span>
+                          </span>
+                          <span>
+                            {formatTeamName(state.away_team.name, state.sport_key).split(' ').pop()}: <span className="font-extrabold text-base">{odd.away_ml > 0 ? '+' : ''}{odd.away_ml}</span>
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Bet This Button */}
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleBookmakerClick(odd.bookmaker, odd, bookmakerUrl);
+                        }}
+                        className="px-3 py-1 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white rounded-lg font-semibold text-sm transition-all shadow-lg shadow-blue-600/30 whitespace-nowrap"
+                        title={`Place bet at ${odd.bookmaker}`}
+                      >
+                        Bet This
+                      </button>
+                    </div>
                   </div>
                 );
               });

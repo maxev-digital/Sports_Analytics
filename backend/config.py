@@ -2,6 +2,14 @@
 import os
 from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
+from zoneinfo import ZoneInfo
+
+# ============================================================================
+# GLOBAL TIMEZONE LAYER - Single Source of Truth
+# Automatically handles CST/CDT and daylight saving
+# ============================================================================
+CST = ZoneInfo("America/Chicago")
+UTC = ZoneInfo("UTC")
 
 # Load environment variables from .env file
 load_dotenv()
@@ -35,10 +43,10 @@ MARKETS = "h2h,spreads,totals"  # Fetch money lines, spreads, and totals
 # Adaptive Polling Configuration (CST timezone)
 # Active Polling: 12pm-12am CST (120 second / 2 minute interval)
 # Cache-Only Mode: 12am-12pm CST (no API calls, use cached data)
-CACHE_ONLY_MODE_ENABLED = True
+CACHE_ONLY_MODE_ENABLED = False
 CACHE_ONLY_START_HOUR = 0   # 12am CST
-CACHE_ONLY_END_HOUR = 12     # 12pm CST
-ACTIVE_POLL_INTERVAL = 120   # seconds (when polling is active) - 2 minutes to conserve API credits
+CACHE_ONLY_END_HOUR = 24     # 12pm CST
+ACTIVE_POLL_INTERVAL = 10800   # seconds (when polling is active) - 2 minutes to conserve API credits
 CACHE_CHECK_INTERVAL = 300   # seconds (5 min - how often to check time during cache mode)
 
 def is_cache_only_time():

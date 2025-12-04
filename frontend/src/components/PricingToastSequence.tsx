@@ -105,9 +105,9 @@ export const PricingToastSequence: React.FC<PricingToastSequenceProps> = ({
     {
       id: 'chart',
       type: 'chart',
-      label: 'Units Won Over Time',
-      title: '+187 units',
-      subtitle: '187 units · $18,700 profit · 9.2% ROI',
+      label: '189 Units Won Last 60 Days',
+      title: '+189 units',
+      subtitle: '189 units · $18,900 profit · 9.2% ROI',
       emoji: '📊',
       valueColor: 'text-green-400',
       delay: 1000,
@@ -247,7 +247,7 @@ export const PricingToastSequence: React.FC<PricingToastSequenceProps> = ({
         odds: '+142',
       },
       cta: {
-        text: 'Claim My 14-Day Free Trial',
+        text: 'Give Me Free Access',
         action: () => onUpgradeClick?.(),
       },
     },

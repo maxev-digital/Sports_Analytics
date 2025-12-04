@@ -54,6 +54,11 @@ export function BetSlipToast() {
     setIsSubmitting(true);
     setError(null);
 
+    // Combine betSide with line for totals/spreads (e.g., "OVER 220.5" or "Lakers -5.5")
+    const formattedBetSide = line && (betType === 'total' || betType === 'spread')
+      ? betSide + ' ' + line
+      : betSide;
+
     try {
       const result = await addManualBet({
         userId: username,
@@ -62,7 +67,7 @@ export function BetSlipToast() {
         awayTeam: awayTeam,
         commenceTime: betData?.commenceTime || new Date().toISOString(),
         betType: betType,
-        betSide: betSide,
+        betSide: formattedBetSide,
         odds: parseFloat(odds),
         stake: parseFloat(stake),
         bookmaker: bookmaker,
@@ -157,6 +162,42 @@ export function BetSlipToast() {
                 {betType.charAt(0).toUpperCase() + betType.slice(1)} • {bookmaker.toUpperCase()}
               </div>
               {notes && <div className="text-white/70 text-xs italic">{notes}</div>}
+            </div>
+          </div>
+        )}
+
+        {/* Line Adjustment Section - Always visible when pre-filled */}
+        {hasPrefilledData && (betType === 'total' || betType === 'spread') && (
+          <div className="bg-slate-800 rounded-lg p-3 border-2 border-yellow-500/50">
+            <div className="text-xs font-semibold text-yellow-400 mb-2">
+              {betType === 'total' ? '📊 TOTAL LINE' : '📊 SPREAD LINE'}
+            </div>
+            <div className="flex items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => setLine((prev) => (parseFloat(prev || '0') - 0.5).toString())}
+                className="w-12 h-12 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-bold text-xl border border-slate-600 transition-colors"
+              >
+                −
+              </button>
+              <input
+                type="number"
+                step="0.5"
+                value={line}
+                onChange={(e) => setLine(e.target.value)}
+                className="w-28 bg-slate-900 text-white rounded-lg px-3 py-3 text-xl border-2 border-yellow-500/50 focus:border-yellow-500 focus:outline-none font-bold text-center"
+                placeholder="220.5"
+              />
+              <button
+                type="button"
+                onClick={() => setLine((prev) => (parseFloat(prev || '0') + 0.5).toString())}
+                className="w-12 h-12 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-bold text-xl border border-slate-600 transition-colors"
+              >
+                +
+              </button>
+            </div>
+            <div className="text-xs text-slate-400 text-center mt-2">
+              Adjust line before tracking
             </div>
           </div>
         )}

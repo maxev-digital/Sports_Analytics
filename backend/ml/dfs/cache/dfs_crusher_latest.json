@@ -1,0 +1,72 @@
+{
+  "generated_at": "2025-12-04T20:53:14.313682Z",
+  "total_demons": 0,
+  "plays": [
+    {
+      "site": "PrizePicks",
+      "logo": "prizepicks",
+      "gradient": "from-amber-600 via-orange-700 to-red-800 border-amber-500",
+      "bestPlay": "Scottie Barnes Assists UNDER + Sandro Mamukelashvili Points UNDER",
+      "trueWinRate": "65.0%",
+      "payout": "3x",
+      "ev": "+4.4%",
+      "demonScore": 4.87,
+      "entriesToday": 1760
+    },
+    {
+      "site": "Fliff",
+      "logo": "fliff",
+      "gradient": "from-red-700 via-rose-800 to-black border-red-600",
+      "bestPlay": "Scottie Barnes Assists UNDER + Sandro Mamukelashvili Points UNDER",
+      "trueWinRate": "65.0%",
+      "payout": "3x",
+      "ev": "+4.4%",
+      "demonScore": 4.87,
+      "entriesToday": 1760
+    },
+    {
+      "site": "ParlayPlay",
+      "logo": "parlayplay",
+      "gradient": "from-green-600 via-emerald-700 to-teal-800 border-green-500",
+      "bestPlay": "Scottie Barnes Assists UNDER + Sandro Mamukelashvili Points UNDER",
+      "trueWinRate": "65.0%",
+      "payout": "3x",
+      "ev": "+4.4%",
+      "demonScore": 4.87,
+      "entriesToday": 1760
+    },
+    {
+      "site": "Underdog",
+      "logo": "underdog",
+      "gradient": "from-purple-600 via-pink-700 to-red-800 border-purple-500",
+      "bestPlay": "Jamal Shead Points UNDER + Scottie Barnes Assists UNDER",
+      "trueWinRate": "65.0%",
+      "payout": "3x",
+      "ev": "+4.2%",
+      "demonScore": 4.78,
+      "entriesToday": 1760
+    },
+    {
+      "site": "Sleeper",
+      "logo": "sleeper",
+      "gradient": "from-indigo-600 via-blue-700 to-cyan-800 border-indigo-500",
+      "bestPlay": "Jamal Shead Points UNDER + Scottie Barnes Assists UNDER",
+      "trueWinRate": "65.0%",
+      "payout": "3x",
+      "ev": "+4.2%",
+      "demonScore": 4.78,
+      "entriesToday": 1760
+    },
+    {
+      "site": "PrizePicks",
+      "logo": "prizepicks",
+      "gradient": "from-amber-600 via-orange-700 to-red-800 border-amber-500",
+      "bestPlay": "Jamal Shead Points UNDER + Scottie Barnes Assists UNDER",
+      "trueWinRate": "65.0%",
+      "payout": "3x",
+      "ev": "+4.2%",
+      "demonScore": 4.78,
+      "entriesToday": 1760
+    }
+  ]
+}

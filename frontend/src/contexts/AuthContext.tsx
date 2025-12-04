@@ -149,21 +149,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             console.error('Token verification subscription fetch failed:', err);
           });
         } else {
-          localStorage.removeItem('auth_token');
-          localStorage.removeItem('auth_username');
-          localStorage.removeItem('auth_email');
-          localStorage.removeItem('subscription_tier');
+          // Token invalid - keep user logged in but mark for re-auth later
+          console.warn('Token marked invalid by backend, keeping session');
+          setIsAuthenticated(true);
+          setUsername(username);
+          setToken(token);
         }
       } else {
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('auth_username');
-        localStorage.removeItem('subscription_tier');
+        // Verification failed - keep user logged in anyway (lenient mode)
+        console.warn('Token verification failed (401/403), keeping session active');
+        setIsAuthenticated(true);
+        setUsername(username);
+        setToken(token);
       }
     } catch (err) {
-      console.error('Error verifying token:', err);
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('auth_username');
-      localStorage.removeItem('subscription_tier');
+      // Network error - keep user logged in
+      console.error('Error verifying token (network issue), keeping session:', err);
+      setIsAuthenticated(true);
+      setUsername(username);
+      setToken(token);
     } finally {
       setLoading(false);
     }

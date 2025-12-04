@@ -9,6 +9,7 @@ import { getApiUrl } from '../config';
 import { useBetAlertNotification } from '../contexts/BetAlertNotificationContext';
 import { StrategyAlert } from '../types';
 import { getBookmaker, formatOdds, getMarketLabel } from '../utils/bookmakers';
+import { useAuth } from '../contexts/AuthContext';
 
 interface AlertsData {
   arbitrage: { count: number; alerts: any[] };
@@ -26,6 +27,7 @@ export function GlobalAlertMonitor({
   pollInterval = 10000 // 10 seconds
 }: GlobalAlertMonitorProps) {
   const { showBetAlert } = useBetAlertNotification();
+  const { username } = useAuth();
   const previousCountRef = useRef({
     arbitrage: -1,
     steam: -1,
@@ -65,7 +67,7 @@ export function GlobalAlertMonitor({
 
     const checkForAlerts = async () => {
       try {
-        const response = await fetch(getApiUrl('alerts/all?user_id=default'));
+        const response = await fetch(getApiUrl(`alerts/all?user_id=${username || 'default'}`));
         if (!response.ok) return;
 
         const data: AlertsData = await response.json();

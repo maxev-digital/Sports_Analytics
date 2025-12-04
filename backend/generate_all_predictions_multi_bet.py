@@ -13,7 +13,8 @@ Changes:
 import sys
 import os
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 import pandas as pd
 import requests
 import logging
@@ -312,7 +313,9 @@ def generate_predictions_for_sport(sport, games):
         logger.info(f"\nProcessing {len(sport_games)} {sport.upper()} games...")
 
         for game in sport_games:
-            game_date = game['state']['commence_time'][:10]
+            # Use global timezone layer for date extraction
+            from utils.timezone import parse_game_datetime_to_cst
+            game_date = parse_game_datetime_to_cst(game['state']['commence_time'])
             game_time_str = game['state'].get('game_time', '07:00 PM')
             home_team = game['state']['home_team']['name']
             away_team = game['state']['away_team']['name']

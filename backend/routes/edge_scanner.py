@@ -13,10 +13,12 @@ from fastapi import APIRouter, HTTPException
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 import logging
+from utils.timezone import utc_to_cst, get_cst_now, get_cst_today
 import sys
 from pathlib import Path
 import httpx
 import numpy as np
+import math
 import pandas as pd
 
 # Add ml directory to path
@@ -26,6 +28,20 @@ sys.path.append(str(ml_path))
 # Add backend directory to path for sport_detector
 backend_path = Path(__file__).parent.parent
 sys.path.append(str(backend_path))
+
+# Helper function for JSON serialization
+def clean_nan_values(obj):
+    """Recursively replace NaN, inf, and -inf with None for JSON serialization"""
+    if isinstance(obj, dict):
+        return {k: clean_nan_values(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [clean_nan_values(item) for item in obj]
+    elif isinstance(obj, float):
+        if math.isnan(obj) or math.isinf(obj):
+            return None
+        return obj
+    else:
+        return obj
 
 # Import model loader
 from model_loader import load_model, get_available_models
@@ -83,7 +99,7 @@ def load_edge_lab_predictions(bet_type_filter: Optional[str] = None, model_filte
 
         # Parse game dates and filter by sport-specific windows
         df['game_date_parsed'] = pd.to_datetime(df['game_date'], format='mixed', errors='coerce')
-        now = pd.Timestamp.now(tz='UTC')
+        now = pd.Timestamp(get_cst_now())  # Use global timezone layer
 
         # Filter based on sport:
         # - NBA, NHL, NCAAB: Next 36 hours (daily sports - more lenient to handle timezone differences)
@@ -95,9 +111,9 @@ def load_edge_lab_predictions(bet_type_filter: Optional[str] = None, model_filte
 
             # Make game_date timezone-aware if it isn't already
             if game_date.tz is None:
-                game_date = game_date.tz_localize('UTC')
+                game_date = game_date.tz_localize('America/Chicago')
             else:
-                game_date = game_date.tz_convert('UTC')
+                game_date = game_date.tz_convert('America/Chicago')
 
             # Get sport from CSV column
             sport_code = str(row.get('sport', '')).upper()
@@ -109,7 +125,7 @@ def load_edge_lab_predictions(bet_type_filter: Optional[str] = None, model_filte
             # Weekly sports: next 7 days
             elif sport_code in ['NFL', 'NCAAF']:
                 days_until_game = (game_date - now).total_seconds() / 86400
-                return -0.5 <= days_until_game <= 7  # Include games that started up to 12 hours ago, and games within next 7 days
+                return -0.5 <= days_until_game <= 7  # Include games that started up to 24 hours ago, and games within next 7 days
             else:
                 # Default: next 36 hours
                 hours_until_game = (game_date - now).total_seconds() / 3600
@@ -144,7 +160,8 @@ def load_edge_lab_predictions(bet_type_filter: Optional[str] = None, model_filte
                 'NHL': 'icehockey_nhl',
                 'MLB': 'baseball_mlb'
             }
-            sport = sport_map.get(sport_raw.upper(), sport_raw.lower())
+            # Keep sport as short code (NBA, NHL, etc.) - don't convert to API format
+            sport = sport_raw.upper()
 
             edge = float(row['edge'])
             predicted_value = float(row['predicted_value'])
@@ -197,7 +214,7 @@ def load_edge_lab_predictions(bet_type_filter: Optional[str] = None, model_filte
                 'linear_regression': 'Linear Regression',
                 'logistic_regression': 'Logistic Regression'
             }
-            model_display = model_name_map.get(model, model.replace('_', ' ').title())
+            model_display = model_name_map.get(model, str(model).replace('_', ' ').title())
 
             predictions.append({
                 "id": f"edgelab_{row['prediction_id']}",
@@ -662,17 +679,20 @@ async def get_best_plays(
         # Filter by sport if specified
         if sport:
             # Map short sport codes to full API codes
-            sport_code_map = {
-                'nba': 'basketball_nba',
-                'ncaab': 'basketball_ncaab',
-                'nfl': 'americanfootball_nfl',
-                'ncaaf': 'americanfootball_ncaaf',
-                'nhl': 'icehockey_nhl',
-                'mlb': 'baseball_mlb'
+            # Support both short codes (NBA) and API codes (basketball_nba)
+            sport_short = sport.upper()
+            sport_code_to_short = {
+                'basketball_nba': 'NBA',
+                'basketball_ncaab': 'NCAAB',
+                'americanfootball_nfl': 'NFL',
+                'americanfootball_ncaaf': 'NCAAF',
+                'icehockey_nhl': 'NHL',
+                'baseball_mlb': 'MLB'
             }
-            # Convert short code to full code if needed
-            sport_filter = sport_code_map.get(sport.lower(), sport.lower())
-            all_plays = [p for p in all_plays if p['sport'].lower() == sport_filter.lower()]
+            # Convert API code to short code if needed
+            if sport.lower() in sport_code_to_short:
+                sport_short = sport_code_to_short[sport.lower()]
+            all_plays = [p for p in all_plays if p['sport'].upper() == sport_short]
             logger.info(f"After sport filter ({sport}): {len(all_plays)} plays")
 
         # Filter by minimum edge and confidence
@@ -708,7 +728,7 @@ async def get_best_plays(
                 "min_confidence": min_confidence,
                 "projection_type": projection_type or "pregame"
             },
-            "plays": result_plays,
+            "plays": clean_nan_values(result_plays),
             "generated_at": datetime.utcnow().isoformat() + 'Z',
             "data_sources": source_counts
         }

@@ -1,0 +1,13 @@
+[Unit]
+Description=Odds Archive Database Backup (Daily)
+After=network.target
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/root/sporttrader/backend/data/odds_archive
+ExecStart=/bin/bash /root/sporttrader/backend/data/odds_archive/backup_database.sh
+
+# Logging
+StandardOutput=append:/var/log/odds-backup.log
+StandardError=append:/var/log/odds-backup-error.log
