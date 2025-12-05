@@ -324,10 +324,12 @@ export function ModelPerformance() {
               >
                 <option value="all">All Models</option>
                 <option value="ensemble">Ensemble</option>
+                <option value="lightgbm">LightGBM</option>
                 <option value="xgboost">XGBoost</option>
                 <option value="random_forest">Random Forest</option>
-                <option value="lightgbm">LightGBM</option>
                 <option value="linear_regression">Linear Regression</option>
+                <option value="logistic_regression">Logistic Regression</option>
+                <option value="catboost">CatBoost</option>
               </select>
             </div>
             <div>

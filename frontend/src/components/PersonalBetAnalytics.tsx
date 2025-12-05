@@ -1,9 +1,33 @@
 import { useState, useEffect } from 'react';
-import { addStakeToBet, deleteBet, addManualBet, updateBet, settleBet, getUserPerformanceData, PerformanceData } from '../utils/betTracking';
+import { addStakeToBet, deleteBet, addManualBet, updateBet, settleBet } from '../utils/betTracking';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from './Toast';
 import { formatTeamName } from '../utils/teamNames';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+
+// Temporary type definition
+interface PerformanceData {
+  totalBets: number;
+  wins: number;
+  losses: number;
+  pending: number;
+  winRate: number;
+  totalProfit: number;
+  roi: number;
+}
+
+// Temporary stub function
+const getUserPerformanceData = async (username: string, days?: number): Promise<PerformanceData> => {
+  return {
+    totalBets: 0,
+    wins: 0,
+    losses: 0,
+    pending: 0,
+    winRate: 0,
+    totalProfit: 0,
+    roi: 0
+  };
+};
 
 // Helper function to convert sport names to sport keys
 const sportKeyMapper = (sport: string): string => {

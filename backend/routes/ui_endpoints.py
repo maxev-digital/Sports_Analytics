@@ -315,6 +315,7 @@ async def get_model_performance(
                 recommendation, confidence, result, profit_loss, model
             FROM results
             WHERE game_date >= ?
+              AND result IN ('WIN', 'LOSS', 'PUSH')
         """
         df = pd.read_sql_query(query, conn, params=[cutoff])
         conn.close()
@@ -385,6 +386,7 @@ async def get_model_performance(
             m_df = df[df['model'] == model_name]
             m_wins = len(m_df[m_df['result'] == 'WIN'])
             m_losses = len(m_df[m_df['result'] == 'LOSS'])
+            m_pushes = len(m_df[m_df['result'] == 'PUSH'])
             m_decided = m_wins + m_losses
             m_wr = m_wins / m_decided if m_decided > 0 else 0
             m_units = (m_df['profit_loss'].sum() / 100) if 'profit_loss' in m_df.columns else 0
@@ -393,7 +395,8 @@ async def get_model_performance(
                 "total": len(m_df),
                 "wins": m_wins,
                 "losses": m_losses,
-                "record": format_record(m_wins, m_losses),
+                "pushes": m_pushes,
+                "record": format_record(m_wins, m_losses, m_pushes),
                 "win_rate": round(m_wr, 4),
                 "display_win_rate": format_percentage(m_wr),
                 "units": round(m_units, 2),
@@ -407,6 +410,7 @@ async def get_model_performance(
             if len(c_df) > 0:
                 c_wins = len(c_df[c_df['result'] == 'WIN'])
                 c_losses = len(c_df[c_df['result'] == 'LOSS'])
+                c_pushes = len(c_df[c_df['result'] == 'PUSH'])
                 c_decided = c_wins + c_losses
                 c_wr = c_wins / c_decided if c_decided > 0 else 0
 
@@ -414,7 +418,8 @@ async def get_model_performance(
                     "total": len(c_df),
                     "wins": c_wins,
                     "losses": c_losses,
-                    "record": format_record(c_wins, c_losses),
+                    "pushes": c_pushes,
+                    "record": format_record(c_wins, c_losses, c_pushes),
                     "win_rate": round(c_wr, 4),
                     "display_win_rate": format_percentage(c_wr),
                     "color": get_confidence_color(conf)
