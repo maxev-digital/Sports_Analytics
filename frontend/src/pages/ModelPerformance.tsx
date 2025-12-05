@@ -129,172 +129,138 @@ export function ModelPerformance() {
     try {
       setLoading(true);
 
-      // Generate weekly performance data from 4/28/2024 to today (12/3/2025)
-      // ~31 weeks of data with gradual upward trend and realistic variance
-      const startDate = new Date('2024-04-28');
-      const today = new Date('2025-12-03');
-      const weeksDiff = Math.floor((today.getTime() - startDate.getTime()) / (7 * 24 * 60 * 60 * 1000));
+      // Fetch real data from backend API
+      const params = new URLSearchParams({
+        days: days.toString(),
+        unit_size: unitSize.toString(),
+        bankroll: startingBankroll.toString(),
+      });
 
-      const historyData: HistoryPeriod[] = [];
-      let cumulativeUnits = 0;
-
-      // Use smooth sine wave for more gradual, realistic swings
-      let previousWinRate = 0.52;
-      let previousROI = 0.02;
-
-      for (let i = 0; i < Math.min(weeksDiff, 31); i++) {
-        const weekDate = new Date(startDate.getTime() + i * 7 * 24 * 60 * 60 * 1000);
-        const dateStr = weekDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-
-        // Base win rate starts at 52% and gradually improves to 61.8% with smooth variance
-        const baseWinRate = 0.52 + (i / weeksDiff) * 0.098;
-
-        // Smoother variance using sine wave + small random noise
-        const sineVariance = Math.sin(i * 0.5) * 0.02; // Smooth wave ±2%
-        const randomNoise = (Math.random() - 0.5) * 0.015; // Small random ±0.75%
-
-        // Smooth transition from previous week (moving average effect)
-        const targetWinRate = baseWinRate + sineVariance + randomNoise;
-        const winRate = previousWinRate * 0.6 + targetWinRate * 0.4; // 60% previous, 40% new
-        previousWinRate = Math.min(0.68, Math.max(0.50, winRate));
-
-        // Predictions per week: 25-35 with slight increase over time
-        const predictions = Math.floor(25 + Math.random() * 10 + (i * 0.2));
-        const wins = Math.floor(predictions * previousWinRate);
-
-        // ROI correlates with win rate but with smoother changes
-        const targetROI = (previousWinRate - 0.5) * 0.35 + (Math.random() - 0.5) * 0.02;
-        const roi = previousROI * 0.7 + targetROI * 0.3; // Smooth ROI changes
-        previousROI = Math.max(0, roi);
-
-        // Units won based on $100 bets at -110 odds (standard)
-        // Each win = $90.91 profit, each loss = $100 loss
-        const losses = predictions - wins;
-        const weekProfit = (wins * 90.91) - (losses * 100);
-        cumulativeUnits += weekProfit;
-
-        historyData.push({
-          period: dateStr,
-          predictions,
-          wins,
-          win_rate: previousWinRate,
-          roi: previousROI,
-          units_won: parseFloat(weekProfit.toFixed(2))
-        });
+      if (selectedSport && selectedSport !== 'all') {
+        params.append('sport', selectedSport);
+      }
+      if (selectedModel && selectedModel !== 'all') {
+        params.append('model', selectedModel);
+      }
+      if (selectedBetType && selectedBetType !== 'all') {
+        params.append('bet_type', selectedBetType);
       }
 
-      // Calculate totals from generated data
-      const totalPreds = historyData.reduce((sum, week) => sum + week.predictions, 0);
-      const totalWins = historyData.reduce((sum, week) => sum + week.wins, 0);
-      const totalLosses = totalPreds - totalWins - 24; // 24 pushes
-      const avgWinRate = totalWins / totalPreds;
-      const avgROI = historyData.reduce((sum, week) => sum + week.roi, 0) / historyData.length;
-      const totalUnitsWon = historyData.reduce((sum, week) => sum + week.units_won, 0);
+      const apiUrl = getApiUrl('/ui/model-performance');
+      const response = await fetch(`${apiUrl}?${params}`);
+      const data = await response.json();
 
-      // STATIC DEMO DATA FOR PRESENTATION
+      if (data.error) {
+        console.error('API error:', data.error);
+        setLoading(false);
+        return;
+      }
+
+      // Transform API response to match frontend interface
       const overviewData: PerformanceOverview = {
         summary: {
-          total_predictions: totalPreds,
-          wins: totalWins,
-          losses: totalLosses,
-          pushes: 24,
-          win_rate: avgWinRate,
-          roi: avgROI,
-          avg_edge: 5.3,
-          units_won: parseFloat(totalUnitsWon.toFixed(1)),
-          last_updated: new Date().toISOString()
+          total_predictions: data.summary?.total_predictions || 0,
+          wins: data.summary?.wins || 0,
+          losses: data.summary?.losses || 0,
+          pushes: data.summary?.pushes || 0,
+          win_rate: data.summary?.win_rate || 0,
+          roi: data.summary?.roi || 0,
+          avg_edge: data.summary?.avg_edge || 0,
+          units_won: data.summary?.units_won || 0,
+          last_updated: data.generated_at
         },
-        by_confidence: {
-          'HIGH': { total: 312, wins: 218, win_rate: 0.699, roi: 0.245 },
-          'MEDIUM': { total: 389, wins: 237, win_rate: 0.609, roi: 0.168 },
-          'LOW': { total: 146, wins: 70, win_rate: 0.479, roi: 0.052 }
-        },
-        by_sport: {
-          'NBA': { total: 324, wins: 208, win_rate: 0.642 },
-          'NFL': { total: 189, wins: 121, win_rate: 0.640 },
-          'NHL': { total: 156, wins: 94, win_rate: 0.603 },
-          'NCAAB': { total: 123, wins: 72, win_rate: 0.585 },
-          'NCAAF': { total: 55, wins: 30, win_rate: 0.545 }
-        },
-        by_model: {
-          'XGBoost Totals': { total: 298, wins: 189, win_rate: 0.634 },
-          'CatBoost Spreads': { total: 267, wins: 171, win_rate: 0.640 },
-          'Random Forest ML': { total: 198, wins: 118, win_rate: 0.596 },
-          'Neural Net Ensemble': { total: 84, wins: 47, win_rate: 0.560 }
-        },
+        by_confidence: {},
+        by_sport: {},
+        by_model: {},
         filters: {
           sport: selectedSport,
           model: selectedModel,
           bet_type: selectedBetType,
           days: days
         },
-        generated_at: new Date().toISOString()
+        generated_at: data.generated_at
       };
 
-      const predictionsData: Prediction[] = [
-        {
-          prediction_id: 'pred_001',
-          game_date: '2025-12-01',
-          game_time: '19:00',
-          sport: 'NBA',
-          away_team: 'Lakers',
-          home_team: 'Warriors',
-          bet_type: 'totals',
-          model: 'XGBoost Totals',
-          predicted_value: 228.5,
-          market_value: 225.5,
-          actual_total: 232,
-          away_score: 118,
-          home_score: 114,
-          edge: 3.0,
-          recommendation: 'OVER',
-          confidence: 'HIGH',
-          result: 'WIN',
-          profit_loss: 9.1
-        },
-        {
-          prediction_id: 'pred_002',
-          game_date: '2025-12-01',
-          game_time: '20:00',
-          sport: 'NFL',
-          away_team: 'Chiefs',
-          home_team: 'Bills',
-          bet_type: 'spreads',
-          model: 'CatBoost Spreads',
-          predicted_value: -2.8,
-          market_value: -3.5,
-          actual_total: null,
-          away_score: 27,
-          home_score: 31,
-          edge: 4.2,
-          recommendation: 'Bills +3.5',
-          confidence: 'HIGH',
-          result: 'WIN',
-          profit_loss: 9.1
-        }
-      ];
+      // Transform by_confidence data
+      if (data.by_confidence) {
+        Object.keys(data.by_confidence).forEach(key => {
+          const conf = data.by_confidence[key];
+          overviewData.by_confidence[key] = {
+            total: conf.total || 0,
+            wins: conf.wins || 0,
+            win_rate: conf.win_rate || 0,
+            roi: conf.roi || 0
+          };
+        });
+      }
 
-      const modelsData = {
-        total_models: 61,
-        active_models: 61,
-        models_by_sport: {
-          'NBA': 18,
-          'NFL': 12,
-          'NHL': 11,
-          'NCAAB': 13,
-          'NCAAF': 7
-        }
-      };
+      // Transform by_sport data
+      if (data.by_sport) {
+        Object.keys(data.by_sport).forEach(key => {
+          const sport = data.by_sport[key];
+          overviewData.by_sport[key] = {
+            total: sport.total || 0,
+            wins: sport.wins || 0,
+            win_rate: sport.win_rate || 0
+          };
+        });
+      }
+
+      // Transform by_model data
+      if (data.by_model) {
+        Object.keys(data.by_model).forEach(key => {
+          const model = data.by_model[key];
+          overviewData.by_model[key] = {
+            total: model.total || 0,
+            wins: model.wins || 0,
+            win_rate: model.win_rate || 0
+          };
+        });
+      }
+
+      // Transform history data
+      const historyData: HistoryPeriod[] = (data.history || []).map((h: any) => ({
+        period: h.period,
+        predictions: h.predictions || 0,
+        wins: h.wins || 0,
+        losses: h.losses || 0,
+        win_rate: h.win_rate || 0,
+        roi: h.roi || 0,
+        units_won: h.units_won || 0,
+        daily_win_rate: h.daily_win_rate || h.win_rate || 0
+      }));
+
+      // Transform predictions data
+      const predictionsData: Prediction[] = (data.predictions || []).map((p: any) => ({
+        prediction_id: p.prediction_id || '',
+        game_date: p.game_date || '',
+        game_time: p.game_time || '',
+        sport: p.sport || '',
+        away_team: p.away_team || '',
+        home_team: p.home_team || '',
+        bet_type: p.bet_type || '',
+        model: p.model || '',
+        predicted_value: p.predicted_value || 0,
+        market_value: p.market_value || 0,
+        actual_total: p.actual_total || null,
+        away_score: p.away_score || null,
+        home_score: p.home_score || null,
+        edge: p.edge || 0,
+        recommendation: p.recommendation || '',
+        confidence: p.confidence || 'MEDIUM',
+        result: p.result || 'PENDING',
+        profit_loss: p.profit_loss || 0
+      }));
 
       setOverview(overviewData);
       setHistory(historyData);
       setPredictions(predictionsData);
-      setPredictionsTotal(847);
-      setModelsInfo(modelsData);
+      setPredictionsTotal(data.predictions_total || 0);
+      setModelsInfo(data.models || {});
 
       setLoading(false);
     } catch (error) {
-      console.error('Error loading demo data:', error);
+      console.error('Error loading performance data:', error);
       setLoading(false);
     }
   };
