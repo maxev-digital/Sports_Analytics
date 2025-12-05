@@ -13,7 +13,9 @@ interface Prediction {
   model: string;
   predicted_value: number;
   market_value: number;
-  edge: number;
+  edge: number;  // Now percentage edge
+  model_prob: number;  // Model probability percentage
+  kelly: number;  // Kelly bet size percentage
   recommendation: string;
   confidence: string;
   bet_placed: string;

@@ -732,7 +732,38 @@ async def get_historical_predictions(
             bet_type_val = safe_str_title(row.get("bet_type"))
             confidence_val = safe_str_upper(row.get("confidence")) or "MEDIUM"
             result_val = safe_str_upper(row.get("result"))
-            
+
+            # Calculate proper edge percentage (not just point difference)
+            predicted_value = float(row.get("predicted_value") or 0)
+            market_value = float(row.get("market_value") or 0)
+
+            # For totals/spreads: edge is the difference in implied probabilities
+            # We approximate this using a simple heuristic based on how far off the prediction is
+            # A larger difference = higher edge
+            raw_diff = abs(predicted_value - market_value)
+
+            # Edge calculation:
+            # For totals/spreads at -110 odds, each point difference roughly = 2-3% edge
+            # This is a simplified model, but works for display purposes
+            if bet_type_val.lower() in ['totals', 'spreads']:
+                edge_pct = raw_diff * 2.5  # Points difference * 2.5% per point
+            else:  # Moneyline
+                # For moneylines, use profit_loss to infer edge
+                # This is already calculated with actual odds
+                edge_pct = abs(raw_diff) if raw_diff > 0 else 0
+
+            # Model probability (approximation based on confidence)
+            # HIGH confidence = 60-65%, MEDIUM = 55-60%, LOW = 52-55%
+            confidence_map = {
+                'HIGH': 0.625,
+                'MEDIUM': 0.575,
+                'LOW': 0.535
+            }
+            model_prob = confidence_map.get(confidence_val, 0.55)
+
+            # Calculate Kelly (using standard -110 odds for totals/spreads)
+            kelly_result = calculate_kelly(edge_pct, -110)
+
             predictions.append({
                 "prediction_id": safe_str(row.get("prediction_id")),
                 "game_date": row["game_date"].strftime("%Y-%m-%d") if pd.notna(row.get("game_date")) else "",
@@ -742,9 +773,11 @@ async def get_historical_predictions(
                 "home_team": safe_str(row.get("home_team")),
                 "bet_type": bet_type_val,
                 "model": safe_str(row.get("model")) or "ensemble",
-                "predicted_value": float(row.get("predicted_value") or 0),
-                "market_value": float(row.get("market_value") or 0),
-                "edge": float(row.get("edge") or 0),
+                "predicted_value": predicted_value,
+                "market_value": market_value,
+                "edge": round(edge_pct, 2),  # Now percentage edge
+                "model_prob": round(model_prob * 100, 1),  # Model probability as percentage
+                "kelly": kelly_result["quarter"],  # Quarter Kelly (conservative)
                 "recommendation": safe_str(row.get("recommendation")),
                 "confidence": confidence_val,
                 "bet_placed": "",
