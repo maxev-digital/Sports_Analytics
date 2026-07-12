@@ -380,7 +380,6 @@ export function Dashboard() {
           <span className={`inline-block w-1.5 h-1.5 rounded-full ${wsConnected ? 'bg-green-500' : 'bg-red-500'}`} />
           {wsConnected ? 'Real-time updates via WebSocket (3s refresh)' : 'Disconnected - Reconnecting...'}
         </p>
-        <p className="mt-1">Powered by Odds API</p>
       </div>
     </div>
   );

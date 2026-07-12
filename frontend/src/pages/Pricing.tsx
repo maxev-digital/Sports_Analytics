@@ -1010,7 +1010,7 @@ export function Pricing() {
                     </td>
                     <td className="py-4 px-4 text-slate-300">$0</td>
                     <td className="py-4 px-4 text-slate-300 text-xs">
-                      The Odds API Free<br />
+                      Standard feed<br />
                       <span className="text-slate-500">(45-60s polling)</span>
                     </td>
                     <td className="py-4 px-4 text-slate-300 text-xs">
@@ -1028,7 +1028,7 @@ export function Pricing() {
                     </td>
                     <td className="py-4 px-4 text-slate-300">$19/mo</td>
                     <td className="py-4 px-4 text-slate-300 text-xs">
-                      The Odds API Starter<br />
+                      Priority feed<br />
                       <span className="text-slate-500">(30-45s polling)</span>
                     </td>
                     <td className="py-4 px-4 text-slate-300 text-xs">

@@ -9,7 +9,7 @@
     "dev": "vite",
     "dev:electron": "cross-env NODE_ENV=development electron .",
     "dev:electron:win": "set NODE_ENV=development&& electron .",
-    "build": "tsc && vite build",
+    "build": "vite build",
     "build:electron": "npm run build && electron-builder",
     "preview": "vite preview",
     "electron:start": "electron .",

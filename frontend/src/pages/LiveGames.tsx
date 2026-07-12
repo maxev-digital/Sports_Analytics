@@ -2,16 +2,32 @@ import { useState, useEffect, useRef } from 'react';
 import { LiveGame } from '../types';
 import { GameCard } from '../components/GameCard';
 import { LiveGamesTicker } from '../components/LiveGamesTicker';
+import { GolfOddsBoard } from '../components/GolfOddsBoard';
 import { sportEmojis } from '../utils/sportDetection';
 import { getApiUrl } from '../config';
 import { useAlertMonitoring } from '../hooks/useAlertMonitoring';
 import { useAuth } from '../contexts/AuthContext';
+
+const SPORT_BACKGROUNDS: Record<string, string> = {
+  nfl:   '/Footballfield.jpg',
+  ncaaf: '/Footballfield.jpg',
+  nba:   '/Bballcourt.jpg',
+  ncaab: '/Bballcourt.jpg',
+  wnba:  '/Bballcourt.jpg',
+  nhl:   '/hockeyrink.jpg',
+  mlb:   '/baseballldiamiond.jpg',
+  atp:   '/Tennis_Court.jpg',
+  wta:   '/Tennis_Court.jpg',
+  pga:   '/GolfCourse.jpg',
+  mma:   '/MMARink.jpg',
+};
 
 export function LiveGames() {
   const { username } = useAuth();
   const [games, setGames] = useState<LiveGame[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSport, setSelectedSport] = useState<string>('live');
+  const [picks, setPicks] = useState<any[]>([]);
 
   // Real-time alert monitoring
   const alertMonitoring = useAlertMonitoring(games);
@@ -22,10 +38,22 @@ export function LiveGames() {
   });
   const gameRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
+  const fetchPicks = async () => {
+    try {
+      const response = await fetch(getApiUrl('predictions/pending'));
+      if (response.ok) {
+        const d = await response.json();
+        setPicks(d.predictions ?? []);
+      }
+    } catch (_) {}
+  };
+
   useEffect(() => {
     fetchGames();
+    fetchPicks();
     const interval = setInterval(fetchGames, 15000); // PERF FIX: Reduced from 5s to 15s (70% fewer requests)
-    return () => clearInterval(interval);
+    const picksInterval = setInterval(fetchPicks, 60000); // refresh picks every minute
+    return () => { clearInterval(interval); clearInterval(picksInterval); };
   }, []);
 
   // Save pinned games to localStorage whenever they change
@@ -47,8 +75,7 @@ export function LiveGames() {
 
   const fetchGames = async () => {
     try {
-      const userId = username || 'default';
-      const url = getApiUrl(`games?user_id=${userId}`);
+      const url = getApiUrl(`games?user_id=default`);
       console.log('🔄 Fetching games from:', url);
       const response = await fetch(url);
       console.log('✅ Response received:', response.status, response.statusText);
@@ -74,6 +101,18 @@ export function LiveGames() {
     }
   };
 
+  const picksMap = picks.reduce((acc: Record<string, any[]>, pick: any) => {
+    const key = `${(pick.home_team || '').toLowerCase()}|${(pick.away_team || '').toLowerCase()}`;
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(pick);
+    return acc;
+  }, {});
+
+  const getGamePicks = (game: LiveGame) => {
+    const key = `${game.state.home_team.name.toLowerCase()}|${game.state.away_team.name.toLowerCase()}`;
+    return picksMap[key] || [];
+  };
+
   const sports = [
     { key: 'live', label: 'All Games', emoji: null },
     { key: 'nfl', label: 'NFL', filter: 'americanfootball_nfl', emoji: sportEmojis.NFL },
@@ -82,12 +121,11 @@ export function LiveGames() {
     { key: 'ncaab', label: 'NCAAB', filter: 'basketball_ncaab', emoji: sportEmojis.NCAAB },
     { key: 'nhl', label: 'NHL', filter: 'icehockey_nhl', emoji: sportEmojis.NHL },
     { key: 'mlb', label: 'MLB', filter: 'baseball_mlb', emoji: sportEmojis.MLB },
-    { key: 'pga', label: 'PGA', filter: 'golf_pga', emoji: sportEmojis.PGA },
-    { key: 'atp', label: 'ATP', filter: 'tennis_atp', emoji: sportEmojis.TENNIS },
-    { key: 'wta', label: 'WTA', filter: 'tennis_wta', emoji: sportEmojis.TENNIS },
-    { key: 'mma', label: 'MMA', filter: 'mma_mixed_martial_arts', emoji: sportEmojis.MMA },
     { key: 'wnba', label: 'WNBA', filter: 'basketball_wnba', emoji: sportEmojis.NBA },
-    { key: 'nascar', label: 'NASCAR', filter: 'motorsport_nascar', emoji: null },
+    { key: 'atp', label: 'ATP', filter: 'tennis_atp_wimbledon', emoji: sportEmojis.TENNIS },
+    { key: 'wta', label: 'WTA', filter: 'tennis_wta_wimbledon', emoji: sportEmojis.TENNIS },
+    { key: 'mma', label: 'MMA', filter: 'mma_mixed_martial_arts', emoji: sportEmojis.MMA },
+    { key: 'pga', label: 'PGA', filter: 'golf_pga', emoji: sportEmojis.PGA },
   ];
 
   const filteredGames = selectedSport === 'live'
@@ -169,8 +207,18 @@ export function LiveGames() {
     );
   }
 
+  const bgImage = SPORT_BACKGROUNDS[selectedSport];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-slate-900 to-black">
+    <div
+      className="min-h-screen"
+      style={bgImage ? {
+        backgroundImage: `linear-gradient(rgba(0,0,0,0.72), rgba(0,0,0,0.72)), url(${bgImage})`,
+        backgroundSize: 'cover',
+        backgroundAttachment: 'fixed',
+        backgroundPosition: 'center',
+      } : { background: 'linear-gradient(135deg, #000 0%, #0f172a 50%, #000 100%)' }}
+    >
       {/* Sport Filter Tabs */}
       <div className="sticky top-0 z-10 bg-gradient-to-br from-red-900 via-red-950 to-black border-b border-red-800">
         <div className="max-w-7xl mx-auto px-4 py-3">
@@ -201,6 +249,10 @@ export function LiveGames() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-6">
+        {/* Golf Odds Board — replaces game cards for PGA tab */}
+        {selectedSport === 'pga' && <GolfOddsBoard />}
+
+        {selectedSport !== 'pga' && <>
         {/* Live Games Ticker */}
         <LiveGamesTicker games={filteredGames} onGameClick={handleGameClick} />
 
@@ -235,6 +287,7 @@ export function LiveGames() {
                       game={game}
                       isPinned={pinnedGames.has(game.state.id)}
                       onTogglePin={togglePin}
+                      matchingPicks={getGamePicks(game)}
                     />
                   ))}
                 </div>
@@ -260,6 +313,7 @@ export function LiveGames() {
                         game={game}
                         isPinned={pinnedGames.has(game.state.id)}
                         onTogglePin={togglePin}
+                        matchingPicks={getGamePicks(game)}
                       />
                     </div>
                   ))}
@@ -281,6 +335,7 @@ export function LiveGames() {
                       game={game}
                       isPinned={pinnedGames.has(game.state.id)}
                       onTogglePin={togglePin}
+                      matchingPicks={getGamePicks(game)}
                     />
                   ))}
                 </div>
@@ -290,7 +345,7 @@ export function LiveGames() {
         )}
 
         {/* No Games Message */}
-        {filteredGames.length === 0 && (
+        {filteredGames.length === 0 && selectedSport !== 'pga' && (
           <div className="text-center py-20">
             {(() => {
               const currentSport = sports.find(s => s.key === selectedSport);
@@ -310,6 +365,7 @@ export function LiveGames() {
             <p className="text-slate-400">Check back later for more games</p>
           </div>
         )}
+        </>}
       </div>
     </div>
   );

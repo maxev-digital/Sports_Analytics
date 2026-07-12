@@ -24,18 +24,16 @@ BALLDONTLIE_API_BASE = "https://api.balldontlie.io/v1"
 
 # Active Sports (Nov 2024 - Apr 2025: NBA, NCAAB, NHL, NFL in season)
 SPORTS = [
+    "baseball_mlb",               # MLB (Apr-Oct) - IN SEASON
+    "basketball_wnba",            # WNBA (May-Oct) - IN SEASON
+    "tennis_atp_wimbledon",       # ATP Wimbledon - IN SEASON
+    "tennis_wta_wimbledon",       # WTA Wimbledon - IN SEASON
+    "mma_mixed_martial_arts",     # MMA/UFC - active year-round
     "basketball_nba",             # NBA (Oct-Apr)
     "americanfootball_nfl",       # NFL (Sep-Feb)
     "icehockey_nhl",              # NHL (Oct-Apr)
     "basketball_ncaab",           # NCAA Basketball (Nov-Apr)
-    "americanfootball_ncaaf",     # NCAA Football (Aug-Jan) - Now with betting trends!
-    # OUT OF SEASON (Disabled to save API credits):
-    # "baseball_mlb",             # MLB (Apr-Oct)
-    # PERMANENTLY DISABLED TO SAVE API CREDITS:
-    # "golf_pga_championship",    # PGA Golf
-    # "tennis_atp",               # Tennis (ATP - Men's)
-    # "tennis_wta",               # Tennis (WTA - Women's)
-    # "mma_mixed_martial_arts",   # MMA/UFC
+    "americanfootball_ncaaf",     # NCAA Football (Aug-Jan)
 ]
 REGION = "us,us2,uk,au,eu"  # Fetch from all regions for maximum bookmaker coverage
 MARKETS = "h2h,spreads,totals"  # Fetch money lines, spreads, and totals

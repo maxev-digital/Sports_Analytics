@@ -114,10 +114,12 @@ export function ModelPerformance() {
 
   const sports = [
     { key: 'all', name: 'All Sports', emoji: uiEmojis.target },
+    { key: 'mlb', name: 'MLB', emoji: sportEmojis.MLB },
+    { key: 'wnba', name: 'WNBA', emoji: sportEmojis.NBA },
+    { key: 'tennis_atp', name: 'Tennis ATP', emoji: sportEmojis.TENNIS },
+    { key: 'tennis_wta', name: 'Tennis WTA', emoji: sportEmojis.TENNIS },
     { key: 'nba', name: 'NBA', emoji: sportEmojis.NBA },
-    { key: 'ncaab', name: 'NCAAB', emoji: sportEmojis.NCAAB },
     { key: 'nfl', name: 'NFL', emoji: sportEmojis.NFL },
-    { key: 'nhl', name: 'NHL', emoji: sportEmojis.NHL },
     { key: 'ncaaf', name: 'NCAAF', emoji: sportEmojis.NCAAF },
   ];
 
@@ -323,13 +325,7 @@ export function ModelPerformance() {
                 className="px-3 py-2 bg-slate-800 border border-slate-600 hover:border-white transition-all rounded text-white"
               >
                 <option value="all">All Models</option>
-                <option value="ensemble">Ensemble</option>
-                <option value="lightgbm">LightGBM</option>
-                <option value="xgboost">XGBoost</option>
-                <option value="random_forest">Random Forest</option>
-                <option value="linear_regression">Linear Regression</option>
-                <option value="logistic_regression">Logistic Regression</option>
-                <option value="catboost">CatBoost</option>
+                <option value="rule_multibook_vig">Rule-Based (Multibook Vig)</option>
               </select>
             </div>
             <div>
@@ -340,9 +336,9 @@ export function ModelPerformance() {
                 className="px-3 py-2 bg-slate-800 border border-slate-600 hover:border-white transition-all rounded text-white"
               >
                 <option value="all">All Types</option>
-                <option value="totals">Totals</option>
-                <option value="spreads">Spreads</option>
-                <option value="moneyline">Moneyline</option>
+                <option value="total">Totals</option>
+                <option value="ml">Moneyline</option>
+                <option value="spread">Spreads</option>
               </select>
             </div>
             <div>

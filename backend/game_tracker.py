@@ -578,7 +578,7 @@ class GameTracker:
             # For NCAAF, use TeamRankings scraper (same pattern as NFL)
             try:
                 logger.info(f"Fetching NCAAF stats for {team_name} from TeamRankings scraper")
-                teamrankings_data = self.teamrankings_ncaaf_scraper.fetch_all_team_stats()
+                teamrankings_data = await asyncio.to_thread(self.teamrankings_ncaaf_scraper.fetch_all_team_stats)
 
                 # TeamRankings data is keyed by team names like "Alabama", "Ohio St", etc.
                 # Try direct lookup first
@@ -662,7 +662,7 @@ class GameTracker:
             try:
                 # PRIMARY: TeamRankings scraper (has all 38+ ranking fields)
                 logger.info(f"Fetching NFL stats for {team_name} from TeamRankings scraper")
-                teamrankings_data = self.teamrankings_nfl_scraper.fetch_all_team_stats()
+                teamrankings_data = await asyncio.to_thread(self.teamrankings_nfl_scraper.fetch_all_team_stats)
 
                 # TeamRankings data is keyed by team city names like "Buffalo", "Kansas City", etc.
                 # Try direct lookup first
@@ -994,7 +994,7 @@ class GameTracker:
 
         try:
             # PRIMARY: Try TeamRankings first (has real pace data, ratings, and rankings)
-            teamrankings_data = self.teamrankings_scraper.fetch_all_team_stats()
+            teamrankings_data = await asyncio.to_thread(self.teamrankings_scraper.fetch_all_team_stats)
 
             # Normalize team name for better matching (handle LA vs Los Angeles)
             normalized_name = team_name.lower()
@@ -1532,8 +1532,8 @@ class GameTracker:
                     logger.info(f"Including live {sport_key} game: {game['away_team']} @ {game['home_team']}")
                     continue
 
-            # Include upcoming games for NBA, NHL, NCAAF, NCAAB, NFL, and MLB (even if not in scores_data yet)
-            if sport_key in ['basketball_nba', 'icehockey_nhl', 'americanfootball_ncaaf', 'basketball_ncaab', 'americanfootball_nfl', 'baseball_mlb']:
+            # Include upcoming games for all active sports
+            if sport_key in ['basketball_nba', 'icehockey_nhl', 'americanfootball_ncaaf', 'basketball_ncaab', 'americanfootball_nfl', 'baseball_mlb', 'basketball_wnba', 'tennis_atp_wimbledon', 'tennis_wta_wimbledon', 'mma_mixed_martial_arts']:
                 filtered_odds.append(game)
                 logger.info(f"Including upcoming {sport_key} game: {game['away_team']} @ {game['home_team']}")
 

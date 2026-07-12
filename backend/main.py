@@ -210,6 +210,16 @@ except Exception as e:
     import traceback
     traceback.print_exc()
 
+# Analytics Data routes (ESPN + Statcast + NBA.com + BartTorvik)
+try:
+    from routes.analytics_data import router as analytics_data_router
+    logger.info("[OK] Analytics Data routes loaded (ESPN/Statcast/NBA.com/BartTorvik)")
+    app.include_router(analytics_data_router)
+except Exception as e:
+    print(f"ERROR importing analytics_data router: {type(e).__name__}: {e}")
+    import traceback
+    traceback.print_exc()
+
 # BULLETPROOF: UI Props routes (sacred /api/ui/ endpoints)
 try:
     from routes.ui_props import router as ui_props_router

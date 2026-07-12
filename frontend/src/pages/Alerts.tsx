@@ -1,976 +1,529 @@
-import { useState, useEffect, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
-import { TierGate } from '../components/TierGate';
-import { GoaliePullAlerts } from '../components/GoaliePullAlert';
-import { FavoriteComebackAlerts } from '../components/FavoriteComebackAlert';
-import { HalftimeTrackerAlerts } from '../components/HalftimeTrackerAlert';
-import { MomentumAlerts } from '../components/MomentumAlert';
-import { PaceMismatchAlerts } from '../components/PaceMismatchAlert';
-import { WeatherImpactAlerts } from '../components/WeatherImpactAlert';
-import { QuarterReversalAlerts } from '../components/QuarterReversalAlert';
-import { AlertsOverallPerformance } from '../components/AlertsOverallPerformance';
-import { GenericStrategyAlert } from '../components/GenericStrategyAlert';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { getApiUrl } from '../config';
-import { useSoundEffect } from '../hooks/useSoundEffect';
-import { useAuth } from '../contexts/AuthContext';
-// Toast notifications removed - no longer needed
 
-interface StrategyInfo {
-  id: string;
-  name: string;
-  description: string;
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+interface NewsItem {
+  id: number;
+  source: string;
+  headline: string;
+  summary: string | null;
+  url: string;
   sport: string;
-  sportColor: string;
-  category: 'pregame' | 'live';
-  hasComponent: boolean;
+  teams: string[];
+  players: string[];
+  injury_status: string | null;
+  news_type: string;
+  published_at: string | null;
+  fetched_at: string;
+  haiku_classification: Record<string, unknown> | null;
+  sonnet_analysis: Record<string, unknown> | null;
+  analyzed_at: string | null;
 }
 
-const ALL_STRATEGIES: StrategyInfo[] = [
-  // LIVE STRATEGIES
-  { id: 'comeback', name: 'NBA Favorite Comeback', description: 'Regression to mean when favorites trail underdogs after hot starts', sport: 'Basketball', sportColor: 'bg-orange-600', category: 'live', hasComponent: true },
-  { id: 'quarter-reversal', name: 'Basketball Quarter Reversal', description: 'Teams winning 2 consecutive quarters lose the next (55-61%% hit rate, +8-35%% ROI) - NBA & NCAA', sport: 'Basketball', sportColor: 'bg-orange-600', category: 'live', hasComponent: true },
-  { id: 'goalie', name: 'NHL Empty Net Goals', description: 'Predict empty net goal opportunities when goalies are pulled', sport: 'NHL', sportColor: 'bg-blue-600', category: 'live', hasComponent: true },
-  { id: 'halftime', name: 'NBA Halftime Adjustments', description: 'Track period transitions and 1Q under opportunities', sport: 'Basketball', sportColor: 'bg-orange-600', category: 'live', hasComponent: true },
-  { id: 'momentum', name: 'Momentum Detector', description: '5-minute sliding window to detect scoring runs and momentum shifts', sport: 'Basketball', sportColor: 'bg-orange-600', category: 'live', hasComponent: true },
-  { id: 'nhl-period', name: 'NHL Period Tracking', description: 'Period-specific betting opportunities and transitions', sport: 'NHL', sportColor: 'bg-blue-600', category: 'live', hasComponent: false },
-
-  // PRE-GAME STRATEGIES
-  { id: 'steam', name: 'Steam Plays', description: 'Track sudden line movements from sharp money hitting the market', sport: 'Multi-Sport', sportColor: 'bg-purple-600', category: 'pregame', hasComponent: true },
-  { id: 'arbitrage', name: 'Arbitrage', description: 'Risk-free profit opportunities across different sportsbooks', sport: 'Multi-Sport', sportColor: 'bg-purple-600', category: 'pregame', hasComponent: true },
-  { id: 'lines', name: 'Middles', description: 'Bet both sides with a gap to win both or push one', sport: 'Multi-Sport', sportColor: 'bg-purple-600', category: 'pregame', hasComponent: true },
-  { id: 'sharp-money', name: 'Sharp Money Tracking', description: 'Identify where professional bettors are placing their money', sport: 'Multi-Sport', sportColor: 'bg-purple-600', category: 'pregame', hasComponent: true },
-  { id: 'clv', name: 'Closing Line Value (CLV)', description: 'Beat the closing line to ensure long-term profitability', sport: 'Multi-Sport', sportColor: 'bg-purple-600', category: 'pregame', hasComponent: false },
-  { id: 'fatigue', name: 'Schedule Fatigue', description: 'Back-to-back games and rest differential analysis', sport: 'Multi-Sport', sportColor: 'bg-purple-600', category: 'pregame', hasComponent: false },
-  { id: 'weather', name: 'NFL Weather Impact', description: 'Rain, snow, wind, and temperature effects on totals', sport: 'NFL', sportColor: 'bg-green-600', category: 'pregame', hasComponent: true },
-  { id: 'pace', name: 'NBA Pace Mismatches', description: 'Identify tempo mismatches for over/under value', sport: 'NBA', sportColor: 'bg-orange-600', category: 'pregame', hasComponent: true },
-  { id: 'matchup-history', name: 'Matchup History', description: 'Head-to-head trends and situational matchup analysis', sport: 'Multi-Sport', sportColor: 'bg-purple-600', category: 'pregame', hasComponent: false },
-  { id: 'props', name: 'Player Props', description: 'Usage rates and matchup analysis for player markets', sport: 'NBA', sportColor: 'bg-orange-600', category: 'pregame', hasComponent: false },
-  { id: 'regression', name: 'Regression Analysis', description: 'Identify teams due for positive or negative regression', sport: 'Multi-Sport', sportColor: 'bg-purple-600', category: 'pregame', hasComponent: false },
-  { id: 'b2b-rested', name: 'NBA Back-to-Back vs Rested', description: 'Fade teams on B2B against fully rested opponents', sport: 'NBA', sportColor: 'bg-orange-600', category: 'pregame', hasComponent: false },
-  { id: 'nhl-b2b-rested', name: 'NHL Back-to-Back vs Rested', description: 'NHL teams on B2B lose win rate vs rested teams', sport: 'NHL', sportColor: 'bg-blue-600', category: 'pregame', hasComponent: false },
-  { id: 'home-away', name: 'Home/Away Splits', description: 'Exploit extreme home/away performance differentials', sport: 'Multi-Sport', sportColor: 'bg-purple-600', category: 'pregame', hasComponent: false },
-  { id: 'divisional', name: 'Divisional Rivalries', description: 'Division games trend under due to defensive familiarity', sport: 'Multi-Sport', sportColor: 'bg-purple-600', category: 'pregame', hasComponent: false },
-  { id: 'revenge', name: 'Revenge Games', description: 'Teams seeking revenge after lopsided losses', sport: 'Multi-Sport', sportColor: 'bg-purple-600', category: 'pregame', hasComponent: false },
-  { id: 'fade-public', name: 'Fade the Public', description: 'Bet against teams with 70%+ public betting support', sport: 'Multi-Sport', sportColor: 'bg-purple-600', category: 'pregame', hasComponent: false },
-  { id: 'rlm', name: 'Reverse Line Movement', description: 'Line moves opposite of public betting percentages', sport: 'Multi-Sport', sportColor: 'bg-purple-600', category: 'pregame', hasComponent: false },
-  { id: 'blowout-bounce', name: 'After Blowout Loss', description: 'NBA teams bounce back strong ATS after losing big', sport: 'NBA', sportColor: 'bg-orange-600', category: 'pregame', hasComponent: false },
-  { id: 'letdown', name: 'Letdown Spot', description: 'Fade teams coming off big emotional wins', sport: 'Multi-Sport', sportColor: 'bg-purple-600', category: 'pregame', hasComponent: false },
-  { id: 'lookahead', name: 'Lookahead Spot', description: 'Fade teams before major games', sport: 'Multi-Sport', sportColor: 'bg-purple-600', category: 'pregame', hasComponent: false },
-  { id: 'primetime', name: 'NFL Primetime Unders', description: 'NFL primetime games trend under the total', sport: 'NFL', sportColor: 'bg-green-600', category: 'pregame', hasComponent: false },
-  { id: 'conference', name: 'Conference Mismatches', description: 'Exploit talent gaps between East and West', sport: 'NBA', sportColor: 'bg-orange-600', category: 'pregame', hasComponent: false },
-];
-
-interface ArbitrageAlert {
-  game_id: string;
-  sport: string;
-  home_team: string;
-  away_team: string;
-  market_type: string;
-  book_a: string;
-  book_b: string;
-  odds_a: number;
-  odds_b: number;
-  profit_percent: number;
-  stake_a: number;
-  stake_b: number;
-  total_stake: number;
-  guaranteed_profit: number;
-  timestamp: string;
-  expires_in: number;
+interface FeedStats {
+  total_items: number;
+  analyzed: number;
+  injuries: number;
+  bet_now_count: number;
+  last_fetch: string | null;
 }
 
-interface SteamMoveAlert {
-  game_id: string;
-  sport: string;
-  home_team: string;
-  away_team: string;
-  market_type: string;
-  side: string;
-  original_line: number;
-  new_line: number;
-  movement: number;
-  books_moved: string[];
-  consensus_percent: number;
-  timestamp: string;
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+const SPORT_COLORS: Record<string, string> = {
+  mlb:  'bg-blue-900 text-blue-200 border-blue-700',
+  nba:  'bg-orange-900 text-orange-200 border-orange-700',
+  nfl:  'bg-green-900 text-green-200 border-green-700',
+  nhl:  'bg-sky-900 text-sky-200 border-sky-700',
+  wnba: 'bg-purple-900 text-purple-200 border-purple-700',
+  other:'bg-gray-700 text-gray-300 border-gray-600',
+};
+
+const SEVERITY_BADGE: Record<string, string> = {
+  out:         'bg-red-900 text-red-200 border border-red-700',
+  limited:     'bg-yellow-900 text-yellow-200 border border-yellow-700',
+  doubtful:    'bg-orange-900 text-orange-200 border border-orange-700',
+  probable:    'bg-green-900 text-green-200 border border-green-700',
+  day_to_day:  'bg-yellow-800 text-yellow-200 border border-yellow-700',
+  none:        'bg-gray-700 text-gray-300',
+};
+
+const ACTION_BADGE: Record<string, string> = {
+  'BET NOW':        'bg-green-500 text-white font-bold',
+  'MONITOR':        'bg-yellow-500 text-black font-bold',
+  'AVOID':          'bg-red-500 text-white font-bold',
+  'WAIT FOR LINE':  'bg-blue-500 text-white font-bold',
+};
+
+const CONFIDENCE_DOT: Record<string, string> = {
+  high:   'bg-green-400',
+  medium: 'bg-yellow-400',
+  low:    'bg-gray-400',
+};
+
+function timeAgo(iso: string | null): string {
+  if (!iso) return '';
+  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (diff < 60)  return `${Math.floor(diff)}s ago`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
 }
 
-interface LineMovementAlert {
-  game_id: string;
-  sport: string;
-  home_team: string;
-  away_team: string;
-  market_type: string;
-  bookmaker: string;
-  original_line: number;
-  new_line: number;
-  movement: number;
-  movement_percent: number;
-  timestamp: string;
+function sportLabel(s: string) {
+  return s.toUpperCase();
 }
 
-interface MiddleAlert {
-  game_id: string;
-  sport: string;
-  home_team: string;
-  away_team: string;
-  market_type: string;
-  book_low: string;
-  book_high: string;
-  low_line: number;
-  high_line: number;
-  gap: number;
-  side_low: string;
-  side_high: string;
-  odds_low: number;
-  odds_high: number;
-  timestamp: string;
-  expires_in: number;
+// ---------------------------------------------------------------------------
+// Analysis card
+// ---------------------------------------------------------------------------
+
+function AnalysisCard({ item, onAnalyze }: { item: NewsItem; onAnalyze: (id: number) => void }) {
+  const [expanded, setExpanded] = useState(false);
+  const cls = item.haiku_classification as Record<string, unknown> | null;
+  const analysis = item.sonnet_analysis as Record<string, unknown> | null;
+  const severity = (cls?.severity as string) || (item.injury_status ? 'day_to_day' : 'none');
+  const action = analysis?.recommended_action as string | undefined;
+  const confidence = analysis?.confidence as string | undefined;
+  const isInjury = item.news_type === 'injury';
+
+  return (
+    <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+      {/* Header */}
+      <div className="p-4">
+        <div className="flex items-start gap-3">
+          {/* Sport badge */}
+          <span className={`shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded border ${SPORT_COLORS[item.sport] || SPORT_COLORS.other}`}>
+            {sportLabel(item.sport)}
+          </span>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap mb-1">
+              {isInjury && item.injury_status && (
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${SEVERITY_BADGE[severity] || SEVERITY_BADGE.none}`}>
+                  {item.injury_status}
+                </span>
+              )}
+              {action && (
+                <span className={`text-[10px] px-2 py-0.5 rounded-full ${ACTION_BADGE[action] || 'bg-gray-600 text-white'}`}>
+                  {action}
+                </span>
+              )}
+              {confidence && (
+                <span className="flex items-center gap-1 text-[10px] text-gray-400">
+                  <span className={`inline-block w-2 h-2 rounded-full ${CONFIDENCE_DOT[confidence] || 'bg-gray-400'}`} />
+                  {confidence}
+                </span>
+              )}
+              <span className="text-[10px] text-gray-500 ml-auto">
+                {timeAgo(item.published_at || item.fetched_at)}
+              </span>
+            </div>
+
+            {/* Headline */}
+            <p className="text-sm font-medium text-white leading-snug">{item.headline}</p>
+
+            {/* Players / teams */}
+            {(item.players.length > 0 || item.teams.length > 0) && (
+              <p className="text-xs text-gray-400 mt-1">
+                {[...item.players, ...item.teams].filter(Boolean).slice(0, 3).join(' · ')}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* One-line betting hint from Haiku */}
+        {cls?.one_line && (
+          <p className="mt-2 text-xs text-yellow-300 italic">{cls.one_line as string}</p>
+        )}
+      </div>
+
+      {/* Sonnet analysis panel */}
+      {analysis ? (
+        <div className="border-t border-gray-700 bg-gray-900">
+          <button
+            onClick={() => setExpanded(e => !e)}
+            className="w-full px-4 py-2 text-xs text-left text-gray-400 hover:text-white flex items-center justify-between"
+          >
+            <span>Betting Analysis</span>
+            <span>{expanded ? '▲' : '▼'}</span>
+          </button>
+
+          {expanded && (
+            <div className="px-4 pb-4 space-y-3 text-sm">
+              {/* Recommendation */}
+              {analysis.reasoning && (
+                <div>
+                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Edge Reasoning</p>
+                  <p className="text-gray-200">{analysis.reasoning as string}</p>
+                </div>
+              )}
+
+              {/* Target + edge */}
+              <div className="flex gap-4 text-xs">
+                {analysis.target_team && (
+                  <div>
+                    <span className="text-gray-500">Target: </span>
+                    <span className="text-white font-medium">{analysis.target_team as string}</span>
+                  </div>
+                )}
+                {analysis.bet_type && (
+                  <div>
+                    <span className="text-gray-500">Market: </span>
+                    <span className="text-white">{analysis.bet_type as string} / {analysis.direction as string}</span>
+                  </div>
+                )}
+                {analysis.edge_estimate && (
+                  <div>
+                    <span className="text-gray-500">Edge: </span>
+                    <span className="text-green-400">{analysis.edge_estimate as string}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Contrarian risk */}
+              {analysis.contrarian_risk && (
+                <div className="bg-red-950 border border-red-800 rounded p-2">
+                  <p className="text-xs text-red-400 font-medium mb-0.5">Contrarian Risk</p>
+                  <p className="text-xs text-red-200">{analysis.contrarian_risk as string}</p>
+                </div>
+              )}
+
+              {/* Key factors */}
+              {Array.isArray(analysis.key_factors) && (analysis.key_factors as string[]).length > 0 && (
+                <div>
+                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Key Factors</p>
+                  <ul className="space-y-0.5">
+                    {(analysis.key_factors as string[]).map((f, i) => (
+                      <li key={i} className="text-xs text-gray-300 flex items-start gap-1">
+                        <span className="text-yellow-500 mt-0.5">•</span> {f}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Time sensitivity */}
+              {analysis.time_sensitivity && (
+                <p className="text-xs text-gray-500">
+                  Time sensitivity: <span className="text-gray-300">{analysis.time_sensitivity as string}</span>
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="border-t border-gray-700 px-4 py-2 flex items-center justify-between">
+          <span className="text-xs text-gray-500">
+            {item.analyzed_at === null && item.haiku_classification ? 'Analysis queued...' : 'Not yet analyzed'}
+          </span>
+          <button
+            onClick={() => onAnalyze(item.id)}
+            className="text-xs bg-blue-700 hover:bg-blue-600 text-white px-3 py-1 rounded transition-colors"
+          >
+            Analyze
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }
 
-interface SharpMoneyAlert {
-  id: string;
-  game_id: string;
-  sport: string;
-  home_team: string;
-  away_team: string;
-  alert_type: string;
-  market_type: string;
-  recommendation: string;
-  opening_line?: number;
-  current_line?: number;
-  movement?: number;
-  sharp_books_involved: string[];
-  confidence: number;
-  confidence_level: string;
-  reasoning: string;
-  key_factors: string[];
-  edge_percent: number;
-  timestamp: string;
-}
+// ---------------------------------------------------------------------------
+// Main page
+// ---------------------------------------------------------------------------
 
-interface ScheduleFatigueAlert {
-  id: string;
-  game_id: string;
-  sport: string;
-  home_team: string;
-  away_team: string;
-  alert_type: string;
-  market_type: string;
-  fatigue_type: string;
-  favored_side: string;
-  home_rest_days: number;
-  away_rest_days: number;
-  rest_differential: number;
-  home_is_b2b: boolean;
-  away_is_b2b: boolean;
-  confidence: number;
-  confidence_level: string;
-  reasoning: string;
-  key_factors: string[];
-  edge_percent: number;
-  timestamp: string;
-}
-
-interface AlertsData {
-  arbitrage: { count: number; alerts: ArbitrageAlert[] };
-  steam_moves: { count: number; alerts: SteamMoveAlert[] };
-  middles: { count: number; alerts: MiddleAlert[] };
-  sharp_money: { count: number; alerts: SharpMoneyAlert[] };
-  schedule_fatigue: { count: number; alerts: ScheduleFatigueAlert[] };
-}
+const SPORT_FILTERS = ['all', 'mlb', 'nba', 'nfl', 'nhl', 'wnba'];
+const TYPE_FILTERS  = ['all', 'injury', 'general'];
+const AUTO_REFRESH_MS = 5 * 60 * 1000; // 5 minutes
 
 export function Alerts() {
-  const location = useLocation();
-  const { username } = useAuth();
-  const [alertsData, setAlertsData] = useState<AlertsData | null>(null);
-  const [goaliePullCount, setGoaliePullCount] = useState(0);
-  const [favoriteComebackCount, setFavoriteComebackCount] = useState(0);
-  const [halftimeCount, setHalftimeCount] = useState(0);
-  const [momentumCount, setMomentumCount] = useState(0);
-  const [paceMismatchCount, setPaceMismatchCount] = useState(0);
-  const [weatherCount, setWeatherCount] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<string>('comeback');
-  const [categoryTab, setCategoryTab] = useState<'live' | 'pregame'>('live');
-  const [autoRefresh, setAutoRefresh] = useState(true);
-  const alertBellRef = useRef<HTMLAudioElement>(null);
-  const sirenRef = useRef<HTMLAudioElement>(null);
-  const previousCountRef = useRef({ arbitrage: -1, steam: -1, lines: -1, goaliePull: -1, sharpMoney: -1, scheduleFatigue: -1 });
-  const isInitialLoadRef = useRef(true);
-  // Handle navigation state from clicks (when user clicks on other pages)
-  useEffect(() => {
-    const state = location.state as { category?: 'live' | 'pregame'; tab?: string } | null;
-    if (state?.category && state?.tab) {
-      setCategoryTab(state.category);
-      setActiveTab(state.tab);
-    }
-  }, [location]);
+  const [items, setItems]       = useState<NewsItem[]>([]);
+  const [stats, setStats]       = useState<FeedStats | null>(null);
+  const [loading, setLoading]   = useState(false);
+  const [analyzing, setAnalyzing] = useState<Set<number>>(new Set());
+  const [sport, setSport]       = useState('all');
+  const [typeFilter, setType]   = useState('all');
+  const [actionFilter, setAction] = useState('all');
+  const [activeTab, setTab]     = useState<'feed' | 'insights'>('feed');
+  const [lastFetch, setLastFetch] = useState<Date | null>(null);
+  const [pollCountdown, setPollCountdown] = useState(AUTO_REFRESH_MS / 1000);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Sound effects for different alert types
-  const playGoaliePullSound = useSoundEffect('alert-bell.mp3', 0.6);
-  const playArbitrageSound = useSoundEffect('alert-bell.mp3', 0.7);
-  const playMiddleSound = useSoundEffect('alert-bell.mp3', 0.6);
-  const playSteamMoveSound = useSoundEffect('alert-bell.mp3', 0.7);
-
-  const fetchAlerts = async () => {
+  const fetchFeed = useCallback(async () => {
+    setLoading(true);
     try {
-      const [alertsResponse, goalieResponse, comebackResponse, halftimeResponse, momentumResponse, paceResponse, weatherResponse] = await Promise.all([
-        fetch(getApiUrl(`alerts/all?user_id=${username || 'default'}`)),
-        fetch(getApiUrl('goalie-pull-opportunities')),
-        fetch(getApiUrl('favorite-comeback-opportunities')),
-        fetch(getApiUrl('halftime-opportunities')),
-        fetch(getApiUrl('momentum-opportunities')),
-        fetch(getApiUrl('pace-mismatch-opportunities')),
-        fetch(getApiUrl('weather-opportunities'))
-      ]);
-
-      if (!alertsResponse.ok) throw new Error('Failed to fetch alerts');
-
-      const alertsData = await alertsResponse.json();
-      setAlertsData(alertsData);
-
-      if (goalieResponse.ok) {
-        const goalieData = await goalieResponse.json();
-        setGoaliePullCount(goalieData.count || 0);
-      }
-
-      if (comebackResponse.ok) {
-        const comebackData = await comebackResponse.json();
-        setFavoriteComebackCount(comebackData.count || 0);
-      }
-
-      if (halftimeResponse.ok) {
-        const halftimeData = await halftimeResponse.json();
-        setHalftimeCount(halftimeData.count || 0);
-      }
-
-      if (momentumResponse.ok) {
-        const momentumData = await momentumResponse.json();
-        setMomentumCount(momentumData.count || 0);
-      }
-
-      if (paceResponse.ok) {
-        const paceData = await paceResponse.json();
-        setPaceMismatchCount(paceData.count || 0);
-      }
-
-      if (weatherResponse.ok) {
-        const weatherData = await weatherResponse.json();
-        setWeatherCount(weatherData.count || 0);
-      }
-
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      const url = getApiUrl(`news/feed?sport=${sport}&limit=80`);
+      const r = await fetch(url);
+      if (!r.ok) throw new Error(await r.text());
+      const d = await r.json();
+      setItems(d.items || []);
+      setLastFetch(new Date());
+      setPollCountdown(AUTO_REFRESH_MS / 1000);
+    } catch (e) {
+      console.error('Feed fetch failed:', e);
     } finally {
       setLoading(false);
     }
+  }, [sport]);
+
+  const triggerRefresh = useCallback(async () => {
+    // Fire-and-forget ESPN refresh in background, then reload feed after 8s
+    try {
+      await fetch(getApiUrl(`news/refresh?sport=${sport}`), { method: 'POST' });
+      setTimeout(() => fetchFeed(), 8000);
+    } catch (e) {
+      console.error('Refresh trigger failed:', e);
+    }
+  }, [sport, fetchFeed]);
+
+  const fetchStats = useCallback(async () => {
+    try {
+      const r = await fetch(getApiUrl('news/stats'));
+      if (r.ok) setStats(await r.json());
+    } catch {}
+  }, []);
+
+  const fetchInsights = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({ sport, limit: '50' });
+      if (actionFilter !== 'all') params.set('action', actionFilter);
+      const r = await fetch(getApiUrl(`news/insights?${params}`));
+      if (!r.ok) throw new Error(await r.text());
+      const d = await r.json();
+      setItems(d.insights || []);
+    } catch (e) {
+      console.error('Insights fetch failed:', e);
+    } finally {
+      setLoading(false);
+    }
+  }, [sport, actionFilter]);
+
+  // Initial load + tab switch
+  useEffect(() => {
+    if (activeTab === 'feed')     { fetchFeed(); fetchStats(); }
+    if (activeTab === 'insights') { fetchInsights(); }
+  }, [activeTab, sport, actionFilter]);
+
+  // Auto-refresh countdown (feed tab only)
+  useEffect(() => {
+    if (activeTab !== 'feed') return;
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      setPollCountdown(c => {
+        if (c <= 1) { fetchFeed(); return AUTO_REFRESH_MS / 1000; }
+        return c - 1;
+      });
+    }, 1000);
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [activeTab, fetchFeed]);
+
+  const handleAnalyze = async (id: number) => {
+    setAnalyzing(s => new Set(s).add(id));
+    try {
+      const r = await fetch(getApiUrl(`news/analyze/${id}`), { method: 'POST' });
+      if (!r.ok) throw new Error(await r.text());
+      const data = await r.json();
+      // Update haiku_classification immediately
+      setItems(prev => prev.map(item =>
+        item.id === id
+          ? { ...item, haiku_classification: data.classification || item.haiku_classification }
+          : item
+      ));
+      // Poll for sonnet result (up to 15s)
+      let attempts = 0;
+      const poll = setInterval(async () => {
+        attempts++;
+        try {
+          const pr = await fetch(getApiUrl(`news/item/${id}`));
+          if (pr.ok) {
+            const updated = await pr.json();
+            if (updated.sonnet_analysis || attempts >= 10) {
+              clearInterval(poll);
+              setItems(prev => prev.map(item => item.id === id ? { ...item, ...updated } : item));
+              setAnalyzing(s => { const n = new Set(s); n.delete(id); return n; });
+            }
+          }
+        } catch {}
+      }, 1500);
+    } catch (e) {
+      console.error('Analyze failed:', e);
+      setAnalyzing(s => { const n = new Set(s); n.delete(id); return n; });
+    }
   };
 
-  useEffect(() => {
-    fetchAlerts();
+  // Client-side filter
+  const displayed = items.filter(item => {
+    if (typeFilter !== 'all' && item.news_type !== typeFilter) return false;
+    return true;
+  });
 
-    if (autoRefresh) {
-      const interval = setInterval(fetchAlerts, 10000); // Refresh every 10 seconds
-      return () => clearInterval(interval);
-    }
-  }, [autoRefresh]);
-
-  // Mark initial load as complete after first data fetch
-  useEffect(() => {
-    if (alertsData) {
-      isInitialLoadRef.current = false;
-    }
-  }, [alertsData]);
-
-  // Play sound when new goalie pull alerts arrive
-  useEffect(() => {
-    if (goaliePullCount > previousCountRef.current.goaliePull && previousCountRef.current.goaliePull > 0) {
-      console.log('[GOALIE PULL ALERT] New alert detected! Playing sound...');
-      playGoaliePullSound();
-    }
-    previousCountRef.current.goaliePull = goaliePullCount;
-  }, [goaliePullCount, playGoaliePullSound]);
-
-  // Play sound and show toast when new arbitrage alerts arrive
-  useEffect(() => {
-    const currentCount = alertsData?.arbitrage.count || 0;
-
-    // Skip on initial load
-    if (isInitialLoadRef.current) {
-      previousCountRef.current.arbitrage = currentCount;
-      return;
-    }
-
-    if (currentCount > previousCountRef.current.arbitrage && previousCountRef.current.arbitrage >= 0) {
-      console.log('[ARBITRAGE ALERT] New alert detected! Playing sound...');
-      playArbitrageSound();
-    }
-    previousCountRef.current.arbitrage = currentCount;
-  }, [alertsData?.arbitrage.count, playArbitrageSound]);
-
-  // Play sound when new middle alerts arrive
-  useEffect(() => {
-    const currentCount = alertsData?.middles.count || 0;
-
-    // Skip on initial load
-    if (isInitialLoadRef.current) {
-      previousCountRef.current.lines = currentCount;
-      return;
-    }
-
-    if (currentCount > previousCountRef.current.lines && previousCountRef.current.lines >= 0) {
-      console.log('[MIDDLE ALERT] New alert detected! Playing sound...');
-      playMiddleSound();
-    }
-    previousCountRef.current.lines = currentCount;
-  }, [alertsData?.middles.count, playMiddleSound]);
-
-  // Play sound when new steam move alerts arrive
-  useEffect(() => {
-    const currentCount = alertsData?.steam_moves.count || 0;
-
-    // Skip on initial load
-    if (isInitialLoadRef.current) {
-      previousCountRef.current.steam = currentCount;
-      return;
-    }
-
-    if (currentCount > previousCountRef.current.steam && previousCountRef.current.steam >= 0) {
-      console.log('[STEAM MOVE ALERT] New alert detected! Playing sound...');
-      playSteamMoveSound();
-    }
-    previousCountRef.current.steam = currentCount;
-  }, [alertsData?.steam_moves.count, playSteamMoveSound]);
-
-  // Play sound when new sharp money alerts arrive
-  useEffect(() => {
-    const currentCount = alertsData?.sharp_money.count || 0;
-
-    // Skip on initial load
-    if (isInitialLoadRef.current) {
-      previousCountRef.current.sharpMoney = currentCount;
-      return;
-    }
-
-    if (currentCount > previousCountRef.current.sharpMoney && previousCountRef.current.sharpMoney >= 0) {
-      console.log('[SHARP MONEY ALERT] New alert detected! Playing sound...');
-      playSteamMoveSound(); // Reuse steam move sound
-    }
-    previousCountRef.current.sharpMoney = currentCount;
-  }, [alertsData?.sharp_money.count, playSteamMoveSound]);
-
-  // Play sound when new schedule fatigue alerts arrive
-  useEffect(() => {
-    const currentCount = alertsData?.schedule_fatigue.count || 0;
-
-    // Skip on initial load
-    if (isInitialLoadRef.current) {
-      previousCountRef.current.scheduleFatigue = currentCount;
-      return;
-    }
-
-    if (currentCount > previousCountRef.current.scheduleFatigue && previousCountRef.current.scheduleFatigue >= 0) {
-      console.log('[SCHEDULE FATIGUE ALERT] New alert detected! Playing sound...');
-      playSteamMoveSound(); // Reuse steam move sound
-    }
-    previousCountRef.current.scheduleFatigue = currentCount;
-  }, [alertsData?.schedule_fatigue.count, playSteamMoveSound]);
-
-  const formatTime = (timestamp: string) => {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString();
-  };
-
-  const formatExpiresIn = (seconds: number) => {
-    if (seconds < 60) return `${seconds}s`;
-    if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
-    return `${Math.floor(seconds / 3600)}h`;
-  };
-
-  const getSportBadgeColor = (sport: string) => {
-    if (sport.includes('nba')) return 'bg-orange-500';
-    if (sport.includes('nfl')) return 'bg-green-500';
-    if (sport.includes('nhl')) return 'bg-blue-500';
-    if (sport.includes('ncaa')) return 'bg-purple-500';
-    return 'bg-gray-500';
-  };
-
-  const getMarketLabel = (marketType: string) => {
-    if (marketType === 'h2h') return 'Moneyline';
-    if (marketType === 'spreads') return 'Spread';
-    if (marketType === 'totals') return 'Total';
-    return marketType;
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-black via-slate-900 to-black flex items-center justify-center">
-        <div className="text-white text-xl">Loading alerts...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-black via-slate-900 to-black flex items-center justify-center">
-        <div className="text-red-400 text-xl">Error: {error}</div>
-      </div>
-    );
-  }
+  const betNowCount = items.filter(
+    i => (i.sonnet_analysis as Record<string,unknown> | null)?.recommended_action === 'BET NOW'
+  ).length;
 
   return (
-    <TierGate feature="alerts_page">
-      <div className="min-h-screen bg-gradient-to-br from-black via-slate-900 to-black py-8 px-4">
-        <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-4xl font-bold italic text-slate-100 mb-2" style={{ fontStyle: 'italic', textTransform: 'uppercase' }}>LIVE ALERTS</h1>
-              <p className="text-slate-400">Real-time betting opportunities detected every 10 seconds</p>
-            </div>
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => setAutoRefresh(!autoRefresh)}
-                className={`px-4 py-2 border font-bold tracking-wide transition-colors ${
-                  autoRefresh
-                    ? 'bg-gradient-to-br from-green-600 via-green-700 to-green-800 text-white border-green-500'
-                    : 'bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 text-slate-300 border-slate-600 hover:border-blue-500'
-                }`}
-              >
-                {autoRefresh ? 'AUTO-REFRESH ON' : 'AUTO-REFRESH OFF'}
-              </button>
-              <button
-                onClick={fetchAlerts}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white border border-blue-500 font-bold tracking-wide transition-all"
-              >
-                REFRESH NOW
-              </button>
-            </div>
-          </div>
-
-
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-2">
-            <div className="bg-gradient-to-br from-orange-900/50 to-orange-800/30 border border-orange-700 rounded-lg p-1.5 transition-all hover:border-orange-500">
-              <div className="text-xs text-orange-400 font-semibold mb-0">🔥 NBA COMEBACKS</div>
-              <div className="text-3xl font-bold text-white leading-tight">{favoriteComebackCount}</div>
-            </div>
-            <div className="bg-gradient-to-br from-red-900/50 to-red-800/30 border border-red-700 rounded-lg p-1.5 transition-all hover:border-red-500">
-              <div className="text-xs text-red-400 font-semibold mb-0">🚨 NHL GOALIE PULLS</div>
-              <div className="text-3xl font-bold text-white leading-tight">{goaliePullCount}</div>
-            </div>
-            <div className="bg-gradient-to-br from-purple-900/50 to-purple-800/30 border border-purple-700 rounded-lg p-1.5 transition-all hover:border-purple-500">
-              <div className="text-xs text-purple-400 font-semibold mb-0">⏰ NBA HALFTIME 2H</div>
-              <div className="text-3xl font-bold text-white leading-tight">{halftimeCount}</div>
-            </div>
-            <div className="bg-gradient-to-br from-orange-900/50 to-orange-800/30 border border-orange-700 rounded-lg p-1.5 transition-all hover:border-orange-500">
-              <div className="text-xs text-orange-400 font-semibold mb-0">🔥 MOMENTUM SURGES</div>
-              <div className="text-3xl font-bold text-white leading-tight">{momentumCount}</div>
-            </div>
-            <div className="bg-gradient-to-br from-green-900/50 to-green-800/30 border border-green-700 rounded-lg p-1.5 transition-all hover:border-green-500">
-              <div className="text-xs text-green-400 font-semibold mb-0">ARBITRAGE</div>
-              <div className="text-3xl font-bold text-white leading-tight">{alertsData?.arbitrage.count || 0}</div>
-            </div>
-            <div className="bg-gradient-to-br from-blue-900/50 to-blue-800/30 border border-blue-700 rounded-lg p-1.5 transition-all hover:border-blue-500">
-              <div className="text-xs text-blue-400 font-semibold mb-0">STEAM MOVES</div>
-              <div className="text-3xl font-bold text-white leading-tight">{alertsData?.steam_moves.count || 0}</div>
-            </div>
-            <div className="bg-gradient-to-br from-slate-900/50 to-slate-800/30 border border-slate-700 rounded-lg p-1.5 transition-all hover:border-slate-500">
-              <div className="text-xs text-slate-400 font-semibold mb-0">MIDDLES</div>
-              <div className="text-3xl font-bold text-white leading-tight">{alertsData?.middles.count || 0}</div>
-            </div>
-            <div className="bg-gradient-to-br from-purple-900/50 to-purple-800/30 border border-purple-700 rounded-lg p-1.5 transition-all hover:border-purple-500">
-              <div className="text-xs text-purple-400 font-semibold mb-0">💰 SHARP MONEY</div>
-              <div className="text-3xl font-bold text-white leading-tight">{alertsData?.sharp_money.count || 0}</div>
-            </div>
-          </div>
+    <div className="min-h-screen bg-gray-950 text-white p-4 md:p-6">
+      {/* Header */}
+      <div className="flex items-start justify-between mb-6 flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Injury & News Intel</h1>
+          <p className="text-sm text-gray-400 mt-1">
+            Real-time injury and news feed — analyzed by AI for betting opportunities
+          </p>
         </div>
 
-        {/* Category Tabs */}
-        <div className="flex gap-4 mb-6">
-          <button
-            onClick={() => { setCategoryTab('live'); setActiveTab('comeback'); }}
-            className={`px-8 py-4 border font-bold text-lg tracking-wide transition-all ${
-              categoryTab === 'live'
-                ? 'bg-gradient-to-br from-red-600 via-red-700 to-red-800 text-white border-red-500 shadow-lg shadow-red-600/30'
-                : 'bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800 hover:border-blue-600'
-            }`}
-          >
-            🔴 LIVE STRATEGIES ({ALL_STRATEGIES.filter(s => s.category === 'live').length})
-          </button>
-          <button
-            onClick={() => { setCategoryTab('pregame'); setActiveTab('steam'); }}
-            className={`px-8 py-4 border font-bold text-lg tracking-wide transition-all ${
-              categoryTab === 'pregame'
-                ? 'bg-gradient-to-br from-green-600 via-green-700 to-green-800 text-white border-green-500 shadow-lg shadow-green-600/30'
-                : 'bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800 hover:border-blue-600'
-            }`}
-          >
-            📊 PRE-GAME STRATEGIES ({ALL_STRATEGIES.filter(s => s.category === 'pregame').length})
-          </button>
-        </div>
+        {/* Stats bar */}
+        {stats && (
+          <div className="flex gap-4 text-sm">
+            <div className="text-center">
+              <div className="text-xl font-bold text-white">{stats.injuries}</div>
+              <div className="text-xs text-gray-500">Injuries</div>
+            </div>
+            <div className="text-center">
+              <div className="text-xl font-bold text-green-400">{betNowCount || stats.bet_now_count}</div>
+              <div className="text-xs text-gray-500">Bet Now</div>
+            </div>
+            <div className="text-center">
+              <div className="text-xl font-bold text-blue-400">{stats.analyzed}</div>
+              <div className="text-xs text-gray-500">Analyzed</div>
+            </div>
+          </div>
+        )}
+      </div>
 
-        {/* Strategy Tabs */}
-        <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-          {ALL_STRATEGIES.filter(s => s.category === categoryTab).map((strategy) => (
+      {/* Tabs */}
+      <div className="flex gap-1 mb-5 border-b border-gray-700 pb-0">
+        {(['feed', 'insights'] as const).map(tab => (
+          <button
+            key={tab}
+            onClick={() => setTab(tab)}
+            className={`px-4 py-2 text-sm font-medium capitalize border-b-2 transition-colors -mb-px ${
+              activeTab === tab
+                ? 'border-blue-500 text-blue-400'
+                : 'border-transparent text-gray-500 hover:text-gray-300'
+            }`}
+          >
+            {tab === 'feed' ? 'Live Feed' : 'AI Insights'}
+            {tab === 'insights' && betNowCount > 0 && (
+              <span className="ml-1.5 bg-green-600 text-white text-[10px] px-1.5 py-0.5 rounded-full">
+                {betNowCount}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap gap-2 mb-5">
+        {/* Sport filter */}
+        <div className="flex gap-1 flex-wrap">
+          {SPORT_FILTERS.map(s => (
             <button
-              key={strategy.id}
-              onClick={() => setActiveTab(strategy.id)}
-              className={`px-4 py-2 border font-semibold whitespace-nowrap transition-colors ${
-                activeTab === strategy.id
-                  ? `${strategy.sportColor} text-white border-white shadow-lg`
-                  : 'bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800 hover:border-blue-600'
+              key={s}
+              onClick={() => setSport(s)}
+              className={`text-xs px-2.5 py-1 rounded border transition-colors ${
+                sport === s
+                  ? 'bg-blue-600 border-blue-500 text-white'
+                  : 'border-gray-600 text-gray-400 hover:border-gray-500 hover:text-gray-300'
               }`}
             >
-              {strategy.name}
-              {strategy.id === 'comeback' && ` (${favoriteComebackCount})`}
-              {strategy.id === 'goalie' && ` (${goaliePullCount})`}
-              {strategy.id === 'halftime' && ` (${halftimeCount})`}
-              {strategy.id === 'momentum' && ` (${momentumCount})`}
-              {strategy.id === 'pace' && ` (${paceMismatchCount})`}
-              {strategy.id === 'weather' && ` (${weatherCount})`}
-              {strategy.id === 'arbitrage' && ` (${alertsData?.arbitrage.count || 0})`}
-              {strategy.id === 'steam' && ` (${alertsData?.steam_moves.count || 0})`}
-              {strategy.id === 'lines' && ` (${alertsData?.middles.count || 0})`}
-              {strategy.id === 'sharp-money' && ` (${alertsData?.sharp_money.count || 0})`}
-              {strategy.id === 'fatigue' && ` (${alertsData?.schedule_fatigue.count || 0})`}
+              {s === 'all' ? 'All Sports' : s.toUpperCase()}
             </button>
           ))}
         </div>
 
-        {/* Overall Performance Summary - Always Visible */}
-        <AlertsOverallPerformance />
-
-        {/* Arbitrage Alerts */}
-        {activeTab === 'arbitrage' && (
-          <div className="space-y-4">
-            {alertsData?.arbitrage.alerts.length === 0 ? (
-              <div className="bg-slate-800 border border-slate-700 p-12 text-center">
-                <div className="text-slate-400 text-lg">No arbitrage opportunities detected</div>
-                <div className="text-slate-500 text-sm mt-2">Scanning every 10 seconds...</div>
-              </div>
-            ) : (
-              alertsData?.arbitrage.alerts.map((alert, idx) => (
-                <div key={idx} className="bg-slate-900 border border-red-700 p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <span className={`px-3 py-1 text-xs font-bold text-white ${getSportBadgeColor(alert.sport)}`}>
-                        {alert.sport.toUpperCase()}
-                      </span>
-                      <span className="px-3 py-1 text-xs font-bold bg-green-600 text-white">
-                        {getMarketLabel(alert.market_type)}
-                      </span>
-                      <span className="text-lg font-bold text-white">
-                        {alert.away_team} @ {alert.home_team}
-                      </span>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-green-400">
-                        +{alert.profit_percent.toFixed(2)}%
-                      </div>
-                      <div className="text-sm text-slate-400">
-                        Expires in {formatExpiresIn(alert.expires_in)}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div className="bg-slate-800 border border-slate-700 p-4">
-                      <div className="text-sm text-slate-400 mb-2">Book A: {alert.book_a}</div>
-                      <div className="text-xl font-bold text-white mb-1">
-                        {alert.odds_a > 0 ? `+${alert.odds_a}` : alert.odds_a}
-                      </div>
-                      <div className="text-sm text-slate-300">
-                        Stake: ${alert.stake_a.toFixed(2)}
-                      </div>
-                    </div>
-                    <div className="bg-slate-800 border border-slate-700 p-4">
-                      <div className="text-sm text-slate-400 mb-2">Book B: {alert.book_b}</div>
-                      <div className="text-xl font-bold text-white mb-1">
-                        {alert.odds_b > 0 ? `+${alert.odds_b}` : alert.odds_b}
-                      </div>
-                      <div className="text-sm text-slate-300">
-                        Stake: ${alert.stake_b.toFixed(2)}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="text-slate-400">
-                      Total Investment: ${alert.total_stake.toFixed(2)}
-                    </div>
-                    <div className="text-green-400 font-bold">
-                      Guaranteed Profit: ${alert.guaranteed_profit.toFixed(2)}
-                    </div>
-                    <div className="text-slate-500">
-                      {formatTime(alert.timestamp)}
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
+        {/* Type filter (feed tab) */}
+        {activeTab === 'feed' && (
+          <div className="flex gap-1">
+            {TYPE_FILTERS.map(t => (
+              <button
+                key={t}
+                onClick={() => setType(t)}
+                className={`text-xs px-2.5 py-1 rounded border transition-colors ${
+                  typeFilter === t
+                    ? 'bg-blue-600 border-blue-500 text-white'
+                    : 'border-gray-600 text-gray-400 hover:border-gray-500 hover:text-gray-300'
+                }`}
+              >
+                {t === 'all' ? 'All Types' : t.charAt(0).toUpperCase() + t.slice(1)}
+              </button>
+            ))}
           </div>
         )}
 
-        {/* Steam Move Alerts */}
-        {activeTab === 'steam' && (
-          <div className="space-y-4">
-            {alertsData?.steam_moves.alerts.length === 0 ? (
-              <div className="bg-slate-800 border border-slate-700 p-12 text-center">
-                <div className="text-slate-400 text-lg">No steam moves detected</div>
-                <div className="text-slate-500 text-sm mt-2">Scanning every 10 seconds...</div>
-              </div>
-            ) : (
-              alertsData?.steam_moves.alerts.map((alert, idx) => (
-                <div key={idx} className="bg-slate-900 border border-blue-500 p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <span className={`px-3 py-1 text-xs font-bold text-white ${getSportBadgeColor(alert.sport)}`}>
-                        {alert.sport.toUpperCase()}
-                      </span>
-                      <span className="px-3 py-1 text-xs font-bold bg-orange-600 text-white">
-                        {getMarketLabel(alert.market_type)}
-                      </span>
-                      <span className="text-lg font-bold text-white">
-                        {alert.away_team} @ {alert.home_team}
-                      </span>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm text-slate-400">Consensus</div>
-                      <div className="text-2xl font-bold text-white">
-                        {alert.consensus_percent.toFixed(0)}%
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-slate-800 border border-slate-700 p-4 mb-4">
-                    <div className="grid grid-cols-3 gap-4 text-center">
-                      <div>
-                        <div className="text-sm text-slate-400 mb-1">Original Line</div>
-                        <div className="text-xl font-bold text-white">{alert.original_line}</div>
-                      </div>
-                      <div>
-                        <div className="text-sm text-slate-400 mb-1">Movement</div>
-                        <div className={`text-xl font-bold ${alert.movement > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                          {alert.movement > 0 ? '+' : ''}{alert.movement.toFixed(1)}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-sm text-slate-400 mb-1">New Line</div>
-                        <div className="text-xl font-bold text-white">{alert.new_line}</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="text-slate-400">
-                      Books Moved: {alert.books_moved.join(', ')}
-                    </div>
-                    <div className="text-slate-500">
-                      {formatTime(alert.timestamp)}
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
+        {/* Action filter (insights tab) */}
+        {activeTab === 'insights' && (
+          <div className="flex gap-1">
+            {['all', 'BET NOW', 'MONITOR', 'AVOID'].map(a => (
+              <button
+                key={a}
+                onClick={() => setAction(a)}
+                className={`text-xs px-2.5 py-1 rounded border transition-colors ${
+                  actionFilter === a
+                    ? 'bg-blue-600 border-blue-500 text-white'
+                    : 'border-gray-600 text-gray-400 hover:border-gray-500 hover:text-gray-300'
+                }`}
+              >
+                {a === 'all' ? 'All Actions' : a}
+              </button>
+            ))}
           </div>
         )}
 
-        {/* Middle Alerts */}
-        {activeTab === 'lines' && (
-          <div className="space-y-4">
-            {alertsData?.middles.alerts.length === 0 ? (
-              <div className="bg-slate-800 border border-slate-700 p-12 text-center">
-                <div className="text-slate-400 text-lg">No middle opportunities detected</div>
-                <div className="text-slate-500 text-sm mt-2">Scanning every 10 seconds...</div>
-              </div>
-            ) : (
-              alertsData?.middles.alerts.map((alert, idx) => (
-                <div key={idx} className="bg-slate-900 border border-purple-600 p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <span className={`px-3 py-1 text-xs font-bold text-white ${getSportBadgeColor(alert.sport)}`}>
-                        {alert.sport.toUpperCase()}
-                      </span>
-                      <span className="px-3 py-1 text-xs font-bold bg-purple-600 text-white">
-                        {getMarketLabel(alert.market_type)}
-                      </span>
-                      <span className="text-lg font-bold text-white">
-                        {alert.away_team} @ {alert.home_team}
-                      </span>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-purple-400">
-                        {alert.gap.toFixed(1)} pt gap
-                      </div>
-                      <div className="text-sm text-slate-400">
-                        Expires in {formatExpiresIn(alert.expires_in)}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div className="bg-slate-800 border border-slate-700 p-4">
-                      <div className="text-sm text-slate-400 mb-2">Low: {alert.book_low}</div>
-                      <div className="text-lg font-bold text-white mb-1">
-                        {alert.side_low}
-                      </div>
-                      <div className="text-sm text-slate-300">
-                        Odds: {alert.odds_low > 0 ? `+${alert.odds_low}` : alert.odds_low}
-                      </div>
-                    </div>
-                    <div className="bg-slate-800 border border-slate-700 p-4">
-                      <div className="text-sm text-slate-400 mb-2">High: {alert.book_high}</div>
-                      <div className="text-lg font-bold text-white mb-1">
-                        {alert.side_high}
-                      </div>
-                      <div className="text-sm text-slate-300">
-                        Odds: {alert.odds_high > 0 ? `+${alert.odds_high}` : alert.odds_high}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="text-sm text-slate-500 text-right">
-                    {formatTime(alert.timestamp)}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        )}
-
-        {/* Sharp Money Alerts */}
-        {activeTab === 'sharp-money' && (
-          <div className="space-y-4">
-            {alertsData?.sharp_money.alerts.length === 0 ? (
-              <div className="bg-slate-800 border border-slate-700 p-12 text-center">
-                <div className="text-slate-400 text-lg">No sharp money movements detected</div>
-                <div className="text-slate-500 text-sm mt-2">Scanning every 2 minutes...</div>
-              </div>
-            ) : (
-              alertsData?.sharp_money.alerts.map((alert, idx) => (
-                <div key={idx} className="bg-slate-900 border border-purple-600 p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <span className={`px-3 py-1 text-xs font-bold text-white ${getSportBadgeColor(alert.sport)}`}>
-                        {alert.sport.toUpperCase()}
-                      </span>
-                      <span className={`px-3 py-1 text-xs font-bold text-white ${
-                        alert.confidence_level === 'HIGH' ? 'bg-green-600' :
-                        alert.confidence_level === 'MEDIUM' ? 'bg-yellow-600' : 'bg-slate-600'
-                      }`}>
-                        {alert.confidence_level} CONFIDENCE
-                      </span>
-                      <span className="px-3 py-1 text-xs font-bold bg-purple-600 text-white">
-                        {getMarketLabel(alert.market_type)}
-                      </span>
-                      <span className="text-lg font-bold text-white">
-                        {alert.away_team} @ {alert.home_team}
-                      </span>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-purple-400">
-                        {alert.recommendation}
-                      </div>
-                      <div className="text-sm text-green-400">
-                        {alert.edge_percent.toFixed(1)}% edge
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div className="bg-slate-800 border border-slate-700 p-4">
-                      <div className="text-sm text-slate-400 mb-2">Line Movement</div>
-                      <div className="text-lg font-bold text-white mb-1">
-                        {alert.opening_line !== undefined && alert.current_line !== undefined ? (
-                          <>
-                            {alert.opening_line} → {alert.current_line}
-                            <span className="text-sm text-yellow-400 ml-2">
-                              ({alert.movement && alert.movement > 0 ? '+' : ''}{alert.movement?.toFixed(1)})
-                            </span>
-                          </>
-                        ) : (
-                          'Tracking...'
-                        )}
-                      </div>
-                    </div>
-                    <div className="bg-slate-800 border border-slate-700 p-4">
-                      <div className="text-sm text-slate-400 mb-2">Sharp Books Involved</div>
-                      <div className="text-sm font-bold text-purple-400">
-                        {alert.sharp_books_involved.join(', ')}
-                      </div>
-                    </div>
-                  </div>
-
-                  {alert.reasoning && (
-                    <div className="bg-slate-800 border border-slate-700 p-4 mb-4">
-                      <div className="text-sm text-slate-400 mb-2">Analysis</div>
-                      <div className="text-sm text-slate-200">{alert.reasoning}</div>
-                    </div>
-                  )}
-
-                  {alert.key_factors.length > 0 && (
-                    <div className="mb-4">
-                      <div className="text-sm text-slate-400 mb-2">Key Factors</div>
-                      <div className="flex flex-wrap gap-2">
-                        {alert.key_factors.map((factor, i) => (
-                          <span key={i} className="px-3 py-1 text-xs bg-slate-700 text-slate-300 border border-slate-600">
-                            {factor}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="text-sm text-slate-500 text-right">
-                    {formatTime(alert.timestamp)}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        )}
-
-        {/* Schedule Fatigue Alerts */}
-        {activeTab === 'fatigue' && (
-          <div className="space-y-4">
-            {alertsData?.schedule_fatigue.alerts.length === 0 ? (
-              <div className="bg-slate-800 border border-slate-700 p-12 text-center">
-                <div className="text-slate-400 text-lg">No schedule fatigue situations detected</div>
-                <div className="text-slate-500 text-sm mt-2">Scanning every hour for rest advantages...</div>
-              </div>
-            ) : (
-              alertsData?.schedule_fatigue.alerts.map((alert, idx) => (
-                <div key={idx} className="bg-slate-900 border border-yellow-600 p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <span className={`px-3 py-1 text-xs font-bold text-white ${getSportBadgeColor(alert.sport)}`}>
-                        {alert.sport.toUpperCase()}
-                      </span>
-                      <span className={`px-3 py-1 text-xs font-bold text-white ${
-                        alert.confidence_level === 'HIGH' ? 'bg-green-600' :
-                        alert.confidence_level === 'MEDIUM' ? 'bg-yellow-600' : 'bg-slate-600'
-                      }`}>
-                        {alert.confidence_level} CONFIDENCE
-                      </span>
-                      <span className="px-3 py-1 text-xs font-bold bg-yellow-600 text-white">
-                        {alert.fatigue_type.replace('_', ' ').toUpperCase()}
-                      </span>
-                      <span className="text-lg font-bold text-white">
-                        {alert.away_team} @ {alert.home_team}
-                      </span>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-yellow-400">
-                        FAVOR {alert.favored_side.toUpperCase()}
-                      </div>
-                      <div className="text-sm text-green-400">
-                        {alert.edge_percent.toFixed(1)}% edge
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div className="bg-slate-800 border border-slate-700 p-4">
-                      <div className="text-sm text-slate-400 mb-2">Rest Differential</div>
-                      <div className="text-lg font-bold text-white mb-1">
-                        {alert.rest_differential} days
-                      </div>
-                      <div className="text-sm text-slate-300">
-                        Home: {alert.home_rest_days} days {alert.home_is_b2b && '(B2B)'}
-                      </div>
-                      <div className="text-sm text-slate-300">
-                        Away: {alert.away_rest_days} days {alert.away_is_b2b && '(B2B)'}
-                      </div>
-                    </div>
-                    <div className="bg-slate-800 border border-slate-700 p-4">
-                      <div className="text-sm text-slate-400 mb-2">Fatigue Impact</div>
-                      <div className="text-sm font-bold text-yellow-400">
-                        {alert.favored_side === 'home' ? alert.home_team : alert.away_team} has rest advantage
-                      </div>
-                    </div>
-                  </div>
-
-                  {alert.reasoning && (
-                    <div className="bg-slate-800 border border-slate-700 p-4 mb-4">
-                      <div className="text-sm text-slate-400 mb-2">Analysis</div>
-                      <div className="text-sm text-slate-200">{alert.reasoning}</div>
-                    </div>
-                  )}
-
-                  {alert.key_factors.length > 0 && (
-                    <div className="mb-4">
-                      <div className="text-sm text-slate-400 mb-2">Key Factors</div>
-                      <div className="flex flex-wrap gap-2">
-                        {alert.key_factors.map((factor, i) => (
-                          <span key={i} className="px-3 py-1 text-xs bg-slate-700 text-slate-300 border border-slate-600">
-                            {factor}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="text-sm text-slate-500 text-right">
-                    {formatTime(alert.timestamp)}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        )}
-
-        {/* NHL Goalie Pull Alerts */}
-        {activeTab === 'goalie' && (
-          <GoaliePullAlerts />
-        )}
-
-        {/* NBA Halftime Tracker Alerts */}
-        {activeTab === 'halftime' && (
-          <HalftimeTrackerAlerts />
-        )}
-
-        {/* NBA Favorite Comeback Alerts */}
-        {activeTab === 'comeback' && (
-          <FavoriteComebackAlerts />
-        )}
-
-        {/* Momentum Surge Alerts */}
-        {activeTab === 'momentum' && (
-          <MomentumAlerts />
-        )}
-
-        {/* Pace Mismatch Alerts */}
-        {activeTab === 'pace' && (
-          <PaceMismatchAlerts />
-        )}
-
-        {/* Weather Impact Alerts */}
-        {activeTab === 'weather' && (
-          <WeatherImpactAlerts />
-        )}
-
-        {/* NBA Quarter Reversal Alerts */}
-        {activeTab === 'quarter-reversal' && (
-          <QuarterReversalAlerts />
-        )}
-
-        {/* Generic Strategy Alerts (for strategies without dedicated components) */}
-        {ALL_STRATEGIES.filter(s => !s.hasComponent && s.id === activeTab).map((strategy) => (
-          <GenericStrategyAlert
-            key={strategy.id}
-            strategyName={strategy.name}
-            strategyDescription={strategy.description}
-            sport={strategy.sport}
-            sportColor={strategy.sportColor}
-            category={strategy.category}
-          />
-        ))}
+        {/* Refresh + countdown */}
+        <div className="ml-auto flex items-center gap-2">
+          {activeTab === 'feed' && (
+            <span className="text-xs text-gray-500">
+              Refresh in {pollCountdown}s
+            </span>
+          )}
+          <button
+            onClick={activeTab === 'feed' ? triggerRefresh : fetchInsights}
+            disabled={loading}
+            className="text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 px-3 py-1 rounded transition-colors disabled:opacity-50"
+          >
+            {loading ? 'Loading...' : 'Refresh'}
+          </button>
+        </div>
       </div>
+
+      {/* Content */}
+      {loading && items.length === 0 ? (
+        <div className="flex items-center justify-center py-20">
+          <div className="text-gray-500 text-sm">Fetching news and injuries...</div>
+        </div>
+      ) : displayed.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-gray-500">
+          <p className="text-sm">No items found.</p>
+          <p className="text-xs mt-1">Try changing the filters or refreshing.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+          {displayed.map(item => (
+            <div key={item.id} className="relative">
+              {analyzing.has(item.id) && (
+                <div className="absolute inset-0 bg-gray-900/70 rounded-lg flex items-center justify-center z-10">
+                  <div className="text-xs text-blue-400 animate-pulse">Analyzing...</div>
+                </div>
+              )}
+              <AnalysisCard item={item} onAnalyze={handleAnalyze} />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {lastFetch && (
+        <p className="text-center text-xs text-gray-600 mt-6">
+          Last fetched {lastFetch.toLocaleTimeString()}
+        </p>
+      )}
     </div>
-    </TierGate>
   );
 }

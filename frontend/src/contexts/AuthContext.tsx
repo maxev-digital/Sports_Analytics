@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { getApiUrl } from '../config';
-import { isElectron } from '../utils/isElectron';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -24,7 +23,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [email, setEmail] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null);
-  const [subscriptionTier, setSubscriptionTier] = useState<string>('free');
+  const [subscriptionTier, setSubscriptionTier] = useState<string>('elite');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -61,7 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       window.location.hostname === 'localhost' ||
       window.location.hostname === '127.0.0.1';
 
-    const isDesktop = isElectron();
+    const isDesktop = false;
 
 
     if (isDev || isDesktop) {
@@ -123,7 +122,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const storedUsername = localStorage.getItem('auth_username');
     const storedEmail = localStorage.getItem('auth_email');
     const storedRole = localStorage.getItem('auth_role');
-    const storedTier = localStorage.getItem('subscription_tier') || 'free';
+    const storedTier = localStorage.getItem('subscription_tier') || 'elite';
 
     if (storedToken && storedUsername) {
       setEmail(storedEmail);
@@ -193,6 +192,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem('auth_username', data.username);
         localStorage.setItem('auth_email', data.email || '');
         localStorage.setItem('auth_role', data.role || 'user');
+        localStorage.setItem('mes_access_granted', 'true');
 
         setIsAuthenticated(true);
         setUsername(data.username);

@@ -24,7 +24,7 @@ export function Settings() {
     disableAllBookmakers,
     enablePopularBookmakers,
     resetToDefaults
-  } = useSettings(username || 'default');
+  } = useSettings('default');
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRegion, setSelectedRegion] = useState<string>('all');
@@ -211,26 +211,6 @@ export function Settings() {
           </p>
         </div>
 
-        {/* Tier Gate for Free Users */}
-        {subscriptionTier === 'free' && (
-          <div className="bg-gradient-to-br from-blue-900/30 via-purple-900/30 to-blue-900/30 rounded-lg p-6 mb-6 border border-blue-500/30">
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 text-4xl">🔒</div>
-              <div className="flex-1">
-                <h3 className="text-xl font-bold text-white mb-2">Customize Your Bookmakers</h3>
-                <p className="text-slate-300 mb-4">
-                  Free users have access to all popular bookmakers by default. Upgrade to Premium or Pro to customize which bookmakers appear in your odds feeds and alerts.
-                </p>
-                <button
-                  onClick={() => window.location.href = '/#/pricing'}
-                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg font-semibold transition-all shadow-lg"
-                >
-                  Upgrade to Customize
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Stats Bar */}
         <div className="bg-slate-800/50 rounded-lg p-4 mb-6 border border-slate-700">
@@ -251,7 +231,7 @@ export function Settings() {
         </div>
 
         {/* Quick Actions */}
-        {subscriptionTier !== 'free' && (
+        {(
           <div className="mb-6">
             <div className="flex flex-wrap gap-3">
               <button
@@ -356,12 +336,12 @@ export function Settings() {
 
                     {/* Toggle Switch */}
                     <button
-                      onClick={() => subscriptionTier !== 'free' && toggleBookmaker(key)}
-                      disabled={saving || subscriptionTier === 'free'}
+                      onClick={() => toggleBookmaker(key)}
+                      disabled={saving}
                       className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors focus:outline-none ${
                         isEnabled ? 'bg-blue-600' : 'bg-slate-600'
-                      } ${saving || subscriptionTier === 'free' ? 'opacity-50 cursor-not-allowed' : ''}`}
-                      title={subscriptionTier === 'free' ? 'Upgrade to customize bookmakers' : ''}
+                      } ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      title=""
                     >
                       <span
                         className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform ${

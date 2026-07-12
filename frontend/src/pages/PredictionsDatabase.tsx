@@ -104,8 +104,8 @@ export default function PredictionsDatabase() {
   });
 
   const SortIcon = ({ field }: { field: SortField }) => {
-    if (sortField !== field) return <span className="text-slate-500 ml-1">â†•</span>;
-    return <span className="text-blue-400 ml-1">{sortDirection === 'asc' ? 'â†‘' : 'â†“'}</span>;
+    if (sortField !== field) return <span className="text-slate-500 ml-1">{'↕'}</span>;
+    return <span className="text-blue-400 ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>;
   };
 
   return (
@@ -117,11 +117,8 @@ export default function PredictionsDatabase() {
             <h1 className="text-5xl font-bold italic text-slate-100" style={{ fontStyle: 'italic', textTransform: 'uppercase' }}>
               HISTORICAL PREDICTIONS
             </h1>
-            <span className="px-3 py-1 bg-blue-900/50 border border-blue-500 rounded-full text-blue-300 text-sm font-semibold">
-              ðŸ“Š Odds via FanDuel
-            </span>
           </div>
-          <p className="text-slate-400 text-lg">Complete history of all ML model predictions with results â€¢ P/L based on $100 flat units</p>
+          <p className="text-slate-400 text-lg">Complete history of all ML model predictions with results | P/L based on $100 flat units</p>
         </div>
 
         {/* Filters */}
@@ -150,9 +147,11 @@ export default function PredictionsDatabase() {
                 className="w-full bg-slate-800 border-2 border-slate-600 text-slate-100 rounded px-3 py-2"
               >
                 <option value="all">All Sports</option>
+                <option value="mlb">MLB</option>
+                <option value="wnba">WNBA</option>
+                <option value="tennis_atp">Tennis ATP</option>
+                <option value="tennis_wta">Tennis WTA</option>
                 <option value="nba">NBA</option>
-                <option value="ncaab">NCAAB</option>
-                <option value="nhl">NHL</option>
                 <option value="nfl">NFL</option>
                 <option value="ncaaf">NCAAF</option>
               </select>
@@ -166,12 +165,7 @@ export default function PredictionsDatabase() {
                 className="w-full bg-slate-800 border-2 border-slate-600 text-slate-100 rounded px-3 py-2"
               >
                 <option value="all">All Models</option>
-                <option value="ensemble">Ensemble</option>
-                <option value="xgboost">XGBoost</option>
-                <option value="random_forest">Random Forest</option>
-                <option value="lightgbm">LightGBM</option>
-                <option value="linear_regression">Linear Regression</option>
-                <option value="logistic_regression">Logistic Regression</option>
+                <option value="rule_multibook_vig">Rule-Based (Multibook Vig)</option>
               </select>
             </div>
 
@@ -183,9 +177,9 @@ export default function PredictionsDatabase() {
                 className="w-full bg-slate-800 border-2 border-slate-600 text-slate-100 rounded px-3 py-2"
               >
                 <option value="all">All Types</option>
-                <option value="totals">Totals</option>
-                <option value="spreads">Spreads</option>
-                <option value="moneyline">Moneyline</option>
+                <option value="total">Totals</option>
+                <option value="ml">Moneyline</option>
+                <option value="spread">Spreads</option>
               </select>
             </div>
 

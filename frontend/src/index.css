@@ -1,19 +1,29 @@
-/* Import Figtree font from Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Figtree:wght@300..900&display=swap');
+/* Nunito Variable — dunksandthrees font */
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* dunksandthrees dark theme tokens — global */
+:root {
+  --background:       oklch(22.5% 0 0);
+  --foreground:       oklch(98.5% 0 0);
+  --muted:            oklch(26.9% 0 0);
+  --muted-foreground: oklch(70.8% 0 0);
+  --card:             oklch(24% 0 0);
+  --border:           oklch(100% 0 0 / .1);
+  --sidebar:          oklch(20.5% 0 0);
+  --brand-red:        oklch(63.7% .237 25.331);
+}
+
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: "Nunito", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #0f172a;
-  color: #f1f5f9;
+  background-color: oklch(22.5% 0 0);
+  color: oklch(98.5% 0 0);
 }
 
 code {
@@ -202,3 +212,101 @@ code {
 .animate-slide-in-right {
   animation: slide-in-right 0.4s ease-out forwards;
 }
+
+/* ══════════════════════════════════════════════════════════
+   GLOBAL THEME MIGRATION
+   Overrides legacy Tailwind slate palette → dunksandthrees dark tokens.
+   !important beats Tailwind JIT specificity AND React inline styles.
+   ══════════════════════════════════════════════════════════ */
+
+/* 1. Font — overrides every inline fontFamily prop site-wide */
+*, *::before, *::after {
+  font-family: "Nunito", sans-serif !important;
+}
+code, pre, kbd, samp {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace !important;
+}
+
+/* 2. Kill dark gradient page shells, keep accent gradients intact */
+.bg-gradient-to-br.from-black,
+.bg-gradient-to-br.from-slate-900,
+.bg-gradient-to-b.from-black,
+.bg-gradient-to-b.from-slate-900 {
+  background-image: none !important;
+  background-color: var(--background) !important;
+}
+
+/* 3. Background overrides */
+.bg-black         { background-color: var(--background)       !important; }
+.bg-slate-950     { background-color: var(--sidebar)          !important; }
+.bg-slate-900     { background-color: var(--background)       !important; }
+.bg-slate-900\/95 { background-color: oklch(22.5% 0 0 / .95) !important; }
+.bg-slate-800     { background-color: var(--card)             !important; }
+.bg-slate-800\/50 { background-color: oklch(24% 0 0 / .5)    !important; }
+.bg-slate-800\/30 { background-color: oklch(24% 0 0 / .3)    !important; }
+.bg-slate-700     { background-color: var(--muted)            !important; }
+.bg-slate-700\/50 { background-color: oklch(26.9% 0 0 / .5)  !important; }
+.bg-slate-600     { background-color: oklch(30% 0 0)          !important; }
+
+/* 4. Sport / alert accent chip backgrounds */
+.bg-orange-900\/50 { background-color: oklch(31% .09 50  / .40) !important; }
+.bg-orange-900\/30 { background-color: oklch(31% .09 50  / .25) !important; }
+.bg-orange-900\/20 { background-color: oklch(31% .09 50  / .15) !important; }
+.bg-blue-900\/50   { background-color: oklch(26% .07 255 / .40) !important; }
+.bg-blue-900\/30   { background-color: oklch(26% .07 255 / .25) !important; }
+.bg-red-900\/50    { background-color: oklch(28% .07 25  / .40) !important; }
+.bg-red-900\/30    { background-color: oklch(28% .07 25  / .25) !important; }
+.bg-red-900\/10    { background-color: oklch(28% .07 25  / .10) !important; }
+.bg-green-900\/50  { background-color: oklch(28% .07 150 / .40) !important; }
+.bg-green-900\/30  { background-color: oklch(28% .07 150 / .25) !important; }
+.bg-green-900\/20  { background-color: oklch(28% .07 150 / .15) !important; }
+.bg-purple-900\/50 { background-color: oklch(28% .05 295 / .40) !important; }
+.bg-purple-900\/30 { background-color: oklch(28% .05 295 / .25) !important; }
+.bg-yellow-900\/50 { background-color: oklch(34% .08 80  / .40) !important; }
+.bg-yellow-900\/30 { background-color: oklch(34% .08 80  / .25) !important; }
+
+/* 5. Active/selected state — blue → brand red */
+.bg-blue-600      { background-color: var(--brand-red)      !important; }
+.bg-blue-600\/30  { background-color: var(--brand-red-soft) !important; }
+.text-blue-600    { color: var(--brand-red)                 !important; }
+.border-blue-600  { border-color: var(--brand-red)          !important; }
+.hover\:bg-blue-600:hover { background-color: oklch(57.7% .245 27.325) !important; }
+
+/* 6. Border overrides */
+.border-slate-800 { border-color: var(--border)        !important; }
+.border-slate-700 { border-color: var(--border)        !important; }
+.border-slate-600 { border-color: var(--border-strong) !important; }
+.border-slate-500 { border-color: oklch(45% 0 0)       !important; }
+.divide-slate-700 > * + * { border-color: var(--border) !important; }
+
+/* 7. Primary text */
+.text-white     { color: var(--foreground)       !important; }
+.text-slate-100 { color: var(--foreground)       !important; }
+.text-slate-200 { color: var(--foreground)       !important; }
+.text-slate-300 { color: var(--muted-foreground) !important; }
+.text-slate-400 { color: oklch(58% 0 0)          !important; }
+.text-slate-500 { color: oklch(48% 0 0)          !important; }
+.text-slate-600 { color: oklch(40% 0 0)          !important; }
+
+/* 8. Accent text — vibrant on dark background */
+.text-blue-400  { color: var(--color-blue-500)    !important; }
+.text-blue-300  { color: oklch(70% .18 260)       !important; }
+.text-green-400 { color: var(--color-emerald-400) !important; }
+.text-green-300 { color: oklch(72% .16 162)       !important; }
+.text-green-200 { color: oklch(82% .10 162)       !important; }
+.text-green-100 { color: oklch(90% .06 162)       !important; }
+.text-red-400   { color: var(--color-red-500)     !important; }
+.text-red-300   { color: oklch(73% .17 25)        !important; }
+.text-red-200   { color: oklch(82% .11 25)        !important; }
+.text-red-100   { color: oklch(90% .06 25)        !important; }
+.text-yellow-400{ color: var(--color-yellow-500)  !important; }
+.text-yellow-300{ color: oklch(86% .14 86)        !important; }
+.text-orange-400{ color: var(--color-orange-500)  !important; }
+.text-cyan-400  { color: oklch(74% .17 205)       !important; }
+.text-purple-400{ color: oklch(69% .18 290)       !important; }
+
+/* 9. Hover utilities */
+.hover\:bg-slate-700:hover   { background-color: var(--muted) !important; }
+.hover\:bg-slate-800:hover   { background-color: var(--card)  !important; }
+.hover\:text-white:hover     { color: var(--foreground)       !important; }
+.hover\:text-slate-200:hover { color: var(--foreground)       !important; }

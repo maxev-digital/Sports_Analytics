@@ -29,8 +29,7 @@ export function EdgeScannerAlertMonitor({
   const { username, subscriptionTier } = useAuth();
   const [isMonitoring, setIsMonitoring] = useState(false);
 
-  // Only enable monitoring if user is logged in and has active subscription
-  const shouldMonitor = enabled && username && subscriptionTier === 'elite';
+  const shouldMonitor = enabled && username;
 
   // Use the Edge Scanner alerts hook
   const { seenCount, isEnabled } = useEdgeScannerAlerts({

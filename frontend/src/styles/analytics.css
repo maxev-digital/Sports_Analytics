@@ -1,0 +1,351 @@
+/*
+ * Analytics Design System — dunksandthrees.com dark theme
+ * Exact CSS variables from their source
+ * Font: Nunito Variable
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap');
+
+:root {
+  /* ── dunksandthrees dark mode tokens (exact) ── */
+  --background:           oklch(22.5% 0 0);
+  --foreground:           oklch(98.5% 0 0);
+  --muted:                oklch(26.9% 0 0);
+  --muted-foreground:     oklch(70.8% 0 0);
+  --popover:              oklch(24% 0 0);
+  --card:                 oklch(24% 0 0);
+  --card-foreground:      oklch(98.5% 0 0);
+  --border:               oklch(100% 0 0 / .1);
+  --border-strong:        oklch(100% 0 0 / .18);
+  --input:                oklch(100% 0 0 / .15);
+  --sidebar:              oklch(20.5% 0 0);
+  --destructive:          oklch(70.4% .191 22.216);
+
+  /* ── Their exact color palette ── */
+  --color-red-500:        oklch(63.7% .237 25.331);
+  --color-red-600:        oklch(57.7% .245 27.325);
+  --color-orange-500:     oklch(70.5% .213 47.604);
+  --color-yellow-500:     oklch(79.5% .184 86.047);
+  --color-yellow-700:     oklch(55.4% .135 66.442);
+  --color-green-600:      oklch(62.7% .194 149.214);
+  --color-emerald-400:    oklch(76.5% .177 163.223);
+  --color-emerald-500:    oklch(69.6% .17 162.48);
+  --color-emerald-600:    oklch(59.6% .145 163.225);
+  --color-emerald-700:    oklch(50.8% .118 165.612);
+  --color-blue-500:       oklch(62.3% .214 259.815);
+  --color-rose-500:       oklch(64.5% .246 16.439);
+  --color-gray-200:       oklch(92.8% .006 264.531);
+
+  /* ── Stat coloring (their tokens) ── */
+  --stat-good:            var(--color-emerald-500);
+  --stat-bad:             var(--color-red-500);
+
+  /* ── Chart colors ── */
+  --chart-1:              #03aa7d;
+  --chart-2:              oklch(68% .13 250);
+  --chart-3:              #feda6a;
+
+  /* ── Our brand red accent (used in place of their green primary) ── */
+  --brand-red:            oklch(63.7% .237 25.331);
+  --brand-red-soft:       oklch(63.7% .237 25.331 / .15);
+
+  /* ── Typography ── */
+  --d3-font:              "Nunito", sans-serif;
+  --d3-mono:              "JetBrains Mono Variable", ui-monospace, Menlo, monospace;
+
+  /* ── Radius ── */
+  --radius:               0.15rem;
+  --radius-sm:            calc(var(--radius) * 0.6);
+  --radius-md:            calc(var(--radius) * 0.8);
+  --radius-lg:            calc(var(--radius) * 2);
+
+  /* ── Transition ── */
+  --transition:           .15s cubic-bezier(.4, 0, .2, 1);
+}
+
+/* ── Page shell ───────────────────────────────────────── */
+.analytics-page {
+  background:   var(--background);
+  min-height:   100vh;
+  color:        var(--foreground);
+  font-family:  var(--d3-font);
+  font-size:    0.875rem;
+  line-height:  1.5;
+}
+
+/* ── Page header ──────────────────────────────────────── */
+.analytics-header {
+  background:    var(--card);
+  border-bottom: 1px solid var(--border);
+  padding:       20px 24px 0;
+}
+
+.analytics-header h1 {
+  font-size:      1.5rem;
+  font-weight:    800;
+  color:          var(--foreground);
+  letter-spacing: -0.025em;
+  margin:         0 0 3px;
+}
+
+.analytics-header p.subtitle {
+  font-size:   0.75rem;
+  color:       var(--muted-foreground);
+  margin:      0 0 14px;
+  font-weight: 500;
+}
+
+/* ── Sport pill tabs ──────────────────────────────────── */
+.sport-tabs { display: flex; overflow-x: auto; scrollbar-width: none; }
+.sport-tabs::-webkit-scrollbar { display: none; }
+
+.sport-tab {
+  padding:        9px 18px;
+  font-family:    var(--d3-font);
+  font-size:      0.73rem;
+  font-weight:    700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color:          var(--muted-foreground);
+  border:         none;
+  border-bottom:  2px solid transparent;
+  background:     none;
+  cursor:         pointer;
+  white-space:    nowrap;
+  transition:     color var(--transition), border-color var(--transition);
+}
+.sport-tab:hover  { color: var(--foreground); }
+.sport-tab.active { color: var(--brand-red); border-bottom-color: var(--brand-red); }
+
+/* ── Filter bar ───────────────────────────────────────── */
+.filter-bar {
+  display:       flex;
+  align-items:   center;
+  gap:           8px;
+  padding:       10px 24px;
+  background:    var(--card);
+  border-bottom: 1px solid var(--border);
+  flex-wrap:     wrap;
+}
+
+.filter-label {
+  font-size:      0.68rem;
+  font-weight:    700;
+  color:          var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.filter-select {
+  padding:     4px 10px;
+  font-family: var(--d3-font);
+  font-size:   0.78rem;
+  font-weight: 600;
+  color:       var(--foreground);
+  background:  var(--muted);
+  border:      1px solid var(--border);
+  border-radius: var(--radius);
+  cursor:      pointer;
+  outline:     none;
+  transition:  border-color var(--transition);
+}
+.filter-select:focus { border-color: var(--brand-red); }
+.filter-select option { background: var(--popover); color: var(--foreground); }
+
+.filter-pill {
+  padding:       4px 12px;
+  font-family:   var(--d3-font);
+  font-size:     0.72rem;
+  font-weight:   700;
+  border-radius: 20px;
+  border:        1px solid var(--border);
+  background:    transparent;
+  color:         var(--muted-foreground);
+  cursor:        pointer;
+  transition:    all var(--transition);
+}
+.filter-pill:hover  { background: var(--muted); color: var(--foreground); }
+.filter-pill.active { background: var(--brand-red); color: #fff; border-color: var(--brand-red); }
+
+/* ── Content area ─────────────────────────────────────── */
+.analytics-content {
+  padding:    20px 24px;
+  max-width:  1400px;
+  margin:     0 auto;
+}
+
+/* ── Stat summary cards ───────────────────────────────── */
+.stat-cards {
+  display:               grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap:                   10px;
+  margin-bottom:         16px;
+}
+
+.stat-card {
+  background:    var(--card);
+  border:        1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding:       14px 16px;
+}
+
+.stat-card .stat-value {
+  font-size:      1.5rem;
+  font-weight:    800;
+  color:          var(--foreground);
+  line-height:    1;
+  letter-spacing: -0.025em;
+}
+
+.stat-card .stat-label {
+  font-size:      0.67rem;
+  font-weight:    700;
+  color:          var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-top:     5px;
+}
+
+.stat-card .stat-delta     { font-size: 0.78rem; font-weight: 700; margin-top: 4px; }
+.stat-card .stat-delta.pos { color: var(--stat-good); }
+.stat-card .stat-delta.neg { color: var(--stat-bad); }
+
+/* ── Main data table ──────────────────────────────────── */
+.data-table-wrap {
+  background:    var(--card);
+  border:        1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow:      hidden;
+}
+.data-table-wrap.mb { margin-bottom: 16px; }
+
+.data-table {
+  width:           100%;
+  border-collapse: collapse;
+  font-family:     var(--d3-font);
+  font-size:       0.83rem;
+}
+
+/* Header */
+.data-table thead tr { background: var(--sidebar); }
+
+.data-table thead th {
+  padding:        10px 14px;
+  font-size:      0.65rem;
+  font-weight:    700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color:          var(--muted-foreground);
+  text-align:     right;
+  white-space:    nowrap;
+  cursor:         pointer;
+  user-select:    none;
+  transition:     color var(--transition);
+}
+.data-table thead th:first-child { text-align: left; }
+.data-table thead th:hover       { color: var(--foreground); }
+.data-table thead th.sorted      { color: var(--color-emerald-400); }
+
+/* Rows */
+.data-table tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition:    background var(--transition);
+}
+.data-table tbody tr:last-child          { border-bottom: none; }
+.data-table tbody tr:nth-child(even)     { background: oklch(100% 0 0 / .02); }
+.data-table tbody tr:hover               { background: var(--muted); }
+
+.data-table tbody td {
+  padding:     9px 14px;
+  color:       var(--muted-foreground);
+  text-align:  right;
+  white-space: nowrap;
+  font-weight: 500;
+}
+.data-table tbody td:first-child {
+  text-align:  left;
+  font-weight: 700;
+  color:       var(--foreground);
+}
+
+/* ── Rank badge ───────────────────────────────────────── */
+.rank-badge {
+  display:         inline-flex;
+  align-items:     center;
+  justify-content: center;
+  width:           22px;
+  height:          22px;
+  border-radius:   var(--radius);
+  font-size:       0.68rem;
+  font-weight:     800;
+  background:      var(--muted);
+  color:           var(--muted-foreground);
+  margin-right:    8px;
+  flex-shrink:     0;
+}
+.rank-badge.top5 { background: var(--brand-red); color: #fff; }
+
+/* ── Stat value coloring ──────────────────────────────── */
+.val-pos     { color: var(--stat-good); font-weight: 700; }
+.val-neg     { color: var(--stat-bad);  font-weight: 700; }
+.val-neutral { color: var(--muted-foreground); }
+.val-warn    { color: var(--color-yellow-500); font-weight: 700; }
+
+.cell-pos  { background: oklch(50.8% .118 165.612 / .2); color: var(--color-emerald-400); font-weight: 700; border-radius: var(--radius); padding: 2px 7px; display: inline-block; }
+.cell-neg  { background: oklch(63.7% .237 25.331 / .2);  color: var(--color-red-500);     font-weight: 700; border-radius: var(--radius); padding: 2px 7px; display: inline-block; }
+.cell-warn { background: oklch(79.5% .184 86.047 / .15); color: var(--color-yellow-500);  font-weight: 700; border-radius: var(--radius); padding: 2px 7px; display: inline-block; }
+
+/* ── Section title ────────────────────────────────────── */
+.section-title {
+  font-size:      0.67rem;
+  font-weight:    700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color:          var(--muted-foreground);
+  margin-bottom:  10px;
+}
+
+/* ── Team row ─────────────────────────────────────────── */
+.team-cell   { display: flex; align-items: center; gap: 10px; }
+.team-abbr   { font-size: 0.73rem; font-weight: 800; letter-spacing: 0.05em; color: var(--muted-foreground); width: 34px; flex-shrink: 0; }
+.team-name   { font-size: 0.85rem; font-weight: 700; color: var(--foreground); }
+.team-record { font-size: 0.72rem; color: var(--muted-foreground); margin-left: 4px; }
+
+/* ── Sort arrow ───────────────────────────────────────── */
+.sort-arrow        { display: inline-block; margin-left: 3px; opacity: 0.3; font-size: 0.6rem; }
+.sort-arrow.active { opacity: 1; color: var(--color-emerald-400); }
+
+/* ── Empty / loading ──────────────────────────────────── */
+.empty-state    { text-align: center; padding: 56px 24px; color: var(--muted-foreground); }
+.empty-state h3 { font-size: 1rem; font-weight: 700; color: var(--foreground); margin-bottom: 6px; }
+.empty-state p  { font-size: 0.83rem; }
+
+.skeleton {
+  background:      linear-gradient(90deg, var(--muted) 25%, var(--border-strong) 50%, var(--muted) 75%);
+  background-size: 200% 100%;
+  animation:       shimmer 1.4s infinite;
+  border-radius:   var(--radius);
+  height:          14px;
+}
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── Data note ────────────────────────────────────────── */
+.data-note {
+  font-size:  0.7rem;
+  color:      var(--muted-foreground);
+  margin-top: 10px;
+  font-style: italic;
+}
+
+/* ── Responsive ───────────────────────────────────────── */
+@media (max-width: 768px) {
+  .analytics-content   { padding: 12px 14px; }
+  .analytics-header    { padding: 14px 14px 0; }
+  .filter-bar          { padding: 8px 14px; }
+  .data-table-wrap     { border-radius: 6px; overflow-x: auto; }
+  .stat-cards          { grid-template-columns: repeat(2, 1fr); }
+  .analytics-header h1 { font-size: 1.2rem; }
+}

@@ -1,9 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { uiEmojis } from '../utils/sportDetection';
-import { useSoundEffect } from '../hooks/useSoundEffect';
-import { isElectron } from '../utils/isElectron';
 import { getApiUrl } from '../config';
 import { useBetAlertNotification } from '../contexts/BetAlertNotificationContext';
 
@@ -12,260 +9,123 @@ export function Navigation() {
   const navigate = useNavigate();
   const { username, role, token, logout } = useAuth();
   const { isAudioMuted, toggleAudioMute } = useBetAlertNotification();
-  const [strategyDropdownOpen, setStrategyDropdownOpen] = useState(false);
-  const [strategyResultsDropdownOpen, setStrategyResultsDropdownOpen] = useState(false);
+
+  const [rankingsDropdownOpen, setRankingsDropdownOpen] = useState(false);
   const [edgesDropdownOpen, setEdgesDropdownOpen] = useState(false);
-  const [propsDropdownOpen, setPropsDropdownOpen] = useState(false);
+  const [strategyDropdownOpen, setStrategyDropdownOpen] = useState(false);
   const [toolsDropdownOpen, setToolsDropdownOpen] = useState(false);
-  const [learnDropdownOpen, setLearnDropdownOpen] = useState(false);
+  const [marketsDropdownOpen, setMarketsDropdownOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
-  const [unreadFeedbackCount, setUnreadFeedbackCount] = useState(0);
-  const strategyRef = useRef<HTMLDivElement>(null);
-  const strategyResultsRef = useRef<HTMLDivElement>(null);
+
+  const rankingsRef = useRef<HTMLDivElement>(null);
   const edgesRef = useRef<HTMLDivElement>(null);
-  const propsRef = useRef<HTMLDivElement>(null);
+  const strategyRef = useRef<HTMLDivElement>(null);
   const toolsRef = useRef<HTMLDivElement>(null);
-  const learnRef = useRef<HTMLDivElement>(null);
+  const marketsRef = useRef<HTMLDivElement>(null);
   const userRef = useRef<HTMLDivElement>(null);
-  // Sound effects - DISABLED for menu buttons
-  // const playTabSwitch = useSoundEffect('tab-switch.mp3', 0.3);
-  // const playDropdown = useSoundEffect('dropdown.mp3', 0.3);
-  // const playLogout = useSoundEffect('logout.mp3', 0.4);
 
-  // Check if running in desktop (Electron) mode
-  const isDesktop = isElectron();
+  const isActive = (path: string) =>
+    path === '/live-games'
+      ? location.pathname === '/' || location.pathname === '/live-games'
+      : location.pathname.startsWith(path);
 
-  // Load unread feedback count
-  useEffect(() => {
-    const loadUnreadCount = async () => {
-      if (!token) return;
-      try {
-        const response = await fetch(getApiUrl('feedback/my-feedback'), {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          const count = data.feedback.filter(
-            (f: any) => f.admin_response && !f.response_viewed
-          ).length;
-          setUnreadFeedbackCount(count);
-        }
-      } catch (error) {
-        console.error('Error loading unread feedback:', error);
-      }
-    };
+  const isDropdownActive = (items: { path: string }[]) =>
+    items.some(item => isActive(item.path));
 
-    loadUnreadCount();
-    // Check every minute for new responses
-    const interval = setInterval(loadUnreadCount, 60000);
-    return () => clearInterval(interval);
-  }, [token]);
+  const handleLogout = () => { logout(); navigate('/login'); };
 
-  const handleNavClick = () => { /* Sound disabled */ };
-  const handleDropdownToggle = (dropdownSetter: (val: boolean) => void, currentState: boolean) => { /* Sound disabled */ dropdownSetter(!currentState); };
-  const handleLogout = () => { /* Sound disabled */ logout(); navigate('/login'); };
-
-  // Main nav items (always visible)
   const mainNavItems = [
-    { path: '/live-games', label: 'GAME CARDS', emoji: uiEmojis.fire },
-    { path: '/odds', label: 'ODDS', emoji: uiEmojis.chart },
-    { path: '/analytics', label: 'PERFORMANCE', emoji: uiEmojis.search },
-    { path: '/alerts', label: 'ALERTS', emoji: uiEmojis.lightning },
+    { path: '/live-games', label: 'GAME CARDS' },
+    { path: '/odds',       label: 'ODDS' },
+    { path: '/alerts',     label: 'ALERTS', live: true },
   ];
 
-  // Player Props dropdown items (with Performance dashboard)
-  const propsItems = [
-    { path: '/props', label: 'PROPS', emoji: uiEmojis.book },
-    { path: '/props-performance', label: 'PERFORMANCE', emoji: uiEmojis.chart },
-    { path: '/dfs-crusher', label: 'DFS CRUSHER', emoji: uiEmojis.fire },
+  const rankingsItems = [
+    { path: '/team-rankings',     label: 'TEAM RANKINGS'     },
+    { path: '/advanced-metrics',  label: 'ADVANCED METRICS'  },
+    { path: '/player-leaders',    label: 'PLAYER LEADERS'    },
   ];
 
-  // Edges dropdown items (ML Model Edges)
   const edgesItems = [
-    { path: '/max-ev-edges', label: 'ML EDGES', emoji: uiEmojis.star },
-    { path: '/model-performance', label: 'PERFORMANCE', emoji: uiEmojis.chart },
-    { path: '/predictions-database', label: 'PREDICTIONS DATABASE', emoji: uiEmojis.book },
-    { path: '/ml-models-explained', label: 'ML MODELS EXPLAINED', emoji: uiEmojis.book },
+    { path: '/picks',               label: 'PICKS' },
+    { path: '/max-ev-edges',        label: 'ML EDGES' },
+    { path: '/model-performance',   label: 'MODEL PERFORMANCE' },
+    { path: '/predictions-database', label: 'PREDICTIONS DB' },
   ];
 
-  // Strategy Results dropdown items (Live vs Pre-Game)
-  const strategyResultsItems = [
-    { path: '/strategy-results', label: 'LIVE STRATEGIES', emoji: uiEmojis.fire },
-    { path: '/pre-game-strategy-results', label: 'PRE-GAME STRATEGIES', emoji: uiEmojis.trophy },
+  const strategyItems: { path: string; label: string }[] = [];
+
+  const marketsItems = [
+    { path: '/kalshi', label: 'KALSHI' },
   ];
 
-  // Strategy Settings dropdown items
-  const strategyItems = [
-    { path: '/strategy-settings', label: 'STRATEGY SETTINGS', emoji: uiEmojis.trophy },
-  ];
-
-  // Tools dropdown items (includes Bookmaker Settings)
   const toolsItems = [
-    { path: '/tools', label: 'BETTING TOOLS', emoji: uiEmojis.wrench },
-    { path: '/settings', label: 'BOOKMAKER SETTINGS', emoji: uiEmojis.gear },
-    { path: '/my-feedback', label: 'MY FEEDBACK', emoji: uiEmojis.book, badge: unreadFeedbackCount },
-    ...(role === 'admin' ? [{ path: '/admin-dashboard', label: 'ADMIN DASHBOARD', emoji: uiEmojis.star }] : []),
+    { path: '/tools',            label: 'BETTING TOOLS' },
+    { path: '/settings',         label: 'BOOKMAKER SETTINGS' },
+    { path: '/system-overview',  label: 'HOW WE PICK: ALL SPORTS' },
+    { path: '/system-nfl',       label: 'HOW WE PICK: NFL' },
+    { path: '/system-health',    label: 'SYSTEM HEALTH' },
+    ...(role === 'admin' ? [{ path: '/admin-dashboard', label: 'ADMIN DASHBOARD' }] : []),
   ];
 
-  // Learn dropdown items
-  const learnItems = [
-    { path: '/learn', label: 'LEARN ARTICLES', emoji: uiEmojis.graduation },
-    { path: '/getting-started', label: 'GETTING STARTED', emoji: uiEmojis.rocket },
-    { path: '/odds-explained', label: 'ODDS EXPLAINED', emoji: uiEmojis.chart },
-    { path: '/evidence', label: 'EVIDENCE & PROOF', emoji: uiEmojis.chart },
-    { path: '/ml-advantage', label: 'ML ROADMAP', emoji: uiEmojis.star },
-  ];
-
-  const isActive = (path: string) => {
-    if (path === '/live-games') {
-      return location.pathname === '/' || location.pathname === '/live-games';
-    }
-    return location.pathname.startsWith(path);
-  };
-
-  const isDropdownActive = (items: typeof strategyItems) => {
-    return items.some(item => isActive(item.path));
-  };
-
-  // Close dropdowns when clicking outside
+  // Close dropdowns on outside click
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (strategyRef.current && !strategyRef.current.contains(event.target as Node)) {
-        setStrategyDropdownOpen(false);
-      }
-      if (strategyResultsRef.current && !strategyResultsRef.current.contains(event.target as Node)) {
-        setStrategyResultsDropdownOpen(false);
-      }
-      if (propsRef.current && !propsRef.current.contains(event.target as Node)) {
-        setPropsDropdownOpen(false);
-      }
-      if (toolsRef.current && !toolsRef.current.contains(event.target as Node)) {
-        setToolsDropdownOpen(false);
-      }
-      if (learnRef.current && !learnRef.current.contains(event.target as Node)) {
-        setLearnDropdownOpen(false);
-      }
-      if (userRef.current && !userRef.current.contains(event.target as Node)) {
-        setUserDropdownOpen(false);
-      }
+    function handleClick(e: MouseEvent) {
+      if (rankingsRef.current && !rankingsRef.current.contains(e.target as Node)) setRankingsDropdownOpen(false);
+      if (edgesRef.current && !edgesRef.current.contains(e.target as Node)) setEdgesDropdownOpen(false);
+      if (strategyRef.current && !strategyRef.current.contains(e.target as Node)) setStrategyDropdownOpen(false);
+      if (toolsRef.current && !toolsRef.current.contains(e.target as Node)) setToolsDropdownOpen(false);
+      if (marketsRef.current && !marketsRef.current.contains(e.target as Node)) setMarketsDropdownOpen(false);
+      if (userRef.current && !userRef.current.contains(e.target as Node)) setUserDropdownOpen(false);
     }
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
   }, []);
+
+  const navBtn = (active: boolean, extra = '') =>
+    `px-4 py-2 rounded-lg font-bold text-base transition-all italic flex items-center gap-1.5 ${extra} ${
+      active ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+    }`;
+
+  const dropdownLink = (active: boolean) =>
+    `px-4 py-2.5 flex items-center gap-3 text-base font-semibold italic transition-all ${
+      active ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+    }`;
+
+  const chevron = (open: boolean) => (
+    <svg className={`w-4 h-4 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+    </svg>
+  );
+
+  const dropdownPanel = (children: React.ReactNode) => (
+    <div className="absolute top-full mt-1 left-0 bg-slate-800 border border-slate-700 rounded-lg shadow-xl min-w-[220px] py-1 z-50">
+      {children}
+    </div>
+  );
 
   return (
     <nav className="sticky top-0 z-50 bg-black border-b border-slate-700 shadow-lg">
       <div className="max-w-7xl mx-auto px-4">
-        <div className="flex items-center justify-between h-24 py-4">
+        <div className="flex items-center justify-between h-20">
+
           {/* Logo */}
-          <Link to="/live-games" onClick={handleNavClick} className="hover:opacity-80 transition-opacity flex-shrink-0">
-            <img
-              src="/logo.png"
-              alt="Max EV Sports"
-              className="h-24 w-auto object-contain"
-              style={{ minWidth: '120px', maxWidth: '200px' }}
-            />
+          <Link to="/live-games" className="hover:opacity-80 transition-opacity flex-shrink-0">
+            <img src="/3DMaxLogo.png" alt="Max EV Sports" className="h-20 w-auto object-contain" style={{ mixBlendMode: 'screen' }} />
           </Link>
 
-          {/* Navigation Links */}
+          {/* Desktop nav */}
           <div className="hidden md:flex items-center gap-1">
-            {/* Main Nav Items - First 2 items (Game Cards, Odds) */}
-            {mainNavItems.slice(0, 2).map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`px-5 py-2.5 rounded-lg font-bold transition-all text-base flex items-center gap-2 italic ${
-                  isActive(item.path)
-                    ? item.path === '/live-games'
-                      ? 'bg-black text-white border-2 border-yellow-500 shadow-lg shadow-yellow-500/30'
-                      : 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
-                    : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
-                }`}
-              >
-                {/* item.emoji && (
-                  <img
-                    src={item.emoji}
-                    alt={item.label || 'Home'}
-                    className={item.label ? "w-5 h-5" : "w-8 h-8"}
-                    style={{ imageRendering: 'crisp-edges' }}
-                  />
-                ) */}
+
+            {/* Main flat items */}
+            {mainNavItems.map(item => (
+              <Link key={item.path} to={item.path} className={navBtn(isActive(item.path))}>
                 {item.label}
-              </Link>
-            ))}
-
-            {/* Edges Dropdown - ML Model Edges & Performance */}
-            <div className="relative" ref={edgesRef}>
-              <button
-                onClick={() => handleDropdownToggle(setEdgesDropdownOpen, edgesDropdownOpen)}
-                className={`px-5 py-2.5 rounded-lg font-bold transition-all text-base flex items-center gap-2 italic ${
-                  isDropdownActive(edgesItems)
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
-                    : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
-                }`}
-              >
-                {/* <img src={uiEmojis.star} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} /> */}
-                <div className="flex flex-col leading-tight">
-                  <span className="whitespace-nowrap">MAX-EV</span>
-                  <span className="whitespace-nowrap">EDGE</span>
-                </div>
-                <svg className={`w-5 h-5 transition-transform ${edgesDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-
-              {edgesDropdownOpen && (
-                <div className="absolute top-full mt-1 left-0 bg-slate-800 border border-slate-700 rounded-lg shadow-xl min-w-[220px] py-2 z-50">
-                  {edgesItems.map((item) => (
-                    <Link
-                      key={item.path}
-                      to={item.path}
-                      onClick={() => { /* Sound disabled */ setEdgesDropdownOpen(false); }}
-                      className={`px-4 py-2.5 flex items-center gap-3 transition-all ${
-                        isActive(item.path)
-                          ? 'bg-blue-600 text-white'
-                          : 'text-slate-300 hover:bg-slate-700 hover:text-slate-100'
-                      }`}
-                    >
-                      {/* <img src={item.emoji} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} /> */}
-                      <span className="font-semibold text-base italic">{item.label}</span>
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Main Nav Items - Remaining items (Performance, Alerts) */}
-            {mainNavItems.slice(2, 4).map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`px-5 py-2.5 rounded-lg font-bold transition-all text-base flex items-center gap-2 italic whitespace-nowrap relative ${
-                  isActive(item.path)
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
-                    : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
-                }`}
-              >
-                {/* item.emoji && (
-                  <img
-                    src={item.emoji}
-                    alt={item.label || 'Home'}
-                    className={item.label ? "w-5 h-5" : "w-8 h-8"}
-                    style={{ imageRendering: 'crisp-edges' }}
-                  />
-                ) */}
-                {item.label}
-                {/* Pulsing LIVE dot for ALERTS nav item */}
-                {item.path === '/alerts' && (
-                  <span className="flex items-center gap-1 ml-1">
-                    <span className="relative flex h-2.5 w-2.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+                {item.live && (
+                  <span className="flex items-center gap-1 ml-0.5">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
                     </span>
                     <span className="text-xs text-red-400 font-bold">LIVE</span>
                   </span>
@@ -273,418 +133,137 @@ export function Navigation() {
               </Link>
             ))}
 
-            {/* Player Props Dropdown */}
-            <div className="relative" ref={propsRef}>
+            {/* RANKINGS dropdown */}
+            <div className="relative" ref={rankingsRef}>
               <button
-                onClick={() => handleDropdownToggle(setPropsDropdownOpen, propsDropdownOpen)}
-                className={`px-5 py-2.5 rounded-lg font-bold transition-all text-base flex items-center gap-2 italic whitespace-nowrap ${
-                  isDropdownActive(propsItems)
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
-                    : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
-                }`}
+                onClick={() => setRankingsDropdownOpen(o => !o)}
+                className={navBtn(isDropdownActive(rankingsItems))}
               >
-                {/* <img src={uiEmojis.book} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} /> */}
-                PLAYER PROPS
-                <svg className={`w-5 h-5 transition-transform ${propsDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
+                RANKINGS {chevron(rankingsDropdownOpen)}
               </button>
-
-              {propsDropdownOpen && (
-                <div className="absolute top-full mt-1 left-0 bg-slate-800 border border-slate-700 rounded-lg shadow-xl min-w-[220px] py-2 z-50">
-                  {propsItems.map((item) => (
-                    <Link
-                      key={item.path}
-                      to={item.path}
-                      onClick={() => { /* Sound disabled */ setPropsDropdownOpen(false); }}
-                      className={`px-4 py-2.5 flex items-center gap-3 transition-all ${
-                        isActive(item.path)
-                          ? 'bg-blue-600 text-white'
-                          : 'text-slate-300 hover:bg-slate-700 hover:text-slate-100'
-                      }`}
-                    >
-                      {/* <img src={item.emoji} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} /> */}
-                      <span className="font-semibold text-base italic">{item.label}</span>
-                    </Link>
-                  ))}
-                </div>
+              {rankingsDropdownOpen && dropdownPanel(
+                rankingsItems.map(item => (
+                  <Link key={item.path} to={item.path} onClick={() => setRankingsDropdownOpen(false)} className={dropdownLink(isActive(item.path))}>
+                    {item.label}
+                  </Link>
+                ))
               )}
             </div>
 
-            {/* Strategy Results Dropdown - Live vs Pre-Game */}
-            <div className="relative" ref={strategyResultsRef}>
+            {/* MAX-EV EDGE dropdown */}
+            <div className="relative" ref={edgesRef}>
               <button
-                onClick={() => handleDropdownToggle(setStrategyResultsDropdownOpen, strategyResultsDropdownOpen)}
-                className={`px-5 py-2.5 rounded-lg font-bold transition-all text-base flex items-center gap-2 italic ${
-                  isDropdownActive(strategyResultsItems)
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
-                    : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
-                }`}
+                onClick={() => setEdgesDropdownOpen(o => !o)}
+                className={navBtn(isDropdownActive(edgesItems))}
               >
-                {/* <img src={uiEmojis.trophy} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} /> */}
-                STRATEGY RESULTS
-                <svg className={`w-5 h-5 transition-transform ${strategyResultsDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
+                MAX-EV EDGE {chevron(edgesDropdownOpen)}
               </button>
-
-              {strategyResultsDropdownOpen && (
-                <div className="absolute top-full mt-1 left-0 bg-slate-800 border border-slate-700 rounded-lg shadow-xl min-w-[220px] py-2 z-50">
-                  {strategyResultsItems.map((item) => (
-                    <Link
-                      key={item.path}
-                      to={item.path}
-                      onClick={() => { /* Sound disabled */ setStrategyResultsDropdownOpen(false); }}
-                      className={`px-4 py-2.5 flex items-center gap-3 transition-all ${
-                        isActive(item.path)
-                          ? 'bg-blue-600 text-white'
-                          : 'text-slate-300 hover:bg-slate-700 hover:text-slate-100'
-                      }`}
-                    >
-                      {/* <img src={item.emoji} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} /> */}
-                      <span className="font-semibold text-base italic">{item.label}</span>
-                    </Link>
-                  ))}
-                </div>
+              {edgesDropdownOpen && dropdownPanel(
+                edgesItems.map(item => (
+                  <Link key={item.path} to={item.path} onClick={() => setEdgesDropdownOpen(false)} className={dropdownLink(isActive(item.path))}>
+                    {item.label}
+                  </Link>
+                ))
               )}
             </div>
 
-            {/* Strategies Dropdown - Strategy Settings */}
-            <div className="relative" ref={strategyRef}>
-              <button
-                onClick={() => handleDropdownToggle(setStrategyDropdownOpen, strategyDropdownOpen)}
-                className={`px-5 py-2.5 rounded-lg font-semibold transition-all text-base flex items-center gap-2 italic ${
-                  isDropdownActive(strategyItems)
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
-                    : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
-                }`}
-              >
-                {/* <img src={uiEmojis.trophy} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} /> */}
-                STRATEGIES
-                <svg className={`w-5 h-5 transition-transform ${strategyDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-
-              {strategyDropdownOpen && (
-                <div className="absolute top-full mt-1 left-0 bg-slate-800 border border-slate-700 rounded-lg shadow-xl min-w-[220px] py-2 z-50">
-                  {strategyItems.map((item) => (
-                    <Link
-                      key={item.path}
-                      to={item.path}
-                      onClick={() => { /* Sound disabled */ setStrategyDropdownOpen(false); }}
-                      className={`px-4 py-2.5 flex items-center gap-3 transition-all ${
-                        isActive(item.path)
-                          ? 'bg-blue-600 text-white'
-                          : 'text-slate-300 hover:bg-slate-700 hover:text-slate-100'
-                      }`}
-                    >
-                      {/* <img src={item.emoji} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} /> */}
-                      <span className="font-semibold text-base italic">{item.label}</span>
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Tools Dropdown */}
+            {/* TOOLS dropdown */}
             <div className="relative" ref={toolsRef}>
               <button
-                onClick={() => handleDropdownToggle(setToolsDropdownOpen, toolsDropdownOpen)}
-                className={`px-5 py-2.5 rounded-lg font-semibold transition-all text-base flex items-center gap-2 relative italic ${
-                  isDropdownActive(toolsItems)
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
-                    : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
-                }`}
+                onClick={() => setToolsDropdownOpen(o => !o)}
+                className={navBtn(isDropdownActive(toolsItems))}
               >
-                {/* <img src={uiEmojis.wrench} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} /> */}
-                TOOLS
-                <svg className={`w-5 h-5 transition-transform ${toolsDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-                {/* Notification Badge */}
-                {unreadFeedbackCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center animate-pulse">
-                    {unreadFeedbackCount}
-                  </span>
-                )}
+                TOOLS {chevron(toolsDropdownOpen)}
               </button>
-
-              {toolsDropdownOpen && (
-                <div className="absolute top-full mt-1 left-0 bg-slate-800 border border-slate-700 rounded-lg shadow-xl min-w-[220px] py-2 z-50">
-                  {toolsItems.map((item) => (
-                    <Link
-                      key={item.path}
-                      to={item.path}
-                      onClick={() => { /* Sound disabled */ setToolsDropdownOpen(false); }}
-                      className={`px-4 py-2.5 flex items-center gap-3 transition-all ${
-                        isActive(item.path)
-                          ? 'bg-blue-600 text-white'
-                          : 'text-slate-300 hover:bg-slate-700 hover:text-slate-100'
-                      }`}
-                    >
-                      {/* <img src={item.emoji} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} /> */}
-                      <span className="font-semibold text-base flex-1 italic">{item.label}</span>
-                      {item.badge && item.badge > 0 && (
-                        <span className="bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full">
-                          {item.badge}
-                        </span>
-                      )}
-                    </Link>
-                  ))}
-                </div>
+              {toolsDropdownOpen && dropdownPanel(
+                toolsItems.map(item => (
+                  <Link key={item.path} to={item.path} onClick={() => setToolsDropdownOpen(false)} className={dropdownLink(isActive(item.path))}>
+                    {item.label}
+                  </Link>
+                ))
               )}
             </div>
 
-            {/* Learn Dropdown - Hidden in desktop mode */}
-            {!isDesktop && (
-              <div className="relative" ref={learnRef}>
+            {/* PREDICTION MARKETS dropdown */}
+            <div className="relative" ref={marketsRef}>
+              <button
+                onClick={() => setMarketsDropdownOpen(o => !o)}
+                className={navBtn(isDropdownActive(marketsItems))}
+              >
+                PREDICTION MARKETS {chevron(marketsDropdownOpen)}
+              </button>
+              {marketsDropdownOpen && dropdownPanel(
+                marketsItems.map(item => (
+                  <Link key={item.path} to={item.path} onClick={() => setMarketsDropdownOpen(false)} className={dropdownLink(isActive(item.path))}>
+                    {item.label}
+                  </Link>
+                ))
+              )}
+            </div>
+
+          </div>
+
+          {/* User menu */}
+          <div className="relative hidden md:block" ref={userRef}>
+            <button
+              onClick={() => setUserDropdownOpen(o => !o)}
+              className="flex items-center gap-2 bg-slate-800/50 border border-slate-700 hover:border-slate-500 rounded-lg px-3 py-2 transition-all"
+            >
+              <div className="w-7 h-7 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center text-white font-bold text-xs">
+                {username ? username.charAt(0).toUpperCase() : 'U'}
+              </div>
+              <span className="text-slate-300 text-sm font-semibold">{username}</span>
+              {chevron(userDropdownOpen)}
+            </button>
+
+            {userDropdownOpen && (
+              <div className="absolute top-full mt-1 right-0 bg-slate-800 border border-slate-700 rounded-lg shadow-xl min-w-[190px] py-1 z-50">
                 <button
-                  onClick={() => handleDropdownToggle(setLearnDropdownOpen, learnDropdownOpen)}
-                  className={`px-5 py-2.5 rounded-lg font-semibold transition-all text-base flex items-center gap-2 italic ${
-                    isDropdownActive(learnItems)
-                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
-                      : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
+                  onClick={toggleAudioMute}
+                  className={`w-full px-4 py-2.5 flex items-center gap-3 text-sm font-semibold text-left transition-all ${
+                    isAudioMuted ? 'text-slate-400 hover:bg-slate-700' : 'text-green-400 hover:bg-green-900/30'
                   }`}
                 >
-                  {/* <img src={uiEmojis.graduation} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} /> */}
-                  LEARN
-                  <svg className={`w-5 h-5 transition-transform ${learnDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    {isAudioMuted
+                      ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+                      : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                    }
                   </svg>
+                  Alert Audio: {isAudioMuted ? 'OFF' : 'ON'}
                 </button>
-
-                {learnDropdownOpen && (
-                  <div className="absolute top-full mt-1 left-0 bg-slate-800 border border-slate-700 rounded-lg shadow-xl min-w-[220px] py-2 z-50">
-                    {learnItems.map((item) => (
-                      <Link
-                        key={item.path}
-                        to={item.path}
-                        onClick={() => { /* Sound disabled */ setLearnDropdownOpen(false); }}
-                        className={`px-4 py-2.5 flex items-center gap-3 transition-all ${
-                          isActive(item.path)
-                            ? 'bg-blue-600 text-white'
-                            : 'text-slate-300 hover:bg-slate-700 hover:text-slate-100'
-                        }`}
-                      >
-                        <img src={item.emoji} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} />
-                        <span className="font-semibold text-base">{item.label}</span>
-                      </Link>
-                    ))}
-                  </div>
-                )}
+                <button
+                  onClick={() => { setUserDropdownOpen(false); handleLogout(); }}
+                  className="w-full px-4 py-2.5 flex items-center gap-3 text-sm font-semibold text-slate-300 hover:bg-red-900/30 hover:text-red-400 transition-all text-left"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  Logout
+                </button>
               </div>
             )}
-
           </div>
 
-          {/* Right Side Actions */}
-          <div className="flex items-center gap-3 ml-auto">
-            {/* User Dropdown Menu */}
-            <div className="relative hidden md:block" ref={userRef}>
-              <button
-                onClick={() => handleDropdownToggle(setUserDropdownOpen, userDropdownOpen)}
-                className="flex items-center gap-3 bg-slate-800/50 border-2 border-slate-700 hover:border-slate-600 rounded-lg px-4 py-2 transition-all"
-              >
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
-                    {username ? username.charAt(0).toUpperCase() : 'U'}
-                  </div>
-                  <span className="text-slate-300 text-sm font-semibold">{username}</span>
-                </div>
-                <svg className={`w-4 h-4 text-slate-400 transition-transform ${userDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-
-              {userDropdownOpen && (
-                <div className="absolute top-full mt-1 right-0 bg-slate-800 border border-slate-700 rounded-lg shadow-xl min-w-[200px] py-2 z-50">
-                  {/* Pricing link - Hidden in desktop mode */}
-                  {!isDesktop && (
-                    <Link
-                      to="/pricing"
-                      onClick={() => { /* Sound disabled */ setUserDropdownOpen(false); }}
-                      className={`px-4 py-2.5 flex items-center gap-3 transition-all ${
-                        isActive('/pricing')
-                          ? 'bg-blue-600 text-white'
-                          : 'text-slate-300 hover:bg-slate-700 hover:text-slate-100'
-                      }`}
-                    >
-                      <img src={uiEmojis.dollar} alt="" className="w-5 h-5" style={{ imageRendering: 'crisp-edges' }} />
-                      <span className="font-semibold text-base">Pricing</span>
-                    </Link>
-                  )}
-
-                  {/* Audio Toggle Button */}
-                  <button
-                    onClick={() => {
-                      toggleAudioMute();
-                    }}
-                    className={`w-full px-4 py-2.5 flex items-center gap-3 transition-all text-left ${
-                      isAudioMuted
-                        ? 'text-slate-400 hover:bg-slate-700 hover:text-slate-200'
-                        : 'text-green-400 hover:bg-green-900/30 hover:text-green-300'
-                    }`}
-                    title={isAudioMuted ? 'Click to unmute bet alert sounds' : 'Click to mute bet alert sounds'}
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      {isAudioMuted ? (
-                        // Muted icon - speaker with X
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
-                      ) : (
-                        // Unmuted icon - speaker with sound waves
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-                      )}
-                    </svg>
-                    <span className="font-semibold text-base">
-                      {isAudioMuted ? 'Alert Audio: OFF' : 'Alert Audio: ON'}
-                    </span>
-                  </button>
-
-                  {/* Logout Button */}
-                  <button
-                    onClick={() => {
-                      /* Sound disabled */
-                      setUserDropdownOpen(false);
-                      setTimeout(() => {
-                        logout();
-                        navigate('/login');
-                      }, 200);
-                    }}
-                    className="w-full px-4 py-2.5 flex items-center gap-3 text-slate-300 hover:bg-red-900/30 hover:text-red-400 transition-all text-left"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                    <span className="font-semibold text-base">Logout</span>
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
         </div>
 
-        {/* Mobile Navigation - Scrollable */}
-        <div className="md:hidden flex gap-1 pb-3 overflow-x-auto scrollbar-hide">
-          {mainNavItems.map((item) => (
+        {/* Mobile nav — horizontal scroll */}
+        <div className="md:hidden flex gap-1 pb-2 overflow-x-auto scrollbar-hide">
+          {[...mainNavItems, ...rankingsItems, ...edgesItems, ...strategyItems, ...toolsItems, ...marketsItems].map(item => (
             <Link
               key={item.path}
               to={item.path}
-              className={`px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
-                isActive(item.path)
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-slate-800 text-slate-300'
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all italic ${
+                isActive(item.path) ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-300'
               }`}
             >
-              {item.emoji && (
-                <img src={item.emoji} alt="" className="w-3.5 h-3.5" style={{ imageRendering: 'crisp-edges' }} />
-              )}
               {item.label}
             </Link>
           ))}
-          {propsItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
-                isActive(item.path)
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-slate-800 text-slate-300'
-              }`}
-            >
-              {item.emoji && (
-                <img src={item.emoji} alt="" className="w-3.5 h-3.5" style={{ imageRendering: 'crisp-edges' }} />
-              )}
-              {item.label}
-            </Link>
-          ))}
-          {strategyResultsItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
-                isActive(item.path)
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-slate-800 text-slate-300'
-              }`}
-            >
-              {item.emoji && (
-                <img src={item.emoji} alt="" className="w-3.5 h-3.5" style={{ imageRendering: 'crisp-edges' }} />
-              )}
-              {item.label}
-            </Link>
-          ))}
-          {strategyItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
-                isActive(item.path)
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-slate-800 text-slate-300'
-              }`}
-            >
-              {item.emoji && (
-                <img src={item.emoji} alt="" className="w-3.5 h-3.5" style={{ imageRendering: 'crisp-edges' }} />
-              )}
-              {item.label}
-            </Link>
-          ))}
-          {toolsItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
-                isActive(item.path)
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-slate-800 text-slate-300'
-              }`}
-            >
-              {item.emoji && (
-                <img src={item.emoji} alt="" className="w-3.5 h-3.5" style={{ imageRendering: 'crisp-edges' }} />
-              )}
-              {item.label}
-            </Link>
-          ))}
-          {/* Learn items - Hidden in desktop mode */}
-          {!isDesktop && learnItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
-                isActive(item.path)
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-slate-800 text-slate-300'
-              }`}
-            >
-              {item.emoji && (
-                <img src={item.emoji} alt="" className="w-3.5 h-3.5" style={{ imageRendering: 'crisp-edges' }} />
-              )}
-              {item.label}
-            </Link>
-          ))}
-          {/* Mobile Pricing Link - Hidden in desktop mode */}
-          {!isDesktop && (
-            <Link
-              to="/pricing" onClick={handleNavClick}
-              className={`px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
-                isActive('/pricing')
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-slate-800 text-slate-300'
-              }`}
-            >
-              <img src={uiEmojis.dollar} alt="" className="w-3.5 h-3.5" style={{ imageRendering: 'crisp-edges' }} />
-              Pricing
-            </Link>
-          )}
-          {/* Mobile Logout */}
           <button
             onClick={handleLogout}
-            className="px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 bg-red-900/50 text-red-300"
+            className="px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap bg-red-900/50 text-red-300"
           >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
             Logout
           </button>
         </div>

@@ -65,8 +65,7 @@ export const QuarterReversalAlerts: React.FC = () => {
   const [coldTeamOpportunities, setColdTeamOpportunities] = useState<ColdTeamOpportunity[]>([]);
   const { subscriptionTier } = useAuth();
 
-  // Mock bankroll for demo - in production, get from user settings
-  const bankroll = subscriptionTier === 'elite' ? 10000 : subscriptionTier === 'pro' ? 5000 : null;
+  const bankroll = 10000;
   const riskProfile = 'balanced';
 
   // Update opportunities from WebSocket

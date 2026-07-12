@@ -3,344 +3,154 @@ import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Navigation } from './components/Navigation';
 import { Footer } from './components/Footer';
-import { ElectronWindowControls } from './components/ElectronWindowControls';
 import { ToastProvider } from './components/Toast';
 import { BetAlertNotificationProvider } from './contexts/BetAlertNotificationContext';
 import { BetSlipProvider } from './contexts/BetSlipContext';
 import { BetSlipToast } from './components/BetSlipToast';
+import { QuarterStrategyAlertMonitor } from './components/QuarterStrategyAlertMonitor';
+import { GoaliePullMonitor } from './components/GoaliePullMonitor';
+import { HedgeAlertMonitor } from './components/HedgeAlertMonitor';
+import { FloatingFeedbackButton } from './components/FloatingFeedbackButton';
+
+import { LandingPage } from './pages/LandingPage';
 import { Login } from './pages/Login';
 import { SignUp } from './pages/SignUp';
-import { InfluencerRegister } from './pages/InfluencerRegister';
-import { InfluencerLogin } from './pages/InfluencerLogin';
-import { InfluencerDashboard } from './pages/InfluencerDashboard';
 import { LiveGames } from './pages/LiveGames';
+import { Odds } from './pages/Odds';
+import { MaxEvEdges } from './pages/MaxEvEdges';
+import { Kalshi } from './pages/Kalshi';
 import { Tools } from './pages/Tools';
 import { Analytics } from './pages/Analytics';
-import { AnalyticsSample } from './pages/AnalyticsSample';
 import { Props } from './pages/Props';
 import { StrategyResults } from './pages/StrategyResults';
 import { PreGameStrategyResults } from './pages/PreGameStrategyResults';
-import { Pricing } from './pages/Pricing';
 import { Alerts } from './pages/Alerts';
-import { Learn } from './pages/Learn';
-import { ArticleDetail } from './pages/ArticleDetail';
-import { GettingStarted } from './pages/GettingStarted';
-import { OddsExplained } from './pages/OddsExplained';
-import { Odds } from './pages/Odds';
-import { HandicapperPicks } from './pages/HandicapperPicks';
-import { Settings } from './pages/Settings';
-import { StrategySettings } from './pages/StrategySettings';
 import AlertPreferences from './pages/AlertPreferences';
-import SoundPreview from './pages/SoundPreview';
+import { ModelPerformance } from './pages/ModelPerformance';
+import PredictionsDatabase from './pages/PredictionsDatabase';
+import { TeamRankings } from './pages/TeamRankings';
+import { AdvancedMetrics } from './pages/AdvancedMetrics';
+import { PlayerLeaders } from './pages/PlayerLeaders';
+import { Settings } from './pages/Settings';
+import { AdminDashboard } from './pages/AdminDashboard';
+import { Pricing } from './pages/Pricing';
+import { SystemHealth } from './pages/SystemHealth';
+import { Picks } from './pages/Picks';
 import SubscriptionSuccess from './pages/SubscriptionSuccess';
 import SubscriptionCancel from './pages/SubscriptionCancel';
 import { Terms } from './pages/Terms';
 import { Privacy } from './pages/Privacy';
 import { Disclaimer } from './pages/Disclaimer';
-import { FloatingFeedbackButton } from './components/FloatingFeedbackButton';
-import { AdminDashboard } from './pages/AdminDashboard';
-import { MyFeedback } from './pages/MyFeedback';
-import { MaxEvEdges } from './pages/MaxEvEdges';
-import { ModelPerformance } from './pages/ModelPerformance';
-import { PropsPerformance } from './pages/PropsPerformance';
-import { MLModelsExplained } from './pages/MLModelsExplained';
-import PredictionsDatabase from './pages/PredictionsDatabase';
-import Performance from './pages/Performance';
-import GoaliePull from './pages/GoaliePull';
-import { EdgeScannerAlertMonitor } from './components/EdgeScannerAlertMonitor';
-import { GlobalAlertMonitor } from './components/GlobalAlertMonitor';
-import { QuarterStrategyAlertMonitor } from './components/QuarterStrategyAlertMonitor';
-import { GoaliePullMonitor } from './components/GoaliePullMonitor';
-import { HedgeAlertMonitor } from './components/HedgeAlertMonitor';
-import { isElectron } from './utils/isElectron';
-import { MLAdvantage } from './pages/MLAdvantage';
-import { EvidenceArchitecture } from './pages/EvidenceArchitecture';
-import { Partners } from './pages/Partners';
+import { NFLSystem } from './pages/NFLSystem';
+import { SystemOverview } from './pages/SystemOverview';
+
+const bg = 'min-h-screen flex flex-col' /* dark matte via body bg */;
 
 function AppContent() {
   const location = useLocation();
-
-  // PERF FIX: Only enable monitors on pages that need them (not pricing, login, etc.)
-  // Enable alerts on main app pages where users view games
-  const excludedPaths = ['/login', '/signup', '/pricing', '/evidence', '/ml-advantage', '/ml-models-explained', '/learn'];
-  const needsAlerts = !excludedPaths.some(path => location.pathname.includes(path));
-
-  // Check if running in desktop (Electron) mode
-  const isDesktop = isElectron();
+  const excludedPaths = ['/login', '/signup', '/pricing', '/terms', '/privacy', '/disclaimer'];
+  const needsAlerts = location.pathname !== '/' && !excludedPaths.some(path => location.pathname.startsWith(path));
 
   return (
-      <AuthProvider>
-        <ToastProvider>
-          <BetSlipProvider>
-            <BetAlertNotificationProvider>
-              {/* Bet Slip Toast - Lower Left Corner */}
-              <BetSlipToast />
+    <AuthProvider>
+      <ToastProvider>
+        <BetSlipProvider>
+          <BetAlertNotificationProvider>
+            <BetSlipToast />
 
-              {/* Edge Scanner Live Alert Monitor - DISABLED for goalie pull testing */}
-              <EdgeScannerAlertMonitor
-                enabled={false}
-                minEdge={3.5}
-                minConfidence={0.70}
-                pollInterval={30000}
-              />
-              {/* Global Alert Monitor - DISABLED (arbitrage, middles, and steam moves) */}
-              <GlobalAlertMonitor
-                enabled={false}
-                pollInterval={30000}
-              />
-              {/* Quarter Strategy Alert Monitor - ENABLED for NBA Quarter Reversal and Cold Team Bounce-Back via WebSocket */}
-              <QuarterStrategyAlertMonitor
-                enabled={needsAlerts}
-              />
-              {/* Goalie Pull Monitor - alerts for NHL goalie pull opportunities in 3rd period - ACTIVE */}
-              <GoaliePullMonitor
-                enabled={needsAlerts}
-                pollInterval={3000}
-              />
-              {/* Hedge Alert Monitor - monitors bet positions and alerts for hedge opportunities - ACTIVE */}
-              <HedgeAlertMonitor
-                enabled={needsAlerts}
-                pollInterval={10000}
-              />
-              <Routes>
-          {/* Public routes - Login and SignUp pages */}
-          <Route path="/login" element={
-            <>
-              <Login />
-              <Footer />
-            </>
-          } />
-          <Route path="/signup" element={
-            <>
-              <SignUp />
-              <Footer />
-            </>
-          } />
+            <QuarterStrategyAlertMonitor enabled={needsAlerts} />
+            <GoaliePullMonitor enabled={needsAlerts} pollInterval={3000} />
+            <HedgeAlertMonitor enabled={needsAlerts} pollInterval={10000} />
 
-          {/* Influencer routes - Public */}
-          <Route path="/influencer-register" element={
-            <>
-              <InfluencerRegister />
-            </>
-          } />
-          <Route path="/influencer-login" element={
-            <>
-              <InfluencerLogin />
-            </>
-          } />
-          <Route path="/influencer-dashboard" element={
-            <>
-              <InfluencerDashboard />
-            </>
-          } />
+            <Routes>
+              {/* Public auth */}
+              <Route path="/login" element={<><Login /><Footer /></>} />
+              <Route path="/signup" element={<><SignUp /><Footer /></>} />
 
-          {/* Root redirect to pricing page (public landing) */}
-          <Route path="/" element={<Navigate to="/pricing" replace />} />
+              {/* Public legal */}
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/disclaimer" element={<Disclaimer />} />
 
-          {/* Pricing page - public, no auth required */}
-          <Route
-            path="/pricing"
-            element={
-              <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col">
-                <Navigation />
-                <Pricing />
-                <Footer />
-              </div>
-            }
-          />
-
-          {/* Partners landing page - public for X ads */}
-          <Route
-            path="/partners"
-            element={
-              <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col">
-                <Partners />
-              </div>
-            }
-          />
-
-          {/* Strategy Results - public for testing */}
-          <Route
-            path="/strategy-results"
-            element={
-              <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col">
-                <Navigation />
-                <StrategyResults />
-                <Footer />
-                {/* Floating Feedback & Chat - visible on Strategy Results page (hidden in desktop) */}
-                {!isDesktop && (
-                  <>
-                    <FloatingFeedbackButton />
-                  </>
-                )}
-              </div>
-            }
-          />
-
-          {/* Pre-Game Strategy Results - public for testing */}
-          <Route
-            path="/pre-game-strategy-results"
-            element={
-              <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col">
-                <Navigation />
-                <PreGameStrategyResults />
-                <Footer />
-                {/* Floating Feedback & Chat - visible on Pre-Game Strategy Results page (hidden in desktop) */}
-                {!isDesktop && (
-                  <>
-                    <FloatingFeedbackButton />
-                  </>
-                )}
-              </div>
-            }
-          />
-
-          {/* Legal pages - public */}
-          <Route path="/terms" element={<Terms />} />
-          <Route path="/privacy" element={<Privacy />} />
-          <Route path="/disclaimer" element={<Disclaimer />} />
-
-          {/* ML Advantage / Future Features - public marketing page */}
-          <Route
-            path="/ml-advantage"
-            element={
-              <div className="min-h-screen bg-slate-900 flex flex-col">
-                <Navigation />
-                <MLAdvantage />
-              </div>
-            }
-          />
-
-          {/* Evidence & Architecture - proof-based technical page */}
-          <Route
-            path="/evidence"
-            element={
-              <div className="min-h-screen bg-slate-950 flex flex-col">
-                <Navigation />
-                <EvidenceArchitecture />
-              </div>
-            }
-          />
-
-          {/* ML Models Explained - PUBLIC educational page for social media sharing */}
-          <Route
-            path="/ml-models-explained"
-            element={
-              <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col">
-                <Navigation />
-                <MLModelsExplained />
-                <Footer />
-              </div>
-            }
-          />
-
-          {/* Learn Articles - PUBLIC for social media sharing */}
-          <Route
-            path="/learn"
-            element={
-              <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col">
-                <Navigation />
-                <div className="flex-grow">
-                  <Learn />
-                </div>
-                <Footer />
-              </div>
-            }
-          />
-          <Route
-            path="/learn/:articleId"
-            element={
-              <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col">
-                <Navigation />
-                <div className="flex-grow">
-                  <ArticleDetail />
-                </div>
-                <Footer />
-              </div>
-            }
-          />
-
-          <Route
-            path="/subscription/success"
-            element={
-              <ProtectedRoute requireSubscription={false}>
-                <>
-                  <SubscriptionSuccess />
-                  <Footer />
-                </>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/subscription/cancel"
-            element={
-              <ProtectedRoute requireSubscription={false}>
-                <>
-                  <SubscriptionCancel />
-                  <Footer />
-                </>
-              </ProtectedRoute>
-            }
-          />
-
-          {/* Protected routes - require BOTH login AND paid subscription */}
-          <Route
-            path="/*"
-            element={
-              <ProtectedRoute requireSubscription={true}>
-                <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col">
+              {/* Public marketing */}
+              <Route path="/pricing" element={
+                <div className={bg}>
                   <Navigation />
-                  <ElectronWindowControls />
+                  <Pricing />
+                  <Footer />
+                </div>
+              } />
+
+              {/* Landing page (public) */}
+              <Route path="/" element={
+                <div className={bg}>
+                  <Navigation />
+                  <div className="flex-grow">
+                    <LandingPage />
+                  </div>
+                  <Footer />
+                </div>
+              } />
+              <Route path="/dashboard" element={<Navigate to="/" replace />} />
+
+              {/* Subscription callbacks */}
+              <Route path="/subscription/success" element={
+                <ProtectedRoute requireSubscription={false}>
+                  <><SubscriptionSuccess /><Footer /></>
+                </ProtectedRoute>
+              } />
+              <Route path="/subscription/cancel" element={
+                <ProtectedRoute requireSubscription={false}>
+                  <><SubscriptionCancel /><Footer /></>
+                </ProtectedRoute>
+              } />
+
+              {/* App shell — public pages accessible to all, sensitive pages require login */}
+              <Route path="/*" element={
+                <div className={bg}>
+                  <Navigation />
                   <div className="flex-grow">
                     <Routes>
-                      <Route path="/dashboard" element={<Navigate to="/live-games" replace />} />
+                      {/* Public pages — no login required */}
                       <Route path="/live-games" element={<LiveGames />} />
-                      <Route path="/tools" element={<Tools />} />
-                      <Route path="/analytics" element={<Analytics />} />
-                      <Route path="/analytics-sample" element={<AnalyticsSample />} />
-                      <Route path="/props" element={<Props />} />
-                      <Route path="/props-performance" element={<PropsPerformance />} />
-
-                      <Route path="/alerts" element={<Alerts />} />
                       <Route path="/odds" element={<Odds />} />
                       <Route path="/max-ev-edges" element={<MaxEvEdges />} />
-                      <Route path="/model-performance" element={<ModelPerformance />} />
-                      <Route path="/predictions-database" element={<PredictionsDatabase />} />
-                      <Route path="/performance" element={<Performance />} />
-                      <Route path="/goalie-pull" element={<GoaliePull />} />
-                      <Route path="/handicapper-picks" element={<HandicapperPicks />} />
-                      <Route path="/settings" element={<Settings />} />
-                      <Route path="/strategy-settings" element={<StrategySettings />} />
-                      <Route path="/alert-preferences" element={<AlertPreferences />} />
-                      <Route path="/my-feedback" element={<MyFeedback />} />
-                      {/* Getting Started - redirect to home in desktop mode */}
-                      <Route path="/getting-started" element={isDesktop ? <Navigate to="/live-games" replace /> : <GettingStarted />} />
-                      <Route path="/odds-explained" element={isDesktop ? <Navigate to="/live-games" replace /> : <OddsExplained />} />
-                      {/* Admin and sample pages - redirect to home in desktop mode */}
-                      <Route path="/sound-preview" element={<SoundPreview />} />
-                      <Route path="/admin-dashboard" element={isDesktop ? <Navigate to="/live-games" replace /> : <AdminDashboard />} />
+                      <Route path="/team-rankings" element={<TeamRankings />} />
+                      <Route path="/picks" element={<Picks />} />
+                      <Route path="/system-nfl" element={<NFLSystem />} />
+                      <Route path="/system-overview" element={<SystemOverview />} />
+
+                      {/* Login-required pages */}
+                      <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+                      <Route path="/alerts" element={<ProtectedRoute><Alerts /></ProtectedRoute>} />
+                      <Route path="/alert-preferences" element={<ProtectedRoute><AlertPreferences /></ProtectedRoute>} />
+                      <Route path="/admin-dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+                      <Route path="/system-health" element={<ProtectedRoute><SystemHealth /></ProtectedRoute>} />
+                      <Route path="/kalshi" element={<ProtectedRoute><Kalshi /></ProtectedRoute>} />
+                      <Route path="/tools" element={<ProtectedRoute><Tools /></ProtectedRoute>} />
+                      <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+                      <Route path="/props" element={<ProtectedRoute><Props /></ProtectedRoute>} />
+                      <Route path="/strategy-results" element={<ProtectedRoute><StrategyResults /></ProtectedRoute>} />
+                      <Route path="/pre-game-strategy-results" element={<ProtectedRoute><PreGameStrategyResults /></ProtectedRoute>} />
+                      <Route path="/model-performance" element={<ProtectedRoute><ModelPerformance /></ProtectedRoute>} />
+                      <Route path="/predictions-database" element={<ProtectedRoute><PredictionsDatabase /></ProtectedRoute>} />
+                      <Route path="/advanced-metrics" element={<ProtectedRoute><AdvancedMetrics /></ProtectedRoute>} />
+                      <Route path="/player-leaders" element={<ProtectedRoute><PlayerLeaders /></ProtectedRoute>} />
+                      <Route path="*" element={<Navigate to="/live-games" replace />} />
                     </Routes>
                   </div>
                   <Footer />
-                  {/* Floating Feedback Button - visible on all protected pages (hidden in desktop) */}
-                  {!isDesktop && (
-                    <>
-                      <FloatingFeedbackButton />
-                    </>
-                  )}
+                  <FloatingFeedbackButton />
                 </div>
-              </ProtectedRoute>
-            }
-          />
+              } />
             </Routes>
           </BetAlertNotificationProvider>
         </BetSlipProvider>
-        </ToastProvider>
-      </AuthProvider>
-    );
+      </ToastProvider>
+    </AuthProvider>
+  );
 }
 
-// Wrapper to provide Router context for useLocation
 function App() {
   return (
     <Router>

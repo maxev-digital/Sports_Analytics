@@ -446,6 +446,14 @@ export interface LiveGame {
   away_ncaaf_momentum: NFLMomentumStats | null;
   home_mlb_stats: MLBTeamStats | null;
   away_mlb_stats: MLBTeamStats | null;
+  home_probable_pitcher?: ProbablePitcher | null;
+  away_probable_pitcher?: ProbablePitcher | null;
+  ballpark?: string | null;
+  hp_umpire?: string | null;
+  home_mma_stats?: MMAFighterStats | null;
+  away_mma_stats?: MMAFighterStats | null;
+  tennis_round?: string | null;
+  tennis_tournament?: string | null;
   player_props_count?: number | null;
   strategy_alerts?: StrategyAlert[];  // NEW: Strategy alerts for this game
   ncaab_analytics?: NCAABAnalytics | null;  // NCAAB custom analytics from our models
@@ -460,6 +468,26 @@ export interface LiveGame {
   fatigue_edge?: number | null;
   fatigue_edge_points?: number | null;
   rest_differential?: number | null;
+}
+
+export interface ProbablePitcher {
+  name: string;
+  era?: number | null;
+  wins?: number | null;
+  losses?: number | null;
+  record?: string | null;  // "(0-1, 4.09)"
+}
+
+export interface MMAFighterStats {
+  height?: string | null;
+  weight?: string | null;
+  reach?: string | null;
+  stance?: string | null;
+  fighting_style?: string | null;
+  tko_wins?: number | null;
+  tko_losses?: number | null;
+  sub_wins?: number | null;
+  sub_losses?: number | null;
 }
 
 export interface AlternateMarketLine {

@@ -3,6 +3,7 @@ import { BookmakerLogo } from '../components/BookmakerLogo';
 import { getBookmaker } from '../data/bookmakers';
 import { OddsMetricsDashboard } from '../components/OddsMetricsDashboard';
 import { formatTeamName } from '../utils/teamNames';
+import { getTeamLogoUrl } from '../utils/teamLogos';
 import { getApiUrl } from '../config';
 import { useAuth } from '../contexts/AuthContext';
 import { useBetSlip } from '../contexts/BetSlipContext';
@@ -46,13 +47,13 @@ interface GameOdds {
   }>;
 }
 
-type SportKey = 'basketball_nba' | 'basketball_ncaab' | 'americanfootball_nfl' | 'americanfootball_ncaaf' | 'icehockey_nhl' | 'baseball_mlb';
+type SportKey = 'basketball_nba' | 'basketball_ncaab' | 'americanfootball_nfl' | 'americanfootball_ncaaf' | 'icehockey_nhl' | 'baseball_mlb' | 'basketball_wnba' | 'tennis_atp_wimbledon' | 'tennis_wta_wimbledon';
 type BetType = 'moneyline' | 'spread' | 'total';
 
 export function Odds() {
   const { username } = useAuth();
   const { openBetSlip } = useBetSlip();
-  const [activeSport, setActiveSport] = useState<SportKey>('basketball_nba');
+  const [activeSport, setActiveSport] = useState<SportKey>('baseball_mlb');
   const [activeBetType, setActiveBetType] = useState<BetType>('moneyline');
   const [games, setGames] = useState<GameOdds[]>([]);
   const [loading, setLoading] = useState(true);
@@ -67,8 +68,7 @@ export function Odds() {
     console.log('🎮 Loading games for sport:', activeSport);
 
     try {
-      const userId = username || 'default';
-      const response = await fetch(getApiUrl(`games?user_id=${userId}`));
+      const response = await fetch(getApiUrl(`games?user_id=default`));
       if (!response.ok) throw new Error('API not available');
 
       const apiGames = await response.json();
@@ -101,27 +101,33 @@ export function Odds() {
   };
 
   const getSportDisplayName = (sport: SportKey): string => {
-    const sportNames = {
+    const sportNames: Record<SportKey, string> = {
+      'baseball_mlb': 'MLB',
+      'basketball_wnba': 'WNBA',
+      'tennis_atp_wimbledon': 'ATP Wimbledon',
+      'tennis_wta_wimbledon': 'WTA Wimbledon',
       'basketball_nba': 'NBA',
       'basketball_ncaab': 'NCAAB',
       'americanfootball_nfl': 'NFL',
       'americanfootball_ncaaf': 'NCAAF',
       'icehockey_nhl': 'NHL',
-      'baseball_mlb': 'MLB'
     };
-    return sportNames[sport] || 'NBA';
+    return sportNames[sport] || sport;
   };
 
   const getSportIcon = (sport: SportKey): string => {
-    const sportIcons = {
+    const sportIcons: Record<SportKey, string> = {
+      'baseball_mlb': '⚾',
+      'basketball_wnba': '🏀',
+      'tennis_atp_wimbledon': '🎾',
+      'tennis_wta_wimbledon': '🎾',
       'basketball_nba': '🏀',
       'basketball_ncaab': '🏀',
       'americanfootball_nfl': '🏈',
       'americanfootball_ncaaf': '🏈',
       'icehockey_nhl': '🏒',
-      'baseball_mlb': '⚾'
     };
-    return sportIcons[sport] || '🏀';
+    return sportIcons[sport] || '🏆';
   };
 
   const formatDate = (dateStr: string) => {
@@ -240,7 +246,7 @@ export function Odds() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-black via-slate-900 to-black flex items-center justify-center">
+      <div className="analytics-page flex items-center justify-center">
         <div className="text-slate-400 text-lg">Loading odds...</div>
       </div>
     );
@@ -264,12 +270,12 @@ export function Odds() {
   const bookmakers = allBookmakers;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-slate-900 to-black p-4" style={{ fontFamily: 'Open Sans, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif' }}>
+    <div className="analytics-page p-4">
       <div className="w-full mx-auto">
         {/* Header with Bet Type Selector */}
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold italic text-slate-100 mb-2" style={{ fontStyle: 'italic', textTransform: 'uppercase' }}>ODDS COMPARISON</h1>
+            <h1 className="text-3xl font-bold text-slate-100 mb-2" style={{ textTransform: 'uppercase', letterSpacing: '-0.02em' }}>ODDS COMPARISON</h1>
             <p className="text-slate-400 text-sm">Real-time betting lines across top sportsbooks</p>
           </div>
 
@@ -308,30 +314,27 @@ export function Odds() {
           </div>
         </div>
 
-        {/* Sport Tabs & Metrics Dashboard - Side by Side */}
-        <div className="flex gap-4 mb-2">
-          {/* Sport Tabs */}
-          <div className="flex flex-col gap-2">
-            {(['basketball_nba', 'basketball_ncaab', 'americanfootball_nfl', 'americanfootball_ncaaf', 'icehockey_nhl', 'baseball_mlb'] as SportKey[]).map((sport) => (
-              <button
-                key={sport}
-                onClick={() => setActiveSport(sport)}
-                className={`px-3 py-1.5 rounded text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 ${
-                  activeSport === sport
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
-                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
-                }`}
-              >
-                <span className="text-sm">{getSportIcon(sport)}</span>
-                {getSportDisplayName(sport)}
-              </button>
-            ))}
-          </div>
+        {/* Sport Tabs — horizontal row */}
+        <div className="flex flex-wrap gap-2 mb-3">
+          {(['baseball_mlb', 'basketball_wnba', 'tennis_atp_wimbledon', 'tennis_wta_wimbledon', 'basketball_nba', 'basketball_ncaab', 'americanfootball_nfl', 'americanfootball_ncaaf', 'icehockey_nhl'] as SportKey[]).map((sport) => (
+            <button
+              key={sport}
+              onClick={() => setActiveSport(sport)}
+              className={`px-3 py-1.5 rounded text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 ${
+                activeSport === sport
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
+                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
+              }`}
+            >
+              <span className="text-sm">{getSportIcon(sport)}</span>
+              {getSportDisplayName(sport)}
+            </button>
+          ))}
+        </div>
 
-          {/* Metrics Dashboard */}
-          <div className="flex-1">
-            <OddsMetricsDashboard />
-          </div>
+        {/* Metrics Dashboard */}
+        <div className="mb-2">
+          <OddsMetricsDashboard />
         </div>
 
         {/* Compact Odds Grid */}
@@ -428,6 +431,7 @@ export function Odds() {
                         {/* Teams */}
                         <div className="space-y-0.5">
                           <div className="flex items-center gap-2">
+                            {(() => { const logo = getTeamLogoUrl(game.away_team, game.sport_key, 50); return logo ? <img src={logo} alt="" style={{ width: 18, height: 18, objectFit: 'contain', flexShrink: 0 }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} /> : null; })()}
                             <span className="text-white font-semibold text-base">
                               <span className="text-slate-400 text-sm">(A)</span> {formatTeamName(game.away_team, game.sport_key)}
                             </span>
@@ -438,6 +442,7 @@ export function Odds() {
                             )}
                           </div>
                           <div className="flex items-center gap-2">
+                            {(() => { const logo = getTeamLogoUrl(game.home_team, game.sport_key, 50); return logo ? <img src={logo} alt="" style={{ width: 18, height: 18, objectFit: 'contain', flexShrink: 0 }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} /> : null; })()}
                             <span className="text-white font-semibold text-base">
                               <span className="text-slate-400 text-sm">(H)</span> {formatTeamName(game.home_team, game.sport_key)}
                             </span>
@@ -738,23 +743,23 @@ export function Odds() {
 
         {/* Stats Footer */}
         <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-slate-800 rounded-lg border border-slate-700 p-4 text-center">
-            <div className="text-xs text-slate-400 uppercase tracking-wide mb-1">Games</div>
-            <div className="text-2xl font-bold text-white">{games.length}</div>
+          <div className="stat-card" style={{ textAlign: 'center' }}>
+            <div className="stat-label">Games</div>
+            <div className="stat-value">{games.length}</div>
           </div>
-          <div className="bg-slate-800 rounded-lg border border-slate-700 p-4 text-center">
-            <div className="text-xs text-slate-400 uppercase tracking-wide mb-1">Sportsbooks</div>
-            <div className="text-2xl font-bold text-green-400">{bookmakers.length}</div>
+          <div className="stat-card" style={{ textAlign: 'center' }}>
+            <div className="stat-label">Sportsbooks</div>
+            <div className="stat-value" style={{ color: 'var(--color-emerald-400)' }}>{bookmakers.length}</div>
           </div>
-          <div className="bg-slate-800 rounded-lg border border-slate-700 p-4 text-center">
-            <div className="text-xs text-slate-400 uppercase tracking-wide mb-1">Live Now</div>
-            <div className="text-2xl font-bold text-red-400">
+          <div className="stat-card" style={{ textAlign: 'center' }}>
+            <div className="stat-label">Live Now</div>
+            <div className="stat-value" style={{ color: 'var(--brand-red)' }}>
               {games.filter(g => g.status === 'live').length}
             </div>
           </div>
-          <div className="bg-slate-800 rounded-lg border border-slate-700 p-4 text-center">
-            <div className="text-xs text-slate-400 uppercase tracking-wide mb-1">Total Lines</div>
-            <div className="text-2xl font-bold text-blue-400">
+          <div className="stat-card" style={{ textAlign: 'center' }}>
+            <div className="stat-label">Total Lines</div>
+            <div className="stat-value" style={{ color: 'var(--color-blue-500)' }}>
               {games.reduce((sum, g) => sum + g.odds.length, 0)}
             </div>
           </div>
@@ -782,7 +787,8 @@ export function Odds() {
           onClick={() => setModalInfo(null)}
         >
           <div
-            className="bg-slate-800 rounded-lg p-6 max-w-md w-full mx-4 border-2 border-slate-600"
+            className="rounded-lg p-6 max-w-md w-full mx-4"
+            style={{ background: 'var(--card)', border: '1px solid var(--border-strong)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">

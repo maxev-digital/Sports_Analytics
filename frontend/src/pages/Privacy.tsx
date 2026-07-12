@@ -46,7 +46,7 @@ export function Privacy() {
 
             <h3 className="text-xl font-semibold text-white mt-4 mb-2">2.3 Third-Party Data</h3>
             <ul className="list-disc list-inside space-y-2 ml-4">
-              <li><strong>Odds Data:</strong> Real-time odds from The Odds API and other providers</li>
+              <li><strong>Odds Data:</strong> Real-time odds from third-party odds data providers</li>
               <li><strong>Social Media:</strong> If you connect social accounts (optional)</li>
             </ul>
           </section>

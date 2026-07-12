@@ -1,382 +1,323 @@
 """
-Predictions API Routes
-Exposes ML predictions from the predictions database
+Predictions API Routes — reads from PostgreSQL maxev_sports.predictions table.
 
-Endpoints:
-- GET /api/predictions/today - Today's predictions
-- GET /api/predictions/recent - Recent predictions with filters
-- GET /api/predictions/by-sport/{sport} - Predictions for specific sport
-- GET /api/predictions/stats - Prediction statistics
+Schema (key columns):
+  id, created_at_cst, sport, home_team, away_team, game_time_cst,
+  pick_side, pick_type, our_probability, market_odds, market_implied_prob,
+  edge_pct, detector, confidence_tier, status, result, pl_units,
+  sonnet_narrative, game_id, total_line
 """
 from fastapi import APIRouter, Query, HTTPException
-from typing import Optional, List, Dict, Any
+from typing import Optional
 from datetime import datetime, date, timedelta
-from pathlib import Path
-import sqlite3
 import logging
+import pytz
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/predictions", tags=["predictions"])
 
-# Database path
-DB_PATH = Path(__file__).parent.parent / "ml" / "predictions.db"
+CST = pytz.timezone("America/Chicago")
+
+def _today_cst() -> str:
+    return datetime.now(CST).strftime("%Y-%m-%d")
 
 
-def get_db_connection():
-    """Get database connection"""
-    if not DB_PATH.exists():
-        raise HTTPException(status_code=500, detail="Predictions database not found")
-    return sqlite3.connect(DB_PATH)
+def _get_db():
+    from pipeline.db.connection import execute_query
+    return execute_query
 
 
-def dict_factory(cursor, row):
-    """Convert SQLite rows to dictionaries"""
-    fields = [column[0] for column in cursor.description]
-    return {key: value for key, value in zip(fields, row)}
+def _rows(sql: str, params: tuple = ()) -> list[dict]:
+    execute_query = _get_db()
+    return execute_query(sql, params)
 
+
+# ── Endpoints ───────────────────────────────────────────────────────────────
 
 @router.get("/today")
 async def get_today_predictions(
-    sport: Optional[str] = Query(None, description="Filter by sport (NBA, NCAAB, etc.)"),
-    bet_type: Optional[str] = Query(None, description="Filter by bet type (totals, spreads, moneyline)")
+    sport: Optional[str] = Query(None),
+    pick_type: Optional[str] = Query(None),
 ):
-    """Get all predictions for today's games"""
+    """Today's picks based on game_time_cst date in CST."""
     try:
-        conn = get_db_connection()
-        conn.row_factory = dict_factory
-        cursor = conn.cursor()
-
-        query = """
-            SELECT *
-            FROM predictions
-            WHERE date(game_date) = date('now')
-        """
-        params = []
+        today = _today_cst()
+        where = ["game_time_cst::date = %s OR created_at_cst::date = %s"]
+        params: list = [today, today]
 
         if sport:
-            query += " AND UPPER(sport) = UPPER(?)"
+            where.append("LOWER(sport) = LOWER(%s)")
             params.append(sport)
+        if pick_type:
+            where.append("LOWER(pick_type) = LOWER(%s)")
+            params.append(pick_type)
 
-        if bet_type:
-            query += " AND LOWER(bet_type) = LOWER(?)"
-            params.append(bet_type)
-
-        query += " ORDER BY game_time, sport, home_team"
-
-        cursor.execute(query, params)
-        predictions = cursor.fetchall()
-        conn.close()
-
-        return {
-            "total": len(predictions),
-            "date": date.today().isoformat(),
-            "filters": {
-                "sport": sport or "all",
-                "bet_type": bet_type or "all"
-            },
-            "predictions": predictions
-        }
-
+        sql = f"""
+            SELECT * FROM predictions
+            WHERE {' AND '.join(where)}
+            ORDER BY game_time_cst, sport, home_team
+        """
+        rows = _rows(sql, tuple(params))
+        return {"total": len(rows), "date": today, "predictions": rows}
     except Exception as e:
-        logger.error(f"Error fetching today's predictions: {e}")
+        logger.error("get_today_predictions: %s", e)
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/recent")
 async def get_recent_predictions(
-    sport: Optional[str] = Query(None, description="Filter by sport"),
-    bet_type: Optional[str] = Query(None, description="Filter by bet type"),
-    limit: int = Query(50, ge=1, le=500, description="Number of predictions to return"),
-    days: int = Query(7, ge=1, le=90, description="Number of days to look back")
+    sport: Optional[str] = Query(None),
+    pick_type: Optional[str] = Query(None),
+    limit: int = Query(50, ge=1, le=500),
+    days: int = Query(7, ge=1, le=90),
 ):
-    """Get recent predictions with filters"""
     try:
-        conn = get_db_connection()
-        conn.row_factory = dict_factory
-        cursor = conn.cursor()
-
-        query = """
-            SELECT *
-            FROM predictions
-            WHERE date(created_at) >= date('now', ? || ' days')
-        """
-        params = [f"-{days}"]
+        where = ["created_at_cst >= now() - INTERVAL %s"]
+        params: list = [f"{days} days"]
 
         if sport:
-            query += " AND UPPER(sport) = UPPER(?)"
+            where.append("LOWER(sport) = LOWER(%s)")
             params.append(sport)
+        if pick_type:
+            where.append("LOWER(pick_type) = LOWER(%s)")
+            params.append(pick_type)
 
-        if bet_type:
-            query += " AND LOWER(bet_type) = LOWER(?)"
-            params.append(bet_type)
-
-        query += " ORDER BY created_at DESC LIMIT ?"
+        sql = f"""
+            SELECT * FROM predictions
+            WHERE {' AND '.join(where)}
+            ORDER BY created_at_cst DESC
+            LIMIT %s
+        """
         params.append(limit)
-
-        cursor.execute(query, params)
-        predictions = cursor.fetchall()
-        conn.close()
-
-        return {
-            "total": len(predictions),
-            "filters": {
-                "sport": sport or "all",
-                "bet_type": bet_type or "all",
-                "days": days,
-                "limit": limit
-            },
-            "predictions": predictions
-        }
-
+        rows = _rows(sql, tuple(params))
+        return {"total": len(rows), "days": days, "predictions": rows}
     except Exception as e:
-        logger.error(f"Error fetching recent predictions: {e}")
+        logger.error("get_recent_predictions: %s", e)
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/by-sport/{sport}")
 async def get_predictions_by_sport(
     sport: str,
-    days: int = Query(7, ge=1, le=90, description="Number of days to look back"),
-    bet_type: Optional[str] = Query(None, description="Filter by bet type")
+    days: int = Query(7, ge=1, le=90),
+    pick_type: Optional[str] = Query(None),
 ):
-    """Get predictions for a specific sport"""
     try:
-        conn = get_db_connection()
-        conn.row_factory = dict_factory
-        cursor = conn.cursor()
+        where = ["LOWER(sport) = LOWER(%s)", "created_at_cst >= now() - INTERVAL %s"]
+        params: list = [sport, f"{days} days"]
 
-        query = """
-            SELECT *
-            FROM predictions
-            WHERE UPPER(sport) = UPPER(?)
-            AND date(game_date) >= date('now', ? || ' days')
+        if pick_type:
+            where.append("LOWER(pick_type) = LOWER(%s)")
+            params.append(pick_type)
+
+        sql = f"""
+            SELECT * FROM predictions
+            WHERE {' AND '.join(where)}
+            ORDER BY game_time_cst DESC, home_team
         """
-        params = [sport, f"-{days}"]
-
-        if bet_type:
-            query += " AND LOWER(bet_type) = LOWER(?)"
-            params.append(bet_type)
-
-        query += " ORDER BY game_date DESC, game_time, home_team"
-
-        cursor.execute(query, params)
-        predictions = cursor.fetchall()
-        conn.close()
-
-        return {
-            "sport": sport.upper(),
-            "total": len(predictions),
-            "filters": {
-                "days": days,
-                "bet_type": bet_type or "all"
-            },
-            "predictions": predictions
-        }
-
+        rows = _rows(sql, tuple(params))
+        return {"sport": sport, "total": len(rows), "days": days, "predictions": rows}
     except Exception as e:
-        logger.error(f"Error fetching predictions for {sport}: {e}")
+        logger.error("get_predictions_by_sport: %s", e)
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/stats")
 async def get_prediction_stats():
-    """Get prediction statistics"""
+    """Aggregate stats from the PostgreSQL predictions table."""
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
+        # Total all-time
+        total_row = _rows("SELECT COUNT(*) AS n FROM predictions")
+        total = total_row[0]["n"] if total_row else 0
 
-        # Total predictions
-        cursor.execute("SELECT COUNT(*) FROM predictions")
-        total_predictions = cursor.fetchone()[0]
-
-        # Today's predictions
-        cursor.execute("""
-            SELECT COUNT(*) FROM predictions
-            WHERE date(game_date) = date('now')
-        """)
-        today_count = cursor.fetchone()[0]
+        # Today
+        today = _today_cst()
+        today_row = _rows(
+            "SELECT COUNT(*) AS n FROM predictions WHERE created_at_cst::date = %s",
+            (today,),
+        )
+        today_count = today_row[0]["n"] if today_row else 0
 
         # Last 7 days
-        cursor.execute("""
-            SELECT COUNT(*) FROM predictions
-            WHERE date(created_at) >= date('now', '-7 days')
-        """)
-        last_7_days = cursor.fetchone()[0]
+        last7_row = _rows(
+            "SELECT COUNT(*) AS n FROM predictions WHERE created_at_cst >= now() - INTERVAL '7 days'"
+        )
+        last_7 = last7_row[0]["n"] if last7_row else 0
 
-        # By sport (last 7 days)
-        cursor.execute("""
-            SELECT sport, COUNT(*) as count
+        # By sport (last 30 days)
+        by_sport_rows = _rows("""
+            SELECT sport, COUNT(*) AS n
             FROM predictions
-            WHERE date(created_at) >= date('now', '-7 days')
-            GROUP BY sport
-            ORDER BY count DESC
+            WHERE created_at_cst >= now() - INTERVAL '30 days'
+            GROUP BY sport ORDER BY n DESC
         """)
-        by_sport = {row[0]: row[1] for row in cursor.fetchall()}
+        by_sport = {r["sport"]: r["n"] for r in by_sport_rows}
 
-        # By bet type (last 7 days)
-        cursor.execute("""
-            SELECT bet_type, COUNT(*) as count
+        # By pick_type (last 30 days)
+        by_type_rows = _rows("""
+            SELECT pick_type, COUNT(*) AS n
             FROM predictions
-            WHERE date(created_at) >= date('now', '-7 days')
-            GROUP BY bet_type
-            ORDER BY count DESC
+            WHERE created_at_cst >= now() - INTERVAL '30 days'
+            GROUP BY pick_type ORDER BY n DESC
         """)
-        by_bet_type = {row[0]: row[1] for row in cursor.fetchall()}
+        by_type = {r["pick_type"]: r["n"] for r in by_type_rows}
 
-        # Predictions with NULL values (failures)
-        cursor.execute("""
-            SELECT COUNT(*) FROM predictions
-            WHERE predicted_value IS NULL
-            AND date(created_at) >= date('now', '-7 days')
+        # Status breakdown (last 30 days)
+        status_rows = _rows("""
+            SELECT status, COUNT(*) AS n
+            FROM predictions
+            WHERE created_at_cst >= now() - INTERVAL '30 days'
+            GROUP BY status ORDER BY n DESC
         """)
-        null_predictions = cursor.fetchone()[0]
+        by_status = {r["status"]: r["n"] for r in status_rows}
 
-        # Graded predictions accuracy (if graded field exists)
-        try:
-            cursor.execute("""
-                SELECT
-                    COUNT(*) as total,
-                    SUM(CASE WHEN result = 'win' THEN 1 ELSE 0 END) as wins
-                FROM predictions
-                WHERE result IS NOT NULL
-                AND date(created_at) >= date('now', '-30 days')
-            """)
-            graded_row = cursor.fetchone()
-            if graded_row and graded_row[0] > 0:
-                accuracy = (graded_row[1] / graded_row[0]) * 100
-            else:
-                accuracy = None
-        except:
-            accuracy = None
+        # Graded picks record (last 30 days)
+        # Grader writes status = result directly ('win'/'loss'/'push')
+        graded_rows = _rows("""
+            SELECT
+                COUNT(*) AS total,
+                SUM(CASE WHEN status = 'win' THEN 1 ELSE 0 END) AS wins,
+                SUM(CASE WHEN status = 'loss' THEN 1 ELSE 0 END) AS losses,
+                SUM(CASE WHEN status = 'push' THEN 1 ELSE 0 END) AS pushes,
+                ROUND(AVG(pl_units)::numeric, 3) AS avg_pl,
+                ROUND(SUM(pl_units)::numeric, 3) AS total_pl
+            FROM predictions
+            WHERE status IN ('win', 'loss', 'push')
+              AND created_at_cst >= now() - INTERVAL '30 days'
+        """)
+        graded = graded_rows[0] if graded_rows else {}
+        total_graded = graded.get("total", 0) or 0
+        win_rate = None
+        if total_graded and total_graded > 0:
+            wins = graded.get("wins", 0) or 0
+            losses = graded.get("losses", 0) or 0
+            denom = wins + losses
+            win_rate = round(wins / denom * 100, 1) if denom else None
 
-        conn.close()
+        # Average edge on pending picks
+        edge_row = _rows("""
+            SELECT ROUND(AVG(edge_pct)::numeric, 2) AS avg_edge
+            FROM predictions
+            WHERE status = 'pending'
+              AND created_at_cst >= now() - INTERVAL '7 days'
+        """)
+        avg_edge = edge_row[0]["avg_edge"] if edge_row else None
 
         return {
-            "total_predictions": total_predictions,
+            "total_all_time": total,
             "today": today_count,
-            "last_7_days": last_7_days,
-            "by_sport": by_sport,
-            "by_bet_type": by_bet_type,
-            "null_predictions_7d": null_predictions,
-            "accuracy_30d": accuracy,
-            "database_path": str(DB_PATH.relative_to(DB_PATH.parent.parent)),
-            "generated_at": datetime.now().isoformat()
+            "last_7_days": last_7,
+            "by_sport_30d": by_sport,
+            "by_pick_type_30d": by_type,
+            "by_status_30d": by_status,
+            "graded_30d": {
+                "total": total_graded,
+                "wins": graded.get("wins", 0),
+                "losses": graded.get("losses", 0),
+                "pushes": graded.get("pushes", 0),
+                "win_rate_pct": win_rate,
+                "total_pl_units": graded.get("total_pl"),
+                "avg_pl_per_pick": graded.get("avg_pl"),
+            },
+            "avg_edge_pending_7d": avg_edge,
+            "generated_at": datetime.now(CST).isoformat(),
         }
-
     except Exception as e:
-        logger.error(f"Error fetching prediction stats: {e}")
+        logger.error("get_prediction_stats: %s", e)
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/by-date/{prediction_date}")
-async def get_predictions_by_date(
-    prediction_date: str,
-    sport: Optional[str] = Query(None, description="Filter by sport"),
-    bet_type: Optional[str] = Query(None, description="Filter by bet type")
+@router.get("/pending")
+async def get_pending_predictions(
+    sport: Optional[str] = Query(None),
+    limit: int = Query(100, ge=1, le=500),
 ):
-    """Get predictions for a specific date (format: YYYY-MM-DD)"""
+    """Picks awaiting grading."""
     try:
-        # Validate date format
-        try:
-            date.fromisoformat(prediction_date)
-        except ValueError:
-            raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
-
-        conn = get_db_connection()
-        conn.row_factory = dict_factory
-        cursor = conn.cursor()
-
-        query = """
-            SELECT *
-            FROM predictions
-            WHERE date(game_date) = ?
-        """
-        params = [prediction_date]
+        where = ["status IN ('pending', 'needs_review')"]
+        params: list = []
 
         if sport:
-            query += " AND UPPER(sport) = UPPER(?)"
+            where.append("LOWER(sport) = LOWER(%s)")
             params.append(sport)
 
-        if bet_type:
-            query += " AND LOWER(bet_type) = LOWER(?)"
-            params.append(bet_type)
-
-        query += " ORDER BY game_time, sport, home_team"
-
-        cursor.execute(query, params)
-        predictions = cursor.fetchall()
-        conn.close()
-
-        return {
-            "date": prediction_date,
-            "total": len(predictions),
-            "filters": {
-                "sport": sport or "all",
-                "bet_type": bet_type or "all"
-            },
-            "predictions": predictions
-        }
-
-    except HTTPException:
-        raise
+        sql = f"""
+            SELECT * FROM predictions
+            WHERE {' AND '.join(where)}
+            ORDER BY game_time_cst ASC
+            LIMIT %s
+        """
+        params.append(limit)
+        rows = _rows(sql, tuple(params))
+        return {"total": len(rows), "predictions": rows}
     except Exception as e:
-        logger.error(f"Error fetching predictions for date {prediction_date}: {e}")
+        logger.error("get_pending_predictions: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/graded")
+async def get_graded_predictions(
+    sport: Optional[str] = Query(None),
+    result: Optional[str] = Query(None, description="WIN, LOSS, or PUSH"),
+    days: int = Query(30, ge=1, le=365),
+    limit: int = Query(100, ge=1, le=500),
+):
+    """Graded picks — filter by sport, result, date range."""
+    try:
+        where = ["status IN ('win', 'loss', 'push')", "created_at_cst >= now() - INTERVAL %s"]
+        params: list = [f"{days} days"]
+
+        if sport:
+            where.append("LOWER(sport) = LOWER(%s)")
+            params.append(sport)
+        if result:
+            where.append("UPPER(result) = UPPER(%s)")
+            params.append(result)
+
+        sql = f"""
+            SELECT * FROM predictions
+            WHERE {' AND '.join(where)}
+            ORDER BY created_at_cst DESC
+            LIMIT %s
+        """
+        params.append(limit)
+        rows = _rows(sql, tuple(params))
+        return {"total": len(rows), "days": days, "predictions": rows}
+    except Exception as e:
+        logger.error("get_graded_predictions: %s", e)
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/edges")
 async def get_predictions_with_edges(
-    min_edge: float = Query(0.5, ge=0, description="Minimum edge percentage"),
-    min_confidence: float = Query(0.0, ge=0, le=1, description="Minimum confidence"),
-    sport: Optional[str] = Query(None, description="Filter by sport"),
-    bet_type: Optional[str] = Query(None, description="Filter by bet type"),
-    limit: int = Query(100, ge=1, le=500, description="Number of predictions to return")
+    min_edge: float = Query(3.0, ge=0),
+    sport: Optional[str] = Query(None),
+    pick_type: Optional[str] = Query(None),
+    limit: int = Query(100, ge=1, le=500),
 ):
-    """Get predictions with positive edges above threshold"""
+    """Pending picks with edge >= min_edge, sorted by edge descending."""
     try:
-        conn = get_db_connection()
-        conn.row_factory = dict_factory
-        cursor = conn.cursor()
-
-        query = """
-            SELECT *
-            FROM predictions
-            WHERE date(game_date) >= date('now')
-            AND ABS(edge) >= ?
-        """
-        params = [min_edge]
-
-        if min_confidence > 0:
-            query += " AND confidence >= ?"
-            params.append(min_confidence)
+        where = ["status IN ('pending', 'needs_review')", "edge_pct >= %s",
+                 "game_time_cst >= now()"]
+        params: list = [min_edge]
 
         if sport:
-            query += " AND UPPER(sport) = UPPER(?)"
+            where.append("LOWER(sport) = LOWER(%s)")
             params.append(sport)
+        if pick_type:
+            where.append("LOWER(pick_type) = LOWER(%s)")
+            params.append(pick_type)
 
-        if bet_type:
-            query += " AND LOWER(bet_type) = LOWER(?)"
-            params.append(bet_type)
-
-        query += " ORDER BY ABS(edge) DESC LIMIT ?"
+        sql = f"""
+            SELECT * FROM predictions
+            WHERE {' AND '.join(where)}
+            ORDER BY edge_pct DESC
+            LIMIT %s
+        """
         params.append(limit)
-
-        cursor.execute(query, params)
-        predictions = cursor.fetchall()
-        conn.close()
-
-        return {
-            "total": len(predictions),
-            "filters": {
-                "min_edge": min_edge,
-                "min_confidence": min_confidence,
-                "sport": sport or "all",
-                "bet_type": bet_type or "all"
-            },
-            "predictions": predictions
-        }
-
+        rows = _rows(sql, tuple(params))
+        return {"total": len(rows), "min_edge": min_edge, "predictions": rows}
     except Exception as e:
-        logger.error(f"Error fetching edge predictions: {e}")
+        logger.error("get_predictions_with_edges: %s", e)
         raise HTTPException(status_code=500, detail=str(e))
