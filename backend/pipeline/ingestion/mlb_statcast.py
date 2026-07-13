@@ -114,6 +114,71 @@ def _current_season() -> int:
     return now_cst().year
 
 
+# ---------------------------------------------------------------------------
+# Player -> team roster map (MLB Stats API)
+# ---------------------------------------------------------------------------
+# Baseball Savant's leaderboard CSV has no team column at all in the 2026 API
+# (confirmed absent, not just blank) - so anything needing team affiliation
+# (e.g. mlb_features.py's team-level wOBA-gap feature) has no source of truth
+# for it without pulling from elsewhere. The official, free, unauthenticated
+# MLB Stats API provides exactly this, keyed in the same "Last, First" name
+# format Savant uses (lastFirstName), so it merges on directly with no name
+# reformatting needed.
+
+_MLB_STATSAPI_TEAMS_URL = "https://statsapi.mlb.com/api/v1/teams"
+_MLB_STATSAPI_PLAYERS_URL = "https://statsapi.mlb.com/api/v1/sports/1/players"
+
+_team_map_cache: dict[int, dict[str, str]] = {}  # season -> {player_name: team_abbr}
+
+
+def fetch_player_team_map(season: Optional[int] = None) -> dict[str, str]:
+    """
+    Build a ``{"Last, First": team_abbreviation}`` map for the given season
+    via the official MLB Stats API. Cached per season in-process - rosters
+    don't change meaningfully within a single ingestion run, and this avoids
+    two extra HTTP calls on every feature-build.
+
+    Returns an empty dict (never raises) if the API is unreachable, so
+    callers degrade to "no team info" rather than crashing ingestion.
+    """
+    if season is None:
+        season = _current_season()
+    if season in _team_map_cache:
+        return _team_map_cache[season]
+
+    team_map: dict[str, str] = {}
+    try:
+        teams_resp = requests.get(
+            _MLB_STATSAPI_TEAMS_URL, params={"sportId": 1}, timeout=20
+        )
+        teams_resp.raise_for_status()
+        id_to_abbr = {
+            t["id"]: t.get("abbreviation", "")
+            for t in teams_resp.json().get("teams", [])
+        }
+
+        players_resp = requests.get(
+            _MLB_STATSAPI_PLAYERS_URL, params={"season": season}, timeout=20
+        )
+        players_resp.raise_for_status()
+        for p in players_resp.json().get("people", []):
+            name = p.get("lastFirstName")
+            team_id = (p.get("currentTeam") or {}).get("id")
+            abbr = id_to_abbr.get(team_id)
+            if name and abbr:
+                team_map[name] = abbr
+    except (requests.RequestException, ValueError, KeyError) as exc:
+        logger.warning("Failed to fetch MLB player-team roster map: %s", exc)
+        return {}
+
+    logger.info(
+        "fetch_player_team_map: resolved %d player->team mappings for season %d.",
+        len(team_map), season,
+    )
+    _team_map_cache[season] = team_map
+    return team_map
+
+
 def _fetch_savant_csv(url: str, fields: list[str]) -> pd.DataFrame:
     """
     Download a Baseball Savant leaderboard CSV and return a cleaned DataFrame.
@@ -250,6 +315,15 @@ def fetch_batting_statcast(season: Optional[int] = None) -> pd.DataFrame:
     df = _fetch_savant_csv(url, BATTING_FIELDS)
     df["season"] = season
     df["stat_type"] = "batting"
+
+    # Savant's own CSV has no team column - attach one via the MLB Stats API
+    # roster map so team-level aggregation (mlb_features.py) has something
+    # to filter on. Best-effort: an empty/partial map just leaves "team" NaN
+    # for unmatched players rather than failing the whole fetch.
+    if "player_name" in df.columns:
+        team_map = fetch_player_team_map(season)
+        if team_map:
+            df["team"] = df["player_name"].map(team_map)
 
     logger.info(
         "Fetched %d batting rows for season %d.", len(df), season

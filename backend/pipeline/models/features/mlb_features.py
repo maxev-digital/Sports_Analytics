@@ -97,15 +97,18 @@ def _team_woba_gap(batting_df: pd.DataFrame, team: str) -> Optional[float]:
         logger.debug("No batting rows found for team '%s'.", team)
         return None
 
-    if "woba" not in rows.columns or "xwoba" not in rows.columns:
+    # Savant's own column is named "est_woba", not "xwoba" - this previously
+    # checked for a column that never existed, so this feature was silently
+    # always None regardless of data availability.
+    if "woba" not in rows.columns or "est_woba" not in rows.columns:
         logger.debug(
-            "woba / xwoba columns missing for team '%s' — cannot compute gap.",
+            "woba / est_woba columns missing for team '%s' — cannot compute gap.",
             team,
         )
         return None
 
     woba = pd.to_numeric(rows["woba"], errors="coerce").dropna()
-    xwoba = pd.to_numeric(rows["xwoba"], errors="coerce").dropna()
+    xwoba = pd.to_numeric(rows["est_woba"], errors="coerce").dropna()
 
     if woba.empty or xwoba.empty:
         return None

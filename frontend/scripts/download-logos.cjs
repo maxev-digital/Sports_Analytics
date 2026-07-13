@@ -39,6 +39,7 @@ const DOMAIN_MAP = {
   'betonlineag': 'betonline.ag',
   'betus': 'betus.com.pa',
   'lowvig': 'lowvig.ag',
+  'bovada': 'bovada.lv',
   'sport888': '888sport.com',
   'sport_interaction': 'sportsinteraction.com',
   'unibet_eu': 'unibet.eu',
@@ -61,28 +62,41 @@ function downloadLogo(bookmakerKey) {
 
     console.log(`📥 Downloading ${bookmakerKey} from ${domain}...`);
 
-    https.get(url, (response) => {
-      if (response.statusCode !== 200) {
-        reject(new Error(`Failed to download ${bookmakerKey}: ${response.statusCode}`));
-        return;
-      }
+    function get(requestUrl, redirectsLeft) {
+      https.get(requestUrl, (response) => {
+        if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
+          if (redirectsLeft <= 0) {
+            reject(new Error(`Failed to download ${bookmakerKey}: too many redirects`));
+            return;
+          }
+          response.resume(); // discard this response body before following the redirect
+          get(response.headers.location, redirectsLeft - 1);
+          return;
+        }
+        if (response.statusCode !== 200) {
+          reject(new Error(`Failed to download ${bookmakerKey}: ${response.statusCode}`));
+          return;
+        }
 
-      const fileStream = fs.createWriteStream(outputPath);
-      response.pipe(fileStream);
+        const fileStream = fs.createWriteStream(outputPath);
+        response.pipe(fileStream);
 
-      fileStream.on('finish', () => {
-        fileStream.close();
-        console.log(`✅ Saved: ${bookmakerKey}.png`);
-        resolve();
-      });
+        fileStream.on('finish', () => {
+          fileStream.close();
+          console.log(`✅ Saved: ${bookmakerKey}.png`);
+          resolve();
+        });
 
-      fileStream.on('error', (err) => {
-        fs.unlink(outputPath, () => {});
+        fileStream.on('error', (err) => {
+          fs.unlink(outputPath, () => {});
+          reject(err);
+        });
+      }).on('error', (err) => {
         reject(err);
       });
-    }).on('error', (err) => {
-      reject(err);
-    });
+    }
+
+    get(url, 5);
   });
 }
 

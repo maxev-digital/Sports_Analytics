@@ -8,6 +8,7 @@ import { getApiUrl } from '../config';
 import { useAuth } from '../contexts/AuthContext';
 import { useBetSlip } from '../contexts/BetSlipContext';
 import { openSportsbook } from '../utils/deepLinking';
+import { useSettings } from '../hooks/useSettings';
 
 interface WeatherInfo {
   temp_high?: number;
@@ -53,6 +54,7 @@ type BetType = 'moneyline' | 'spread' | 'total';
 export function Odds() {
   const { username } = useAuth();
   const { openBetSlip } = useBetSlip();
+  const { settings } = useSettings('default');
   const [activeSport, setActiveSport] = useState<SportKey>('baseball_mlb');
   const [activeBetType, setActiveBetType] = useState<BetType>('moneyline');
   const [games, setGames] = useState<GameOdds[]>([]);
@@ -169,32 +171,37 @@ export function Odds() {
 
   // Find best odds for a game based on bet type
   const getBestOdds = (game: GameOdds) => {
-    if (game.odds.length === 0) return null;
+    // Only consider bookmakers the user has enabled - otherwise "best odds"
+    // could point at a book that's filtered out of the table right below it.
+    const odds = settings?.enabled_bookmakers?.length
+      ? game.odds.filter(odd => settings.enabled_bookmakers.includes(normalizeBookmakerKey(odd.bookmaker)))
+      : game.odds;
+    if (odds.length === 0) return null;
 
     if (activeBetType === 'moneyline') {
       // Best is highest value (most positive or least negative)
-      const bestAway = game.odds.reduce((best, curr) =>
+      const bestAway = odds.reduce((best, curr) =>
         curr.away_ml > best.away_ml ? curr : best
       );
-      const bestHome = game.odds.reduce((best, curr) =>
+      const bestHome = odds.reduce((best, curr) =>
         curr.home_ml > best.home_ml ? curr : best
       );
       return { away: bestAway, home: bestHome };
     } else if (activeBetType === 'spread') {
       // Best is highest price (most positive or least negative)
-      const bestAway = game.odds.reduce((best, curr) =>
+      const bestAway = odds.reduce((best, curr) =>
         curr.away_spread_price > best.away_spread_price ? curr : best
       );
-      const bestHome = game.odds.reduce((best, curr) =>
+      const bestHome = odds.reduce((best, curr) =>
         curr.home_spread_price > best.home_spread_price ? curr : best
       );
       return { away: bestAway, home: bestHome };
     } else {
       // Total - best is highest price
-      const bestOver = game.odds.reduce((best, curr) =>
+      const bestOver = odds.reduce((best, curr) =>
         curr.over_price > best.over_price ? curr : best
       );
-      const bestUnder = game.odds.reduce((best, curr) =>
+      const bestUnder = odds.reduce((best, curr) =>
         curr.under_price > best.under_price ? curr : best
       );
       return { over: bestOver, under: bestUnder };
@@ -266,8 +273,12 @@ export function Odds() {
     game.odds.map(odd => normalizeBookmakerKey(odd.bookmaker))
   ))).sort();
 
-  // Show all bookmakers (no limit)
-  const bookmakers = allBookmakers;
+  // Only show bookmakers the user has enabled in Settings. Falls back to
+  // showing everything if settings haven't loaded yet or nothing is enabled -
+  // "0 columns" would look broken, not like a valid filtered state.
+  const bookmakers = settings?.enabled_bookmakers?.length
+    ? allBookmakers.filter(bm => settings.enabled_bookmakers.includes(bm))
+    : allBookmakers;
 
   return (
     <div className="analytics-page p-4">

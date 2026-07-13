@@ -27,7 +27,7 @@ Metadata saved:   pipeline/models/saved/mlb_{bet_type}_hist_metadata.json
 
 Run manually:
     cd /root/sporttrader/backend
-    python3 -m pipeline.training.mlb_historical_trainer
+    python3 -m pipeline.models.training.mlb_historical_trainer
 """
 
 from __future__ import annotations

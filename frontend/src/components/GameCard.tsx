@@ -10,6 +10,7 @@ import { useBetSlip } from '../contexts/BetSlipContext';
 import { MomentumBar } from './MomentumBar';
 import { formatTeamName } from '../utils/teamNames';
 import { getTeamLogoUrl } from '../utils/teamLogos';
+import { useSettings } from '../hooks/useSettings';
 
 interface PickSummary {
   id: number;
@@ -32,15 +33,19 @@ interface GameCardProps {
 const getBookmakerInfo = (bookmaker: string) => {
   // Normalize bookmaker name to match BOOKMAKERS keys
   // API returns: "MyBookie.ag", "Nordic Bet", "DraftKings"
-  // Database keys: "mybookieag", "nordicbet", "draftkings"
-  const normalizedKey = bookmaker
+  // Database keys: "mybookieag", "nordicbet", "draftkings" - but some keys
+  // keep an underscore on purpose (e.g. "williamhill_us"), so try the
+  // underscore-preserving form first before falling back to fully stripped -
+  // stripping unconditionally used to make "williamhill_us" -> "williamhillus",
+  // which never matches the real key and silently fell through to the
+  // hardcoded fallback list below.
+  const withUnderscore = bookmaker
     .toLowerCase()
     .replace(/\s+/g, '')      // Remove all spaces: "Nordic Bet" -> "nordicbet"
-    .replace(/\./g, '')       // Remove periods: "MyBookie.ag" -> "mybookieag"
-    .replace(/_/g, '');       // Remove underscores if any
+    .replace(/\./g, '');      // Remove periods: "MyBookie.ag" -> "mybookieag"
 
   // Try to find in BOOKMAKERS database
-  const bookmakerData = BOOKMAKERS[normalizedKey];
+  const bookmakerData = BOOKMAKERS[withUnderscore] || BOOKMAKERS[withUnderscore.replace(/_/g, '')];
 
   if (bookmakerData) {
     return {
@@ -133,7 +138,18 @@ const getBookmakerInfoFallback = (bookmaker: string) => {
 };
 
 export function GameCard({ game, isPinned = false, onTogglePin, matchingPicks = [] }: GameCardProps) {
-  const { state, odds, projection, home_team_stats, away_team_stats, home_nfl_live_stats, away_nfl_live_stats, home_nfl_stats, away_nfl_stats, home_ncaaf_stats, away_ncaaf_stats, home_nhl_momentum, away_nhl_momentum, home_nhl_stats, away_nhl_stats, home_nba_momentum, away_nba_momentum, home_nfl_momentum, away_nfl_momentum, home_ncaaf_momentum, away_ncaaf_momentum, alternate_lines, ncaab_analytics, nba_analytics, nfl_analytics, ncaaf_analytics, mlb_analytics, nhl_analytics, home_mlb_stats, away_mlb_stats, home_probable_pitcher, away_probable_pitcher, ballpark, hp_umpire, home_mma_stats, away_mma_stats, tennis_round, tennis_tournament } = game;
+  const { state, odds: rawOdds, projection, home_team_stats, away_team_stats, home_nfl_live_stats, away_nfl_live_stats, home_nfl_stats, away_nfl_stats, home_ncaaf_stats, away_ncaaf_stats, home_nhl_momentum, away_nhl_momentum, home_nhl_stats, away_nhl_stats, home_nba_momentum, away_nba_momentum, home_nfl_momentum, away_nfl_momentum, home_ncaaf_momentum, away_ncaaf_momentum, alternate_lines, ncaab_analytics, nba_analytics, nfl_analytics, ncaaf_analytics, mlb_analytics, nhl_analytics, home_mlb_stats, away_mlb_stats, home_probable_pitcher, away_probable_pitcher, ballpark, hp_umpire, home_mma_stats, away_mma_stats, tennis_round, tennis_tournament } = game;
+
+  // Only show bookmakers the user has enabled in Settings - falls back to
+  // showing everything if settings haven't loaded yet or nothing is enabled,
+  // since an empty odds list would look broken rather than "filtered".
+  const { settings } = useSettings('default');
+  const odds = settings?.enabled_bookmakers?.length
+    ? rawOdds.filter(odd => {
+        const key = odd.bookmaker.toLowerCase().replace(/\s+/g, '').replace(/\./g, '');
+        return settings.enabled_bookmakers.includes(key) || settings.enabled_bookmakers.includes(key.replace(/_/g, ''));
+      })
+    : rawOdds;
 
   // DEBUG: Log stats data
   console.log(`🏀 ${formatTeamName(state.away_team.name, state.sport_key)} @ ${formatTeamName(state.home_team.name, state.sport_key)}:`, {
@@ -648,7 +664,8 @@ export function GameCard({ game, isPinned = false, onTogglePin, matchingPicks = 
                   (projection.recommendation === 'UNDER' && odd.is_best_under)
                 );
                 const bookmakerInfo = getBookmakerInfo(odd.bookmaker);
-                const normalizedKey = odd.bookmaker.toLowerCase().replace(/\s+/g, '').replace(/\./g, '').replace(/_/g, '');
+                const withUnderscore = odd.bookmaker.toLowerCase().replace(/\s+/g, '').replace(/\./g, '');
+                const normalizedKey = BOOKMAKERS[withUnderscore] ? withUnderscore : withUnderscore.replace(/_/g, '');
                 const bookmakerData = BOOKMAKERS[normalizedKey];
                 const gameSpecificUrl = getGameSpecificUrl(
                   normalizedKey,
