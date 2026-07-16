@@ -172,6 +172,17 @@ async def list_candidates(
         """,
         params,
     )
+    # true_probability/raw_edge_pct/net_edge_pct/sharp_consensus_total/kalshi_strike are
+    # Text columns (schema.py) - cast to float here so the API actually returns numbers,
+    # matching what the frontend's TS interface already assumes. Left as string in the DB,
+    # a real (non-empty) candidate row crashes the whole Kalshi page: fmtPct() calls
+    # .toFixed() directly on the value, which throws on a string with no error boundary
+    # to catch it.
+    _numeric_fields = ("true_probability", "raw_edge_pct", "net_edge_pct", "sharp_consensus_total", "kalshi_strike")
+    for row in rows:
+        for field in _numeric_fields:
+            if row.get(field) is not None:
+                row[field] = float(row[field])
     return {"candidates": rows}
 
 
