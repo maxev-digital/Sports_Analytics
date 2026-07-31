@@ -44,6 +44,8 @@ import { Disclaimer } from './pages/Disclaimer';
 import { NFLSystem } from './pages/NFLSystem';
 import { SystemOverview } from './pages/SystemOverview';
 import { F5Edge } from './pages/F5Edge';
+import { LineMovement } from './pages/LineMovement';
+import { Statcast } from './pages/Statcast';
 
 const bg = 'min-h-screen flex flex-col' /* dark matte via body bg */;
 
@@ -130,6 +132,8 @@ function AppContent() {
                       <Route path="/kalshi" element={<ProtectedRoute><Kalshi /></ProtectedRoute>} />
                       <Route path="/tools" element={<ProtectedRoute><Tools /></ProtectedRoute>} />
                       <Route path="/f5-edge" element={<F5Edge />} />
+                      <Route path="/line-movement" element={<LineMovement />} />
+                      <Route path="/statcast" element={<Statcast />} />
                       <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
                       <Route path="/props" element={<ProtectedRoute><Props /></ProtectedRoute>} />
                       <Route path="/strategy-results" element={<ProtectedRoute><StrategyResults /></ProtectedRoute>} />

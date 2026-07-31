@@ -44,6 +44,7 @@ export function Navigation() {
     { path: '/team-rankings',     label: 'TEAM RANKINGS'     },
     { path: '/advanced-metrics',  label: 'ADVANCED METRICS'  },
     { path: '/player-leaders',    label: 'PLAYER LEADERS'    },
+    { path: '/statcast',          label: 'STATCAST'          },
   ];
 
   const edgesItems = [
@@ -62,6 +63,7 @@ export function Navigation() {
 
   const toolsItems = [
     { path: '/tools',            label: 'BETTING TOOLS' },
+    { path: '/line-movement',    label: 'LINE MOVEMENT' },
     { path: '/settings',         label: 'BOOKMAKER SETTINGS' },
     { path: '/system-overview',  label: 'HOW WE PICK: ALL SPORTS' },
     { path: '/system-nfl',       label: 'HOW WE PICK: NFL' },
