@@ -61,6 +61,7 @@ export function Navigation() {
 
   const toolsItems = [
     { path: '/tools',            label: 'BETTING TOOLS' },
+    { path: '/f5-edge',          label: 'F5 EDGE ENGINE' },
     { path: '/settings',         label: 'BOOKMAKER SETTINGS' },
     { path: '/system-overview',  label: 'HOW WE PICK: ALL SPORTS' },
     { path: '/system-nfl',       label: 'HOW WE PICK: NFL' },

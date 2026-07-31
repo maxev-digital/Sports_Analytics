@@ -43,6 +43,7 @@ import { Privacy } from './pages/Privacy';
 import { Disclaimer } from './pages/Disclaimer';
 import { NFLSystem } from './pages/NFLSystem';
 import { SystemOverview } from './pages/SystemOverview';
+import F5FadeTie from './pages/F5FadeTie';
 
 const bg = 'min-h-screen flex flex-col' /* dark matte via body bg */;
 
@@ -128,6 +129,7 @@ function AppContent() {
                       <Route path="/system-health" element={<ProtectedRoute><SystemHealth /></ProtectedRoute>} />
                       <Route path="/kalshi" element={<ProtectedRoute><Kalshi /></ProtectedRoute>} />
                       <Route path="/tools" element={<ProtectedRoute><Tools /></ProtectedRoute>} />
+                      <Route path="/f5-edge" element={<F5FadeTie />} />
                       <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
                       <Route path="/props" element={<ProtectedRoute><Props /></ProtectedRoute>} />
                       <Route path="/strategy-results" element={<ProtectedRoute><StrategyResults /></ProtectedRoute>} />
