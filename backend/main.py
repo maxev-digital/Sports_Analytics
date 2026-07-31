@@ -370,6 +370,16 @@ except Exception as e:
     import traceback
     traceback.print_exc()
 
+# Import and register F5 Fade the Tie router (Baseball F5 3-way arb system)
+try:
+    from routes.f5_fade_tie import router as f5_fade_tie_router
+    app.include_router(f5_fade_tie_router)
+    logger.info("[OK] F5 Fade the Tie router registered - Baseball F5 arb system ready")
+except Exception as e:
+    print(f"ERROR importing/registering f5_fade_tie router: {type(e).__name__}: {e}")
+    import traceback
+    traceback.print_exc()
+
 # Game tracker instance
 tracker = GameTracker()
 
