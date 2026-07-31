@@ -10,6 +10,7 @@ class Team(BaseModel):
     spread_price: Optional[int] = None
     money_line: Optional[int] = None
     momentum: Optional[float] = None  # -100 to 100 scale, represents recent play trends
+    record: Optional[str] = None  # Season record e.g. 39-48 or MMA record 18-10-1
 
 class GameState(BaseModel):
     id: str
@@ -352,21 +353,22 @@ class MLBTeamStats(BaseModel):
     # Batting statistics
     runs_per_game: float  # Runs scored per game
     batting_avg: float  # Team batting average
-    on_base_pct: float  # OBP
-    slugging_pct: float  # SLG
-    ops: float  # On-base + slugging
-    home_runs_per_game: float
-    hits_per_game: float
-    stolen_bases: int
+    on_base_pct: Optional[float] = None  # OBP
+    slugging_pct: Optional[float] = None  # SLG
+    ops: Optional[float] = None  # On-base + slugging
+    home_runs_per_game: Optional[float] = None
+    hits_per_game: Optional[float] = None
+    stolen_bases: Optional[int] = None
+    runs_allowed_per_game: Optional[float] = None  # Runs allowed per game
     # Pitching statistics
     era: float  # Earned run average
-    whip: float  # Walks + hits per inning
-    strikeouts_per_9: float  # K/9
-    walks_per_9: float  # BB/9
-    hits_allowed_per_9: float
-    saves: int
-    blown_saves: int
-    quality_starts: int
+    whip: Optional[float] = None  # Walks + hits per inning
+    strikeouts_per_9: Optional[float] = None  # K/9
+    walks_per_9: Optional[float] = None  # BB/9
+    hits_allowed_per_9: Optional[float] = None
+    saves: Optional[int] = None
+    blown_saves: Optional[int] = None
+    quality_starts: Optional[int] = None
     # Recent form
     last_10_record: Optional[str] = None  # "7-3" format
     form_trend: Optional[str] = None  # "HOT", "COLD", "NEUTRAL"
@@ -381,6 +383,26 @@ class MLBTeamStats(BaseModel):
     whip_rank: Optional[int] = None
     strikeouts_per_9_rank: Optional[int] = None
     saves_rank: Optional[int] = None
+
+class ProbablePitcher(BaseModel):
+    """MLB probable starting pitcher for today's game"""
+    name: str
+    era: Optional[float] = None
+    wins: Optional[int] = None
+    losses: Optional[int] = None
+    record: Optional[str] = None  # e.g. "(0-1, 4.09)"
+
+class MMAFighterStats(BaseModel):
+    """MMA fighter physical stats and fight-method breakdown"""
+    height: Optional[str] = None
+    weight: Optional[str] = None
+    reach: Optional[str] = None
+    stance: Optional[str] = None
+    fighting_style: Optional[str] = None
+    tko_wins: Optional[int] = None
+    tko_losses: Optional[int] = None
+    sub_wins: Optional[int] = None
+    sub_losses: Optional[int] = None
 
 class AlternateMarketLine(BaseModel):
     """Alternate market lines (halves, quarters, periods)"""
@@ -438,6 +460,14 @@ class LiveGame(BaseModel):
     away_ncaaf_momentum: Optional[NFLMomentumStats] = None  # NCAAF-specific momentum (uses same model as NFL)
     home_mlb_stats: Optional[MLBTeamStats] = None  # MLB-specific season stats
     away_mlb_stats: Optional[MLBTeamStats] = None  # MLB-specific season stats
+    home_probable_pitcher: Optional[ProbablePitcher] = None
+    away_probable_pitcher: Optional[ProbablePitcher] = None
+    ballpark: Optional[str] = None
+    hp_umpire: Optional[str] = None
+    home_mma_stats: Optional[MMAFighterStats] = None
+    away_mma_stats: Optional[MMAFighterStats] = None
+    tennis_round: Optional[str] = None
+    tennis_tournament: Optional[str] = None
     quarters: Optional[dict] = None  # NBA quarter-by-quarter scores: {'Q1': {'home': 25, 'away': 22}, ...}
     player_props_count: Optional[int] = None  # Number of player props available for this game (NBA/NHL only)
     # Game information fields

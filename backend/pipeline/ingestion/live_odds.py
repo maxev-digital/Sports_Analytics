@@ -16,6 +16,7 @@ remove_vig(home_prob, away_prob)          -> tuple[float, float]
 from __future__ import annotations
 
 import logging
+import time
 from datetime import datetime
 from typing import Optional
 
@@ -35,6 +36,13 @@ _ODDS_API_ODDS_URL = (
 )
 _DEFAULT_MARKETS: list[str] = ["h2h", "spreads", "totals"]
 _SUPPORTED_MARKETS: frozenset[str] = frozenset({"h2h", "spreads", "totals"})
+
+# ---------------------------------------------------------------------------
+# TTL cache — keeps each (sport_key, markets) result for 30 minutes so the
+# live-edge endpoint can be polled frequently without draining API credits.
+# ---------------------------------------------------------------------------
+_CACHE_TTL: int = 1800  # seconds (30 min)
+_odds_cache: dict[tuple, tuple[float, list]] = {}  # key -> (ts, data)
 
 # ---------------------------------------------------------------------------
 # Probability helpers
@@ -225,6 +233,15 @@ def fetch_live_odds(
     if markets is None:
         markets = list(_DEFAULT_MARKETS)
 
+    cache_key = (sport_key, tuple(sorted(markets)))
+    now = time.monotonic()
+    cached = _odds_cache.get(cache_key)
+    if cached is not None:
+        ts, data = cached
+        if now - ts < _CACHE_TTL:
+            logger.debug("Odds cache hit — sport=%s (%.0fs old)", sport_key, now - ts)
+            return data
+
     url = _ODDS_API_ODDS_URL.format(sport_key=sport_key)
     params: dict[str, str] = {
         "apiKey": ODDS_API_KEY,
@@ -267,6 +284,7 @@ def fetch_live_odds(
             }
         )
 
+    _odds_cache[cache_key] = (time.monotonic(), games)
     return games
 
 
@@ -333,6 +351,8 @@ def _consensus_h2h_or_spread(
     """
     home_prices: list[float] = []
     away_prices: list[float] = []
+    home_probs: list[float] = []
+    away_probs: list[float] = []
 
     for bk in bookmakers:
         outcomes = bk.get("markets", {}).get(market, [])
@@ -341,6 +361,14 @@ def _consensus_h2h_or_spread(
         if home_price is not None and away_price is not None:
             home_prices.append(home_price)
             away_prices.append(away_price)
+            # Convert THIS book's odds to probability before combining across
+            # books - American odds cannot be arithmetically averaged once
+            # books disagree on which side is favored (mixed positive/
+            # negative signs for the same team), which previously produced
+            # nonsensical results (e.g. a negative vig_pct, which is
+            # impossible for a real two-way market).
+            home_probs.append(american_to_prob(int(round(home_price))))
+            away_probs.append(american_to_prob(int(round(away_price))))
 
     if not home_prices:
         logger.debug(
@@ -354,9 +382,10 @@ def _consensus_h2h_or_spread(
     avg_home = sum(home_prices) / len(home_prices)
     avg_away = sum(away_prices) / len(away_prices)
 
-    # Convert averages to implied probs, compute vig, then normalise
-    home_raw = american_to_prob(int(round(avg_home)))
-    away_raw = american_to_prob(int(round(avg_away)))
+    # Average each book's already-converted probability, then remove vig once
+    # on the combined average.
+    home_raw = sum(home_probs) / len(home_probs)
+    away_raw = sum(away_probs) / len(away_probs)
     vig_pct = (home_raw + away_raw - 1.0) * 100.0
     home_normed, away_normed = remove_vig(home_raw, away_raw)
 
@@ -382,6 +411,8 @@ def _consensus_totals(bookmakers: list[dict]) -> Optional[dict]:
     """
     over_prices: list[float] = []
     under_prices: list[float] = []
+    over_probs: list[float] = []
+    under_probs: list[float] = []
     lines: list[float] = []
 
     for bk in bookmakers:
@@ -400,6 +431,12 @@ def _consensus_totals(bookmakers: list[dict]) -> Optional[dict]:
             over_prices.append(float(over["price"]))
         if under.get("price") is not None:
             under_prices.append(float(under["price"]))
+        if over.get("price") is not None and under.get("price") is not None:
+            # Convert THIS book's odds to probability before combining across
+            # books - see the matching fix in _consensus_h2h_or_spread for why
+            # arithmetic-averaging raw American odds is invalid.
+            over_probs.append(american_to_prob(int(round(float(over["price"])))))
+            under_probs.append(american_to_prob(int(round(float(under["price"])))))
         if over.get("point") is not None:
             lines.append(float(over["point"]))
 
@@ -410,8 +447,8 @@ def _consensus_totals(bookmakers: list[dict]) -> Optional[dict]:
     avg_under = sum(under_prices) / len(under_prices)
     avg_line = sum(lines) / len(lines) if lines else None
 
-    over_raw = american_to_prob(int(round(avg_over)))
-    under_raw = american_to_prob(int(round(avg_under)))
+    over_raw = sum(over_probs) / len(over_probs)
+    under_raw = sum(under_probs) / len(under_probs)
     vig_pct = (over_raw + under_raw - 1.0) * 100.0
 
     return {

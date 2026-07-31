@@ -36,7 +36,7 @@ def _rows(sql: str, params: tuple = ()) -> list[dict]:
 # ── Endpoints ───────────────────────────────────────────────────────────────
 
 @router.get("/today")
-async def get_today_predictions(
+def get_today_predictions(
     sport: Optional[str] = Query(None),
     pick_type: Optional[str] = Query(None),
 ):
@@ -66,7 +66,7 @@ async def get_today_predictions(
 
 
 @router.get("/recent")
-async def get_recent_predictions(
+def get_recent_predictions(
     sport: Optional[str] = Query(None),
     pick_type: Optional[str] = Query(None),
     limit: int = Query(50, ge=1, le=500),
@@ -98,7 +98,7 @@ async def get_recent_predictions(
 
 
 @router.get("/by-sport/{sport}")
-async def get_predictions_by_sport(
+def get_predictions_by_sport(
     sport: str,
     days: int = Query(7, ge=1, le=90),
     pick_type: Optional[str] = Query(None),
@@ -124,7 +124,7 @@ async def get_predictions_by_sport(
 
 
 @router.get("/stats")
-async def get_prediction_stats():
+def get_prediction_stats():
     """Aggregate stats from the PostgreSQL predictions table."""
     try:
         # Total all-time
@@ -229,13 +229,13 @@ async def get_prediction_stats():
 
 
 @router.get("/pending")
-async def get_pending_predictions(
+def get_pending_predictions(
     sport: Optional[str] = Query(None),
     limit: int = Query(100, ge=1, le=500),
 ):
     """Picks awaiting grading."""
     try:
-        where = ["status IN ('pending', 'needs_review')"]
+        where = ["status IN ('pending', 'needs_review')", "(game_time_cst IS NULL OR game_time_cst >= NOW() - INTERVAL '4 hours')"]
         params: list = []
 
         if sport:
@@ -257,7 +257,7 @@ async def get_pending_predictions(
 
 
 @router.get("/graded")
-async def get_graded_predictions(
+def get_graded_predictions(
     sport: Optional[str] = Query(None),
     result: Optional[str] = Query(None, description="WIN, LOSS, or PUSH"),
     days: int = Query(30, ge=1, le=365),
@@ -289,8 +289,185 @@ async def get_graded_predictions(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+
+@router.get("/enriched")
+def get_enriched_predictions(
+    status: Optional[str] = Query("pending"),
+    sport: Optional[str] = Query(None),
+):
+    """Picks enriched with team ratings, line movement, H2H, ATS splits, injuries."""
+    try:
+        sql = """
+            SELECT * FROM predictions
+            WHERE status = %s
+              AND (game_time_cst IS NULL OR game_time_cst >= NOW() - INTERVAL '2 days')
+        """
+        p: list = [status]
+        if sport:
+            sql += " AND LOWER(sport) = LOWER(%s)"
+            p.append(sport)
+        sql += " ORDER BY edge_pct DESC LIMIT 50"
+        picks = _rows(sql, tuple(p))
+
+        if not picks:
+            return {"picks": [], "total": 0}
+
+        game_ids  = [pk["game_id"] for pk in picks if pk.get("game_id")]
+        all_teams = list({t for pk in picks for t in [pk["home_team"], pk["away_team"]]})
+        sports    = list({pk["sport"] for pk in picks})
+
+        # ── Team ratings (batch) ────────────────────────────────────────────
+        ratings: dict = {}
+        if all_teams:
+            for r in _rows(
+                "SELECT * FROM team_ratings WHERE team = ANY(%s) AND sport = ANY(%s)",
+                (all_teams, sports),
+            ):
+                ratings[f"{r['team']}|{r['sport']}"] = r
+
+        # ── Line snapshots (batch, grouped by game_id) ──────────────────────
+        snapshots: dict = {}
+        if game_ids:
+            for s in _rows(
+                """
+                SELECT DISTINCT ON (game_id, snapshot_label) *
+                FROM line_snapshots WHERE game_id = ANY(%s)
+                ORDER BY game_id, snapshot_label, snapshot_at DESC
+                """,
+                (game_ids,),
+            ):
+                gid = s["game_id"]
+                snapshots.setdefault(gid, []).append(s)
+            # sort oldest-first per game so frontend can show movement direction
+            for gid in snapshots:
+                snapshots[gid].sort(key=lambda x: x.get("snapshot_at") or "")
+
+        # ── Injuries (batch) ────────────────────────────────────────────────
+        injuries: dict = {}
+        if all_teams:
+            for inj in _rows(
+                "SELECT * FROM injury_log WHERE team = ANY(%s) ORDER BY fetched_at DESC",
+                (all_teams,),
+            ):
+                injuries.setdefault(inj["team"], [])
+                if len(injuries[inj["team"]]) < 12:
+                    injuries[inj["team"]].append(inj)
+
+        # ── Enrich each pick ────────────────────────────────────────────────
+        enriched = []
+        for pk in picks:
+            home    = pk["home_team"]
+            away    = pk["away_team"]
+            spt     = pk["sport"]
+            gid     = pk.get("game_id")
+
+            h2h      = []
+            home_ats = None
+            away_ats = None
+
+            if spt == "nfl" and home and away:
+                h2h = _rows(
+                    """
+                    SELECT season, week, game_date, home_team, away_team,
+                           home_score, away_score, spread_close, home_covered,
+                           total_close, total_went_over
+                    FROM nfl_historical_odds
+                    WHERE sport = 'nfl'
+                      AND ((home_team = %s AND away_team = %s)
+                           OR (home_team = %s AND away_team = %s))
+                    ORDER BY game_date DESC LIMIT 8
+                    """,
+                    (home, away, away, home),
+                )
+
+                def _ats(team: str, role: str) -> dict | None:
+                    if role == "home":
+                        rows = _rows(
+                            """SELECT COUNT(*) AS g,
+                                      SUM(CASE WHEN home_covered THEN 1 ELSE 0 END) AS c,
+                                      MIN(season) AS fs, MAX(season) AS ts
+                               FROM nfl_historical_odds
+                               WHERE sport='nfl' AND home_team=%s AND season>=2022""",
+                            (team,),
+                        )
+                        cov_key = "c"
+                    else:
+                        rows = _rows(
+                            """SELECT COUNT(*) AS g,
+                                      SUM(CASE WHEN NOT home_covered THEN 1 ELSE 0 END) AS c,
+                                      MIN(season) AS fs, MAX(season) AS ts
+                               FROM nfl_historical_odds
+                               WHERE sport='nfl' AND away_team=%s AND season>=2022""",
+                            (team,),
+                        )
+                        cov_key = "c"
+                    if not rows or not rows[0]["g"]:
+                        return None
+                    r = rows[0]
+                    g = r["g"]; c = r["c"] or 0
+                    return {
+                        "team": team, "role": role, "games": g, "covers": c,
+                        "cover_pct": round(c / g * 100, 1),
+                        "from_season": r["fs"], "to_season": r["ts"],
+                    }
+
+                home_ats = _ats(home, "home")
+                away_ats = _ats(away, "away")
+
+            enriched.append({
+                **pk,
+                "home_rating":   ratings.get(f"{home}|{spt}"),
+                "away_rating":   ratings.get(f"{away}|{spt}"),
+                "line_snapshots": snapshots.get(gid, []) if gid else [],
+                "h2h":           h2h,
+                "home_ats":      home_ats,
+                "away_ats":      away_ats,
+                "home_injuries": injuries.get(home, []),
+                "away_injuries": injuries.get(away, []),
+            })
+
+        return {"picks": enriched, "total": len(enriched)}
+
+    except Exception as e:
+        logger.error("get_enriched_predictions: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/generate-narrative/{pick_id}")
+def generate_narrative_for_pick(pick_id: int):
+    """On-demand game script generation for a single pick. Saves to DB and returns."""
+    try:
+        from pipeline.narrative_pipeline import _enrich_pick, run_narrative_generation
+        from pipeline.agents.sonnet_reasoner import generate_game_script
+
+        picks = _rows("SELECT * FROM predictions WHERE id = %s", (pick_id,))
+        if not picks:
+            raise HTTPException(status_code=404, detail=f"Pick {pick_id} not found")
+
+        pk = picks[0]
+        enriched = _enrich_pick(pk)
+        narrative = generate_game_script(enriched)
+
+        from pipeline.db.connection import execute_write as _write
+        _write(
+            "UPDATE predictions SET sonnet_narrative = %s WHERE id = %s",
+            (narrative, pick_id),
+        )
+        logger.info("On-demand narrative generated for pick %d", pick_id)
+        return {
+            "pick_id": pick_id,
+            "narrative": narrative,
+            "chars": len(narrative),
+            "saved": True,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("generate_narrative_for_pick %d: %s", pick_id, e)
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/edges")
-async def get_predictions_with_edges(
+def get_predictions_with_edges(
     min_edge: float = Query(3.0, ge=0),
     sport: Optional[str] = Query(None),
     pick_type: Optional[str] = Query(None),

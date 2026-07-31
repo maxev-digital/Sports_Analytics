@@ -134,7 +134,8 @@ async def get_live_edges(
             rule_based, generate = _get_wnba_predictor()
             picks = generate() if use_ml else rule_based(min_edge=min_edge)
         else:
-            raise HTTPException(status_code=400, detail=f"Unsupported sport: {sport}")
+            _, get_todays_picks, _ = _get_health_reporter()
+            picks = get_todays_picks(sport)
 
         picks = [p for p in picks if p.get("edge_pct", 0) >= min_edge]
         picks.sort(key=lambda p: p.get("edge_pct", 0), reverse=True)
@@ -241,3 +242,91 @@ async def get_ingestion_log(days: int = Query(7, ge=1, le=30)):
         return {"log": rows, "total": len(rows)}
     except Exception as e:
         return {"log": [], "total": 0, "error": str(e)}
+
+
+# Historical ingestion and training endpoints
+
+def _run_historical_ingest(seasons):
+    try:
+        from pipeline.ingestion.historical_mlb import ingest_historical
+        results = ingest_historical(seasons)
+        logger.info("[edge_engine] historical ingest complete: %s", results)
+    except Exception:
+        logger.exception("[edge_engine] historical ingest failed")
+
+
+def _run_historical_train(seasons):
+    try:
+        from pipeline.models.training.mlb_historical_trainer import build_and_train
+        result = build_and_train(seasons)
+        logger.info("[edge_engine] historical train complete: %s", result)
+    except Exception:
+        logger.exception("[edge_engine] historical train failed")
+
+
+@router.post("/ingest-historical")
+async def ingest_historical_mlb(
+    background_tasks: BackgroundTasks,
+    seasons: str = Query("2023,2024,2025", description="Comma-separated seasons"),
+):
+    try:
+        season_list = [int(s.strip()) for s in seasons.split(",") if s.strip()]
+    except ValueError:
+        raise HTTPException(status_code=400, detail="seasons must be comma-separated integers")
+    background_tasks.add_task(_run_historical_ingest, season_list)
+    return {
+        "status": "started",
+        "seasons": season_list,
+        "message": "Historical ingestion running. Idempotent - already-done steps are skipped.",
+    }
+
+
+@router.post("/train-historical")
+async def train_historical_mlb(
+    background_tasks: BackgroundTasks,
+    seasons: str = Query("2023,2024,2025", description="Seasons to train on"),
+):
+    try:
+        season_list = [int(s.strip()) for s in seasons.split(",") if s.strip()]
+    except ValueError:
+        raise HTTPException(status_code=400, detail="seasons must be comma-separated integers")
+    background_tasks.add_task(_run_historical_train, season_list)
+    return {
+        "status": "started",
+        "seasons": season_list,
+        "message": "Historical training running. Models saved to pipeline/models/saved/ when done.",
+    }
+
+
+@router.get("/historical-status")
+async def get_historical_status():
+    execute_query = _get_db()
+    try:
+        log_rows = execute_query(
+            "SELECT season, step, rows, status, run_at FROM hist_mlb_ingest_log ORDER BY season, run_at DESC LIMIT 100"
+        )
+    except Exception:
+        log_rows = []
+    try:
+        game_counts = execute_query(
+            "SELECT season, COUNT(*) as games FROM hist_mlb_games WHERE home_score IS NOT NULL GROUP BY season ORDER BY season"
+        )
+    except Exception:
+        game_counts = []
+    try:
+        pitch_counts = execute_query(
+            "SELECT season, COUNT(*) as pitchers FROM hist_mlb_statcast_pitching GROUP BY season ORDER BY season"
+        )
+    except Exception:
+        pitch_counts = []
+    import os
+    saved_dir = os.path.join(os.path.dirname(__file__), "..", "pipeline", "models", "saved")
+    model_files = []
+    if os.path.isdir(saved_dir):
+        model_files = [f for f in os.listdir(saved_dir) if "hist" in f]
+    return {
+        "ingest_log": log_rows,
+        "game_counts_by_season": game_counts,
+        "pitcher_counts_by_season": pitch_counts,
+        "hist_model_files": model_files,
+    }

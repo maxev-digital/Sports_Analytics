@@ -1,0 +1,126 @@
+{
+  "random_forest": {
+    "sport": "mlb",
+    "bet_type": "spread",
+    "source": "historical",
+    "feature_cols": [
+      "sp_era_gap",
+      "opp_sp_era_gap",
+      "team_woba_gap",
+      "opp_woba_gap",
+      "home_advantage",
+      "sp_k_pct",
+      "opp_sp_k_pct",
+      "sp_bb_pct",
+      "opp_sp_bb_pct"
+    ],
+    "auc": 0.5272,
+    "brier": 0.229,
+    "accuracy": 0.6442,
+    "trained_at": "2026-07-13T08:26:17.964088-05:00",
+    "feature_importance_top10": {
+      "sp_era_gap": 0.531036,
+      "opp_sp_era_gap": 0.457732,
+      "opp_woba_gap": 0.005644,
+      "team_woba_gap": 0.005588,
+      "home_advantage": 0.0,
+      "sp_k_pct": 0.0,
+      "opp_sp_k_pct": 0.0,
+      "sp_bb_pct": 0.0,
+      "opp_sp_bb_pct": 0.0
+    }
+  },
+  "xgboost": {
+    "sport": "mlb",
+    "bet_type": "spread",
+    "source": "historical",
+    "feature_cols": [
+      "sp_era_gap",
+      "opp_sp_era_gap",
+      "team_woba_gap",
+      "opp_woba_gap",
+      "home_advantage",
+      "sp_k_pct",
+      "opp_sp_k_pct",
+      "sp_bb_pct",
+      "opp_sp_bb_pct"
+    ],
+    "auc": 0.5171,
+    "brier": 0.2291,
+    "accuracy": 0.6438,
+    "trained_at": "2026-07-13T08:26:17.964088-05:00",
+    "feature_importance_top10": {
+      "sp_era_gap": 0.313893,
+      "opp_sp_era_gap": 0.28507,
+      "opp_woba_gap": 0.214033,
+      "team_woba_gap": 0.187004,
+      "home_advantage": 0.0,
+      "sp_k_pct": 0.0,
+      "opp_sp_k_pct": 0.0,
+      "sp_bb_pct": 0.0,
+      "opp_sp_bb_pct": 0.0
+    }
+  },
+  "lightgbm": {
+    "sport": "mlb",
+    "bet_type": "spread",
+    "source": "historical",
+    "feature_cols": [
+      "sp_era_gap",
+      "opp_sp_era_gap",
+      "team_woba_gap",
+      "opp_woba_gap",
+      "home_advantage",
+      "sp_k_pct",
+      "opp_sp_k_pct",
+      "sp_bb_pct",
+      "opp_sp_bb_pct"
+    ],
+    "auc": 0.5141,
+    "brier": 0.2292,
+    "accuracy": 0.6438,
+    "trained_at": "2026-07-13T08:26:17.964088-05:00",
+    "feature_importance_top10": {
+      "opp_sp_era_gap": 0.489128,
+      "sp_era_gap": 0.441492,
+      "team_woba_gap": 0.062916,
+      "opp_woba_gap": 0.006463,
+      "home_advantage": 0.0,
+      "sp_k_pct": 0.0,
+      "opp_sp_k_pct": 0.0,
+      "sp_bb_pct": 0.0,
+      "opp_sp_bb_pct": 0.0
+    }
+  },
+  "logistic_regression": {
+    "sport": "mlb",
+    "bet_type": "spread",
+    "source": "historical",
+    "feature_cols": [
+      "sp_era_gap",
+      "opp_sp_era_gap",
+      "team_woba_gap",
+      "opp_woba_gap",
+      "home_advantage",
+      "sp_k_pct",
+      "opp_sp_k_pct",
+      "sp_bb_pct",
+      "opp_sp_bb_pct"
+    ],
+    "auc": 0.5411,
+    "brier": 0.2289,
+    "accuracy": 0.645,
+    "trained_at": "2026-07-13T08:26:17.964088-05:00",
+    "feature_importance_top10": {
+      "sp_era_gap": 0.736878,
+      "opp_sp_era_gap": 0.237216,
+      "team_woba_gap": 0.012953,
+      "opp_woba_gap": 0.012953,
+      "home_advantage": 0.0,
+      "sp_k_pct": 0.0,
+      "opp_sp_k_pct": 0.0,
+      "sp_bb_pct": 0.0,
+      "opp_sp_bb_pct": 0.0
+    }
+  }
+}

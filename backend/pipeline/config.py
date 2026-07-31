@@ -4,7 +4,18 @@ Central configuration for the Sports Betting Analytics pipeline.
 Reads all secrets and settings from environment variables with sensible defaults.
 """
 
-import os
+import os, pathlib as _pl
+
+# Load .env from backend root for standalone scripts (systemd uses EnvironmentFile)
+_env_path = _pl.Path(__file__).parent.parent / ".env"
+if _env_path.exists():
+    with open(_env_path) as _f:
+        for _line in _f:
+            _line = _line.strip()
+            if _line and not _line.startswith("#") and "=" in _line:
+                _k, _, _v = _line.partition("=")
+                os.environ.setdefault(_k.strip(), _v.strip())
+
 from datetime import datetime
 
 import pytz

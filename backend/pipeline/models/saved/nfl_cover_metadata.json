@@ -1,0 +1,14 @@
+{
+  "n_train": 551,
+  "n_test": 138,
+  "accuracy": 0.4565,
+  "brier_score": 0.2585,
+  "roc_auc": 0.4771,
+  "trained_at": "2026-07-07T21:33:57.597478-05:00",
+  "feature_columns": [
+    "spread_close",
+    "total_close",
+    "rating_gap",
+    "is_division_game"
+  ]
+}

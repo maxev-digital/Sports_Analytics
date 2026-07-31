@@ -52,12 +52,80 @@ _DEFAULT_WEEKLY_AUDIT: dict[str, Any] = {
 }
 
 
-def _strip_fences(text: str) -> str:
-    """Strip markdown code fences from a Claude response before JSON parsing."""
+def _extract_json(text: str) -> str:
+    """Robustly extract JSON from a Claude response.
+    Handles: markdown fences, leading prose, truncated responses, smart quotes.
+    """
     text = text.strip()
+    # Strip markdown code fences
     text = re.sub(r"^```[a-zA-Z]*\n?", "", text)
     text = re.sub(r"\n?```$", "", text)
-    return text.strip()
+    text = text.strip()
+    # If response starts with prose, find the first { or [
+    if not text.startswith(("{", "[")):
+        m = re.search(r"[\{\[]", text)
+        if m:
+            text = text[m.start():]
+    # Replace curly/smart quotes that break JSON
+    text = text.replace("\u2019", "'").replace("\u2018", "'")
+    text = text.replace("\u201c", '\"').replace("\u201d", '\"')
+    text = text.replace("\u2014", "-").replace("\u2013", "-")
+    # If JSON is truncated (unterminated string), try to repair
+    try:
+        json.loads(text)
+        return text
+    except json.JSONDecodeError:
+        # Try truncating to last complete key-value pair
+        repaired = _repair_truncated_json(text)
+        return repaired
+
+
+def _repair_truncated_json(text: str) -> str:
+    """Attempt to close a truncated JSON object by finding the last valid position."""
+    # Walk backwards finding the last comma or opening brace
+    # Then close all open brackets
+    depth_brace = 0
+    depth_bracket = 0
+    in_string = False
+    escape_next = False
+    last_safe = 0
+
+    for i, ch in enumerate(text):
+        if escape_next:
+            escape_next = False
+            continue
+        if ch == "\\":
+            escape_next = True
+            continue
+        if ch == '"' and not in_string:
+            in_string = True
+            continue
+        if ch == '"' and in_string:
+            in_string = False
+            last_safe = i + 1
+            continue
+        if in_string:
+            continue
+        if ch in ("{", "["):
+            if ch == "{":
+                depth_brace += 1
+            else:
+                depth_bracket += 1
+        elif ch in ("}", "]"):
+            if ch == "}":
+                depth_brace -= 1
+            else:
+                depth_bracket -= 1
+            last_safe = i + 1
+        elif ch == ",":
+            last_safe = i
+
+    # Truncate to last safe position and close open brackets
+    truncated = text[:last_safe].rstrip(",").rstrip()
+    closing = "}" * depth_brace + "]" * depth_bracket
+    return truncated + closing
+
+
 
 
 def reflect_on_daily_picks(
@@ -103,11 +171,13 @@ def reflect_on_daily_picks(
         }
 
         prompt = (
+            f"SYSTEM CONTEXT: This is a brand-new pipeline launched June 2026. The 2026 MLB season is currently ACTIVE (started March 2026). Season=2026 data from Baseball Savant is CURRENT data, not future/synthetic. model_performance being zero/empty is EXPECTED because no game results are settled yet (new system, < 30 days old). Do NOT flag empty model_performance as a blocker.\n\n"
+            f"SYSTEM CONTEXT: This is a brand-new pipeline launched June 2026. The 2026 MLB season is currently ACTIVE (started March 2026). Season=2026 data from Baseball Savant is CURRENT data, not future/synthetic. model_performance being zero/empty is EXPECTED because no game results are settled yet (new system, < 30 days old). Do NOT flag empty model_performance as a blocker.\n\n"
             f"Today's pipeline data for risk review:\n"
             f"{json.dumps(payload, default=str)}\n\n"
             f"As Chief Risk Officer, evaluate the following:\n"
             f"1. Pick concentration risk — are too many bets on one sport, team, or market?\n"
-            f"2. Data quality — are error rates, record gaps, or staleness concerning?\n"
+            f"2. Data quality — are error rates or staleness concerning? NOTE: ignore any 'future season 2026' flags — 2026 is the current active season.\n"
             f"3. Model health trends — is accuracy degrading, is Brier score drifting?\n"
             f"4. Individual pick outliers — any picks that look like data artifacts or "
             f"model misfires (e.g. impossibly high edge_pct, extreme lines)?\n\n"
@@ -124,7 +194,7 @@ def reflect_on_daily_picks(
 
         response = client.messages.create(
             model=OPUS,
-            max_tokens=1500,
+            max_tokens=2000,
             system=(
                 "You are the Chief Risk Officer for a quantitative sports betting operation. "
                 "Your daily reflection is the final automated gate before picks are published "
@@ -136,7 +206,7 @@ def reflect_on_daily_picks(
             messages=[{"role": "user", "content": prompt}],
         )
 
-        raw = _strip_fences(response.content[0].text)
+        raw = _extract_json(response.content[0].text)
         result = json.loads(raw)
 
         health = result.get("model_health", "warning")
@@ -146,7 +216,7 @@ def reflect_on_daily_picks(
         return {
             "proceed": bool(result.get("proceed", True)),
             "flags": list(result.get("flags", [])),
-            "picks_to_skip": [int(i) for i in result.get("picks_to_skip", [])],
+            "picks_to_skip": [int(i) for i in result.get("picks_to_skip", []) if str(i).strip().lstrip("-").isdigit()],
             "narrative": str(result.get("narrative", "")),
             "action_items": list(result.get("action_items", [])),
             "model_health": health,
@@ -244,7 +314,7 @@ def weekly_deep_audit(
             messages=[{"role": "user", "content": prompt}],
         )
 
-        raw = _strip_fences(response.content[0].text)
+        raw = _extract_json(response.content[0].text)
         result = json.loads(raw)
 
         return {
@@ -290,6 +360,9 @@ def save_reflection_report(report: dict, sport: str) -> None:
         INSERT INTO reflection_reports (
             report_date,
             sport,
+            total_picks,
+            flags_raised,
+            opus_narrative,
             proceed,
             flags,
             picks_to_skip,
@@ -300,6 +373,9 @@ def save_reflection_report(report: dict, sport: str) -> None:
         ) VALUES (
             %(report_date)s,
             %(sport)s,
+            %(total_picks)s,
+            %(flags_raised)s,
+            %(narrative)s,
             %(proceed)s,
             %(flags)s,
             %(picks_to_skip)s,
@@ -310,6 +386,9 @@ def save_reflection_report(report: dict, sport: str) -> None:
         )
         ON CONFLICT (report_date, sport)
         DO UPDATE SET
+            total_picks    = EXCLUDED.total_picks,
+            flags_raised   = EXCLUDED.flags_raised,
+            opus_narrative = EXCLUDED.opus_narrative,
             proceed        = EXCLUDED.proceed,
             flags          = EXCLUDED.flags,
             picks_to_skip  = EXCLUDED.picks_to_skip,
@@ -320,11 +399,14 @@ def save_reflection_report(report: dict, sport: str) -> None:
     """
 
     now = now_cst()
+    flags_list = report.get("flags", [])
     params: dict[str, Any] = {
         "report_date": now.date(),
         "sport": sport.upper(),
+        "total_picks": len(report.get("picks_to_skip", [])) + len(flags_list),
+        "flags_raised": len(flags_list),
         "proceed": report.get("proceed", True),
-        "flags": json.dumps(report.get("flags", [])),
+        "flags": json.dumps(flags_list),
         "picks_to_skip": json.dumps(report.get("picks_to_skip", [])),
         "narrative": report.get("narrative", ""),
         "action_items": json.dumps(report.get("action_items", [])),

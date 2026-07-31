@@ -5,6 +5,8 @@ Runs as a cron job every 30 min from 7 PM CST to 1 AM CST.
 Grades:
   ML picks   → winner field from ESPN
   Total picks → stored total_line vs actual total; fallback heuristic for missing lines
+  Spread picks → stored total_line (home spread) vs actual margin
+  Props picks → pitcher strikeout count from ESPN boxscore vs total_line (K line)
 Updates: predictions.status/result/pl_units, game_results, model_performance
 """
 
@@ -39,6 +41,8 @@ ESPN_TENNIS_ATP_SCOREBOARD = "https://site.api.espn.com/apis/site/v2/sports/tenn
 ESPN_TENNIS_WTA_SCOREBOARD = "https://site.api.espn.com/apis/site/v2/sports/tennis/wta/scoreboard"
 ESPN_TENNIS_V3_COMPS = "https://sports.core.api.espn.com/v2/sports/tennis/leagues/{league}/events/{event_id}/competitions"
 
+ESPN_MLB_SUMMARY = "https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/summary"
+
 SPORT_ESPN = {
     "mlb":         ESPN_MLB,
     "wnba":        ESPN_WNBA,
@@ -63,10 +67,95 @@ def _pl_units(odds: int, result: str) -> float:
 
 
 def _normalise_name(name: str) -> str:
-    """Lowercase, strip accents, collapse whitespace — for fuzzy team matching."""
+    """Lowercase, strip accents, collapse whitespace — for fuzzy team/player matching."""
     name = unicodedata.normalize("NFD", name)
     name = "".join(c for c in name if unicodedata.category(c) != "Mn")
     return re.sub(r"\s+", " ", name.lower().strip())
+
+
+def _extract_pitcher_name(reasoning: str) -> str | None:
+    """
+    Extract pitcher name from pick reasoning text.
+    Handles patterns like:
+      "...edge on Paul Skenes's strikeout over 6.5..."
+      "...on Jack Flaherty's strikeout over 5.5..."
+      "...pricing Nick Lodolo's strikeout total..."
+    """
+    if not reasoning:
+        return None
+    # Primary: any "Name's strikeout" pattern (works regardless of what precedes the name)
+    m = re.search(r"([A-Z][a-z]+(?:\s[A-Z][a-z'-]+)+)'s strikeout", reasoning)
+    if m:
+        return m.group(1).strip()
+    return None
+
+
+def _fetch_pitcher_ks(espn_id: str) -> dict[str, int]:
+    """
+    Fetch ESPN MLB game boxscore and return a dict of {normalised_name: strikeout_count}
+    for all pitchers who appeared in the game.
+    """
+    try:
+        resp = requests.get(ESPN_MLB_SUMMARY, params={"event": espn_id}, timeout=15)
+        resp.raise_for_status()
+        data = resp.json()
+    except Exception as exc:
+        logger.error("ESPN boxscore fetch failed for event=%s: %s", espn_id, exc)
+        return {}
+
+    result = {}
+    players = data.get("boxscore", {}).get("players", [])
+    for grp in players:
+        for sg in grp.get("statistics", []):
+            if not sg or sg.get("type") != "pitching":
+                continue
+            keys = sg.get("keys", [])
+            for ath in sg.get("athletes", []):
+                name = ath.get("athlete", {}).get("displayName", "")
+                if not name:
+                    continue
+                stats = dict(zip(keys, ath.get("stats", [])))
+                ks_raw = stats.get("strikeouts", "0")
+                try:
+                    ks = int(ks_raw)
+                except (ValueError, TypeError):
+                    ks = 0
+                result[_normalise_name(name)] = ks
+                logger.debug("Boxscore pitcher %s: %d Ks", name, ks)
+
+    logger.info("ESPN boxscore event=%s: %d pitchers found", espn_id, len(result))
+    return result
+
+
+def _find_pitcher_ks(pitcher_name: str, ks_map: dict[str, int]) -> int | None:
+    """
+    Look up a pitcher's strikeout count from the boxscore map.
+    Tries exact normalised match first, then last-name-only match.
+    Returns None if not found.
+    """
+    if not pitcher_name or not ks_map:
+        return None
+
+    norm = _normalise_name(pitcher_name)
+
+    # Exact match
+    if norm in ks_map:
+        return ks_map[norm]
+
+    # Partial match — pick name may be shorter than ESPN display name (e.g., "Felix A-A")
+    for espn_name, ks in ks_map.items():
+        if norm in espn_name or espn_name in norm:
+            return ks
+
+    # Last-name fallback
+    last = norm.split()[-1] if norm else ""
+    if last:
+        for espn_name, ks in ks_map.items():
+            espn_last = espn_name.split()[-1] if espn_name else ""
+            if last == espn_last:
+                return ks
+
+    return None
 
 
 def fetch_espn_scores(sport: str, game_date: date) -> list[dict]:
@@ -269,9 +358,9 @@ def _grade_pick(pick: dict, game: dict) -> tuple[str, float] | None:
 
     result values: 'win' | 'loss' | 'push' | 'needs_review'
     """
-    pick_side = pick["pick_side"]   # home | away | over | under | home_cover | away_cover
-    pick_type = pick["pick_type"]   # ml | total | spread
-    odds      = int(pick["market_odds"])
+    pick_side  = pick["pick_side"]   # home | away | over | under | home_cover | away_cover
+    pick_type  = pick["pick_type"]   # ml | total | spread | props
+    odds       = int(pick["market_odds"])
     total_line = pick.get("total_line")  # may be None for older picks
 
     if pick_type == "ml":
@@ -347,6 +436,54 @@ def _grade_pick(pick: dict, game: dict) -> tuple[str, float] | None:
         result = "push" if push else ("win" if covered else "loss")
         return result, _pl_units(odds, result)
 
+    elif pick_type == "props":
+        # Pitcher strikeout props — fetch ESPN boxscore to get actual K count.
+        # total_line = the strikeout line (e.g., 6.5)
+        # reasoning field contains the pitcher name (e.g., "...on Paul Skenes's strikeout...")
+        if total_line is None:
+            logger.warning("Props pick %s @ %s has no total_line stored",
+                           pick["away_team"], pick["home_team"])
+            return "needs_review", 0.0
+
+        espn_id = game.get("espn_id")
+        if not espn_id:
+            logger.warning("Props pick has no espn_id for boxscore fetch")
+            return "needs_review", 0.0
+
+        pitcher_name = _extract_pitcher_name(pick.get("reasoning", ""))
+        if not pitcher_name:
+            logger.warning("Could not extract pitcher name from reasoning for pick %s @ %s",
+                           pick["away_team"], pick["home_team"])
+            return "needs_review", 0.0
+
+        ks_map = _fetch_pitcher_ks(espn_id)
+        actual_ks = _find_pitcher_ks(pitcher_name, ks_map)
+
+        if actual_ks is None:
+            logger.warning("Pitcher '%s' not found in ESPN boxscore (event=%s). Available: %s",
+                           pitcher_name, espn_id, list(ks_map.keys()))
+            return "needs_review", 0.0
+
+        logger.info("Props grade: %s threw %d Ks vs line %.1f (%s)",
+                    pitcher_name, actual_ks, total_line, pick_side)
+
+        k_line = float(total_line)
+        if actual_ks > k_line:
+            actual_side = "over"
+        elif actual_ks < k_line:
+            actual_side = "under"
+        else:
+            actual_side = "push"
+
+        if actual_side == "push":
+            result = "push"
+        elif pick_side in ("over", "under"):
+            result = "win" if pick_side == actual_side else "loss"
+        else:
+            return None
+
+        return result, _pl_units(odds, result)
+
     return None
 
 
@@ -401,6 +538,8 @@ def _refresh_model_performance(cur):
 def grade_picks_for_date(grade_date: date | None = None) -> dict:
     """
     Main entry point. Grades all pending picks for grade_date (default: today CST).
+    Also retries any stale needs_review picks from the past 14 days (props may need
+    a separate boxscore fetch not tied to the grade_date).
     Returns summary dict.
     """
     if grade_date is None:
@@ -411,10 +550,10 @@ def grade_picks_for_date(grade_date: date | None = None) -> dict:
     conn = psycopg2.connect(DB_URL)
     cur  = conn.cursor()
 
-    # Fetch pending/needs_review picks for this date (needs_review picks may now have a line set)
+    # Primary query: pending/needs_review picks for this specific game date
     cur.execute("""
         SELECT id, sport, home_team, away_team, pick_side, pick_type,
-               market_odds, total_line, status
+               market_odds, total_line, status, reasoning
         FROM predictions
         WHERE status IN ('pending', 'needs_review')
           AND (game_time_cst::date = %s OR created_at_cst::date = %s)
@@ -422,72 +561,111 @@ def grade_picks_for_date(grade_date: date | None = None) -> dict:
     picks = [
         dict(zip(
             ["id","sport","home_team","away_team","pick_side","pick_type",
-             "market_odds","total_line","status"],
+             "market_odds","total_line","status","reasoning"],
             row
         ))
         for row in cur.fetchall()
     ]
 
-    if not picks:
-        logger.info("No pending picks for %s", grade_date)
+    # Secondary query: stale needs_review picks from the past 14 days not covered above
+    # These accumulate when props couldn't be graded on their original date.
+    cur.execute("""
+        SELECT id, sport, home_team, away_team, pick_side, pick_type,
+               market_odds, total_line, status, reasoning,
+               game_time_cst::date AS game_date
+        FROM predictions
+        WHERE status = 'needs_review'
+          AND game_time_cst::date != %s
+          AND game_time_cst::date >= CURRENT_DATE - INTERVAL '14 days'
+    """, (grade_date,))
+    stale_rows = cur.fetchall()
+    stale_picks_by_date: dict[date, list[dict]] = {}
+    for row in stale_rows:
+        p = dict(zip(
+            ["id","sport","home_team","away_team","pick_side","pick_type",
+             "market_odds","total_line","status","reasoning","_game_date"],
+            row
+        ))
+        gd = p.pop("_game_date")
+        stale_picks_by_date.setdefault(gd, []).append(p)
+
+    if not picks and not stale_picks_by_date:
+        logger.info("No pending picks for %s and no stale needs_review", grade_date)
         conn.close()
         return {"date": str(grade_date), "graded": 0, "skipped": 0}
 
-    logger.info("Found %d pending picks for %s", len(picks), grade_date)
+    logger.info("Found %d pending picks for %s + %d stale needs_review across %d dates",
+                len(picks), grade_date, len(stale_rows), len(stale_picks_by_date))
 
-    # Group picks by sport and fetch ESPN scores once per sport
-    sports = list({p["sport"] for p in picks})
-    espn_by_sport: dict[str, list[dict]] = {}
-    for sport in sports:
-        espn_by_sport[sport] = fetch_espn_scores(sport, grade_date)
+    def _process_picks(pick_list: list[dict], target_date: date) -> tuple[int, int, int]:
+        """Grade a list of picks for target_date. Returns (graded, skipped, needs_review)."""
+        sports = list({p["sport"] for p in pick_list})
+        espn_by_sport: dict[str, list[dict]] = {}
+        for sport in sports:
+            espn_by_sport[sport] = fetch_espn_scores(sport, target_date)
 
-    graded = skipped = needs_review = 0
+        graded = skipped = nr = 0
+        for pick in pick_list:
+            games = espn_by_sport.get(pick["sport"], [])
+            final_games = [g for g in games if g["final"]]
 
-    for pick in picks:
-        games = espn_by_sport.get(pick["sport"], [])
-        final_games = [g for g in games if g["final"]]
+            game = _match_pick_to_game(pick, final_games)
+            if game is None:
+                logger.debug("No final result for pick %d: %s @ %s",
+                             pick["id"], pick["away_team"], pick["home_team"])
+                skipped += 1
+                continue
 
-        game = _match_pick_to_game(pick, final_games)
-        if game is None:
-            # Game not final yet or not found
-            logger.debug("No final result for pick %d: %s @ %s",
-                         pick["id"], pick["away_team"], pick["home_team"])
-            skipped += 1
-            continue
+            grade = _grade_pick(pick, game)
+            if grade is None:
+                logger.warning("Could not grade pick %d (type=%s side=%s)",
+                               pick["id"], pick["pick_type"], pick["pick_side"])
+                skipped += 1
+                continue
 
-        grade = _grade_pick(pick, game)
-        if grade is None:
-            logger.warning("Could not grade pick %d (type=%s side=%s)",
-                           pick["id"], pick["pick_type"], pick["pick_side"])
-            skipped += 1
-            continue
+            result, pl = grade
+            if result == "needs_review":
+                nr += 1
+                cur.execute(
+                    "UPDATE predictions SET status='needs_review' WHERE id=%s",
+                    (pick["id"],)
+                )
+                logger.info("Pick %d (%s @ %s %s %s) → needs_review",
+                            pick["id"], pick["away_team"], pick["home_team"],
+                            pick["pick_side"], pick["pick_type"])
+            else:
+                cur.execute(
+                    "UPDATE predictions SET status=%s, result=%s, pl_units=%s WHERE id=%s",
+                    (result, result, pl, pick["id"])
+                )
+                logger.info("Pick %d (%s @ %s %s %s) → %s (P/L: %+.2f units)",
+                            pick["id"], pick["away_team"], pick["home_team"],
+                            pick["pick_side"], pick["pick_type"], result, pl)
+                graded += 1
 
-        result, pl = grade
-        if result == "needs_review":
-            needs_review += 1
-            cur.execute(
-                "UPDATE predictions SET status='needs_review' WHERE id=%s",
-                (pick["id"],)
-            )
-            logger.info("Pick %d (%s @ %s %s %s) → needs_review (total=%d, no line)",
-                        pick["id"], pick["away_team"], pick["home_team"],
-                        pick["pick_side"], pick["pick_type"],
-                        game["total_score"])
-        else:
-            cur.execute(
-                "UPDATE predictions SET status=%s, result=%s, pl_units=%s WHERE id=%s",
-                (result, result, pl, pick["id"])
-            )
-            logger.info("Pick %d (%s @ %s %s %s) → %s (P/L: %+.2f units)",
-                        pick["id"], pick["away_team"], pick["home_team"],
-                        pick["pick_side"], pick["pick_type"], result, pl)
-            graded += 1
+            _upsert_game_result(cur, pick["sport"], game, target_date)
 
-        # Store game result
-        _upsert_game_result(cur, pick["sport"], game, grade_date)
+        return graded, skipped, nr
+
+    total_graded = total_skipped = total_nr = 0
+
+    # Grade today's date picks
+    if picks:
+        g, s, n = _process_picks(picks, grade_date)
+        total_graded += g
+        total_skipped += s
+        total_nr += n
+
+    # Retry stale needs_review picks on their original game dates
+    for stale_date, stale_picks in stale_picks_by_date.items():
+        logger.info("Retrying %d stale needs_review picks for game date %s", len(stale_picks), stale_date)
+        g, s, n = _process_picks(stale_picks, stale_date)
+        total_graded += g
+        total_skipped += s
+        total_nr += n
 
     # Refresh model performance after grading
-    if graded > 0:
+    if total_graded > 0:
         _refresh_model_performance(cur)
 
     conn.commit()
@@ -495,9 +673,9 @@ def grade_picks_for_date(grade_date: date | None = None) -> dict:
 
     summary = {
         "date":         str(grade_date),
-        "graded":       graded,
-        "needs_review": needs_review,
-        "skipped":      skipped,
+        "graded":       total_graded,
+        "needs_review": total_nr,
+        "skipped":      total_skipped,
     }
     logger.info("Grading complete: %s", summary)
     return summary

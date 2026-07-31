@@ -322,12 +322,14 @@ async def get_statcast_batting(
 
     players = []
     for row in rows:
-        name = f"{row.get('first_name','').strip()} {row.get('last_name','').strip()}".strip()
-        if not name:
-            name = row.get('player_name', row.get('name', ''))
+        name = row.get('last_name, first_name', '')
+        if ', ' in name:
+            parts = name.split(', ', 1)
+            name = f'{parts[1]} {parts[0]}'
+        name = name.strip()
         players.append({
             'name':      name,
-            'team':      row.get('team_name', row.get('team', '')),
+            'team':      row.get('team_name', row.get('team_abbrev', row.get('team', ''))),
             'pa':        _safe_int(row.get('pa')),
             'ba':        _safe_float(row.get('ba')),
             'xBA':       _safe_float(row.get('est_ba')),

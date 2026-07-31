@@ -25,12 +25,75 @@ _DEFAULT_RECORD_RESULT: dict[str, Any] = {"valid": True, "flags": [], "severity"
 _DEFAULT_ODDS_RESULT: dict[str, Any] = {"valid": True, "flags": [], "severity": "ok"}
 
 
-def _strip_fences(text: str) -> str:
-    """Strip markdown code fences from a Claude response before JSON parsing."""
+def _extract_json(text: str) -> str:
+    """Robustly extract JSON from a Claude response.
+    Handles: markdown fences, leading prose, truncated responses, smart quotes.
+    """
     text = text.strip()
+    # Strip markdown code fences
     text = re.sub(r"^```[a-zA-Z]*\n?", "", text)
     text = re.sub(r"\n?```$", "", text)
-    return text.strip()
+    text = text.strip()
+    # If response starts with prose, find the first { or [
+    if not text.startswith(("{", "[")):
+        m = re.search(r"[\{\[]", text)
+        if m:
+            text = text[m.start():]
+    # Replace curly/smart quotes that break JSON
+    text = text.replace("’", "'").replace("‘", "'")
+    text = text.replace("“", '"').replace("”", '"')
+    text = text.replace("—", "-").replace("–", "-")
+    # If JSON is truncated (unterminated string), try to repair
+    try:
+        json.loads(text)
+        return text
+    except json.JSONDecodeError:
+        # Try truncating to last complete key-value pair
+        repaired = _repair_truncated_json(text)
+        return repaired
+
+
+def _repair_truncated_json(text: str) -> str:
+    """Attempt to close a truncated JSON object by finding the last valid position."""
+    depth_brace = 0
+    depth_bracket = 0
+    in_string = False
+    escape_next = False
+    last_safe = 0
+
+    for i, ch in enumerate(text):
+        if escape_next:
+            escape_next = False
+            continue
+        if ch == "\\":
+            escape_next = True
+            continue
+        if ch == '"' and not in_string:
+            in_string = True
+            continue
+        if ch == '"' and in_string:
+            in_string = False
+            last_safe = i + 1
+            continue
+        if in_string:
+            continue
+        if ch in ("{", "["):
+            if ch == "{":
+                depth_brace += 1
+            else:
+                depth_bracket += 1
+        elif ch in ("}", "]"):
+            if ch == "}":
+                depth_brace -= 1
+            else:
+                depth_bracket -= 1
+            last_safe = i + 1
+        elif ch == ",":
+            last_safe = i
+
+    truncated = text[:last_safe].rstrip(",").rstrip()
+    closing = "}" * depth_brace + "]" * depth_bracket
+    return truncated + closing
 
 
 def validate_statcast_record(record: dict) -> dict:
@@ -45,9 +108,9 @@ def validate_statcast_record(record: dict) -> dict:
 
     Returns:
         dict with keys:
-            valid    (bool)                   – True if the record passes validation.
-            flags    (list[str])              – Human-readable issue descriptions.
-            severity ('ok'|'warning'|'error') – Worst-case severity across flags.
+            valid    (bool)                   - True if the record passes validation.
+            flags    (list[str])              - Human-readable issue descriptions.
+            severity ('ok'|'warning'|'error') - Worst-case severity across flags.
         On any API or parse error, returns the safe default
         ``{valid: True, flags: [], severity: 'ok'}`` so the pipeline continues.
     """
@@ -61,14 +124,16 @@ def validate_statcast_record(record: dict) -> dict:
             f"exit_velocity < 0 or > 130, spin_rate < 0 or > 4000\n"
             f"- Statistical impossibilities (e.g. whiff_rate > 1.0)\n\n"
             f"Respond with ONLY valid JSON, no markdown fences:\n"
-            f'{{ "valid": true, "flags": [], "severity": "ok" }}'
+            '{ "valid": true, "flags": [], "severity": "ok" }'
         )
 
         response = client.messages.create(
             model=HAIKU,
-            max_tokens=200,
+            max_tokens=400,
             system=(
                 "You are a sports data quality analyst specializing in Statcast baseball metrics. "
+                "The current year is 2026. The 2026 MLB season is live and active — "
+                "records with season=2026 or game_date in 2026 are CURRENT, not future data. "
                 "Detect anomalous, impossible, or missing values in raw data records. "
                 "Be strict about data integrity. "
                 "Return ONLY valid JSON with no explanation, no markdown, no extra keys."
@@ -76,7 +141,7 @@ def validate_statcast_record(record: dict) -> dict:
             messages=[{"role": "user", "content": prompt}],
         )
 
-        raw = _strip_fences(response.content[0].text)
+        raw = _extract_json(response.content[0].text)
         result = json.loads(raw)
 
         severity = result.get("severity", "ok")
@@ -91,7 +156,7 @@ def validate_statcast_record(record: dict) -> dict:
 
     except anthropic.APIStatusError as exc:
         logger.error(
-            "Haiku API error validating statcast record: HTTP %s – %s",
+            "Haiku API error validating statcast record: HTTP %s - %s",
             exc.status_code,
             exc.message,
         )
@@ -111,65 +176,85 @@ def validate_game_odds(game: dict) -> dict:
     """
     Use Claude Haiku to validate a live odds snapshot for a game.
 
-    Flags odds that appear stale, manipulated, or from a data-feed error:
-    - Vig exceeding 8% (implied prob sum > 1.08)
-    - Implied probability sum exceeding 1.15 (over 15% juice)
-    - No bookmakers listed
-    - Missing home/away teams
-    - Negative or zero odds values
-
-    Args:
-        game: Odds snapshot dict containing at minimum ``home_team``,
-              ``away_team``, ``bookmakers``, and ``market_lines``.
-
-    Returns:
-        dict with keys:
-            valid    (bool)                   – True if odds appear clean.
-            flags    (list[str])              – Descriptions of issues found.
-            severity ('ok'|'warning'|'error') – Worst-case severity.
-        On any API or parse error, returns the safe default (valid=True).
+    Returns only numeric/boolean/enum fields — no free-text string arrays
+    that could contain colons or commas causing JSON parse failures.
+    Flag descriptions are built from numeric values in Python.
     """
     try:
+        home = game.get("home_team", "")
+        away = game.get("away_team", "")
+        bookmakers = game.get("bookmakers", [])
+        bk_count = len(bookmakers)
+        ml = game.get("market_lines", {})
+        home_price = ml.get("home_ml") or ml.get("h2h_home")
+        away_price = ml.get("away_ml") or ml.get("h2h_away")
+        # Fallback: pull ML prices from bookmakers if market_lines absent (WNBA/NBA)
+        if home_price is None and bookmakers:
+            for bk in bookmakers:
+                markets = bk.get("markets", {})
+                if not isinstance(markets, dict):
+                    continue
+                h2h = markets.get("h2h", [])
+                home_out = next((o for o in h2h if o.get("name") == home), None)
+                away_out = next((o for o in h2h if o.get("name") == away), None)
+                if home_out and away_out:
+                    home_price = home_out.get("price")
+                    away_price = away_out.get("price")
+                    break
+
         prompt = (
-            f"Validate this sports betting odds record for data quality issues.\n\n"
-            f"Game data: {json.dumps(game, default=str)}\n\n"
-            f"Flag as issues:\n"
-            f"- Vig > 8% (implied probability sum > 1.08) → severity: warning\n"
-            f"- Implied probability sum > 1.15 (extreme juice) → severity: error\n"
-            f"- No bookmakers listed → severity: error\n"
-            f"- Missing home_team or away_team → severity: error\n"
-            f"- Negative or zero odds values → severity: error\n\n"
-            f"Respond with ONLY valid JSON, no markdown fences:\n"
-            f'{{ "valid": true, "flags": [], "severity": "ok" }}'
+            "Validate these betting odds for data quality.\n"
+            f"home_team present: {bool(home)}\n"
+            f"away_team present: {bool(away)}\n"
+            f"bookmaker_count: {bk_count}\n"
+            f"home_ml: {home_price}\n"
+            f"away_ml: {away_price}\n\n"
+            "Return ONLY this JSON with no other text:\n"
+            '{"valid": true, "implied_prob_sum": 1.05, "severity": "ok"}\n'
+            "severity must be exactly ok or warning or error.\n"
+            "valid is false only when severity is error."
         )
 
         response = client.messages.create(
             model=HAIKU,
-            max_tokens=150,
+            max_tokens=80,
             system=(
-                "You are a sports betting data analyst checking live odds feeds for integrity. "
-                "Detect stale data, feed errors, extreme vig, and missing bookmakers. "
-                "Return ONLY valid JSON with no explanation and no markdown."
+                "You are a betting odds validator. "
+                "Return ONLY a single JSON object with keys: valid (bool), "
+                "implied_prob_sum (float), severity (ok/warning/error). "
+                "No markdown. No explanation. No arrays. No extra keys."
             ),
             messages=[{"role": "user", "content": prompt}],
         )
 
-        raw = _strip_fences(response.content[0].text)
+        raw = _extract_json(response.content[0].text)
         result = json.loads(raw)
 
         severity = result.get("severity", "ok")
         if severity not in ("ok", "warning", "error"):
             severity = "ok"
 
+        # Build flag descriptions from numeric results — no free-text from model
+        flags: list[str] = []
+        ips = float(result.get("implied_prob_sum", 1.0))
+        if ips > 1.15:
+            flags.append(f"Extreme vig: implied_prob_sum={ips:.3f}")
+        elif ips > 1.08:
+            flags.append(f"High vig: implied_prob_sum={ips:.3f}")
+        if bk_count == 0:
+            flags.append("No bookmakers")
+        if not home or not away:
+            flags.append("Missing team name(s)")
+
         return {
             "valid": bool(result.get("valid", True)),
-            "flags": list(result.get("flags", [])),
+            "flags": flags,
             "severity": severity,
         }
 
     except anthropic.APIStatusError as exc:
         logger.error(
-            "Haiku API error validating game odds: HTTP %s – %s",
+            "Haiku API error validating game odds: HTTP %s - %s",
             exc.status_code,
             exc.message,
         )

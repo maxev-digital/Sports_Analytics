@@ -23,7 +23,7 @@ Pick dict schema (both functions return this structure)
   'away_team'           : str,
   'game_time_cst'       : str,
   'pick_side'           : 'over'|'under'|'home'|'away',
-  'pick_type'           : 'total'|'spread',
+  'pick_type'           : 'total'|'spread'|'ml',
   'our_probability'     : float,
   'market_odds'         : int,
   'market_implied_prob' : float,
@@ -126,7 +126,7 @@ def _build_pick(
     """Assemble a standardised WNBA pick dict."""
     return {
         "sport": "wnba",
-        "game_id": game.get("id", ""),
+        "game_id": game.get("game_id", game.get("id", "")),
         "home_team": game.get("home_team", ""),
         "away_team": game.get("away_team", ""),
         "game_time_cst": game_time_cst,
@@ -138,6 +138,7 @@ def _build_pick(
         "edge_pct": round((our_prob - market_implied) * 100, 2),
         "detector": detector,
         "features": features,
+        "total_line": features.get("total_line"),
     }
 
 
@@ -187,12 +188,16 @@ def fetch_wnba_team_stats() -> dict:
 
     result: dict = {}
 
+    # Unwrap {"teams": [...]} envelope format from the internal ESPN endpoint
+    if isinstance(data, dict) and "teams" in data and isinstance(data["teams"], list):
+        data = data["teams"]
+
     if isinstance(data, list):
         for entry in data:
             if not isinstance(entry, dict):
                 continue
             name = entry.get("team") or entry.get("name") or ""
-            abbrev = entry.get("abbreviation") or entry.get("abbrev") or ""
+            abbrev = entry.get("abbreviation") or entry.get("abbrev") or entry.get("abbr") or ""
             # Normalise homeRecord / roadRecord → plain win rates if only strings
             entry = _normalise_team_record(entry)
             if name:
@@ -330,7 +335,7 @@ def generate_wnba_picks(min_edge: Optional[float] = None) -> list[dict]:
         # ── TOTALS market ──────────────────────────────────────────────────
         if total_models:
             try:
-                total_data = extract_consensus_line(bookmakers, "totals")
+                total_data = extract_consensus_line(game, "totals")
                 if total_data:
                     total_point = total_data.get("point")
                     over_odds = total_data.get("over_odds")
@@ -386,7 +391,7 @@ def generate_wnba_picks(min_edge: Optional[float] = None) -> list[dict]:
         # ── SPREADS market ─────────────────────────────────────────────────
         if spread_models:
             try:
-                spread_data = extract_consensus_line(bookmakers, "spreads")
+                spread_data = extract_consensus_line(game, "spreads")
                 if spread_data:
                     home_spread = spread_data.get("home_point")   # e.g. -5.5
                     home_spread_odds = spread_data.get("home_odds")
@@ -547,9 +552,23 @@ def rule_based_wnba_edges(min_edge: float = 3.0) -> list[dict]:
                 away_net = float(away_ppg) - float(away_papg)
                 net_diff = home_net - away_net  # positive = home dominates
 
-                spread_data = extract_consensus_line(bookmakers, "spreads")
+                spread_data = extract_consensus_line(game, "spreads")
+                # extract_consensus_line doesn't return the point value; pull from raw bookmakers
+                home_point = None
+                for _bk in bookmakers:
+                    _markets = _bk.get("markets", {})
+                    if not isinstance(_markets, dict):
+                        continue
+                    _outcomes = _markets.get("spreads", [])
+                    _home_out = next((o for o in _outcomes if o.get("name") == home_team), None)
+                    if _home_out and _home_out.get("point") is not None:
+                        try:
+                            home_point = float(_home_out["point"])
+                        except (TypeError, ValueError):
+                            pass
+                        break
+
                 if spread_data:
-                    home_point = spread_data.get("home_point")   # e.g. -3.5 or +3.5
                     home_spread_odds = spread_data.get("home_odds")
                     away_spread_odds = spread_data.get("away_odds")
 
@@ -614,7 +633,7 @@ def rule_based_wnba_edges(min_edge: float = 3.0) -> list[dict]:
                 away_team, home_team, exc,
             )
 
-        # ── Detector 2: Vig-Removed Multi-Book ────────────────────────────
+        # ── Detector 2: Vig-Removed Multi-Book (Totals + Spreads) ────────
         try:
             for market_key, pick_type in [("totals", "total"), ("spreads", "spread")]:
                 if not bookmakers:
@@ -624,50 +643,51 @@ def rule_based_wnba_edges(min_edge: float = 3.0) -> list[dict]:
 
                 for bk in bookmakers:
                     bk_key = bk.get("key", "unknown")
-                    for mkt in bk.get("markets", []):
-                        if mkt.get("key") != market_key:
-                            continue
-                        outcomes = mkt.get("outcomes", [])
-                        if not outcomes:
-                            continue
+                    # markets is a dict {market_key: [outcomes]} after _normalise_bookmakers
+                    markets_dict = bk.get("markets", {})
+                    if not isinstance(markets_dict, dict):
+                        continue
+                    outcomes = markets_dict.get(market_key, [])
+                    if not outcomes:
+                        continue
 
-                        if market_key == "totals":
-                            over_out = next(
-                                (o for o in outcomes if o.get("name") == "Over"), None
-                            )
-                            under_out = next(
-                                (o for o in outcomes if o.get("name") == "Under"), None
-                            )
-                            if over_out and under_out:
-                                oo = over_out.get("price", 0)
-                                uo = under_out.get("price", 0)
-                                if oo and uo:
-                                    ip = _american_to_implied(int(oo))
-                                    book_probs.append((bk_key, ip, int(oo)))
+                    if market_key == "totals":
+                        over_out = next(
+                            (o for o in outcomes if o.get("name") == "Over"), None
+                        )
+                        under_out = next(
+                            (o for o in outcomes if o.get("name") == "Under"), None
+                        )
+                        if over_out and under_out:
+                            oo = over_out.get("price", 0)
+                            uo = under_out.get("price", 0)
+                            if oo and uo:
+                                ip = _american_to_implied(int(oo))
+                                book_probs.append((bk_key, ip, int(oo)))
 
-                        elif market_key == "spreads":
-                            home_out = next(
-                                (
-                                    o for o in outcomes
-                                    if o.get("name") == home_team
-                                    or o.get("name", "").lower() == "home"
-                                ),
-                                None,
-                            )
-                            away_out = next(
-                                (
-                                    o for o in outcomes
-                                    if o.get("name") == away_team
-                                    or o.get("name", "").lower() == "away"
-                                ),
-                                None,
-                            )
-                            if home_out and away_out:
-                                ho = home_out.get("price", 0)
-                                ao = away_out.get("price", 0)
-                                if ho and ao:
-                                    ip = _american_to_implied(int(ho))
-                                    book_probs.append((bk_key, ip, int(ho)))
+                    elif market_key == "spreads":
+                        home_out = next(
+                            (
+                                o for o in outcomes
+                                if o.get("name") == home_team
+                                or o.get("name", "").lower() == "home"
+                            ),
+                            None,
+                        )
+                        away_out = next(
+                            (
+                                o for o in outcomes
+                                if o.get("name") == away_team
+                                or o.get("name", "").lower() == "away"
+                            ),
+                            None,
+                        )
+                        if home_out and away_out:
+                            ho = home_out.get("price", 0)
+                            ao = away_out.get("price", 0)
+                            if ho and ao:
+                                ip = _american_to_implied(int(ho))
+                                book_probs.append((bk_key, ip, int(ho)))
 
                 if len(book_probs) < 3:
                     continue
@@ -675,9 +695,17 @@ def rule_based_wnba_edges(min_edge: float = 3.0) -> list[dict]:
                 all_probs = [p for _, p, _ in book_probs]
                 consensus = float(np.mean(all_probs))
 
+                # Sanity guard: totals consensus outside 20%-80% means data error
+                if not (0.20 <= consensus <= 0.80):
+                    logger.debug(
+                        "[wnba_predictor] Multi-book skipping — consensus %.3f outside bounds",
+                        consensus,
+                    )
+                    continue
+
                 for bk_key, bk_prob, bk_odds in book_probs:
                     divergence = bk_prob - consensus
-                    if abs(divergence) >= _MULTIBOOK_PROB_DIVERGENCE and divergence < 0:
+                    if abs(divergence) >= _MULTIBOOK_PROB_DIVERGENCE and abs(divergence) < 0.15 and divergence < 0:
                         # This book has better odds (lower implied prob) than consensus
                         our_prob = consensus
                         edge_pct = (consensus - bk_prob) * 100
@@ -705,6 +733,92 @@ def rule_based_wnba_edges(min_edge: float = 3.0) -> list[dict]:
         except Exception as exc:
             logger.warning(
                 "[wnba_predictor] Multi-book detector failed for %s @ %s: %s",
+                away_team, home_team, exc,
+            )
+
+        # ── Detector 2b: Vig-Removed Multi-Book (H2H Moneyline) ──────────
+        try:
+            if bookmakers:
+                # Track home and away implied probs separately across all books
+                home_ml_probs: list[tuple[str, float, int]] = []
+                away_ml_probs: list[tuple[str, float, int]] = []
+
+                for bk in bookmakers:
+                    bk_key = bk.get("key", "unknown")
+                    markets_dict = bk.get("markets", {})
+                    if not isinstance(markets_dict, dict):
+                        continue
+                    outcomes = markets_dict.get("h2h", [])
+                    if not outcomes:
+                        continue
+
+                    home_out = next(
+                        (o for o in outcomes
+                         if o.get("name") == home_team
+                         or o.get("name", "").lower() == "home"),
+                        None,
+                    )
+                    away_out = next(
+                        (o for o in outcomes
+                         if o.get("name") == away_team
+                         or o.get("name", "").lower() == "away"),
+                        None,
+                    )
+
+                    if home_out and away_out:
+                        ho = home_out.get("price", 0)
+                        ao = away_out.get("price", 0)
+                        if ho and ao:
+                            home_ip = _american_to_implied(int(ho))
+                            away_ip = _american_to_implied(int(ao))
+                            home_ml_probs.append((bk_key, home_ip, int(ho)))
+                            away_ml_probs.append((bk_key, away_ip, int(ao)))
+
+                for pick_side, side_probs in [("home", home_ml_probs), ("away", away_ml_probs)]:
+                    if len(side_probs) < 3:
+                        continue
+
+                    all_probs = [p for _, p, _ in side_probs]
+                    consensus = float(np.mean(all_probs))
+
+                    # Sanity guard: skip extreme favourites or outlier data
+                    if not (0.20 <= consensus <= 0.80):
+                        continue
+
+                    for bk_key, bk_prob, bk_odds in side_probs:
+                        divergence = bk_prob - consensus
+                        # divergence < 0 means this book has LOWER implied prob = better odds
+                        if (
+                            divergence < 0
+                            and abs(divergence) >= _MULTIBOOK_PROB_DIVERGENCE
+                            and abs(divergence) < 0.15
+                        ):
+                            our_prob = consensus
+                            edge_pct = (consensus - bk_prob) * 100
+
+                            if edge_pct >= min_edge:
+                                picks.append(_build_pick(
+                                    game=game,
+                                    game_time_cst=game_time_cst,
+                                    pick_side=pick_side,
+                                    pick_type="ml",
+                                    our_prob=our_prob,
+                                    market_odds=bk_odds,
+                                    market_implied=bk_prob,
+                                    detector="rule_multibook_vig",
+                                    features={
+                                        "flagged_book": bk_key,
+                                        "book_implied_prob": round(bk_prob, 4),
+                                        "consensus_prob": round(consensus, 4),
+                                        "divergence_pct": round(abs(divergence) * 100, 2),
+                                        "market": "h2h",
+                                        "books_sampled": len(side_probs),
+                                    },
+                                ))
+
+        except Exception as exc:
+            logger.warning(
+                "[wnba_predictor] H2H multi-book detector failed for %s @ %s: %s",
                 away_team, home_team, exc,
             )
 

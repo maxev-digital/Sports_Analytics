@@ -16,7 +16,14 @@ Required Routes (per bulletproof spec):
 
 from fastapi import APIRouter, Query, HTTPException
 from datetime import datetime, timedelta
-from utils.timezone import get_cst_now, get_cst_today
+from zoneinfo import ZoneInfo as _ZI
+_CST = _ZI("America/Chicago")
+def get_cst_now():
+    from datetime import datetime
+    return datetime.now(_CST)
+def get_cst_today():
+    from datetime import datetime
+    return datetime.now(_CST).date()
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 import pandas as pd
@@ -293,233 +300,204 @@ async def get_model_performance(
     unit_size: int = Query(100),
     bankroll: int = Query(10000)
 ):
-    """
-    Returns FULLY FORMATTED model performance data.
-    Frontend should just render - no calculations.
-    """
+    """Returns model performance stats from PostgreSQL pipeline DB."""
+    import psycopg2
+    from psycopg2.extras import RealDictCursor
+    PG_DSN = "postgresql://maxev:maxev_sports@localhost:5432/maxev_sports"
     try:
-        # BULLETPROOF: Read from predictions.db results table - SINGLE SOURCE OF TRUTH
-        if not PREDICTIONS_DB.exists():
-            return {"error": "No data available", "generated_at": datetime.utcnow().isoformat()}
-
-        conn = sqlite3.connect(PREDICTIONS_DB)
-
-        # Calculate cutoff date
-        cutoff = (get_cst_now().replace(tzinfo=None) - timedelta(days=days)).strftime('%Y-%m-%d')
-
-        # Load results from database
+        conn = psycopg2.connect(PG_DSN)
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cutoff = (datetime.utcnow() - timedelta(days=days)).date()
         query = """
             SELECT
-                prediction_id, sport, bet_type, game_date,
-                away_team, home_team, predicted_value, market_value,
-                recommendation, confidence, result, profit_loss, model
-            FROM results
-            WHERE game_date >= ?
-              AND result IN ('WIN', 'LOSS', 'PUSH')
+                id::text AS prediction_id,
+                created_at_cst::date AS game_date,
+                sport,
+                pick_type AS bet_type,
+                detector AS model,
+                confidence_tier AS confidence,
+                status AS result,
+                COALESCE(pl_units, 0) AS pl_units,
+                edge_pct,
+                our_probability * 100 AS predicted_value,
+                market_implied_prob * 100 AS market_value,
+                pick_side AS recommendation,
+                away_team,
+                home_team
+            FROM predictions
+            WHERE created_at_cst::date >= %s
+              AND status IN ('win', 'loss', 'push')
         """
-        df = pd.read_sql_query(query, conn, params=[cutoff])
+        params = [cutoff]
+        if sport:
+            query += " AND LOWER(sport) = LOWER(%s)"
+            params.append(sport)
+        if bet_type:
+            _bt = {'totals': 'total', 'moneyline': 'ml', 'spreads': 'spread'}.get((bet_type or '').lower(), bet_type)
+            query += " AND LOWER(pick_type) = LOWER(%s)"
+            params.append(_bt)
+        if model:
+            query += " AND LOWER(detector) LIKE LOWER(%s)"
+            params.append(f"%{model}%")
+        cur.execute(query, params)
+        rows = cur.fetchall()
         conn.close()
 
-        df['game_date'] = pd.to_datetime(df['game_date'], format='mixed', errors='coerce')
+        empty_resp = {
+            "summary": {
+                "total_predictions": 0, "wins": 0, "losses": 0, "pushes": 0,
+                "win_rate": 0, "roi": 0, "avg_edge": 0, "units_won": 0,
+                "record": "0-0", "display_win_rate": "0%", "display_units": "0.00u",
+                "display_roi": "+0.0%", "pnl_dollars": 0, "display_pnl": "$0",
+                "time_period": f"Last {days} days"
+            },
+            "by_sport": {}, "by_model": {}, "by_confidence": {},
+            "history": [], "predictions": [], "predictions_total": 0,
+            "models": [{"name": "rule_multibook_vig", "description": "Multi-Book Vig Detector", "type": "rule"}],
+            "filters": {"sport": sport, "model": model, "bet_type": bet_type, "days": days},
+            "settings": {"unit_size": unit_size, "bankroll": bankroll},
+            "generated_at": datetime.utcnow().isoformat()
+        }
+        if not rows:
+            return empty_resp
 
-        # Add edge column for compatibility
-        if 'edge' not in df.columns:
-            df['edge'] = df['predicted_value'] - df['market_value']
-
-        # Apply filters
-        if sport:
-            df = df[df['sport'].str.lower() == sport.lower()]
-        if model:
-            df = df[df['model'].str.lower() == model.lower()]
-        if bet_type:
-            df = df[df['bet_type'].str.lower() == bet_type.lower()]
-
-        if len(df) == 0:
-            return {"error": "No data for selected filters", "generated_at": datetime.utcnow().isoformat()}
-
-        # Calculate metrics
-        total = len(df)
-        wins = len(df[df['result'] == 'WIN'])
-        losses = len(df[df['result'] == 'LOSS'])
-        pushes = len(df[df['result'] == 'PUSH'])
-        decided = wins + losses
-        win_rate = wins / decided if decided > 0 else 0
-
-        # Calculate P&L from filtered dataset (respects user's model selection)
-        capped_pnl = df['profit_loss'].clip(lower=-100, upper=500) if 'profit_loss' in df.columns else pd.Series([0])
-        units_won = capped_pnl.sum() / 100
-        roi = (units_won / total) if total > 0 else 0
-        avg_edge = df['edge'].abs().mean() if 'edge' in df.columns else 0
-        kelly = calculate_kelly(avg_edge)
+        total  = len(rows)
+        wins   = sum(1 for r in rows if r["result"] == "win")
+        losses = sum(1 for r in rows if r["result"] == "loss")
+        pushes = sum(1 for r in rows if r["result"] == "push")
+        decided   = wins + losses
+        win_rate  = wins / decided if decided > 0 else 0
+        units_won = sum(float(r["pl_units"] or 0) for r in rows)
+        roi       = (units_won / total) if total > 0 else 0
+        avg_edge  = sum(abs(float(r["edge_pct"] or 0)) for r in rows) / total if total > 0 else 0
         pnl_dollars = units_won * unit_size
 
-        # By sport breakdown
+        def _rec(w, l, p=0):
+            return f"{w}-{l}" + (f"-{p}" if p else "")
+
         by_sport = {}
-        for sport_name in df['sport'].dropna().unique():
-            s_df = df[df['sport'] == sport_name]
-            s_wins = len(s_df[s_df['result'] == 'WIN'])
-            s_losses = len(s_df[s_df['result'] == 'LOSS'])
-            s_pushes = len(s_df[s_df['result'] == 'PUSH'])
-            s_decided = s_wins + s_losses
-            s_wr = s_wins / s_decided if s_decided > 0 else 0
-            s_units = (s_df['profit_loss'].sum() / 100) if 'profit_loss' in s_df.columns else 0
-
-            by_sport[sport_name.upper()] = {
-                "total": len(s_df),
-                "wins": s_wins,
-                "losses": s_losses,
-                "pushes": s_pushes,
-                "record": format_record(s_wins, s_losses, s_pushes),
-                "win_rate": round(s_wr, 4),
-                "display_win_rate": format_percentage(s_wr),
-                "units": round(s_units, 2),
-                "display_units": format_units(s_units),
-                "roi": round((s_units / len(s_df)) if len(s_df) > 0 else 0, 4),
-                "display_roi": format_percentage((s_units / len(s_df)) * 100 if len(s_df) > 0 else 0, include_sign=True),
-                "pnl_dollars": round(s_units * unit_size, 0),
-                "display_pnl": format_money(s_units * unit_size)
+        for s in set(r["sport"] for r in rows if r["sport"]):
+            sr = [r for r in rows if r["sport"] == s]
+            sw = sum(1 for r in sr if r["result"] == "win")
+            sl = sum(1 for r in sr if r["result"] == "loss")
+            sp = sum(1 for r in sr if r["result"] == "push")
+            sd = sw + sl
+            su = sum(float(r["pl_units"] or 0) for r in sr)
+            by_sport[s.upper()] = {
+                "total": len(sr), "wins": sw, "losses": sl, "pushes": sp,
+                "record": _rec(sw, sl, sp),
+                "win_rate": round(sw / sd, 4) if sd > 0 else 0,
+                "display_win_rate": f"{round(sw/sd*100,1)}%" if sd > 0 else "0%",
+                "units": round(su, 2),
+                "roi": round(su / len(sr), 4) if sr else 0,
+                "pnl_dollars": round(su * unit_size, 0),
+                "display_pnl": f"{'+'if su>=0 else ''}${abs(su*unit_size):.0f}",
             }
 
-        # By model breakdown
         by_model = {}
-        for model_name in df['model'].dropna().unique():
-            m_df = df[df['model'] == model_name]
-            m_wins = len(m_df[m_df['result'] == 'WIN'])
-            m_losses = len(m_df[m_df['result'] == 'LOSS'])
-            m_pushes = len(m_df[m_df['result'] == 'PUSH'])
-            m_decided = m_wins + m_losses
-            m_wr = m_wins / m_decided if m_decided > 0 else 0
-            m_units = (m_df['profit_loss'].sum() / 100) if 'profit_loss' in m_df.columns else 0
-
-            by_model[model_name.lower()] = {
-                "total": len(m_df),
-                "wins": m_wins,
-                "losses": m_losses,
-                "pushes": m_pushes,
-                "record": format_record(m_wins, m_losses, m_pushes),
-                "win_rate": round(m_wr, 4),
-                "display_win_rate": format_percentage(m_wr),
-                "units": round(m_units, 2),
-                "display_units": format_units(m_units)
+        for m in set(r["model"] for r in rows if r["model"]):
+            mr = [r for r in rows if r["model"] == m]
+            mw = sum(1 for r in mr if r["result"] == "win")
+            ml_cnt = sum(1 for r in mr if r["result"] == "loss")
+            md = mw + ml_cnt
+            mu = sum(float(r["pl_units"] or 0) for r in mr)
+            by_model[m] = {
+                "total": len(mr), "wins": mw, "losses": ml_cnt,
+                "record": _rec(mw, ml_cnt),
+                "win_rate": round(mw / md, 4) if md > 0 else 0,
+                "display_win_rate": f"{round(mw/md*100,1)}%" if md > 0 else "0%",
+                "units": round(mu, 2),
             }
 
-        # By confidence breakdown
         by_confidence = {}
-        for conf in ['HIGH', 'MEDIUM', 'LOW']:
-            c_df = df[df['confidence'] == conf]
-            if len(c_df) > 0:
-                c_wins = len(c_df[c_df['result'] == 'WIN'])
-                c_losses = len(c_df[c_df['result'] == 'LOSS'])
-                c_pushes = len(c_df[c_df['result'] == 'PUSH'])
-                c_decided = c_wins + c_losses
-                c_wr = c_wins / c_decided if c_decided > 0 else 0
-
-                by_confidence[conf.lower()] = {
-                    "total": len(c_df),
-                    "wins": c_wins,
-                    "losses": c_losses,
-                    "pushes": c_pushes,
-                    "record": format_record(c_wins, c_losses, c_pushes),
-                    "win_rate": round(c_wr, 4),
-                    "display_win_rate": format_percentage(c_wr),
-                    "color": get_confidence_color(conf)
+        for conf in ["high", "medium", "low"]:
+            cr = [r for r in rows if (r["confidence"] or "").lower() == conf]
+            if cr:
+                cw = sum(1 for r in cr if r["result"] == "win")
+                cl_cnt = sum(1 for r in cr if r["result"] == "loss")
+                cd = cw + cl_cnt
+                by_confidence[conf] = {
+                    "total": len(cr), "wins": cw, "losses": cl_cnt,
+                    "record": _rec(cw, cl_cnt),
+                    "win_rate": round(cw / cd, 4) if cd > 0 else 0,
+                    "display_win_rate": f"{round(cw/cd*100,1)}%" if cd > 0 else "0%",
+                    "roi": 0,
+                    "color": "green" if conf == "high" else ("yellow" if conf == "medium" else "gray"),
                 }
 
-
-        # DAILY BREAKDOWN for charts (BULLETPROOF)
-        df['date'] = df['game_date'].dt.date
+        dates = sorted(set(str(r["game_date"]) for r in rows if r["game_date"]))
         history_data = []
-        cumulative_units = 0
-        
-        for date_val in sorted(df['date'].dropna().unique()):
-            day_df = df[df['date'] == date_val]
-            day_wins = len(day_df[day_df['result'] == 'WIN'])
-            day_losses = len(day_df[day_df['result'] == 'LOSS'])
-            day_decided = day_wins + day_losses
-            day_wr = day_wins / day_decided if day_decided > 0 else 0
-            day_units = (day_df['profit_loss'].sum() / 100) if 'profit_loss' in day_df.columns else 0
-            cumulative_units += day_units
-            
+        cum_units = 0
+        for d in dates:
+            dr = [r for r in rows if str(r["game_date"]) == d]
+            dw = sum(1 for r in dr if r["result"] == "win")
+            dl = sum(1 for r in dr if r["result"] == "loss")
+            dd = dw + dl
+            du = sum(float(r["pl_units"] or 0) for r in dr)
+            cum_units += du
             history_data.append({
-                "period": str(date_val),
-                "predictions": len(day_df),
-                "wins": day_wins,
-                "losses": day_losses,
-                "win_rate": round(day_wr, 4),
-                "daily_win_rate": round(day_wr, 4),
-                "roi": round((cumulative_units / total) if total > 0 else 0, 4),
-                "daily_roi": round((day_units / len(day_df)) if len(day_df) > 0 else 0, 4),
-                "units_won": round(cumulative_units, 2),
-                "pnl_dollars": round(cumulative_units * unit_size, 0)
+                "period": d,
+                "predictions": len(dr),
+                "wins": dw, "losses": dl,
+                "win_rate": round(dw / dd, 4) if dd > 0 else 0,
+                "daily_win_rate": round(dw / dd, 4) if dd > 0 else 0,
+                "roi": round(cum_units / total, 4) if total > 0 else 0,
+                "units_won": round(cum_units, 2),
+                "pnl_dollars": round(cum_units * unit_size, 0),
             })
-        
-        # RECENT PREDICTIONS for table (BULLETPROOF)
-        recent_preds = df.sort_values('game_date', ascending=False).head(50)
-        predictions_list = []
-        for _, row in recent_preds.iterrows():
-            predictions_list.append({
-                "prediction_id": row.get('prediction_id', ''),
-                "game_date": str(row.get('game_date', '')),
-                "sport": row.get('sport', ''),
-                "away_team": row.get('away_team', ''),
-                "home_team": row.get('home_team', ''),
-                "bet_type": row.get('bet_type', ''),
-                "predicted_value": round(float(row.get('predicted_value', 0)), 1),
-                "market_value": round(float(row.get('market_value', 0)), 1),
-                "edge": round(float(row.get('edge', 0)), 1),
-                "recommendation": row.get('recommendation', ''),
-                "confidence": row.get('confidence', ''),
-                "model": row.get('model', ''),
-                "result": row.get('result', 'PENDING'),
-                "profit_loss": int(row.get('profit_loss', 0))
+
+        preds_list = []
+        for r in sorted(rows, key=lambda x: str(x["game_date"]), reverse=True)[:50]:
+            preds_list.append({
+                "prediction_id": r["prediction_id"],
+                "game_date": str(r["game_date"]),
+                "sport": (r["sport"] or "").upper(),
+                "away_team": r["away_team"] or "",
+                "home_team": r["home_team"] or "",
+                "bet_type": r["bet_type"] or "",
+                "predicted_value": round(float(r["predicted_value"] or 0), 1),
+                "market_value": round(float(r["market_value"] or 0), 1),
+                "edge": round(float(r["edge_pct"] or 0), 2),
+                "recommendation": r["recommendation"] or "",
+                "confidence": (r["confidence"] or "medium").upper(),
+                "model": r["model"] or "rule_multibook_vig",
+                "result": (r["result"] or "pending").upper(),
+                "profit_loss": round(float(r["pl_units"] or 0) * unit_size, 2),
             })
-        
-        # MODELS LIST (BULLETPROOF)
-        models_list = [
-            {"name": "all", "description": "All Models Combined", "type": "meta"},
-            {"name": "ensemble", "description": "Neural Ensemble", "type": "deep_learning"},
-            {"name": "pytorch", "description": "PyTorch TabularNet", "type": "deep_learning"},
-            {"name": "catboost", "description": "CatBoost", "type": "ml"},
-            {"name": "xgboost", "description": "XGBoost", "type": "ml"},
-            {"name": "lightgbm", "description": "LightGBM", "type": "ml"},
-            {"name": "random_forest", "description": "Random Forest", "type": "ml"},
-            {"name": "linear", "description": "Linear Regression", "type": "baseline"}
-        ]
-        
+
         return {
             "summary": {
                 "total_predictions": total,
-                "wins": wins,
-                "losses": losses,
-                "pushes": pushes,
-                "record": format_record(wins, losses, pushes),
+                "wins": wins, "losses": losses, "pushes": pushes,
+                "record": _rec(wins, losses, pushes),
                 "win_rate": round(win_rate, 4),
-                "display_win_rate": format_percentage(win_rate),
+                "display_win_rate": f"{round(win_rate*100,1)}%",
                 "units_won": round(units_won, 2),
-                "display_units": format_units(units_won),
-                "roi": round(roi, 2),
-                "display_roi": format_percentage(roi, include_sign=True),
+                "display_units": f"{'+'if units_won>=0 else ''}{ units_won:.2f}u",
+                "roi": round(roi * 100, 2),
+                "display_roi": f"{'+'if roi>=0 else ''}{roi*100:.1f}%",
                 "pnl_dollars": round(pnl_dollars, 0),
-                "display_pnl": format_money(pnl_dollars),
+                "display_pnl": f"{'+'if pnl_dollars>=0 else ''}${abs(pnl_dollars):.0f}",
                 "avg_edge": round(avg_edge, 2),
-                "kelly": kelly,
-                "time_period": f"Last {days} days"
+                "time_period": f"Last {days} days",
             },
             "by_sport": by_sport,
             "by_model": by_model,
             "by_confidence": by_confidence,
             "history": history_data,
-            "predictions": predictions_list,
-            "predictions_total": len(df),
-            "models": models_list,
+            "predictions": preds_list,
+            "predictions_total": total,
+            "models": [{"name": "rule_multibook_vig", "description": "Multi-Book Vig Detector", "type": "rule"}],
             "filters": {"sport": sport, "model": model, "bet_type": bet_type, "days": days},
             "settings": {"unit_size": unit_size, "bankroll": bankroll},
-            "generated_at": datetime.utcnow().isoformat()
+            "generated_at": datetime.utcnow().isoformat(),
         }
-
     except Exception as e:
         logger.error(f"Error in model-performance: {e}")
         return {"error": str(e), "generated_at": datetime.utcnow().isoformat()}
+
+
+
 
 
 # ============================================================================
@@ -664,130 +642,99 @@ async def get_props_edges(
 @router.get("/historical-predictions")
 async def get_historical_predictions(
     sport: str = Query(None),
+    model: str = Query(None),
+    bet_type: str = Query(None),
     days: int = Query(7),
-    result: str = Query(None, description="WIN, LOSS, PUSH, or PENDING"),
+    result: str = Query(None, description="win, loss, push, or pending"),
     limit: int = Query(100)
 ):
-    """
-    Returns historical predictions - FULLY FORMATTED.
-    BULLETPROOF: Uses predictions.db as single source of truth
-    """
+    """Returns historical predictions from PostgreSQL pipeline DB."""
+    import psycopg2
+    from psycopg2.extras import RealDictCursor
+    PG_DSN = "postgresql://maxev:maxev_sports@localhost:5432/maxev_sports"
     try:
-        if not PREDICTIONS_DB.exists():
-            return {"predictions": [], "count": 0, "generated_at": datetime.utcnow().isoformat()}
+        conn = psycopg2.connect(PG_DSN)
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cutoff = (datetime.utcnow() - timedelta(days=days)).date()
 
-        # Connect to database
-        conn = sqlite3.connect(PREDICTIONS_DB)
-        
-        # Calculate cutoff date
-        cutoff = (get_cst_now().replace(tzinfo=None) - timedelta(days=days)).strftime('%Y-%m-%d')
-        
-        # Build query with filters
         query = """
             SELECT
-                r.prediction_id,
-                r.sport,
-                r.bet_type,
-                r.game_date,
-                r.away_team,
-                r.home_team,
-                r.predicted_value,
-                r.market_value,
-                r.recommendation,
-                r.confidence,
-                r.result,
-                r.profit_loss,
-                r.model,
-                (r.predicted_value - r.market_value) as edge
-            FROM results r
-            WHERE r.game_date >= ?
+                p.id::text AS prediction_id,
+                p.created_at_cst::date AS game_date,
+                p.game_time_cst AS game_time,
+                p.sport,
+                p.away_team,
+                p.home_team,
+                p.pick_type AS bet_type,
+                p.detector AS model,
+                p.our_probability * 100 AS predicted_value,
+                p.market_implied_prob * 100 AS market_value,
+                p.edge_pct AS edge,
+                p.pick_side AS recommendation,
+                p.confidence_tier AS confidence,
+                p.status AS result,
+                COALESCE(p.pl_units, 0) * 100 AS profit_loss,
+                p.market_odds,
+                gr.home_score,
+                gr.away_score,
+                gr.total AS actual_total
+            FROM predictions p
+            LEFT JOIN game_results gr ON
+                gr.sport = p.sport AND
+                gr.home_team = p.home_team AND
+                gr.away_team = p.away_team AND
+                gr.game_date_cst = p.created_at_cst::date
+            WHERE p.created_at_cst::date >= %s
         """
-        
         params = [cutoff]
-        
         if sport:
-            query += " AND UPPER(r.sport) = UPPER(?)"
+            query += " AND LOWER(p.sport) = LOWER(%s)"
             params.append(sport)
-        
+        if bet_type:
+            _bt = {'totals': 'total', 'moneyline': 'ml', 'spreads': 'spread'}.get((bet_type or '').lower(), bet_type)
+            query += " AND LOWER(p.pick_type) = LOWER(%s)"
+            params.append(_bt)
+        if model:
+            query += " AND LOWER(p.detector) LIKE LOWER(%s)"
+            params.append(f"%{model}%")
         if result:
-            query += " AND UPPER(r.result) = UPPER(?)"
+            query += " AND LOWER(p.status) = LOWER(%s)"
             params.append(result)
-        
-        query += " ORDER BY r.game_date DESC LIMIT ?"
+        query += " ORDER BY p.created_at_cst DESC LIMIT %s"
         params.append(limit)
-        
-        # Load data from database
-        df = pd.read_sql_query(query, conn, params=params)
+
+        cur.execute(query, params)
+        rows = cur.fetchall()
         conn.close()
-        
-        if len(df) == 0:
-            return {"predictions": [], "count": 0, "generated_at": datetime.utcnow().isoformat()}
-        
-        df['game_date'] = pd.to_datetime(df['game_date'], format='mixed', errors='coerce')
 
         predictions = []
-        for _, row in df.iterrows():
-            # Safely extract values with NULL handling
-            sport_val = safe_str_upper(row.get("sport"))
-            bet_type_val = safe_str_title(row.get("bet_type"))
-            confidence_val = safe_str_upper(row.get("confidence")) or "MEDIUM"
-            result_val = safe_str_upper(row.get("result"))
-
-            # Calculate proper edge percentage (not just point difference)
-            predicted_value = float(row.get("predicted_value") or 0)
-            market_value = float(row.get("market_value") or 0)
-
-            # For totals/spreads: edge is the difference in implied probabilities
-            # We approximate this using a simple heuristic based on how far off the prediction is
-            # A larger difference = higher edge
-            raw_diff = abs(predicted_value - market_value)
-
-            # Edge calculation:
-            # For totals/spreads at -110 odds, each point difference roughly = 2-3% edge
-            # This is a simplified model, but works for display purposes
-            if bet_type_val.lower() in ['totals', 'spreads']:
-                edge_pct = raw_diff * 2.5  # Points difference * 2.5% per point
-            else:  # Moneyline
-                # For moneylines, use profit_loss to infer edge
-                # This is already calculated with actual odds
-                edge_pct = abs(raw_diff) if raw_diff > 0 else 0
-
-            # Model probability (approximation based on confidence)
-            # HIGH confidence = 60-65%, MEDIUM = 55-60%, LOW = 52-55%
-            confidence_map = {
-                'HIGH': 0.625,
-                'MEDIUM': 0.575,
-                'LOW': 0.535
-            }
-            model_prob = confidence_map.get(confidence_val, 0.55)
-
-            # Calculate Kelly (using standard -110 odds for totals/spreads)
-            kelly_result = calculate_kelly(edge_pct, -110)
-
+        for row in rows:
+            result_raw = (row.get("result") or "pending").upper()
+            conf_raw   = (row.get("confidence") or "medium").upper()
             predictions.append({
-                "prediction_id": safe_str(row.get("prediction_id")),
-                "game_date": row["game_date"].strftime("%Y-%m-%d") if pd.notna(row.get("game_date")) else "",
-                "game_time": "",
-                "sport": sport_val,
-                "away_team": safe_str(row.get("away_team")),
-                "home_team": safe_str(row.get("home_team")),
-                "bet_type": bet_type_val,
-                "model": safe_str(row.get("model")) or "ensemble",
-                "predicted_value": predicted_value,
-                "market_value": market_value,
-                "edge": round(edge_pct, 2),  # Now percentage edge
-                "model_prob": round(model_prob * 100, 1),  # Model probability as percentage
-                "kelly": kelly_result["quarter"],  # Quarter Kelly (conservative)
-                "recommendation": safe_str(row.get("recommendation")),
-                "confidence": confidence_val,
-                "bet_placed": "",
-                "actual_total": float(row.get("actual_total") or 0) if pd.notna(row.get("actual_total")) else None,
-                "away_score": int(row.get("away_score") or 0) if pd.notna(row.get("away_score")) else None,
-                "home_score": int(row.get("home_score") or 0) if pd.notna(row.get("home_score")) else None,
-                "result": result_val if result_val else None,
-                "profit_loss": float(row.get("profit_loss") or 0),
-                "market_odds": None,
-                "odds_source": None
+                "prediction_id": row["prediction_id"],
+                "game_date": str(row["game_date"]) if row.get("game_date") else "",
+                "game_time": str(row["game_time"]) if row.get("game_time") else "",
+                "sport": (row.get("sport") or "").upper(),
+                "away_team": row.get("away_team") or "",
+                "home_team": row.get("home_team") or "",
+                "bet_type": row.get("bet_type") or "",
+                "model": row.get("model") or "rule_multibook_vig",
+                "predicted_value": round(float(row["predicted_value"] or 0), 1),
+                "market_value": round(float(row["market_value"] or 0), 1),
+                "edge": round(float(row["edge"] or 0), 2),
+                "model_prob": round(float(row["predicted_value"] or 0), 1),
+                "kelly": 0.0,
+                "recommendation": row.get("recommendation") or "",
+                "confidence": conf_raw,
+                "bet_placed": "Y" if result_raw not in ("PENDING",) else "N",
+                "actual_total": float(row["actual_total"]) if row.get("actual_total") is not None else None,
+                "away_score": int(row["away_score"]) if row.get("away_score") is not None else None,
+                "home_score": int(row["home_score"]) if row.get("home_score") is not None else None,
+                "result": result_raw if result_raw != "PENDING" else None,
+                "profit_loss": round(float(row["profit_loss"] or 0), 2),
+                "market_odds": int(row["market_odds"]) if row.get("market_odds") is not None else None,
+                "odds_source": "odds_api",
             })
 
         return {
@@ -796,10 +743,12 @@ async def get_historical_predictions(
             "filters": {"sport": sport, "days": days, "result": result},
             "generated_at": datetime.utcnow().isoformat()
         }
-
     except Exception as e:
         logger.error(f"Error in historical-predictions: {e}")
         return {"predictions": [], "count": 0, "error": str(e), "generated_at": datetime.utcnow().isoformat()}
+
+
+
 
 
 # ============================================================================

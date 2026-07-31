@@ -2,8 +2,13 @@
 print("=" * 80)
 print("LOADING main.py from:", __file__)
 print("=" * 80)
+import sys as _sys, os as _os
+_vendor_path = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "vendor")
+if _os.path.isdir(_vendor_path) and _vendor_path not in _sys.path:
+    _sys.path.insert(0, _vendor_path)
+
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import sys
@@ -66,6 +71,56 @@ def convert_numpy_types(obj):
     elif isinstance(obj, list):
         return [convert_numpy_types(item) for item in obj]
     return obj
+
+# Shared cache for serialized games — model_dump()+convert_numpy+json.dumps on 187 games takes ~12s;
+# cache as pre-serialized JSON bytes so FastAPI can skip its own serializer entirely.
+_GAMES_CACHE_TTL = 30  # seconds
+_games_serialized_cache = {"json_bytes": None, "list_data": None, "ts": 0.0, "count": 0}
+
+_SPORT_MAP = {
+    'basketball_nba': 'NBA', 'basketball_nba_preseason': 'NBA',
+    'basketball_ncaab': 'NCAAB', 'americanfootball_nfl': 'NFL',
+    'americanfootball_ncaaf': 'NCAAF', 'icehockey_nhl': 'NHL',
+    'baseball_mlb': 'MLB', 'basketball_wnba': 'WNBA',
+    'tennis_atp_wimbledon': 'Tennis', 'tennis_wta_wimbledon': 'Tennis',
+    'mma_mixed_martial_arts': 'MMA',
+}
+
+def _serialize_games(games) -> list:
+    """Convert game objects → JSON-safe dicts. Caller is responsible for caching."""
+    from volatility_detector_simple import detect_volatility_opportunities
+    games = detect_volatility_opportunities(games)
+    games_dicts = [game.model_dump() for game in games]
+    for game_dict, game_obj in zip(games_dicts, games):
+        game_dict['sport_key'] = game_obj.state.sport_key
+        game_dict['sport'] = _SPORT_MAP.get(game_obj.state.sport_key)
+        game_dict['home_team'] = game_obj.state.home_team.name
+        game_dict['away_team'] = game_obj.state.away_team.name
+        game_dict['game_id'] = game_obj.state.id
+    return convert_numpy_types(games_dicts)
+
+def _get_all_games_response() -> "Response":
+    """Return a pre-serialized JSON Response, rebuilding only when stale (>30s) or game count changed."""
+    now = time.time()
+    count = len(tracker.games)
+    cache = _games_serialized_cache
+    if cache["json_bytes"] is not None and now - cache["ts"] < _GAMES_CACHE_TTL and cache["count"] == count:
+        logger.info(f"[GAMES CACHE] Hit ({count} games, age={now - cache['ts']:.1f}s)")
+        return Response(content=cache["json_bytes"], media_type="application/json")
+    logger.info(f"[GAMES CACHE] Miss — rebuilding {count} games")
+    list_data = _serialize_games(tracker.get_all_games())
+    class _DTEncoder(json.JSONEncoder):
+        def default(self, o):
+            import datetime as _dt
+            if isinstance(o, (_dt.datetime, _dt.date)):
+                return o.isoformat()
+            return super().default(o)
+    json_bytes = json.dumps(list_data, cls=_DTEncoder).encode("utf-8")
+    cache["json_bytes"] = json_bytes
+    cache["list_data"] = list_data
+    cache["ts"] = now
+    cache["count"] = count
+    return Response(content=json_bytes, media_type="application/json")
 
 app = FastAPI(title="NBA Live Betting API")
 
@@ -133,7 +188,16 @@ print(f"DEBUG: Alert Preferences router registered with prefix: {alert_preferenc
 # Import and register Settings router
 from routes.settings import router as settings_router
 app.include_router(settings_router)
+
 print(f"DEBUG: Settings router registered with prefix: {settings_router.prefix}")
+
+# Data feeds router (line movement + injuries)
+try:
+    from routes.data_feeds import router as data_feeds_router
+    app.include_router(data_feeds_router)
+    print("DEBUG: Data feeds router registered")
+except Exception as e:
+    print(f"WARNING: Data feeds router failed: {e}")
 # Import and register Goalie Pull router
 try:
     print("DEBUG: About to import goalie_pull router...")
@@ -217,6 +281,16 @@ try:
     app.include_router(analytics_data_router)
 except Exception as e:
     print(f"ERROR importing analytics_data router: {type(e).__name__}: {e}")
+    import traceback
+    traceback.print_exc()
+
+# Kalshi trading routes (account connect, balance, positions)
+try:
+    from routes.kalshi import router as kalshi_router
+    logger.info("[OK] Kalshi routes loaded")
+    app.include_router(kalshi_router)
+except Exception as e:
+    print(f"ERROR importing kalshi router: {type(e).__name__}: {e}")
     import traceback
     traceback.print_exc()
 
@@ -465,6 +539,15 @@ async def startup():
     # Initialize bet grader with game tracker
     initialize_bet_grader(tracker)
     logger.info("Bet grader initialized")
+
+    # Kalshi tables (safe to call every startup - CREATE TABLE IF NOT EXISTS)
+    try:
+        from pipeline.db.connection import get_engine
+        from kalshi.schema import create_all_tables as create_kalshi_tables
+        create_kalshi_tables(get_engine())
+        logger.info("Kalshi tables ready")
+    except Exception as e:
+        logger.warning(f"Kalshi schema init failed (non-critical): {e}")
 
     # Start alert monitoring for NBA, NFL, NHL, and Tennis
     # DISABLED FOR API CREDIT SAVINGS: Alert monitor (was using 10s polling)
@@ -753,65 +836,14 @@ async def get_games(user_id: str = 'default', show_all: bool = False):
         # If show_all parameter is set, return all games (bypasses bookmaker filtering)
         if show_all:
             logger.info("Bypassing bookmaker filter - showing all games for odds testing")
-            games = tracker.get_all_games()
-
-            # Detect volatility opportunities
-            from volatility_detector_simple import detect_volatility_opportunities
-            games = detect_volatility_opportunities(games)
-
-            # Convert Pydantic models to dicts and handle numpy types
-            games_dicts = [game.model_dump() for game in games]
-
-            # Add computed fields for frontend compatibility
-            sport_map = {
-                'basketball_nba': 'NBA',
-                'basketball_nba_preseason': 'NBA',
-                'basketball_ncaab': 'NCAAB',
-                'americanfootball_nfl': 'NFL',
-                'americanfootball_ncaaf': 'NCAAF',
-                'icehockey_nhl': 'NHL',
-                'baseball_mlb': 'MLB'
-            }
-            for game_dict, game_obj in zip(games_dicts, games):
-                game_dict['sport_key'] = game_obj.state.sport_key
-                game_dict['sport'] = sport_map.get(game_obj.state.sport_key)
-                game_dict['home_team'] = game_obj.state.home_team.name
-                game_dict['away_team'] = game_obj.state.away_team.name
-                game_dict['game_id'] = game_obj.state.id
-
-            return convert_numpy_types(games_dicts)
+            return _get_all_games_response()
 
         # Get user settings
         settings = settings_db.get_settings(user_id)
         if not settings:
             # If no settings found, return all games (backwards compatible)
             logger.info(f"No settings found for user {user_id}, returning all games")
-            games = tracker.get_all_games()
-
-            # Detect volatility opportunities
-            from volatility_detector_simple import detect_volatility_opportunities
-            games = detect_volatility_opportunities(games)
-
-            games_dicts = [game.model_dump() for game in games]
-
-            # Add computed fields for frontend compatibility
-            sport_map = {
-                'basketball_nba': 'NBA',
-                'basketball_nba_preseason': 'NBA',
-                'basketball_ncaab': 'NCAAB',
-                'americanfootball_nfl': 'NFL',
-                'americanfootball_ncaaf': 'NCAAF',
-                'icehockey_nhl': 'NHL',
-                'baseball_mlb': 'MLB'
-            }
-            for game_dict, game_obj in zip(games_dicts, games):
-                game_dict['sport_key'] = game_obj.state.sport_key
-                game_dict['sport'] = sport_map.get(game_obj.state.sport_key)
-                game_dict['home_team'] = game_obj.state.home_team.name
-                game_dict['away_team'] = game_obj.state.away_team.name
-                game_dict['game_id'] = game_obj.state.id
-
-            return convert_numpy_types(games_dicts)
+            return _get_all_games_response()
 
         # Check subscription tier - free users get popular bookmakers only
         try:
@@ -834,45 +866,30 @@ async def get_games(user_id: str = 'default', show_all: bool = False):
             logger.warning(f"[TIER CHECK] Error checking tier for {user_id}: {e}")
             # On error, allow custom settings
         
-        # Get all games
-        all_games = tracker.get_all_games()
-        logger.info(f"[DEBUG /api/games] Total games from tracker: {len(all_games)}")
+        # Get serialized games from cache (avoids model_dump+convert_numpy on every request)
+        # Then filter cached dicts by enabled bookmakers — much faster than re-serializing
+        cache = _games_serialized_cache
+        all_games_data = cache.get("list_data") or []
+        if not all_games_data:
+            # Cache not built yet — force a build via the response helper
+            _get_all_games_response()
+            all_games_data = cache.get("list_data") or []
+        logger.info(f"[DEBUG /api/games] Total games from cache: {len(all_games_data)}")
 
-        # Filter by enabled bookmakers (uses model_copy for performance)
-        filtered_games = filter_games_by_bookmakers(all_games, settings['enabled_bookmakers'])
-        logger.info(f"[DEBUG /api/games] Total games after filtering: {len(filtered_games)}")
+        import re as _re
+        def _norm(s): return _re.sub(r'[^a-z0-9]', '', s.lower())
+        enabled_set = {_norm(b) for b in settings['enabled_bookmakers']}
 
-        # Detect volatility opportunities
-        from volatility_detector_simple import detect_volatility_opportunities
-        filtered_games = detect_volatility_opportunities(filtered_games)
+        filtered_dicts = []
+        for gd in all_games_data:
+            matching_odds = [o for o in gd.get('odds', []) if _norm(o.get('bookmaker', '')) in enabled_set]
+            if len(matching_odds) >= 2 or not gd.get('odds'):
+                gd_copy = dict(gd)
+                gd_copy['odds'] = matching_odds
+                filtered_dicts.append(gd_copy)
 
-        # Convert to dicts and handle numpy types
-        games_dicts = [game.model_dump() for game in filtered_games]
-
-        # Add computed fields for frontend compatibility
-        sport_map = {
-            'basketball_nba': 'NBA',
-            'basketball_nba_preseason': 'NBA',
-            'basketball_ncaab': 'NCAAB',
-            'americanfootball_nfl': 'NFL',
-            'americanfootball_ncaaf': 'NCAAF',
-            'icehockey_nhl': 'NHL',
-            'baseball_mlb': 'MLB'
-        }
-        for game_dict, game_obj in zip(games_dicts, filtered_games):
-            game_dict['sport_key'] = game_obj.state.sport_key
-            game_dict['sport'] = sport_map.get(game_obj.state.sport_key)
-            game_dict['home_team'] = game_obj.state.home_team.name
-            game_dict['away_team'] = game_obj.state.away_team.name
-            game_dict['game_id'] = game_obj.state.id
-
-        # EXTREME DEBUG: Log what we're actually returning
-        if games_dicts and user_id == 'DrewB':
-            logger.info(f"[EXTREME DEBUG] About to return for DrewB:")
-            logger.info(f"[EXTREME DEBUG] First game odds count AFTER model_dump: {len(games_dicts[0]['odds'])}")
-            logger.info(f"[EXTREME DEBUG] First 5 bookmakers: {[odd['bookmaker'] for odd in games_dicts[0]['odds'][:5]]}")
-
-        return convert_numpy_types(games_dicts)
+        logger.info(f"[DEBUG /api/games] Total games after bookmaker filter: {len(filtered_dicts)}")
+        return Response(content=json.dumps(filtered_dicts).encode("utf-8"), media_type="application/json")
 
     except Exception as e:
         import traceback
@@ -4899,34 +4916,44 @@ async def analyze_all_strategies(
 @app.post("/api/bets/grade-now")
 async def manual_grade_bets():
     """
-    Manually trigger bet grading for all active bets
-    Useful for testing or forcing an immediate grading cycle
+    Manually trigger bet grading - grades pending picks from the past 3 days.
+    Runs in asyncio.to_thread so ESPN fetches (tennis: 640+ matches, 3-5 min)
+    do not block the FastAPI event loop during grading.
     """
+    import asyncio as _asyncio
+    from grade_results import grade_picks_for_date
+    from datetime import date as _date, timedelta
+
+    def _run_grader():
+        total_graded = total_won = total_lost = total_push = 0
+        for days_ago in range(7):
+            grade_date = _date.today() - timedelta(days=days_ago)
+            result = grade_picks_for_date(grade_date)
+            total_graded += result.get("graded", 0)
+            total_won    += result.get("won", 0)
+            total_lost   += result.get("lost", 0)
+            total_push   += result.get("push", 0)
+        return total_graded, total_won, total_lost, total_push
+
     try:
-        from bet_grader import bet_grader
-
-        if bet_grader is None:
-            raise HTTPException(status_code=503, detail="Bet grader not initialized")
-
-        # Run grading
-        results = bet_grader.grade_active_bets()
-
+        total_graded, total_won, total_lost, total_push = await _asyncio.to_thread(_run_grader)
         return {
             "success": True,
-            "checked": results['checked'],
-            "graded": results['graded'],
-            "won": results['won'],
-            "lost": results['lost'],
-            "push": results['push'],
-            "errors": results['errors'],
-            "message": f"Graded {results['graded']} bets ({results['won']} won, {results['lost']} lost, {results['push']} push)",
+            "checked": total_graded,
+            "graded": total_graded,
+            "won": total_won,
+            "lost": total_lost,
+            "push": total_push,
+            "errors": 0,
+            "message": f"Graded {total_graded} picks ({total_won} won, {total_lost} lost, {total_push} push)",
             "timestamp": datetime.now().isoformat()
         }
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error manually grading bets: {str(e)}")
+        logger.error(f"Error in grade-now: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/bets/user-statistics")
 async def get_user_bet_statistics(request: Request):
@@ -5286,3 +5313,22 @@ async def get_all_feedback(status: Optional[str] = None):
 # edge_scanner, raw_predictions, csv endpoints = FORBIDDEN
 # Any attempt to resurrect them will be reverted instantly
 # ==============================================================================
+
+# ── Edge Engine v2 (agentic pipeline) ─────────────────────────────────────────
+try:
+    print('DEBUG: Importing edge_engine router...')
+    from routes.edge_engine import router as edge_engine_router
+    app.include_router(edge_engine_router)
+    print('DEBUG: Edge Engine v2 router registered — /api/v2/edges/*')
+except Exception as e:
+    print(f'ERROR importing/registering edge_engine router: {type(e).__name__}: {e}')
+    import traceback; traceback.print_exc()
+
+# ── News & Injury Intelligence ─────────────────────────────────────────────────
+try:
+    from routes.news_intel import router as news_intel_router
+    app.include_router(news_intel_router)
+    print('DEBUG: News Intel router registered — /api/news/*')
+except Exception as e:
+    print(f'ERROR importing/registering news_intel router: {type(e).__name__}: {e}')
+    import traceback; traceback.print_exc()

@@ -1,6 +1,6 @@
 """Game tracking and state management"""
 from datetime import datetime
-from live_models import GameState, LiveGame, GameOdds, Team, GameProjection, TeamStats, NFLLiveStats, NFLTeamStats, NHLMomentumStats, NBAMomentumStats, NFLMomentumStats, NHLTeamStats, MLBTeamStats, WeatherInfo
+from live_models import GameState, LiveGame, GameOdds, Team, GameProjection, TeamStats, NFLLiveStats, NFLTeamStats, NHLMomentumStats, NBAMomentumStats, NFLMomentumStats, NHLTeamStats, MLBTeamStats, WeatherInfo, ProbablePitcher, MMAFighterStats
 from odds_client import OddsAPIClient
 from projector import GameProjector
 from momentum_calculator import MomentumCalculator
@@ -1405,43 +1405,60 @@ class GameTracker:
             logger.error(f"Error fetching {'NCAAF' if is_ncaaf else 'NFL'} TeamRankings stats for {team_name}: {e}")
             return None
 
+    _MLB_TR_NAME_MAP = {
+        'chicago white sox': 'Chi Sox',
+        'chicago cubs': 'Chi Cubs',
+        'new york mets': 'NY Mets',
+        'new york yankees': 'NY Yankees',
+        'los angeles angels': 'LA Angels',
+        'la angels': 'LA Angels',
+        'anaheim angels': 'LA Angels',
+        'los angeles dodgers': 'LA Dodgers',
+        'san francisco giants': 'SF Giants',
+        'athletics': 'Sacramento',
+        'oakland athletics': 'Sacramento',
+        'sacramento athletics': 'Sacramento',
+    }
+
     def _get_mlb_teamrankings_stats(self, team_name: str) -> Optional[MLBTeamStats]:
         """Get MLB team stats from TeamRankings"""
         try:
             teamrankings_data = self.teamrankings_mlb_scraper.fetch_all_team_stats()
 
-            # Try to find team in TeamRankings data (flexible matching)
-            tr_stats = None
-            for team_key, stats in teamrankings_data.items():
-                if team_name.lower() in team_key.lower() or team_key.lower() in team_name.lower():
-                    tr_stats = stats
-                    break
+            # Check explicit mapping first (abbreviated keys: Chi Sox, NY Mets, etc.)
+            team_lower = team_name.lower()
+            tr_key = self._MLB_TR_NAME_MAP.get(team_lower)
+            if tr_key:
+                tr_stats = teamrankings_data.get(tr_key)
+            else:
+                tr_stats = None
+                for team_key, stats in teamrankings_data.items():
+                    if team_lower in team_key.lower() or team_key.lower() in team_lower:
+                        tr_stats = stats
+                        break
 
             if not tr_stats:
                 logger.warning(f"TeamRankings data not found for {team_name} (MLB)")
                 return None
 
-            # Map to MLBTeamStats model
+            # Map to MLBTeamStats model (field names match scraper output)
+            wins_val = int(tr_stats.get('wins', 0))
+            losses_val = int(tr_stats.get('losses', 0))
             team_stats = MLBTeamStats(
                 team_id=str(tr_stats.get('team_name', '')),
                 team_name=team_name,
                 games_played=int(tr_stats.get('games_played', 0)),
-                wins=int(tr_stats.get('wins', 0)),
-                losses=int(tr_stats.get('losses', 0)),
+                wins=wins_val,
+                losses=losses_val,
                 win_pct=float(tr_stats.get('win_pct', 0.0)),
                 runs_per_game=float(tr_stats.get('runs_per_game', 4.5)),
-                batting_avg=float(tr_stats.get('batting_average', 0.250)),
-                on_base_pct=float(tr_stats.get('on_base_pct', 0.320)),
-                slugging_pct=float(tr_stats.get('slugging_pct', 0.400)),
-                ops=float(tr_stats.get('ops', 0.720)),
+                batting_avg=float(tr_stats.get('batting_avg', 0.250)),
                 home_runs_per_game=float(tr_stats.get('home_runs_per_game', 1.0)),
                 hits_per_game=float(tr_stats.get('hits_per_game', 8.5)),
-                walks_per_game=float(tr_stats.get('walks_per_game', 3.0)),
-                strikeouts_per_game=float(tr_stats.get('strikeouts_per_game', 8.5)),
-                runs_allowed_per_game=float(tr_stats.get('opponent_runs_per_game', 4.5)),
-                era=float(tr_stats.get('earned_run_average', 4.00)),
-                whip=float(tr_stats.get('whip', 1.30)),
-                errors_per_game=float(tr_stats.get('errors_per_game', 0.5))
+                runs_allowed_per_game=float(tr_stats.get('runs_allowed', 4.5)),
+                era=float(tr_stats.get('era', 4.00)),
+                last_10_record=tr_stats.get('last_10_record'),
+                form_trend=tr_stats.get('form_trend', 'NEUTRAL'),
             )
 
             logger.info(f"✅ Fetched TeamRankings MLB stats for {team_name}")
@@ -1450,6 +1467,210 @@ class GameTracker:
         except Exception as e:
             logger.error(f"Error fetching MLB TeamRankings stats for {team_name}: {e}")
             return None
+
+
+    def _fetch_espn_team_records(self, sport: str) -> dict:
+        """Fetch team/fighter records from ESPN scoreboard. Returns {name_lower: record_str}"""
+        cache_key = f'_espn_records_{sport}'
+        cache_time_key = f'_espn_records_time_{sport}'
+        import time as _time
+        now = _time.time()
+        if hasattr(self, cache_time_key) and now - getattr(self, cache_time_key) < 3600:
+            return getattr(self, cache_key, {})
+        try:
+            import requests as _req
+            sport_paths = {
+                'mma': 'https://site.api.espn.com/apis/site/v2/sports/mma/ufc/scoreboard',
+                'baseball_mlb': 'https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard',
+                'tennis_atp': 'https://site.api.espn.com/apis/site/v2/sports/tennis/atp/scoreboard',
+                'tennis_wta': 'https://site.api.espn.com/apis/site/v2/sports/tennis/wta/scoreboard',
+            }
+            url = sport_paths.get(sport)
+            if not url:
+                return {}
+            r = _req.get(url, timeout=6)
+            data = r.json()
+            records = {}
+            for event in data.get('events', []):
+                for comp in event.get('competitions', []):
+                    for c in comp.get('competitors', []):
+                        # MMA / Tennis use athlete; MLB uses team
+                        athlete = c.get('athlete') or c.get('team') or {}
+                        name = athlete.get('displayName', '') or athlete.get('shortName', '')
+                        rec_list = c.get('records', [])
+                        if name and rec_list:
+                            records[name.lower()] = rec_list[0].get('summary', '')
+            setattr(self, cache_key, records)
+            setattr(self, cache_time_key, now)
+            return records
+        except Exception as e:
+            logger.debug(f'ESPN records fetch failed for {sport}: {e}')
+            return {}
+
+    def _fetch_espn_mlb_game_data(self) -> dict:
+        """Fetch MLB scoreboard: venue + probable starters keyed by home_team_lower"""
+        import time as _t
+        if hasattr(self, '_mlb_gd_ts') and _t.time() - self._mlb_gd_ts < 1800:
+            return getattr(self, '_mlb_gd_cache', {})
+        try:
+            import requests as _req
+            r = _req.get('https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard', timeout=8)
+            data = r.json()
+            result = {}
+            for event in data.get('events', []):
+                for comp in event.get('competitions', []):
+                    venue = comp.get('venue', {}).get('fullName', '')
+                    espn_id = comp.get('id', '')
+                    home_name = ''
+                    home_prob = None
+                    away_prob = None
+                    for c in comp.get('competitors', []):
+                        ha = c.get('homeAway', '')
+                        team = c.get('team', {})
+                        t_name = team.get('displayName', '') or team.get('name', '')
+                        probs = c.get('probables', [])
+                        prob_obj = None
+                        if probs:
+                            p = probs[0]
+                            ath = p.get('athlete', {})
+                            stats = {s.get('abbreviation',''): s.get('displayValue','') for s in p.get('statistics', [])}
+                            era = wins = losses = None
+                            try: era = float(stats.get('ERA', ''))
+                            except: pass
+                            try: wins = int(stats.get('W', ''))
+                            except: pass
+                            try: losses = int(stats.get('L', ''))
+                            except: pass
+                            prob_obj = ProbablePitcher(
+                                name=ath.get('fullName', ''),
+                                era=era, wins=wins, losses=losses,
+                                record=p.get('record', ''),
+                            )
+                        if ha == 'home':
+                            home_name = t_name
+                            home_prob = prob_obj
+                        else:
+                            away_prob = prob_obj
+                    if home_name:
+                        result[home_name.lower()] = {
+                            'espn_id': espn_id, 'venue': venue,
+                            'home_probable': home_prob, 'away_probable': away_prob,
+                        }
+            self._mlb_gd_cache = result
+            self._mlb_gd_ts = _t.time()
+            return result
+        except Exception as e:
+            logger.debug(f'ESPN MLB game data fetch failed: {e}')
+            return {}
+
+    def _fetch_mlb_hp_umpire(self, espn_game_id: str):
+        """Return HP umpire name for an MLB game, cached 24h"""
+        import time as _t
+        ck = f'_ump_{espn_game_id}'
+        tk = f'_ump_t_{espn_game_id}'
+        if hasattr(self, tk) and _t.time() - getattr(self, tk) < 86400:
+            return getattr(self, ck, None)
+        try:
+            import requests as _req
+            r = _req.get(f'https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/summary?event={espn_game_id}', timeout=6)
+            data = r.json()
+            hp = None
+            for o in data.get('gameInfo', {}).get('officials', []):
+                if 'home plate' in o.get('position', {}).get('name', '').lower():
+                    hp = o.get('displayName', '')
+                    break
+            setattr(self, ck, hp); setattr(self, tk, _t.time())
+            return hp
+        except Exception as e:
+            logger.debug(f'HP umpire fetch failed {espn_game_id}: {e}')
+            return None
+
+    def _fetch_mma_athlete_ids(self) -> dict:
+        """Return {name_lower: athlete_id} from ESPN MMA scoreboard"""
+        import time as _t
+        if hasattr(self, '_mma_ids_ts') and _t.time() - self._mma_ids_ts < 3600:
+            return getattr(self, '_mma_ids_cache', {})
+        try:
+            import requests as _req
+            r = _req.get('https://site.api.espn.com/apis/site/v2/sports/mma/ufc/scoreboard', timeout=6)
+            ids = {}
+            for event in r.json().get('events', []):
+                for comp in event.get('competitions', []):
+                    for c in comp.get('competitors', []):
+                        aid = c.get('id', '')
+                        ath = c.get('athlete', {})
+                        name = ath.get('displayName', '') or ath.get('fullName', '')
+                        if name and aid:
+                            ids[name.lower()] = aid
+            self._mma_ids_cache = ids; self._mma_ids_ts = _t.time()
+            return ids
+        except Exception as e:
+            logger.debug(f'MMA athlete IDs fetch failed: {e}')
+            return {}
+
+    def _fetch_mma_fighter_stats(self, athlete_id: str):
+        """Return MMAFighterStats from ESPN athlete detail endpoint, cached 24h"""
+        import time as _t
+        ck = f'_mma_fs_{athlete_id}'; tk = f'_mma_fs_t_{athlete_id}'
+        if hasattr(self, tk) and _t.time() - getattr(self, tk) < 86400:
+            return getattr(self, ck, None)
+        try:
+            import requests as _req
+            r = _req.get(f'https://site.web.api.espn.com/apis/common/v3/sports/mma/ufc/athletes/{athlete_id}', timeout=8)
+            ath = r.json().get('athlete', {})
+            tko_w = tko_l = sub_w = sub_l = None
+            for stat in ath.get('statsSummary', {}).get('statistics', []):
+                n = stat.get('name', ''); v = stat.get('displayValue', '')
+                if n == 'tkos-tkolosses':
+                    parts = v.split('-')
+                    if len(parts) == 2:
+                        try: tko_w = int(parts[0])
+                        except: pass
+                        try: tko_l = int(parts[1])
+                        except: pass
+                elif n == 'submissions-submissionlosses':
+                    parts = v.split('-')
+                    if len(parts) == 2:
+                        try: sub_w = int(parts[0])
+                        except: pass
+                        try: sub_l = int(parts[1])
+                        except: pass
+            fs = MMAFighterStats(
+                height=ath.get('displayHeight'), weight=ath.get('displayWeight'),
+                reach=ath.get('displayReach'), stance=ath.get('stance'),
+                fighting_style=ath.get('displayFightingStyle'),
+                tko_wins=tko_w, tko_losses=tko_l, sub_wins=sub_w, sub_losses=sub_l,
+            )
+            setattr(self, ck, fs); setattr(self, tk, _t.time())
+            return fs
+        except Exception as e:
+            logger.debug(f'MMA fighter stats fetch failed {athlete_id}: {e}')
+            return None
+
+    def _fetch_tennis_round_info(self) -> dict:
+        """Return {player_name_lower: {round, tournament}} from ESPN tennis scoreboards"""
+        import time as _t
+        if hasattr(self, '_tennis_rd_ts') and _t.time() - self._tennis_rd_ts < 3600:
+            return getattr(self, '_tennis_rd_cache', {})
+        try:
+            import requests as _req
+            result = {}
+            for path in ['atp', 'wta']:
+                r = _req.get(f'https://site.api.espn.com/apis/site/v2/sports/tennis/{path}/scoreboard', timeout=6)
+                for event in r.json().get('events', []):
+                    tournament = event.get('name', '')
+                    for grp in event.get('groupings', []):
+                        for comp in grp.get('competitions', []):
+                            rnd = comp.get('round', {}).get('displayName', '')
+                            for c in comp.get('competitors', []):
+                                name = c.get('athlete', {}).get('displayName', '')
+                                if name:
+                                    result[name.lower()] = {'round': rnd, 'tournament': tournament}
+            self._tennis_rd_cache = result; self._tennis_rd_ts = _t.time()
+            return result
+        except Exception as e:
+            logger.debug(f'Tennis round info fetch failed: {e}')
+            return {}
 
     def _nba_team_name_to_abbr(self, team_name: str) -> Optional[str]:
         """Convert NBA team name to ESPN abbreviation"""
@@ -1492,11 +1713,22 @@ class GameTracker:
         # Fetch live NBA scoreboard for real-time quarter/time data (CONDITIONAL)
         from config import ENABLE_ESPN_STATS
         if ENABLE_ESPN_STATS:
-            live_scoreboard = self.nba_live_client.fetch_live_scoreboard()
-            # Fetch ESPN NFL scoreboard for real-time NFL data
-            self.espn_scoreboard_cache = self.espn_nfl_client.fetch_scoreboard()
-            # Fetch ESPN NCAAB scoreboard for real-time NCAAB data
-            ncaab_scoreboard_cache = self.espn_ncaab_client.fetch_scoreboard()
+            # Run all three blocking ESPN fetches concurrently in thread pool so the event loop stays free
+            raw_nba, raw_nfl, raw_ncaab = await asyncio.gather(
+                asyncio.wait_for(asyncio.to_thread(self.nba_live_client.fetch_live_scoreboard), timeout=15),
+                asyncio.wait_for(asyncio.to_thread(self.espn_nfl_client.fetch_scoreboard), timeout=15),
+                asyncio.wait_for(asyncio.to_thread(self.espn_ncaab_client.fetch_scoreboard), timeout=15),
+                return_exceptions=True,
+            )
+            live_scoreboard = raw_nba if not isinstance(raw_nba, Exception) else {}
+            self.espn_scoreboard_cache = raw_nfl if not isinstance(raw_nfl, Exception) else {'events': []}
+            ncaab_scoreboard_cache = raw_ncaab if not isinstance(raw_ncaab, Exception) else {'events': []}
+            if isinstance(raw_nba, Exception):
+                logger.warning(f"NBA scoreboard fetch error (non-blocking): {raw_nba}")
+            if isinstance(raw_nfl, Exception):
+                logger.warning(f"NFL scoreboard fetch error (non-blocking): {raw_nfl}")
+            if isinstance(raw_ncaab, Exception):
+                logger.warning(f"NCAAB scoreboard fetch error (non-blocking): {raw_ncaab}")
             logger.info(f"Fetched live scoreboard with {len(live_scoreboard)} team entries")
             logger.info(f"Fetched ESPN NFL scoreboard with {len(self.espn_scoreboard_cache.get('events', []))} games")
             logger.info(f"Fetched ESPN NCAAB scoreboard with {len(ncaab_scoreboard_cache.get('events', []))} games")
@@ -1542,6 +1774,7 @@ class GameTracker:
         new_games = {}
 
         for game_data in filtered_odds:
+            await asyncio.sleep(0)  # yield to event loop between games
             try:
                 game_id = game_data['id']
                 sport_key = game_data.get('sport_key', 'unknown')  # Get sport_key for this game
@@ -1812,6 +2045,95 @@ class GameTracker:
                     quarter=quarter,
                     time_remaining=time_remaining
                 )
+
+                # Initialize enrichment fields
+                home_probable_pitcher = None
+                away_probable_pitcher = None
+                ballpark = None
+                hp_umpire = None
+                home_mma_stats = None
+                away_mma_stats = None
+                tennis_round = None
+                tennis_tournament = None
+
+                # Enrich team records from ESPN for MLB, MMA, Tennis
+                try:
+                    if sport_key == 'mma_mixed_martial_arts':
+                        _recs = self._fetch_espn_team_records('mma')
+                        for fighter_lower, rec in _recs.items():
+                            if any(w in fighter_lower for w in game_data['home_team'].lower().split() if len(w) > 3):
+                                game_state.home_team.record = rec
+                            if any(w in fighter_lower for w in game_data['away_team'].lower().split() if len(w) > 3):
+                                game_state.away_team.record = rec
+                    elif sport_key == 'baseball_mlb':
+                        _recs = self._fetch_espn_team_records('baseball_mlb')
+                        for team_lower, rec in _recs.items():
+                            home_lower = game_data['home_team'].lower()
+                            away_lower = game_data['away_team'].lower()
+                            if any(w in team_lower for w in home_lower.split() if len(w) > 3):
+                                game_state.home_team.record = rec
+                            if any(w in team_lower for w in away_lower.split() if len(w) > 3):
+                                game_state.away_team.record = rec
+                    elif sport_key.startswith('tennis_atp'):
+                        _recs = self._fetch_espn_team_records('tennis_atp')
+                        for player_lower, rec in _recs.items():
+                            if any(w in player_lower for w in game_data['home_team'].lower().split() if len(w) > 3):
+                                game_state.home_team.record = rec
+                            if any(w in player_lower for w in game_data['away_team'].lower().split() if len(w) > 3):
+                                game_state.away_team.record = rec
+                    elif sport_key.startswith('tennis_wta'):
+                        _recs = self._fetch_espn_team_records('tennis_wta')
+                        for player_lower, rec in _recs.items():
+                            if any(w in player_lower for w in game_data['home_team'].lower().split() if len(w) > 3):
+                                game_state.home_team.record = rec
+                            if any(w in player_lower for w in game_data['away_team'].lower().split() if len(w) > 3):
+                                game_state.away_team.record = rec
+                except Exception as _re:
+                    logger.debug(f'Record enrichment skipped: {_re}')
+
+                # Fetch MLB probable starters, venue, umpire
+                try:
+                    if sport_key == 'baseball_mlb':
+                        _mlb_gd = self._fetch_espn_mlb_game_data()
+                        home_lower = game_data['home_team'].lower()
+                        for _key, _gd in _mlb_gd.items():
+                            if any(w in _key for w in home_lower.split() if len(w) > 3):
+                                home_probable_pitcher = _gd.get('home_probable')
+                                away_probable_pitcher = _gd.get('away_probable')
+                                ballpark = _gd.get('venue')
+                                _eid = _gd.get('espn_id', '')
+                                if _eid:
+                                    hp_umpire = self._fetch_mlb_hp_umpire(_eid)
+                                break
+                except Exception as _me:
+                    logger.debug(f'MLB game enrichment skipped: {_me}')
+
+                # Fetch MMA fighter physical stats
+                try:
+                    if sport_key == 'mma_mixed_martial_arts':
+                        _mma_ids = self._fetch_mma_athlete_ids()
+                        _hl = game_data['home_team'].lower()
+                        _al = game_data['away_team'].lower()
+                        for _fn, _fid in _mma_ids.items():
+                            if any(w in _fn for w in _hl.split() if len(w) > 3):
+                                home_mma_stats = self._fetch_mma_fighter_stats(_fid)
+                            if any(w in _fn for w in _al.split() if len(w) > 3):
+                                away_mma_stats = self._fetch_mma_fighter_stats(_fid)
+                except Exception as _mme:
+                    logger.debug(f'MMA stats enrichment skipped: {_mme}')
+
+                # Fetch tennis round info
+                try:
+                    if sport_key.startswith('tennis_'):
+                        _tri = self._fetch_tennis_round_info()
+                        _hl = game_data['home_team'].lower()
+                        for _pn, _pi in _tri.items():
+                            if any(w in _pn for w in _hl.split() if len(w) > 2):
+                                tennis_round = _pi.get('round')
+                                tennis_tournament = _pi.get('tournament')
+                                break
+                except Exception as _te:
+                    logger.debug(f'Tennis enrichment skipped: {_te}')
 
                 # Cache pregame total for upcoming games (will be used when game goes live)
                 if game_state.status == 'upcoming' and game_id not in self.pregame_totals_cache:
@@ -2237,16 +2559,13 @@ class GameTracker:
                 
 
                 if game_state.sport_key.startswith('baseball'):
-                    # Fetch ESPN MLB season stats if TeamRankings failed
-                    if not home_mlb_stats_tr or not away_mlb_stats_tr:
-                        logger.info(f"Fetching ESPN MLB stats (fallback) for {game_state.away_team.name} @ {game_state.home_team.name}")
+                    # Use TeamRankings per-team; fall back individually to ESPN
+                    home_mlb_stats = home_mlb_stats_tr
+                    away_mlb_stats = away_mlb_stats_tr
+                    if not home_mlb_stats:
                         home_mlb_stats = await self._get_mlb_team_stats(game_state.home_team.name)
+                    if not away_mlb_stats:
                         away_mlb_stats = await self._get_mlb_team_stats(game_state.away_team.name)
-                        logger.info(f"MLB stats fetched - Home: {home_mlb_stats is not None}, Away: {away_mlb_stats is not None}")
-                    else:
-                        # Use TeamRankings stats
-                        home_mlb_stats = home_mlb_stats_tr
-                        away_mlb_stats = away_mlb_stats_tr
 
                 # Use TeamRankings stats for NFL/NCAAF if available, otherwise use ESPN stats
                 if home_nfl_stats_tr:
@@ -2283,6 +2602,14 @@ class GameTracker:
                     away_ncaaf_momentum=away_ncaaf_momentum,
                     home_mlb_stats=home_mlb_stats,
                     away_mlb_stats=away_mlb_stats,
+                    home_probable_pitcher=home_probable_pitcher,
+                    away_probable_pitcher=away_probable_pitcher,
+                    ballpark=ballpark,
+                    hp_umpire=hp_umpire,
+                    home_mma_stats=home_mma_stats,
+                    away_mma_stats=away_mma_stats,
+                    tennis_round=tennis_round,
+                    tennis_tournament=tennis_tournament,
                     player_props_count=63 if "basketball_nba" in game_state.sport_key else (100 if "icehockey_nhl" in game_state.sport_key else (95 if "americanfootball_nfl" in game_state.sport_key else 0)),
                     alternate_lines=alternate_lines,
                     # TV and Weather information
