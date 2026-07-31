@@ -1,23 +1,19 @@
 /**
  * F5 Edge Engine — Main Page
  *
- * Baseball edge dashboard with tabbed layout:
- * - Today's Plays (bet slip)
- * - Game Breakdown (all games)
- * - Signals (performance)
- * - Edge Matrix (research)
- * - Venues (park edges)
+ * Baseball edge dashboard pulling live data from the F5 API.
+ * Tabs: Today's Plays, Game Breakdown, Signals, Edge Matrix, Venues
  */
 import { useState } from 'react';
-import { Target, BarChart3, Layout, Database, MapPin } from 'lucide-react';
+import { Target, BarChart3, Layout, Database, MapPin, RefreshCw } from 'lucide-react';
 import { StatCard } from '../components/f5edge/StatCard';
 import { PlayCard } from '../components/f5edge/PlayCard';
 import { GameBreakdownCard } from '../components/f5edge/GameBreakdownCard';
 import { SignalTable } from '../components/f5edge/SignalTable';
 import { EdgeMatrix } from '../components/f5edge/EdgeMatrix';
 import { VenueTable } from '../components/f5edge/VenueTable';
-import { EMERALD, BRAND_RED, BLUE, MUTED_FG } from '../components/f5edge/tokens';
-import type { F5GameWithPlays } from '../components/f5edge/types';
+import { useF5Today } from '../components/f5edge/useF5Data';
+import { EMERALD, BLUE, MUTED_FG } from '../components/f5edge/tokens';
 import '../styles/analytics.css';
 
 type Tab = 'plays' | 'games' | 'signals' | 'matrix' | 'venues';
@@ -30,56 +26,66 @@ const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: 'venues',  label: 'VENUES',         icon: <MapPin size={14} /> },
 ];
 
-// Placeholder data — will be replaced by API calls to the daily scanner
-const SAMPLE_PLAYS: F5GameWithPlays[] = [
-  {
-    game: {
-      away_team: 'Boston Red Sox', home_team: 'Los Angeles Dodgers',
-      venue: 'Dodger Stadium', away_pitcher: 'Ranger Suarez',
-      home_pitcher: 'Edgardo Henriquez', away_era: 3.02, home_era: 2.79,
-      era_diff: 0.23, hp_umpire: null, temp: '78', wind: '5 mph Out',
-      commence: '', game_pk: 0,
-    },
-    plays: [
-      { type: 'F5 Tie', book: 'BetMGM', tier: 1, unit: 100,
-        signal: 'Ace vs Ace — ERA 3.02 vs 2.79', expected_hit: '22%',
-        historical_roi: '+22.0%', needs_f5_odds: true },
-      { type: 'F5 Under', book: 'Best line', tier: 1, unit: 100,
-        signal: 'Both ERA < 3.50', expected_hit: '59%',
-        historical_roi: '+10.7%', needs_f5_odds: true },
-      { type: 'F5 Tie + Under SGP', book: 'DraftKings', tier: 1, unit: 25,
-        signal: 'Correlated parlay (1.51x)', expected_hit: '18.2%',
-        historical_roi: '+94.2%', needs_f5_odds: true },
-      { type: 'F1 Tie + FG Under SGP', book: 'Bovada', tier: 2, unit: 25,
-        signal: 'FG 8.5 / Both ERA < 3.50', expected_hit: '37%',
-        historical_roi: '+50.3%', needs_f5_odds: false },
-    ],
-    odds: { fg_total: 8.5 },
-  },
-];
-
 export function F5Edge() {
   const [activeTab, setActiveTab] = useState<Tab>('plays');
+  const { data, loading, error, refresh } = useF5Today();
 
-  const totalPlays = SAMPLE_PLAYS.reduce((s, g) => s + g.plays.length, 0);
-  const totalRisk = SAMPLE_PLAYS.reduce((s, g) => s + g.plays.reduce((ps, p) => ps + p.unit, 0), 0);
+  const results = data?.results ?? [];
+  const withPlays = results.filter(r => r.has_plays);
 
   return (
     <div className="analytics-page">
       {/* Header */}
       <div className="analytics-header">
-        <h1>F5 Edge Engine</h1>
-        <p className="subtitle">
-          MLB First 5 Innings — Signal-based edge detection across ties, unders, overs, and moneylines
-        </p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <h1>F5 Edge Engine</h1>
+            <p className="subtitle">
+              MLB First 5 Innings — Signal-based edge detection across ties, unders, overs, and moneylines
+            </p>
+          </div>
+          <button
+            onClick={refresh}
+            disabled={loading}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '6px 14px', borderRadius: 6,
+              background: 'var(--muted)', border: '1px solid var(--border)',
+              color: 'var(--foreground)', fontSize: '0.75rem', fontWeight: 700,
+              cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.5 : 1,
+            }}
+          >
+            <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+            {loading ? 'SCANNING...' : 'RESCAN'}
+          </button>
+        </div>
 
         {/* Stat row */}
         <div style={{ display: 'flex', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
-          <StatCard label="Today's Plays" value={totalPlays.toString()} sub="across qualifying games" color={EMERALD} />
-          <StatCard label="Total Risk" value={`$${totalRisk}`} sub="at recommended sizing" />
+          <StatCard
+            label="Games Scanned"
+            value={data?.games_scanned?.toString() ?? '—'}
+            sub={data?.date ?? ''}
+          />
+          <StatCard
+            label="Qualifying"
+            value={data?.qualifying_games?.toString() ?? '—'}
+            sub={`${data?.total_plays ?? 0} plays`}
+            color={EMERALD}
+          />
+          <StatCard
+            label="Total Risk"
+            value={data ? `$${data.total_risk}` : '—'}
+            sub="at recommended sizing"
+          />
           <StatCard label="Season ROI" value="+11.2%" sub="backtest (2024)" color={EMERALD} />
           <StatCard label="Proven Signals" value="5" sub="p < 0.001" color={BLUE} />
-          <StatCard label="Games Analyzed" value="4,857" sub="2023–2024" color={MUTED_FG} />
+          <StatCard
+            label="API Credits"
+            value={data?.credits_remaining?.toString() ?? '—'}
+            sub="remaining"
+            color={MUTED_FG}
+          />
         </div>
 
         {/* Tabs */}
@@ -97,42 +103,74 @@ export function F5Edge() {
         </div>
       </div>
 
+      {/* Error state */}
+      {error && (
+        <div style={{
+          margin: '16px 24px', padding: '12px 16px', borderRadius: 6,
+          background: 'color-mix(in oklch, oklch(63.7% .237 25.331) 15%, transparent)',
+          border: '1px solid color-mix(in oklch, oklch(63.7% .237 25.331) 40%, transparent)',
+          color: 'oklch(63.7% .237 25.331)', fontSize: '0.8rem', fontWeight: 600,
+        }}>
+          Scanner error: {error}. Make sure the F5 backend is running on port 8888.
+        </div>
+      )}
+
       {/* Content */}
       <div style={{ padding: '16px 24px', maxWidth: 1200 }}>
-
         {activeTab === 'plays' && (
-          <div>
-            {SAMPLE_PLAYS.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: 40, color: MUTED_FG }}>
-                No qualifying plays today. Run the scanner to check.
-              </div>
-            ) : (
-              SAMPLE_PLAYS.flatMap((entry) =>
-                entry.plays.map((play, i) => (
-                  <PlayCard key={`${entry.game.game_pk}-${i}`} game={entry.game} play={play} />
-                ))
-              )
-            )}
-          </div>
+          <TodaysPlays results={withPlays} loading={loading} />
         )}
-
         {activeTab === 'games' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {SAMPLE_PLAYS.map((entry) => (
-              <GameBreakdownCard
-                key={entry.game.game_pk}
-                game={entry.game}
-                plays={entry.plays}
-                fgTotal={entry.odds.fg_total as number}
-              />
-            ))}
-          </div>
+          <GameBreakdown results={results} loading={loading} />
         )}
-
         {activeTab === 'signals' && <SignalTable />}
         {activeTab === 'matrix' && <EdgeMatrix />}
         {activeTab === 'venues' && <VenueTable />}
       </div>
+    </div>
+  );
+}
+
+function TodaysPlays({ results, loading }: { results: typeof [] | any[]; loading: boolean }) {
+  if (loading) return <LoadingState />;
+  if (results.length === 0) {
+    return (
+      <div style={{ textAlign: 'center', padding: 40, color: MUTED_FG, fontSize: '0.85rem' }}>
+        No qualifying plays found. Click RESCAN to check live games.
+      </div>
+    );
+  }
+  return (
+    <div>
+      {results.flatMap((entry: any) =>
+        entry.plays.map((play: any, i: number) => (
+          <PlayCard key={`${entry.game.game_pk}-${i}`} game={entry.game} play={play} />
+        ))
+      )}
+    </div>
+  );
+}
+
+function GameBreakdown({ results, loading }: { results: typeof [] | any[]; loading: boolean }) {
+  if (loading) return <LoadingState />;
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {results.map((entry: any) => (
+        <GameBreakdownCard
+          key={entry.game.game_pk}
+          game={entry.game}
+          plays={entry.plays}
+          fgTotal={entry.odds?.fg_total as number}
+        />
+      ))}
+    </div>
+  );
+}
+
+function LoadingState() {
+  return (
+    <div style={{ textAlign: 'center', padding: 40, color: MUTED_FG, fontSize: '0.85rem' }}>
+      Scanning games...
     </div>
   );
 }

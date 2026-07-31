@@ -1,40 +1,41 @@
 """
-Standalone F5 Fade the Tie server for local testing.
-Run: python3 f5_standalone.py
-Serves F5 endpoints on port 8888 so the frontend can connect.
+F5 Edge Engine — Standalone Server
+
+Serves the live F5 dashboard API on port 8888.
+Run: ODDS_API_KEY=your_key python3 f5_standalone.py
 """
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
-from routes.f5_fade_tie import router as f5_router
-from routes.f5_viability import router as f5_viability_router
-from routes.f5_logic_explained import router as f5_explain_router
-from routes.f5_complete_strategy import router as f5_strategy_router
-from routes.f5_two_of_three import router as f5_two_of_three_router
-from routes.f5_sizing_deep_dive import router as f5_sizing_router
+# Set API key from env or default (never commit real keys)
+os.environ.setdefault("ODDS_API_KEY", os.getenv("ODDS_API_KEY", ""))
 
-app = FastAPI(title="F5 Fade the Tie — Standalone")
+from routes.f5_live import router as f5_live_router
+from routes.f5_fade_tie import router as f5_calc_router
+
+app = FastAPI(title="F5 Edge Engine")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:5173",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app.include_router(f5_router)
-app.include_router(f5_viability_router)
-app.include_router(f5_explain_router)
-app.include_router(f5_strategy_router)
-app.include_router(f5_two_of_three_router)
-app.include_router(f5_sizing_router)
+app.include_router(f5_live_router)
+app.include_router(f5_calc_router)
 
 
 @app.get("/api/health")
 async def health():
-    return {"status": "ok", "module": "f5-fade-tie-standalone"}
+    return {"status": "ok", "module": "f5-edge-engine"}
 
 
 if __name__ == "__main__":
