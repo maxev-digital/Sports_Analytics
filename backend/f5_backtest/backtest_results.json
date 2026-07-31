@@ -1,0 +1,271 @@
+{
+  "overall": {
+    "total_games": 4857,
+    "ties": 705,
+    "tie_rate_pct": 14.52,
+    "modeled_pct": 11.799999999999999,
+    "difference": 2.72
+  },
+  "by_season": [
+    {
+      "season": 2023,
+      "total_games": 2430,
+      "ties": 366,
+      "tie_rate_pct": 15.06
+    },
+    {
+      "season": 2024,
+      "total_games": 2427,
+      "ties": 339,
+      "tie_rate_pct": 13.97
+    }
+  ],
+  "by_park_type": [
+    {
+      "value": "coors_field",
+      "total_games": 160,
+      "ties": 19,
+      "tie_rate_pct": 11.88,
+      "modeled_pct": 7.7,
+      "difference": 4.18
+    },
+    {
+      "value": "hitter_park",
+      "total_games": 1618,
+      "ties": 248,
+      "tie_rate_pct": 15.33,
+      "modeled_pct": 9.1,
+      "difference": 6.23
+    },
+    {
+      "value": "neutral",
+      "total_games": 1142,
+      "ties": 165,
+      "tie_rate_pct": 14.45,
+      "modeled_pct": 11.600000000000001,
+      "difference": 2.85
+    },
+    {
+      "value": "pitcher_park",
+      "total_games": 1937,
+      "ties": 273,
+      "tie_rate_pct": 14.09,
+      "modeled_pct": 13.8,
+      "difference": 0.29
+    }
+  ],
+  "by_era_bucket": [
+    {
+      "value": "both_under_3",
+      "total_games": 299,
+      "ties": 63,
+      "tie_rate_pct": 21.07,
+      "modeled_pct": 15.8,
+      "difference": 5.27
+    },
+    {
+      "value": "diff_0.5_to_1.0",
+      "total_games": 1087,
+      "ties": 175,
+      "tie_rate_pct": 16.1,
+      "modeled_pct": 11.3,
+      "difference": 4.8
+    },
+    {
+      "value": "diff_1.0_to_1.5",
+      "total_games": 811,
+      "ties": 120,
+      "tie_rate_pct": 14.8,
+      "modeled_pct": 10.4,
+      "difference": 4.4
+    },
+    {
+      "value": "diff_over_1.5",
+      "total_games": 1581,
+      "ties": 195,
+      "tie_rate_pct": 12.33,
+      "modeled_pct": 8.799999999999999,
+      "difference": 3.53
+    },
+    {
+      "value": "diff_under_0.5",
+      "total_games": 1076,
+      "ties": 152,
+      "tie_rate_pct": 14.13,
+      "modeled_pct": 13.0,
+      "difference": 1.13
+    }
+  ],
+  "by_total_bucket": [
+    {
+      "value": "7_to_8",
+      "total_games": 902,
+      "ties": 124,
+      "tie_rate_pct": 13.75,
+      "modeled_pct": 11.799999999999999,
+      "difference": 1.95
+    },
+    {
+      "value": "8_to_9",
+      "total_games": 498,
+      "ties": 65,
+      "tie_rate_pct": 13.05,
+      "modeled_pct": 11.5,
+      "difference": 1.55
+    },
+    {
+      "value": "over_10",
+      "total_games": 1630,
+      "ties": 154,
+      "tie_rate_pct": 9.45,
+      "modeled_pct": 8.5,
+      "difference": 0.95
+    },
+    {
+      "value": "over_9",
+      "total_games": 326,
+      "ties": 32,
+      "tie_rate_pct": 9.82,
+      "modeled_pct": 9.4,
+      "difference": 0.42
+    },
+    {
+      "value": "under_7",
+      "total_games": 1501,
+      "ties": 330,
+      "tie_rate_pct": 21.99,
+      "modeled_pct": 14.2,
+      "difference": 7.79
+    }
+  ],
+  "by_month": [
+    {
+      "month": 4,
+      "month_name": "April",
+      "total_games": 799,
+      "ties": 116,
+      "tie_rate_pct": 14.52,
+      "modeled_pct": 12.5,
+      "difference": 2.02
+    },
+    {
+      "month": 5,
+      "month_name": "May",
+      "total_games": 821,
+      "ties": 113,
+      "tie_rate_pct": 13.76,
+      "modeled_pct": 11.899999999999999,
+      "difference": 1.86
+    },
+    {
+      "month": 6,
+      "month_name": "June",
+      "total_games": 794,
+      "ties": 120,
+      "tie_rate_pct": 15.11,
+      "modeled_pct": 11.4,
+      "difference": 3.71
+    },
+    {
+      "month": 7,
+      "month_name": "July",
+      "total_games": 733,
+      "ties": 106,
+      "tie_rate_pct": 14.46,
+      "modeled_pct": 11.0,
+      "difference": 3.46
+    },
+    {
+      "month": 8,
+      "month_name": "August",
+      "total_games": 826,
+      "ties": 117,
+      "tie_rate_pct": 14.16,
+      "modeled_pct": 11.3,
+      "difference": 2.86
+    },
+    {
+      "month": 9,
+      "month_name": "September",
+      "total_games": 794,
+      "ties": 115,
+      "tie_rate_pct": 14.48,
+      "modeled_pct": 12.1,
+      "difference": 2.38
+    }
+  ],
+  "key_combinations": [
+    {
+      "name": "Ace vs Ace (both ERA < 3.50)",
+      "total_games": 299,
+      "ties": 63,
+      "tie_rate_pct": 21.07
+    },
+    {
+      "name": "Ace vs Ace + Pitcher Park",
+      "total_games": 131,
+      "ties": 22,
+      "tie_rate_pct": 16.79
+    },
+    {
+      "name": "Ace vs Ace + Pitcher Park + Low Total (<7 runs)",
+      "total_games": 56,
+      "ties": 12,
+      "tie_rate_pct": 21.43
+    },
+    {
+      "name": "Ace vs Ace + Pitcher Park + April",
+      "total_games": 12,
+      "ties": 3,
+      "tie_rate_pct": 25.0
+    },
+    {
+      "name": "Ace vs Ace + Any Low Total Game",
+      "total_games": 134,
+      "ties": 35,
+      "tie_rate_pct": 26.12
+    },
+    {
+      "name": "Bad Starter (ERA diff > 1.5) + High Total (>9 runs)",
+      "total_games": 723,
+      "ties": 60,
+      "tie_rate_pct": 8.3
+    },
+    {
+      "name": "Hitter Park + High Total (>9 runs)",
+      "total_games": 753,
+      "ties": 81,
+      "tie_rate_pct": 10.76
+    },
+    {
+      "name": "Coors Field Only",
+      "total_games": 160,
+      "ties": 19,
+      "tie_rate_pct": 11.88
+    },
+    {
+      "name": "Coors Field + High Total",
+      "total_games": 98,
+      "ties": 9,
+      "tie_rate_pct": 9.18
+    },
+    {
+      "name": "Pitcher Park + Low Total + April",
+      "total_games": 119,
+      "ties": 25,
+      "tie_rate_pct": 21.01
+    },
+    {
+      "name": "ALL FAVORABLE: Ace+Ace, Pitcher Park, Low Total, April",
+      "total_games": 7,
+      "ties": 3,
+      "tie_rate_pct": 42.86
+    },
+    {
+      "name": "ALL UNFAVORABLE: Bad Starter, Hitter Park, High Total, July",
+      "total_games": 35,
+      "ties": 5,
+      "tie_rate_pct": 14.29
+    }
+  ]
+}

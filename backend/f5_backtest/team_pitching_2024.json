@@ -1,0 +1,182 @@
+{
+  "Oakland Athletics": {
+    "team_era": 4.37,
+    "team_whip": 1.33,
+    "k_per_9": 7.91,
+    "bb_per_9": 3.32
+  },
+  "Pittsburgh Pirates": {
+    "team_era": 4.15,
+    "team_whip": 1.31,
+    "k_per_9": 8.48,
+    "bb_per_9": 3.22
+  },
+  "San Diego Padres": {
+    "team_era": 3.86,
+    "team_whip": 1.22,
+    "k_per_9": 9.09,
+    "bb_per_9": 2.89
+  },
+  "Seattle Mariners": {
+    "team_era": 3.49,
+    "team_whip": 1.08,
+    "k_per_9": 8.89,
+    "bb_per_9": 2.32
+  },
+  "San Francisco Giants": {
+    "team_era": 4.1,
+    "team_whip": 1.3,
+    "k_per_9": 9.01,
+    "bb_per_9": 3.3
+  },
+  "St. Louis Cardinals": {
+    "team_era": 4.04,
+    "team_whip": 1.26,
+    "k_per_9": 8.15,
+    "bb_per_9": 2.83
+  },
+  "Tampa Bay Rays": {
+    "team_era": 3.77,
+    "team_whip": 1.2,
+    "k_per_9": 8.78,
+    "bb_per_9": 2.78
+  },
+  "Texas Rangers": {
+    "team_era": 4.35,
+    "team_whip": 1.3,
+    "k_per_9": 8.64,
+    "bb_per_9": 3.34
+  },
+  "Toronto Blue Jays": {
+    "team_era": 4.29,
+    "team_whip": 1.27,
+    "k_per_9": 8.29,
+    "bb_per_9": 3.17
+  },
+  "Minnesota Twins": {
+    "team_era": 4.26,
+    "team_whip": 1.23,
+    "k_per_9": 9.37,
+    "bb_per_9": 2.71
+  },
+  "Philadelphia Phillies": {
+    "team_era": 3.85,
+    "team_whip": 1.24,
+    "k_per_9": 8.94,
+    "bb_per_9": 2.77
+  },
+  "Atlanta Braves": {
+    "team_era": 3.49,
+    "team_whip": 1.2,
+    "k_per_9": 9.68,
+    "bb_per_9": 2.8
+  },
+  "Chicago White Sox": {
+    "team_era": 4.67,
+    "team_whip": 1.44,
+    "k_per_9": 8.66,
+    "bb_per_9": 4.08
+  },
+  "Miami Marlins": {
+    "team_era": 4.73,
+    "team_whip": 1.38,
+    "k_per_9": 8.25,
+    "bb_per_9": 3.48
+  },
+  "New York Yankees": {
+    "team_era": 3.74,
+    "team_whip": 1.24,
+    "k_per_9": 9.03,
+    "bb_per_9": 3.3
+  },
+  "Milwaukee Brewers": {
+    "team_era": 3.65,
+    "team_whip": 1.23,
+    "k_per_9": 8.55,
+    "bb_per_9": 3.07
+  },
+  "Los Angeles Angels": {
+    "team_era": 4.56,
+    "team_whip": 1.35,
+    "k_per_9": 7.87,
+    "bb_per_9": 3.78
+  },
+  "Arizona Diamondbacks": {
+    "team_era": 4.62,
+    "team_whip": 1.35,
+    "k_per_9": 8.19,
+    "bb_per_9": 3.0
+  },
+  "Baltimore Orioles": {
+    "team_era": 3.94,
+    "team_whip": 1.24,
+    "k_per_9": 8.61,
+    "bb_per_9": 3.0
+  },
+  "Boston Red Sox": {
+    "team_era": 4.04,
+    "team_whip": 1.26,
+    "k_per_9": 8.38,
+    "bb_per_9": 2.86
+  },
+  "Chicago Cubs": {
+    "team_era": 3.78,
+    "team_whip": 1.25,
+    "k_per_9": 8.47,
+    "bb_per_9": 3.05
+  },
+  "Cincinnati Reds": {
+    "team_era": 4.09,
+    "team_whip": 1.25,
+    "k_per_9": 8.63,
+    "bb_per_9": 3.07
+  },
+  "Cleveland Guardians": {
+    "team_era": 3.61,
+    "team_whip": 1.2,
+    "k_per_9": 8.89,
+    "bb_per_9": 3.1
+  },
+  "Colorado Rockies": {
+    "team_era": 5.47,
+    "team_whip": 1.52,
+    "k_per_9": 7.05,
+    "bb_per_9": 3.55
+  },
+  "Detroit Tigers": {
+    "team_era": 3.61,
+    "team_whip": 1.16,
+    "k_per_9": 8.42,
+    "bb_per_9": 2.59
+  },
+  "Houston Astros": {
+    "team_era": 3.74,
+    "team_whip": 1.24,
+    "k_per_9": 9.3,
+    "bb_per_9": 3.42
+  },
+  "Kansas City Royals": {
+    "team_era": 3.76,
+    "team_whip": 1.24,
+    "k_per_9": 8.44,
+    "bb_per_9": 2.97
+  },
+  "Los Angeles Dodgers": {
+    "team_era": 3.9,
+    "team_whip": 1.23,
+    "k_per_9": 8.65,
+    "bb_per_9": 3.12
+  },
+  "Washington Nationals": {
+    "team_era": 4.3,
+    "team_whip": 1.33,
+    "k_per_9": 8.25,
+    "bb_per_9": 2.97
+  },
+  "New York Mets": {
+    "team_era": 3.96,
+    "team_whip": 1.26,
+    "k_per_9": 9.08,
+    "bb_per_9": 3.66
+  }
+}
