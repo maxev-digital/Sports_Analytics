@@ -131,7 +131,7 @@ export function F5Edge() {
   );
 }
 
-function TodaysPlays({ results, loading }: { results: typeof [] | any[]; loading: boolean }) {
+function TodaysPlays({ results, loading }: { results: any[]; loading: boolean }) {
   if (loading) return <LoadingState />;
   if (results.length === 0) {
     return (
@@ -151,7 +151,7 @@ function TodaysPlays({ results, loading }: { results: typeof [] | any[]; loading
   );
 }
 
-function GameBreakdown({ results, loading }: { results: typeof [] | any[]; loading: boolean }) {
+function GameBreakdown({ results, loading }: { results: any[]; loading: boolean }) {
   if (loading) return <LoadingState />;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
