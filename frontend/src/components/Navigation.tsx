@@ -48,6 +48,7 @@ export function Navigation() {
 
   const edgesItems = [
     { path: '/picks',               label: 'PICKS' },
+    { path: '/f5-edge',             label: 'F5 EDGE ENGINE' },
     { path: '/max-ev-edges',        label: 'ML EDGES' },
     { path: '/model-performance',   label: 'MODEL PERFORMANCE' },
     { path: '/predictions-database', label: 'PREDICTIONS DB' },
@@ -61,7 +62,6 @@ export function Navigation() {
 
   const toolsItems = [
     { path: '/tools',            label: 'BETTING TOOLS' },
-    { path: '/f5-edge',          label: 'F5 EDGE ENGINE' },
     { path: '/settings',         label: 'BOOKMAKER SETTINGS' },
     { path: '/system-overview',  label: 'HOW WE PICK: ALL SPORTS' },
     { path: '/system-nfl',       label: 'HOW WE PICK: NFL' },
