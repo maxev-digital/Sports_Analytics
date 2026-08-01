@@ -12,6 +12,7 @@ export function Navigation() {
 
   const [rankingsDropdownOpen, setRankingsDropdownOpen] = useState(false);
   const [edgesDropdownOpen, setEdgesDropdownOpen] = useState(false);
+  const [dataLabDropdownOpen, setDataLabDropdownOpen] = useState(false);
   const [strategyDropdownOpen, setStrategyDropdownOpen] = useState(false);
   const [toolsDropdownOpen, setToolsDropdownOpen] = useState(false);
   const [marketsDropdownOpen, setMarketsDropdownOpen] = useState(false);
@@ -19,6 +20,7 @@ export function Navigation() {
 
   const rankingsRef = useRef<HTMLDivElement>(null);
   const edgesRef = useRef<HTMLDivElement>(null);
+  const dataLabRef = useRef<HTMLDivElement>(null);
   const strategyRef = useRef<HTMLDivElement>(null);
   const toolsRef = useRef<HTMLDivElement>(null);
   const marketsRef = useRef<HTMLDivElement>(null);
@@ -56,6 +58,12 @@ export function Navigation() {
     { path: '/predictions-database', label: 'PREDICTIONS DB' },
   ];
 
+  const dataLabItems = [
+    { path: '/matchup-lab',       label: 'MATCHUP LAB' },
+    { path: '/trends',           label: 'TEAM TRENDS' },
+    { path: '/line-movement',    label: 'LINE MOVEMENT' },
+  ];
+
   const strategyItems: { path: string; label: string }[] = [];
 
   const marketsItems = [
@@ -63,10 +71,7 @@ export function Navigation() {
   ];
 
   const toolsItems = [
-    { path: '/matchup-lab',       label: 'MATCHUP LAB' },
     { path: '/tools',            label: 'BETTING TOOLS' },
-    { path: '/trends',           label: 'TEAM TRENDS' },
-    { path: '/line-movement',    label: 'LINE MOVEMENT' },
     { path: '/settings',         label: 'BOOKMAKER SETTINGS' },
     { path: '/system-overview',  label: 'HOW WE PICK: ALL SPORTS' },
     { path: '/system-nfl',       label: 'HOW WE PICK: NFL' },
@@ -79,6 +84,7 @@ export function Navigation() {
     function handleClick(e: MouseEvent) {
       if (rankingsRef.current && !rankingsRef.current.contains(e.target as Node)) setRankingsDropdownOpen(false);
       if (edgesRef.current && !edgesRef.current.contains(e.target as Node)) setEdgesDropdownOpen(false);
+      if (dataLabRef.current && !dataLabRef.current.contains(e.target as Node)) setDataLabDropdownOpen(false);
       if (strategyRef.current && !strategyRef.current.contains(e.target as Node)) setStrategyDropdownOpen(false);
       if (toolsRef.current && !toolsRef.current.contains(e.target as Node)) setToolsDropdownOpen(false);
       if (marketsRef.current && !marketsRef.current.contains(e.target as Node)) setMarketsDropdownOpen(false);
@@ -173,6 +179,23 @@ export function Navigation() {
               )}
             </div>
 
+            {/* DATA LAB dropdown */}
+            <div className="relative" ref={dataLabRef}>
+              <button
+                onClick={() => setDataLabDropdownOpen(o => !o)}
+                className={navBtn(isDropdownActive(dataLabItems))}
+              >
+                DATA LAB {chevron(dataLabDropdownOpen)}
+              </button>
+              {dataLabDropdownOpen && dropdownPanel(
+                dataLabItems.map(item => (
+                  <Link key={item.path} to={item.path} onClick={() => setDataLabDropdownOpen(false)} className={dropdownLink(isActive(item.path))}>
+                    {item.label}
+                  </Link>
+                ))
+              )}
+            </div>
+
             {/* TOOLS dropdown */}
             <div className="relative" ref={toolsRef}>
               <button
@@ -255,7 +278,7 @@ export function Navigation() {
 
         {/* Mobile nav — horizontal scroll */}
         <div className="md:hidden flex gap-1 pb-2 overflow-x-auto scrollbar-hide">
-          {[...mainNavItems, ...rankingsItems, ...edgesItems, ...strategyItems, ...toolsItems, ...marketsItems].map(item => (
+          {[...mainNavItems, ...rankingsItems, ...edgesItems, ...dataLabItems, ...strategyItems, ...toolsItems, ...marketsItems].map(item => (
             <Link
               key={item.path}
               to={item.path}
