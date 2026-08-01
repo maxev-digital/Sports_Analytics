@@ -409,6 +409,26 @@ async def get_pl():
     return {"daily": {}, "running": {"total_pl": 0, "total_bets": 0, "total_wins": 0, "days": 0}}
 
 
+@router.get("/team-rankings")
+async def get_team_rankings():
+    """F5 betting team rankings computed from 2026 game data."""
+    json_path = BACKTEST_DIR / "f5_team_rankings_2026.json"
+    if json_path.exists():
+        with open(json_path) as f:
+            return {"teams": json.load(f), "season": 2026}
+    return {"teams": [], "error": "Run f5_backtest analysis to generate rankings"}
+
+
+@router.get("/results")
+async def get_results():
+    """2026 backtest results by signal."""
+    json_path = BACKTEST_DIR / "backtest_2026.json"
+    if json_path.exists():
+        with open(json_path) as f:
+            return json.load(f)
+    return {"signals": [], "games": 0, "ties": 0, "season": 2026}
+
+
 @router.get("/credits")
 async def get_credits():
     """Check Odds API credit balance."""
