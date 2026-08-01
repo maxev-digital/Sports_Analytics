@@ -63,6 +63,7 @@ export function Navigation() {
 
   const toolsItems = [
     { path: '/tools',            label: 'BETTING TOOLS' },
+    { path: '/trends',           label: 'TEAM TRENDS' },
     { path: '/line-movement',    label: 'LINE MOVEMENT' },
     { path: '/settings',         label: 'BOOKMAKER SETTINGS' },
     { path: '/system-overview',  label: 'HOW WE PICK: ALL SPORTS' },
