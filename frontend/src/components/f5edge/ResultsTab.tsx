@@ -112,33 +112,42 @@ export function ResultsTab() {
         </ResponsiveContainer>
       </div>
 
-      {/* Signal cards */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {signals.map(s => (
-          <div key={s.signal} className="data-table-wrap" style={{
-            padding: '14px 18px',
-            borderLeft: `3px solid ${s.roi > 0 ? tierColor(s.tier) : BRAND_RED}`,
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Badge color={tierColor(s.tier)} label={s.tier} />
-                <Badge color={BLUE} label={typeLabel(s.type)} />
-                <span style={{ fontWeight: 800, fontSize: '0.82rem', color: FG }}>{s.signal}</span>
-              </div>
-              <span style={{ fontWeight: 800, fontSize: '1.1rem', fontFamily: 'var(--d3-mono)', color: plColor(s.pl) }}>
-                {s.pl >= 0 ? '+' : ''}${Math.abs(s.pl).toLocaleString()}
-              </span>
-            </div>
-
-            <div style={{ display: 'flex', gap: 20, fontSize: '0.72rem' }}>
-              <Stat label="Bets" value={s.bets.toString()} />
-              <Stat label="Wins" value={s.wins.toString()} />
-              <Stat label="Win %" value={`${s.win_rate}%`} color={s.win_rate > 50 ? EMERALD : FG} />
-              <Stat label="ROI" value={fmtPct(s.roi)} color={plColor(s.roi)} />
-              <Stat label="Period" value={s.period} />
-            </div>
-          </div>
-        ))}
+      {/* Results table */}
+      <div className="data-table-wrap" style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
+          <thead>
+            <tr>
+              {['Signal', 'Tier', 'Type', 'Bets', 'Wins', 'Win %', 'P&L', 'ROI'].map(h => (
+                <th key={h} style={{
+                  padding: '8px 10px', textAlign: h === 'Signal' ? 'left' : 'right',
+                  fontSize: '0.65rem', fontWeight: 700, color: MUTED_FG,
+                  letterSpacing: '0.1em', textTransform: 'uppercase',
+                  borderBottom: `1px solid ${BORDER}`,
+                }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {signals.map(s => (
+              <tr key={s.signal} style={{ borderBottom: `1px solid ${BORDER}` }}>
+                <td style={{ padding: '8px 10px', fontWeight: 600, color: FG }}>{s.signal}</td>
+                <td style={{ padding: '8px 10px', textAlign: 'right' }}>
+                  <Badge color={tierColor(s.tier)} label={s.tier} />
+                </td>
+                <td style={{ padding: '8px 10px', textAlign: 'right' }}>
+                  <Badge color={BLUE} label={typeLabel(s.type)} />
+                </td>
+                <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'var(--d3-mono)', color: MUTED_FG }}>{s.bets.toLocaleString()}</td>
+                <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'var(--d3-mono)', color: MUTED_FG }}>{s.wins.toLocaleString()}</td>
+                <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'var(--d3-mono)', fontWeight: 700, color: s.win_rate > 50 ? EMERALD : s.win_rate < 45 ? BRAND_RED : FG }}>{s.win_rate}%</td>
+                <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'var(--d3-mono)', fontWeight: 700, color: plColor(s.pl) }}>
+                  {s.pl >= 0 ? '+' : ''}${Math.abs(s.pl).toLocaleString()}
+                </td>
+                <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'var(--d3-mono)', fontWeight: 700, color: plColor(s.roi) }}>{fmtPct(s.roi)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
