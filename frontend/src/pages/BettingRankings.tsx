@@ -118,11 +118,16 @@ export function BettingRankings() {
     else { setSortKey(key); setSortDesc(true); }
   };
 
-  const sorted = [...teams].sort((a, b) => {
+  const sortFn = (list: any[]) => [...list].sort((a, b) => {
     const av = a[sortKey] ?? 0;
     const bv = b[sortKey] ?? 0;
-    return sortDesc ? bv - av : av - bv;
+    if (typeof av === 'string' && typeof bv === 'string') {
+      return sortDesc ? bv.localeCompare(av) : av.localeCompare(bv);
+    }
+    return sortDesc ? (Number(bv) || 0) - (Number(av) || 0) : (Number(av) || 0) - (Number(bv) || 0);
   });
+
+  const sorted = sortFn(teams);
 
   const views = SPORT_VIEWS[sport] ?? [];
   const sportActive = SPORTS.find(s => s.key === sport)?.active ?? false;
@@ -196,8 +201,8 @@ export function BettingRankings() {
           {sport === 'mlb' && view === 'splits' && <MLBSplits teams={sorted} sortKey={sortKey} sortDesc={sortDesc} onSort={handleSort} sport={sport} />}
           {sport !== 'mlb' && view === 'full_game' && <GenericFullGame teams={sorted} sortKey={sortKey} sortDesc={sortDesc} onSort={handleSort} sport={sport} />}
           {sport !== 'mlb' && view === 'splits' && <GenericSplits teams={sorted} sortKey={sortKey} sortDesc={sortDesc} onSort={handleSort} sport={sport} />}
-          {sport === 'nfl' && view === 'ats' && <NFLAtsTable teams={[...atsTeams].sort((a,b) => sortDesc ? (b[sortKey]??0)-(a[sortKey]??0) : (a[sortKey]??0)-(b[sortKey]??0))} sortKey={sortKey} sortDesc={sortDesc} onSort={handleSort} sport={sport} />}
-          {sport === 'nfl' && view === 'totals' && <NFLTotalsTable teams={[...atsTeams].sort((a,b) => sortDesc ? (b[sortKey]??0)-(a[sortKey]??0) : (a[sortKey]??0)-(b[sortKey]??0))} sortKey={sortKey} sortDesc={sortDesc} onSort={handleSort} sport={sport} />}
+          {sport === 'nfl' && view === 'ats' && <NFLAtsTable teams={sortFn(atsTeams)} sortKey={sortKey} sortDesc={sortDesc} onSort={handleSort} sport={sport} />}
+          {sport === 'nfl' && view === 'totals' && <NFLTotalsTable teams={sortFn(atsTeams)} sortKey={sortKey} sortDesc={sortDesc} onSort={handleSort} sport={sport} />}
           {sport !== 'mlb' && !['full_game','splits','ats','totals'].includes(view) && (
             <div style={{ padding: 40, textAlign: 'center', color: MUTED_FG }}>
               {view.replace('_', ' ').toUpperCase()} data coming soon for {sport.toUpperCase()}.
