@@ -41,7 +41,8 @@ export function Navigation() {
   ];
 
   const rankingsItems = [
-    { path: '/team-rankings',     label: 'TEAM RANKINGS'     },
+    { path: '/power-rankings',    label: 'POWER RANKINGS'    },
+    { path: '/team-rankings',     label: 'STANDINGS'         },
     { path: '/advanced-metrics',  label: 'ADVANCED METRICS'  },
     { path: '/player-leaders',    label: 'PLAYER LEADERS'    },
     { path: '/statcast',          label: 'STATCAST'          },

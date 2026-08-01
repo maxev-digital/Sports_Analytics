@@ -47,6 +47,7 @@ import { F5Edge } from './pages/F5Edge';
 import { LineMovement } from './pages/LineMovement';
 import { Statcast } from './pages/Statcast';
 import { TrendsDashboard } from './pages/TrendsDashboard';
+import { PowerRankings } from './pages/PowerRankings';
 
 const bg = 'min-h-screen flex flex-col' /* dark matte via body bg */;
 
@@ -136,6 +137,7 @@ function AppContent() {
                       <Route path="/line-movement" element={<LineMovement />} />
                       <Route path="/statcast" element={<Statcast />} />
                       <Route path="/trends" element={<TrendsDashboard />} />
+                      <Route path="/power-rankings" element={<PowerRankings />} />
                       <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
                       <Route path="/props" element={<ProtectedRoute><Props /></ProtectedRoute>} />
                       <Route path="/strategy-results" element={<ProtectedRoute><StrategyResults /></ProtectedRoute>} />
