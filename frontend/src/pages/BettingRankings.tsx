@@ -1,3 +1,4 @@
+/* v2 — fixed NFL sort crash */
 /**
  * Betting Rankings — Multi-sport betting analytics.
  * Sport tabs at top, sport-specific view pills below.
@@ -175,11 +176,17 @@ function SortTh({ label, field, sortKey, sortDesc, onSort }: {
 function Td({ value, format, color, bold, align }: {
   value: any; format?: (v: any) => string; color?: string; bold?: boolean; align?: 'left' | 'right';
 }) {
+  let display: string;
+  try {
+    display = format ? format(value) : (value ?? '—');
+  } catch {
+    display = '—';
+  }
   return (
     <td style={{
       padding: '6px 8px', textAlign: align ?? 'right', whiteSpace: 'nowrap',
       fontFamily: 'var(--d3-mono)', fontWeight: bold ? 700 : 400, color: color ?? MUTED_FG,
-    }}>{format ? format(value) : value}</td>
+    }}>{display}</td>
   );
 }
 
@@ -187,9 +194,9 @@ function TeamTd({ name }: { name: string }) {
   return <td style={{ padding: '6px 8px', fontWeight: 700, color: FG, fontFamily: 'Nunito' }}>{name}</td>;
 }
 
-function diffColor(v: number): string { return v > 0 ? EMERALD : v < 0 ? BRAND_RED : MUTED_FG; }
-function pctGood(v: number, good: number, bad: number): string { return v > good ? EMERALD : v < bad ? BRAND_RED : FG; }
-function fmtDiff(v: number): string { return `${v > 0 ? '+' : ''}${v.toFixed(2)}`; }
+function diffColor(v: any): string { return (v ?? 0) > 0 ? EMERALD : (v ?? 0) < 0 ? BRAND_RED : MUTED_FG; }
+function pctGood(v: any, good: number, bad: number): string { const n = Number(v) || 0; return n > good ? EMERALD : n < bad ? BRAND_RED : FG; }
+function fmtDiff(v: any): string { const n = Number(v) || 0; return `${n > 0 ? '+' : ''}${n.toFixed(2)}`; }
 
 /* ─── MLB Tables ─── */
 
@@ -345,12 +352,12 @@ function GenericFullGame({ teams, sortKey, sortDesc, onSort, sport }: any) {
               <Td value={t.games} />
               <Td value={t.record} color={FG} />
               <Td value={`${t.win_pct}%`} color={pctGood(t.win_pct, 55, 45)} bold />
-              <Td value={t.ppg.toFixed(1)} color={pctGood(t.ppg, t.ppg > 50 ? 110 : 3.2, t.ppg > 50 ? 100 : 2.5)} />
-              <Td value={t.papg.toFixed(1)} />
+              <Td value={(t.ppg ?? 0).toFixed(1)} color={pctGood(t.ppg, t.ppg > 50 ? 110 : 3.2, t.ppg > 50 ? 100 : 2.5)} />
+              <Td value={(t.papg ?? 0).toFixed(1)} />
               <Td value={fmtDiff(t.diff)} color={diffColor(t.diff)} bold />
-              <Td value={t.avg_total.toFixed(1)} color={BLUE} />
-              <Td value={`${t.home_win_pct}%`} color={pctGood(t.home_win_pct, 60, 40)} />
-              <Td value={`${t.away_win_pct}%`} color={pctGood(t.away_win_pct, 55, 40)} />
+              <Td value={(t.avg_total ?? 0).toFixed(1)} color={BLUE} />
+              <Td value={`${t.home_win_pct ?? 0}%`} color={pctGood(t.home_win_pct, 60, 40)} />
+              <Td value={`${t.away_win_pct ?? 0}%`} color={pctGood(t.away_win_pct, 55, 40)} />
             </tr>
           ))}
         </tbody>
@@ -375,16 +382,16 @@ function GenericSplits({ teams, sortKey, sortDesc, onSort }: any) {
         </tr></thead>
         <tbody>
           {teams.map((t: any) => {
-            const gap = (t.home_ppg || 0) - (t.away_ppg || 0);
+            const gap = Number(t.home_ppg || 0) - Number(t.away_ppg || 0);
             return (
               <tr key={t.team} style={{ borderBottom: `1px solid ${BORDER}` }}>
                 <TeamTd name={t.team} />
-                <Td value={t.home_record} color={FG} />
-                <Td value={(t.home_ppg || 0).toFixed(1)} />
-                <Td value={(t.home_papg || 0).toFixed(1)} />
-                <Td value={t.away_record} color={FG} />
-                <Td value={(t.away_ppg || 0).toFixed(1)} />
-                <Td value={(t.away_papg || 0).toFixed(1)} />
+                <Td value={t.home_record ?? '—'} color={FG} />
+                <Td value={Number(t.home_ppg || 0).toFixed(1)} />
+                <Td value={Number(t.home_papg || 0).toFixed(1)} />
+                <Td value={t.away_record ?? '—'} color={FG} />
+                <Td value={Number(t.away_ppg || 0).toFixed(1)} />
+                <Td value={Number(t.away_papg || 0).toFixed(1)} />
                 <Td value={fmtDiff(gap)} color={diffColor(gap)} bold />
               </tr>
             );
