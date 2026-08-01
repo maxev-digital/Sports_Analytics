@@ -410,18 +410,29 @@ async def get_pl():
 
 
 @router.get("/team-rankings")
-async def get_team_rankings():
-    """FG + F5 betting team rankings computed from 2026 game data."""
-    json_path = BACKTEST_DIR / "betting_rankings_2026.json"
+async def get_team_rankings(sport: Optional[str] = Query(default="mlb")):
+    """Betting team rankings — supports mlb, nfl, nba, nhl, ncaaf, ncaab."""
+    sport = (sport or "mlb").lower()
+
+    # Sport-specific file mapping
+    file_map = {
+        "mlb": "betting_rankings_2026.json",
+        "nfl": "nfl_betting_rankings.json",
+        "nba": "nba_betting_rankings.json",
+        "nhl": "nhl_betting_rankings.json",
+        "ncaaf": "ncaaf_betting_rankings.json",
+        "ncaab": "ncaab_betting_rankings.json",
+    }
+
+    filename = file_map.get(sport)
+    if not filename:
+        return {"teams": [], "error": f"Unknown sport: {sport}"}
+
+    json_path = BACKTEST_DIR / filename
     if json_path.exists():
         with open(json_path) as f:
-            return {"teams": json.load(f), "season": 2026}
-    # Fallback to F5-only
-    json_path2 = BACKTEST_DIR / "f5_team_rankings_2026.json"
-    if json_path2.exists():
-        with open(json_path2) as f:
-            return {"teams": json.load(f), "season": 2026}
-    return {"teams": [], "error": "Run f5_backtest analysis to generate rankings"}
+            return {"teams": json.load(f), "sport": sport}
+    return {"teams": [], "error": f"No data for {sport}"}
 
 
 @router.get("/results")

@@ -20,10 +20,10 @@ type Sport = 'mlb' | 'nfl' | 'nba' | 'nhl' | 'ncaaf';
 
 const SPORTS: { key: Sport; label: string; active: boolean }[] = [
   { key: 'mlb',   label: 'MLB',   active: true },
-  { key: 'nfl',   label: 'NFL',   active: false },
-  { key: 'ncaaf', label: 'NCAAF', active: false },
-  { key: 'nba',   label: 'NBA',   active: false },
-  { key: 'nhl',   label: 'NHL',   active: false },
+  { key: 'nfl',   label: 'NFL',   active: true },
+  { key: 'ncaaf', label: 'NCAAF', active: true },
+  { key: 'nba',   label: 'NBA',   active: true },
+  { key: 'nhl',   label: 'NHL',   active: true },
 ];
 
 const SPORT_VIEWS: Record<Sport, { key: string; label: string }[]> = {
@@ -43,9 +43,8 @@ export function BettingRankings() {
   const [sortDesc, setSortDesc] = useState(true);
 
   useEffect(() => {
-    if (sport !== 'mlb') { setTeams([]); setLoading(false); return; }
     setLoading(true);
-    fetch(getApiUrl('f5/team-rankings'))
+    fetch(getApiUrl(`f5/team-rankings?sport=${sport}`))
       .then(r => r.json())
       .then(d => setTeams(d.teams ?? []))
       .catch(() => setTeams([]))
@@ -114,15 +113,22 @@ export function BettingRankings() {
       )}
 
       {/* Content */}
-      {!sportActive ? (
-        <ComingSoon sport={sport} />
-      ) : loading ? (
+      {loading ? (
         <div style={{ padding: 40, textAlign: 'center', color: MUTED_FG }}>Loading...</div>
+      ) : teams.length === 0 ? (
+        <ComingSoon sport={sport} />
       ) : (
         <div style={{ padding: '0 24px 24px', maxWidth: 1400 }}>
           {sport === 'mlb' && view === 'full_game' && <MLBFullGame teams={sorted} sortKey={sortKey} sortDesc={sortDesc} onSort={handleSort} />}
           {sport === 'mlb' && view === 'first_5' && <MLBF5 teams={sorted} sortKey={sortKey} sortDesc={sortDesc} onSort={handleSort} />}
           {sport === 'mlb' && view === 'splits' && <MLBSplits teams={sorted} sortKey={sortKey} sortDesc={sortDesc} onSort={handleSort} />}
+          {sport !== 'mlb' && view === 'full_game' && <GenericFullGame teams={sorted} sortKey={sortKey} sortDesc={sortDesc} onSort={handleSort} sport={sport} />}
+          {sport !== 'mlb' && view === 'splits' && <GenericSplits teams={sorted} sortKey={sortKey} sortDesc={sortDesc} onSort={handleSort} />}
+          {sport !== 'mlb' && view !== 'full_game' && view !== 'splits' && (
+            <div style={{ padding: 40, textAlign: 'center', color: MUTED_FG }}>
+              {view.replace('_', ' ').toUpperCase()} data coming soon for {sport.toUpperCase()}. Full game stats available now.
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -305,6 +311,81 @@ function MLBSplits({ teams, sortKey, sortDesc, onSort }: any) {
                 <Td value={t.f5_away_record} color={FG} />
                 <Td value={t.f5_away_rpg.toFixed(2)} color={pctGood(t.f5_away_rpg, 2.8, 2.2)} />
                 <Td value={fmtDiff(f5Gap)} color={diffColor(f5Gap)} bold />
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function GenericFullGame({ teams, sortKey, sortDesc, onSort, sport }: any) {
+  const scoringLabel = sport === 'nhl' ? 'GPG' : 'PPG';
+  const allowedLabel = sport === 'nhl' ? 'GAPG' : 'PAPG';
+  return (
+    <div className="data-table-wrap" style={{ overflowX: 'auto' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.75rem' }}>
+        <thead><tr>
+          <SortTh label="Team" field="team" sortKey={sortKey} sortDesc={sortDesc} onSort={onSort} />
+          <SortTh label="GP" field="games" sortKey={sortKey} sortDesc={sortDesc} onSort={onSort} />
+          <SortTh label="Record" field="win_pct" sortKey={sortKey} sortDesc={sortDesc} onSort={onSort} />
+          <SortTh label="Win%" field="win_pct" sortKey={sortKey} sortDesc={sortDesc} onSort={onSort} />
+          <SortTh label={scoringLabel} field="ppg" sortKey={sortKey} sortDesc={sortDesc} onSort={onSort} />
+          <SortTh label={allowedLabel} field="papg" sortKey={sortKey} sortDesc={sortDesc} onSort={onSort} />
+          <SortTh label="Diff" field="diff" sortKey={sortKey} sortDesc={sortDesc} onSort={onSort} />
+          <SortTh label="Avg Total" field="avg_total" sortKey={sortKey} sortDesc={sortDesc} onSort={onSort} />
+          <SortTh label="Home W%" field="home_win_pct" sortKey={sortKey} sortDesc={sortDesc} onSort={onSort} />
+          <SortTh label="Away W%" field="away_win_pct" sortKey={sortKey} sortDesc={sortDesc} onSort={onSort} />
+        </tr></thead>
+        <tbody>
+          {teams.map((t: any) => (
+            <tr key={t.team} style={{ borderBottom: `1px solid ${BORDER}` }}>
+              <TeamTd name={t.team} />
+              <Td value={t.games} />
+              <Td value={t.record} color={FG} />
+              <Td value={`${t.win_pct}%`} color={pctGood(t.win_pct, 55, 45)} bold />
+              <Td value={t.ppg.toFixed(1)} color={pctGood(t.ppg, t.ppg > 50 ? 110 : 3.2, t.ppg > 50 ? 100 : 2.5)} />
+              <Td value={t.papg.toFixed(1)} />
+              <Td value={fmtDiff(t.diff)} color={diffColor(t.diff)} bold />
+              <Td value={t.avg_total.toFixed(1)} color={BLUE} />
+              <Td value={`${t.home_win_pct}%`} color={pctGood(t.home_win_pct, 60, 40)} />
+              <Td value={`${t.away_win_pct}%`} color={pctGood(t.away_win_pct, 55, 40)} />
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function GenericSplits({ teams, sortKey, sortDesc, onSort }: any) {
+  return (
+    <div className="data-table-wrap" style={{ overflowX: 'auto' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.75rem' }}>
+        <thead><tr>
+          <SortTh label="Team" field="team" sortKey={sortKey} sortDesc={sortDesc} onSort={onSort} />
+          <SortTh label="Home Rec" field="home_win_pct" sortKey={sortKey} sortDesc={sortDesc} onSort={onSort} />
+          <SortTh label="Home PPG" field="home_ppg" sortKey={sortKey} sortDesc={sortDesc} onSort={onSort} />
+          <SortTh label="Home PAPG" field="home_papg" sortKey={sortKey} sortDesc={sortDesc} onSort={onSort} />
+          <SortTh label="Away Rec" field="away_win_pct" sortKey={sortKey} sortDesc={sortDesc} onSort={onSort} />
+          <SortTh label="Away PPG" field="away_ppg" sortKey={sortKey} sortDesc={sortDesc} onSort={onSort} />
+          <SortTh label="Away PAPG" field="away_papg" sortKey={sortKey} sortDesc={sortDesc} onSort={onSort} />
+          <SortTh label="H-A Gap" field="home_ppg" sortKey={sortKey} sortDesc={sortDesc} onSort={onSort} />
+        </tr></thead>
+        <tbody>
+          {teams.map((t: any) => {
+            const gap = (t.home_ppg || 0) - (t.away_ppg || 0);
+            return (
+              <tr key={t.team} style={{ borderBottom: `1px solid ${BORDER}` }}>
+                <TeamTd name={t.team} />
+                <Td value={t.home_record} color={FG} />
+                <Td value={(t.home_ppg || 0).toFixed(1)} />
+                <Td value={(t.home_papg || 0).toFixed(1)} />
+                <Td value={t.away_record} color={FG} />
+                <Td value={(t.away_ppg || 0).toFixed(1)} />
+                <Td value={(t.away_papg || 0).toFixed(1)} />
+                <Td value={fmtDiff(gap)} color={diffColor(gap)} bold />
               </tr>
             );
           })}
