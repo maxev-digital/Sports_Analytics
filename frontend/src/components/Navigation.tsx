@@ -63,6 +63,7 @@ export function Navigation() {
   ];
 
   const toolsItems = [
+    { path: '/matchup-lab',       label: 'MATCHUP LAB' },
     { path: '/tools',            label: 'BETTING TOOLS' },
     { path: '/trends',           label: 'TEAM TRENDS' },
     { path: '/line-movement',    label: 'LINE MOVEMENT' },
