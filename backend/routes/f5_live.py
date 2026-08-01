@@ -410,29 +410,50 @@ async def get_pl():
 
 
 @router.get("/team-rankings")
-async def get_team_rankings(sport: Optional[str] = Query(default="mlb")):
-    """Betting team rankings — supports mlb, nfl, nba, nhl, ncaaf, ncaab."""
+async def get_team_rankings(
+    sport: Optional[str] = Query(default="mlb"),
+    season: Optional[str] = Query(default=None),
+):
+    """Betting team rankings — supports mlb, nfl, nba, nhl, ncaaf, ncaab with season filter."""
     sport = (sport or "mlb").lower()
 
-    # Sport-specific file mapping
-    file_map = {
-        "mlb": "betting_rankings_2026.json",
-        "nfl": "nfl_betting_rankings.json",
-        "nba": "nba_betting_rankings.json",
-        "nhl": "nhl_betting_rankings.json",
-        "ncaaf": "ncaaf_betting_rankings.json",
-        "ncaab": "ncaab_betting_rankings.json",
+    # Available seasons per sport (most recent first)
+    SEASONS: dict = {
+        "mlb":   [{"key": "2026", "label": "2026", "current": True}],
+        "nfl":   [{"key": "2025", "label": "2025", "current": False}, {"key": "2024", "label": "2024", "current": False}, {"key": "2023", "label": "2023", "current": False}, {"key": "2022", "label": "2022", "current": False}],
+        "nba":   [{"key": "2024_25", "label": "2024-25", "current": False}, {"key": "2023_24", "label": "2023-24", "current": False}, {"key": "2022_23", "label": "2022-23", "current": False}],
+        "nhl":   [{"key": "2024-25", "label": "2024-25", "current": False}],
+        "ncaaf": [{"key": "2024", "label": "2024", "current": False}, {"key": "2023", "label": "2023", "current": False}],
+        "ncaab": [{"key": "2025", "label": "2024-25", "current": False}, {"key": "2024", "label": "2023-24", "current": False}, {"key": "2023", "label": "2022-23", "current": False}],
     }
 
-    filename = file_map.get(sport)
-    if not filename:
-        return {"teams": [], "error": f"Unknown sport: {sport}"}
+    available = SEASONS.get(sport, [])
+    if not available:
+        return {"teams": [], "seasons": [], "error": f"Unknown sport: {sport}"}
+
+    # Default to most recent season
+    sel = season or available[0]["key"]
+
+    # File mapping
+    if sport == "mlb":
+        filename = "betting_rankings_2026.json"
+    elif sport == "nhl":
+        filename = "nhl_betting_rankings.json"
+    else:
+        filename = f"{sport}_betting_rankings_{sel}.json"
 
     json_path = BACKTEST_DIR / filename
     if json_path.exists():
         with open(json_path) as f:
-            return {"teams": json.load(f), "sport": sport}
-    return {"teams": [], "error": f"No data for {sport}"}
+            return {"teams": json.load(f), "sport": sport, "season": sel, "seasons": available}
+
+    # Fallback to aggregate file
+    fallback = BACKTEST_DIR / f"{sport}_betting_rankings.json"
+    if fallback.exists():
+        with open(fallback) as f:
+            return {"teams": json.load(f), "sport": sport, "season": "all", "seasons": available}
+
+    return {"teams": [], "seasons": available, "error": f"No data for {sport} season {sel}"}
 
 
 @router.get("/results")

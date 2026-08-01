@@ -39,6 +39,8 @@ export function BettingRankings() {
   const [sport, setSport] = useState<Sport>('mlb');
   const [view, setView] = useState('full_game');
   const [teams, setTeams] = useState<any[]>([]);
+  const [seasons, setSeasons] = useState<{ key: string; label: string; current: boolean }[]>([]);
+  const [selectedSeason, setSelectedSeason] = useState('');
   const [loading, setLoading] = useState(true);
   const [sortKey, setSortKey] = useState('win_pct');
   const [sortDesc, setSortDesc] = useState(true);
@@ -47,13 +49,29 @@ export function BettingRankings() {
     setTeams([]);
     setView('full_game');
     setSortKey(sport === 'mlb' ? 'fg_win_pct' : 'win_pct');
+    setSelectedSeason('');
     setLoading(true);
     fetch(getApiUrl(`f5/team-rankings?sport=${sport}`))
+      .then(r => r.json())
+      .then(d => {
+        setTeams(d.teams ?? []);
+        setSeasons(d.seasons ?? []);
+        setSelectedSeason(d.season ?? '');
+      })
+      .catch(() => setTeams([]))
+      .finally(() => setLoading(false));
+  }, [sport]);
+
+  const changeSeason = (key: string) => {
+    setTeams([]);
+    setSelectedSeason(key);
+    setLoading(true);
+    fetch(getApiUrl(`f5/team-rankings?sport=${sport}&season=${key}`))
       .then(r => r.json())
       .then(d => setTeams(d.teams ?? []))
       .catch(() => setTeams([]))
       .finally(() => setLoading(false));
-  }, [sport]);
+  };
 
   const handleSort = (key: string) => {
     if (sortKey === key) setSortDesc(!sortDesc);
@@ -105,8 +123,23 @@ export function BettingRankings() {
               {v.label}
             </button>
           ))}
+          {seasons.length > 1 && (
+            <>
+              <span style={{ marginLeft: 16, fontSize: '0.68rem', fontWeight: 700, color: MUTED_FG, letterSpacing: '0.1em' }}>SEASON</span>
+              {seasons.map(s => (
+                <button
+                  key={s.key}
+                  className={`filter-pill ${selectedSeason === s.key ? 'active' : ''}`}
+                  onClick={() => changeSeason(s.key)}
+                  style={s.current ? { borderColor: EMERALD } : {}}
+                >
+                  {s.label} {s.current ? '●' : ''}
+                </button>
+              ))}
+            </>
+          )}
           <span style={{ marginLeft: 'auto', fontSize: '0.72rem', color: MUTED_FG }}>
-            {teams.length > 0 ? `${teams.length} teams · 2026 First Half` : ''}
+            {teams.length > 0 ? `${teams.length} teams · ${selectedSeason || ''}` : ''}
           </span>
         </div>
       )}
