@@ -203,25 +203,38 @@ const ESPN_LOGO_MAP: Record<string, Record<string, string>> = {
   },
 };
 
+const MLB_ABBR: Record<string, string> = {
+  'Arizona Diamondbacks':'ari','Atlanta Braves':'atl','Baltimore Orioles':'bal',
+  'Boston Red Sox':'bos','Chicago Cubs':'chc','Chicago White Sox':'chw',
+  'Cincinnati Reds':'cin','Cleveland Guardians':'cle','Colorado Rockies':'col',
+  'Detroit Tigers':'det','Houston Astros':'hou','Kansas City Royals':'kc',
+  'Los Angeles Angels':'laa','Los Angeles Dodgers':'lad','Miami Marlins':'mia',
+  'Milwaukee Brewers':'mil','Minnesota Twins':'min','New York Mets':'nym',
+  'New York Yankees':'nyy','Oakland Athletics':'oak','Athletics':'oak',
+  'Philadelphia Phillies':'phi','Pittsburgh Pirates':'pit','San Diego Padres':'sd',
+  'San Francisco Giants':'sf','Seattle Mariners':'sea','St. Louis Cardinals':'stl',
+  'Tampa Bay Rays':'tb','Texas Rangers':'tex','Toronto Blue Jays':'tor',
+  'Washington Nationals':'wsh',
+};
+
 function getLogoUrl(team: string, sport: Sport): string | null {
   if (sport === 'mlb') {
-    const abbr = team.split(' ').pop()?.toLowerCase() ?? '';
-    return `https://a.espncdn.com/i/teamlogos/mlb/500/${abbr}.png`;
+    const abbr = MLB_ABBR[team];
+    return abbr ? `https://a.espncdn.com/i/teamlogos/mlb/500/${abbr}.png` : null;
   }
   if (sport === 'nfl') {
-    const map = ESPN_LOGO_MAP.nfl;
-    const abbr = map[team] ?? team.toLowerCase();
+    const abbr = ESPN_LOGO_MAP.nfl[team] ?? team.toLowerCase();
     return `https://a.espncdn.com/i/teamlogos/nfl/500/${abbr}.png`;
   }
   if (sport === 'nhl') {
-    const map = ESPN_LOGO_MAP.nhl;
-    const abbr = map[team] ?? team.toLowerCase();
+    const abbr = ESPN_LOGO_MAP.nhl[team] ?? team.toLowerCase();
     return `https://a.espncdn.com/i/teamlogos/nhl/500/${abbr}.png`;
   }
   if (sport === 'nba') {
-    const abbr = team.split(' ').pop()?.toLowerCase() ?? '';
+    const abbr = team.toLowerCase();
     return `https://a.espncdn.com/i/teamlogos/nba/500/${abbr}.png`;
   }
+  // NCAAF/NCAAB — too many schools, skip logos
   return null;
 }
 
