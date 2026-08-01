@@ -39,7 +39,7 @@ export function BettingRankings() {
   const [view, setView] = useState('full_game');
   const [teams, setTeams] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sortKey, setSortKey] = useState('fg_win_pct');
+  const [sortKey, setSortKey] = useState('win_pct');
   const [sortDesc, setSortDesc] = useState(true);
 
   useEffect(() => {
@@ -53,7 +53,7 @@ export function BettingRankings() {
 
   useEffect(() => {
     setView('full_game');
-    setSortKey('fg_win_pct');
+    setSortKey(sport === 'mlb' ? 'fg_win_pct' : 'win_pct');
   }, [sport]);
 
   const handleSort = (key: string) => {
@@ -100,7 +100,7 @@ export function BettingRankings() {
             <button
               key={v.key}
               className={`filter-pill ${view === v.key ? 'active' : ''}`}
-              onClick={() => { setView(v.key); setSortKey(v.key === 'first_5' ? 'f5_win_pct' : v.key === 'splits' ? 'fg_home_rpg' : 'fg_win_pct'); }}
+              onClick={() => { setView(v.key); setSortKey(v.key === 'first_5' ? 'f5_win_pct' : v.key === 'splits' ? (sport === 'mlb' ? 'fg_home_rpg' : 'home_ppg') : (sport === 'mlb' ? 'fg_win_pct' : 'win_pct')); }}
               disabled={!sportActive && v.key !== 'full_game'}
             >
               {v.label}
