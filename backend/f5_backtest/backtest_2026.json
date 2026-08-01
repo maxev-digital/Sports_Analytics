@@ -1,0 +1,115 @@
+{
+  "signals": [
+    {
+      "signal": "F5 Tie (Ace vs Ace)",
+      "tier": "STRONG",
+      "type": "tie",
+      "bets": 164,
+      "wins": 37,
+      "win_rate": 22.6,
+      "pl": 3950.0,
+      "roi": 24.1,
+      "season": 2026,
+      "period": "First Half (Apr-Jul)"
+    },
+    {
+      "signal": "F5 Tie (Hi-Venue+ERA<4)",
+      "tier": "STRONG",
+      "type": "tie",
+      "bets": 55,
+      "wins": 17,
+      "win_rate": 30.9,
+      "pl": 3850.0,
+      "roi": 70.0,
+      "season": 2026,
+      "period": "First Half (Apr-Jul)"
+    },
+    {
+      "signal": "F5 Under (ERA<3.50)",
+      "tier": "STRONG",
+      "type": "under",
+      "bets": 164,
+      "wins": 120,
+      "win_rate": 73.2,
+      "pl": 6509.0,
+      "roi": 39.7,
+      "season": 2026,
+      "period": "First Half (Apr-Jul)"
+    },
+    {
+      "signal": "F5 Under (ERA<4.50)",
+      "tier": "GOOD",
+      "type": "under",
+      "bets": 471,
+      "wins": 287,
+      "win_rate": 60.9,
+      "pl": 7691.0,
+      "roi": 16.3,
+      "season": 2026,
+      "period": "First Half (Apr-Jul)"
+    },
+    {
+      "signal": "F5 Fav ML (diff>=1.5)",
+      "tier": "STRONG",
+      "type": "fav_ml",
+      "bets": 604,
+      "wins": 391,
+      "win_rate": 64.7,
+      "pl": 8777.0,
+      "roi": 14.5,
+      "season": 2026,
+      "period": "First Half (Apr-Jul)"
+    },
+    {
+      "signal": "F5 Fav ML (diff>=1.0)",
+      "tier": "GOOD",
+      "type": "fav_ml",
+      "bets": 279,
+      "wins": 125,
+      "win_rate": 44.8,
+      "pl": -5785.0,
+      "roi": -20.7,
+      "season": 2026,
+      "period": "First Half (Apr-Jul)"
+    },
+    {
+      "signal": "F5 Fav ML (diff>=1.5+hitter)",
+      "tier": "STRONG",
+      "type": "fav_ml",
+      "bets": 205,
+      "wins": 136,
+      "win_rate": 66.3,
+      "pl": 3562.0,
+      "roi": 17.4,
+      "season": 2026,
+      "period": "First Half (Apr-Jul)"
+    },
+    {
+      "signal": "F5 Tie+Under SGP",
+      "tier": "STRONG",
+      "type": "sgp",
+      "bets": 219,
+      "wins": 48,
+      "win_rate": 21.9,
+      "pl": 6525.0,
+      "roi": 119.2,
+      "season": 2026,
+      "period": "First Half (Apr-Jul)"
+    },
+    {
+      "signal": "F1 Tie+FG Under SGP",
+      "tier": "GOOD",
+      "type": "sgp",
+      "bets": 377,
+      "wins": 251,
+      "win_rate": 66.6,
+      "pl": 15675.0,
+      "roi": 166.3,
+      "season": 2026,
+      "period": "First Half (Apr-Jul)"
+    }
+  ],
+  "games": 1638,
+  "ties": 258,
+  "season": 2026
+}

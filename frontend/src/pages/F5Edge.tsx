@@ -5,18 +5,19 @@
  * Tabs: Today's Plays, Game Breakdown, Signals, Edge Matrix, Venues
  */
 import { useState } from 'react';
-import { Target, BarChart3, Layout, Database, MapPin, RefreshCw } from 'lucide-react';
+import { Target, BarChart3, Layout, Database, MapPin, RefreshCw, Trophy } from 'lucide-react';
 import { StatCard } from '../components/f5edge/StatCard';
 import { PlayCard } from '../components/f5edge/PlayCard';
 import { GameBreakdownCard } from '../components/f5edge/GameBreakdownCard';
 import { SignalTable } from '../components/f5edge/SignalTable';
 import { EdgeMatrix } from '../components/f5edge/EdgeMatrix';
 import { VenueTable } from '../components/f5edge/VenueTable';
+import { ResultsTab } from '../components/f5edge/ResultsTab';
 import { useF5Today } from '../components/f5edge/useF5Data';
 import { EMERALD, BLUE, MUTED_FG } from '../components/f5edge/tokens';
 import '../styles/analytics.css';
 
-type Tab = 'plays' | 'games' | 'signals' | 'matrix' | 'venues';
+type Tab = 'plays' | 'games' | 'signals' | 'matrix' | 'venues' | 'results';
 
 const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: 'plays',   label: "TODAY'S PLAYS", icon: <Target size={14} /> },
@@ -24,6 +25,7 @@ const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: 'signals', label: 'SIGNALS',        icon: <BarChart3 size={14} /> },
   { key: 'matrix',  label: 'EDGE MATRIX',    icon: <Database size={14} /> },
   { key: 'venues',  label: 'VENUES',         icon: <MapPin size={14} /> },
+  { key: 'results', label: '2026 RESULTS',   icon: <Trophy size={14} /> },
 ];
 
 export function F5Edge() {
@@ -126,6 +128,7 @@ export function F5Edge() {
         {activeTab === 'signals' && <SignalTable />}
         {activeTab === 'matrix' && <EdgeMatrix />}
         {activeTab === 'venues' && <VenueTable />}
+        {activeTab === 'results' && <ResultsTab />}
       </div>
     </div>
   );
