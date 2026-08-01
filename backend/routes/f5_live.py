@@ -411,10 +411,15 @@ async def get_pl():
 
 @router.get("/team-rankings")
 async def get_team_rankings():
-    """F5 betting team rankings computed from 2026 game data."""
-    json_path = BACKTEST_DIR / "f5_team_rankings_2026.json"
+    """FG + F5 betting team rankings computed from 2026 game data."""
+    json_path = BACKTEST_DIR / "betting_rankings_2026.json"
     if json_path.exists():
         with open(json_path) as f:
+            return {"teams": json.load(f), "season": 2026}
+    # Fallback to F5-only
+    json_path2 = BACKTEST_DIR / "f5_team_rankings_2026.json"
+    if json_path2.exists():
+        with open(json_path2) as f:
             return {"teams": json.load(f), "season": 2026}
     return {"teams": [], "error": "Run f5_backtest analysis to generate rankings"}
 

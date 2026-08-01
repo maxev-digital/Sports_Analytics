@@ -48,6 +48,7 @@ import { LineMovement } from './pages/LineMovement';
 import { Statcast } from './pages/Statcast';
 import { TrendsDashboard } from './pages/TrendsDashboard';
 import { PowerRankings } from './pages/PowerRankings';
+import { BettingRankings } from './pages/BettingRankings';
 import { MatchupLab } from './pages/MatchupLab';
 
 const bg = 'min-h-screen flex flex-col' /* dark matte via body bg */;
@@ -140,6 +141,7 @@ function AppContent() {
                       <Route path="/trends" element={<TrendsDashboard />} />
                       <Route path="/power-rankings" element={<PowerRankings />} />
                       <Route path="/matchup-lab" element={<MatchupLab />} />
+                      <Route path="/betting-rankings" element={<BettingRankings />} />
                       <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
                       <Route path="/props" element={<ProtectedRoute><Props /></ProtectedRoute>} />
                       <Route path="/strategy-results" element={<ProtectedRoute><StrategyResults /></ProtectedRoute>} />

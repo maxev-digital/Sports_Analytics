@@ -9,7 +9,6 @@ import {
 } from 'recharts';
 import '../styles/analytics.css';
 import { getApiUrl } from '../config';
-import { F5BettingTable } from '../components/F5BettingTable';
 
 const EMERALD   = 'oklch(69.6% .17 162.48)';
 const BRAND_RED = 'oklch(63.7% .237 25.331)';
@@ -90,42 +89,26 @@ function DarkTooltip({ active, payload, label }: any) {
   );
 }
 
-type View = 'power' | 'betting';
-
 export function PowerRankings() {
   const [sport, setSport] = useState<Sport>('mlb');
-  const [view, setView] = useState<View>('power');
   const [rankings, setRankings] = useState<TeamRank[]>([]);
-  const [f5Rankings, setF5Rankings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([
-      fetch(getApiUrl(`analytics-data/team-scoring/${sport}`)).then(r => r.json()),
-      sport === 'mlb' ? fetch(getApiUrl('f5/team-rankings')).then(r => r.json()).catch(() => ({ teams: [] })) : Promise.resolve({ teams: [] }),
-    ]).then(([scoring, f5]) => {
-      setRankings(computeRankings(scoring.teams ?? []));
-      setF5Rankings(f5.teams ?? []);
-    })
-    .catch(() => { setRankings([]); setF5Rankings([]); })
-    .finally(() => setLoading(false));
+    fetch(getApiUrl(`analytics-data/team-scoring/${sport}`))
+      .then(r => r.json())
+      .then(d => setRankings(computeRankings(d.teams ?? [])))
+      .catch(() => setRankings([]))
+      .finally(() => setLoading(false));
   }, [sport]);
 
   return (
     <div className="analytics-page">
       <div className="analytics-header">
         <h1>Power Rankings</h1>
-        <p className="subtitle">
-          {view === 'power'
-            ? 'Composite rankings: 40% win rate + 35% point differential + 25% recent form (last 10)'
-            : 'F5 betting stats: first 5 innings records, home/away splits, scoring trends — data ESPN doesn\'t show'}
-        </p>
-        <div style={{ display: 'flex', gap: 8, marginTop: 12, marginBottom: 8 }}>
-          <button className={`filter-pill ${view === 'power' ? 'active' : ''}`} onClick={() => setView('power')}>POWER RANKINGS</button>
-          <button className={`filter-pill ${view === 'betting' ? 'active' : ''}`} onClick={() => setView('betting')}>F5 BETTING STATS</button>
-        </div>
-        <div className="sport-tabs">
+        <p className="subtitle">Composite rankings: 40% win rate + 35% point differential + 25% recent form (last 10)</p>
+        <div className="sport-tabs" style={{ marginTop: 12 }}>
           {SPORTS.map(s => (
             <button key={s.key} className={`sport-tab ${sport === s.key ? 'active' : ''}`} onClick={() => setSport(s.key)}>
               {s.label}
@@ -136,16 +119,6 @@ export function PowerRankings() {
 
       {loading ? (
         <div style={{ padding: 40, textAlign: 'center', color: MUTED_FG }}>Loading...</div>
-      ) : view === 'betting' ? (
-        <div style={{ padding: '16px 24px', maxWidth: 1400 }}>
-          {sport !== 'mlb' ? (
-            <div style={{ padding: 40, textAlign: 'center', color: MUTED_FG }}>
-              F5 betting stats currently available for MLB only. NFL coming soon.
-            </div>
-          ) : (
-            <F5BettingTable teams={f5Rankings} />
-          )}
-        </div>
       ) : (
         <div style={{ padding: '16px 24px', maxWidth: 1200 }}>
           {/* Power Score bar chart */}

@@ -53,6 +53,7 @@ export function Navigation() {
   const edgesItems = [
     { path: '/picks',               label: 'PICKS' },
     { path: '/f5-edge',             label: 'F5 EDGE ENGINE' },
+    { path: '/betting-rankings',    label: 'BETTING RANKINGS' },
     { path: '/max-ev-edges',        label: 'ML EDGES' },
     { path: '/model-performance',   label: 'MODEL PERFORMANCE' },
     { path: '/predictions-database', label: 'PREDICTIONS DB' },
