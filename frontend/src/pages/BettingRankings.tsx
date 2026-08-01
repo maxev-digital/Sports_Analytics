@@ -39,7 +39,9 @@ export function BettingRankings() {
   const [sport, setSport] = useState<Sport>('mlb');
   const [view, setView] = useState('full_game');
   const [teams, setTeams] = useState<any[]>([]);
+  const [atsTeams, setAtsTeams] = useState<any[]>([]);
   const [seasons, setSeasons] = useState<{ key: string; label: string; current: boolean }[]>([]);
+  const [atsSeasons, setAtsSeasons] = useState<{ key: string; label: string; current: boolean }[]>([]);
   const [selectedSeason, setSelectedSeason] = useState('');
   const [loading, setLoading] = useState(true);
   const [sortKey, setSortKey] = useState('win_pct');
@@ -47,30 +49,68 @@ export function BettingRankings() {
 
   useEffect(() => {
     setTeams([]);
+    setAtsTeams([]);
     setView('full_game');
     setSortKey(sport === 'mlb' ? 'fg_win_pct' : 'win_pct');
     setSelectedSeason('');
     setLoading(true);
-    fetch(getApiUrl(`f5/team-rankings?sport=${sport}`))
-      .then(r => r.json())
-      .then(d => {
-        setTeams(d.teams ?? []);
-        setSeasons(d.seasons ?? []);
-        setSelectedSeason(d.season ?? '');
-      })
-      .catch(() => setTeams([]))
-      .finally(() => setLoading(false));
+
+    const fetches: Promise<any>[] = [
+      fetch(getApiUrl(`f5/team-rankings?sport=${sport}`)).then(r => r.json()),
+    ];
+    if (sport === 'nfl') {
+      fetches.push(fetch(getApiUrl(`f5/ats-rankings?sport=nfl`)).then(r => r.json()).catch(() => ({ teams: [] })));
+    }
+
+    Promise.all(fetches).then(([main, ats]) => {
+      setTeams(main.teams ?? []);
+      setSeasons(main.seasons ?? []);
+      setSelectedSeason(main.season ?? '');
+      if (ats) {
+        setAtsTeams(ats.teams ?? []);
+        setAtsSeasons(ats.seasons ?? []);
+      }
+    })
+    .catch(() => setTeams([]))
+    .finally(() => setLoading(false));
   }, [sport]);
 
   const changeSeason = (key: string) => {
     setTeams([]);
+    setAtsTeams([]);
     setSelectedSeason(key);
     setLoading(true);
-    fetch(getApiUrl(`f5/team-rankings?sport=${sport}&season=${key}`))
+
+    const isAtsView = view === 'ats' || view === 'totals';
+    const endpoint = isAtsView
+      ? `f5/ats-rankings?sport=${sport}&season=${key}`
+      : `f5/team-rankings?sport=${sport}&season=${key}`;
+
+    fetch(getApiUrl(endpoint))
       .then(r => r.json())
-      .then(d => setTeams(d.teams ?? []))
-      .catch(() => setTeams([]))
+      .then(d => {
+        if (isAtsView) setAtsTeams(d.teams ?? []);
+        else setTeams(d.teams ?? []);
+      })
+      .catch(() => {})
       .finally(() => setLoading(false));
+  };
+
+  const switchToAtsView = (v: string) => {
+    setView(v);
+    if ((v === 'ats' || v === 'totals') && atsTeams.length === 0 && sport === 'nfl') {
+      setLoading(true);
+      fetch(getApiUrl(`f5/ats-rankings?sport=nfl&season=${selectedSeason || '2025'}`))
+        .then(r => r.json())
+        .then(d => {
+          setAtsTeams(d.teams ?? []);
+          setAtsSeasons(d.seasons ?? []);
+          if (d.season) setSelectedSeason(d.season);
+        })
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    }
+    setSortKey(v === 'ats' ? 'ats_cover_pct' : v === 'totals' ? 'over_pct' : v === 'first_5' ? 'f5_win_pct' : v === 'splits' ? (sport === 'mlb' ? 'fg_home_rpg' : 'home_ppg') : (sport === 'mlb' ? 'fg_win_pct' : 'win_pct'));
   };
 
   const handleSort = (key: string) => {
@@ -117,16 +157,16 @@ export function BettingRankings() {
             <button
               key={v.key}
               className={`filter-pill ${view === v.key ? 'active' : ''}`}
-              onClick={() => { setView(v.key); setSortKey(v.key === 'first_5' ? 'f5_win_pct' : v.key === 'splits' ? (sport === 'mlb' ? 'fg_home_rpg' : 'home_ppg') : (sport === 'mlb' ? 'fg_win_pct' : 'win_pct')); }}
+              onClick={() => switchToAtsView(v.key)}
               disabled={!sportActive && v.key !== 'full_game'}
             >
               {v.label}
             </button>
           ))}
-          {seasons.length > 1 && (
+          {((view === 'ats' || view === 'totals') ? atsSeasons : seasons).length > 1 && (
             <>
               <span style={{ marginLeft: 16, fontSize: '0.68rem', fontWeight: 700, color: MUTED_FG, letterSpacing: '0.1em' }}>SEASON</span>
-              {seasons.map(s => (
+              {((view === 'ats' || view === 'totals') ? atsSeasons : seasons).map(s => (
                 <button
                   key={s.key}
                   className={`filter-pill ${selectedSeason === s.key ? 'active' : ''}`}
@@ -156,9 +196,11 @@ export function BettingRankings() {
           {sport === 'mlb' && view === 'splits' && <MLBSplits teams={sorted} sortKey={sortKey} sortDesc={sortDesc} onSort={handleSort} sport={sport} />}
           {sport !== 'mlb' && view === 'full_game' && <GenericFullGame teams={sorted} sortKey={sortKey} sortDesc={sortDesc} onSort={handleSort} sport={sport} />}
           {sport !== 'mlb' && view === 'splits' && <GenericSplits teams={sorted} sortKey={sortKey} sortDesc={sortDesc} onSort={handleSort} sport={sport} />}
-          {sport !== 'mlb' && view !== 'full_game' && view !== 'splits' && (
+          {sport === 'nfl' && view === 'ats' && <NFLAtsTable teams={[...atsTeams].sort((a,b) => sortDesc ? (b[sortKey]??0)-(a[sortKey]??0) : (a[sortKey]??0)-(b[sortKey]??0))} sortKey={sortKey} sortDesc={sortDesc} onSort={handleSort} sport={sport} />}
+          {sport === 'nfl' && view === 'totals' && <NFLTotalsTable teams={[...atsTeams].sort((a,b) => sortDesc ? (b[sortKey]??0)-(a[sortKey]??0) : (a[sortKey]??0)-(b[sortKey]??0))} sortKey={sortKey} sortDesc={sortDesc} onSort={handleSort} sport={sport} />}
+          {sport !== 'mlb' && !['full_game','splits','ats','totals'].includes(view) && (
             <div style={{ padding: 40, textAlign: 'center', color: MUTED_FG }}>
-              {view.replace('_', ' ').toUpperCase()} data coming soon for {sport.toUpperCase()}. Full game stats available now.
+              {view.replace('_', ' ').toUpperCase()} data coming soon for {sport.toUpperCase()}.
             </div>
           )}
         </div>
@@ -498,6 +540,66 @@ function GenericSplits({ teams, sortKey, sortDesc, onSort, sport }: any) {
               </tr>
             );
           })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function NFLAtsTable({ teams, sortKey, sortDesc, onSort, sport }: any) {
+  return (
+    <div className="data-table-wrap" style={{ overflowX: 'auto' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.75rem' }}>
+        <thead><tr>
+          <SortTh label="Team" field="team" sortKey={sortKey} sortDesc={sortDesc} onSort={onSort} />
+          <SortTh label="GP" field="games" sortKey={sortKey} sortDesc={sortDesc} onSort={onSort} />
+          <SortTh label="ATS Record" field="ats_cover_pct" sortKey={sortKey} sortDesc={sortDesc} onSort={onSort} />
+          <SortTh label="ATS %" field="ats_cover_pct" sortKey={sortKey} sortDesc={sortDesc} onSort={onSort} />
+          <SortTh label="Home ATS" field="home_ats_pct" sortKey={sortKey} sortDesc={sortDesc} onSort={onSort} />
+          <SortTh label="Away ATS" field="away_ats_pct" sortKey={sortKey} sortDesc={sortDesc} onSort={onSort} />
+          <SortTh label="As Fav" field="fav_cover_pct" sortKey={sortKey} sortDesc={sortDesc} onSort={onSort} />
+          <SortTh label="As Dog" field="dog_cover_pct" sortKey={sortKey} sortDesc={sortDesc} onSort={onSort} />
+        </tr></thead>
+        <tbody>
+          {teams.map((t: any) => (
+            <tr key={t.team} style={{ borderBottom: `1px solid ${BORDER}` }}>
+              <TeamTd name={t.team} sport={sport} />
+              <Td value={t.games} />
+              <Td value={t.ats_record ?? '—'} color={FG} />
+              <Td value={`${t.ats_cover_pct ?? 0}%`} color={pctGood(t.ats_cover_pct, 55, 45)} bold />
+              <Td value={t.home_ats ?? '—'} color={FG} />
+              <Td value={t.away_ats ?? '—'} color={FG} />
+              <Td value={t.fav_ats ?? '—'} color={FG} />
+              <Td value={t.dog_ats ?? '—'} color={FG} />
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function NFLTotalsTable({ teams, sortKey, sortDesc, onSort, sport }: any) {
+  return (
+    <div className="data-table-wrap" style={{ overflowX: 'auto' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.75rem' }}>
+        <thead><tr>
+          <SortTh label="Team" field="team" sortKey={sortKey} sortDesc={sortDesc} onSort={onSort} />
+          <SortTh label="GP" field="games" sortKey={sortKey} sortDesc={sortDesc} onSort={onSort} />
+          <SortTh label="O/U Record" field="over_pct" sortKey={sortKey} sortDesc={sortDesc} onSort={onSort} />
+          <SortTh label="Over %" field="over_pct" sortKey={sortKey} sortDesc={sortDesc} onSort={onSort} />
+          <SortTh label="Avg Total" field="avg_total" sortKey={sortKey} sortDesc={sortDesc} onSort={onSort} />
+        </tr></thead>
+        <tbody>
+          {teams.map((t: any) => (
+            <tr key={t.team} style={{ borderBottom: `1px solid ${BORDER}` }}>
+              <TeamTd name={t.team} sport={sport} />
+              <Td value={t.games} />
+              <Td value={t.ou_record ?? '—'} color={FG} />
+              <Td value={`${t.over_pct ?? 0}%`} color={pctGood(t.over_pct, 55, 45)} bold />
+              <Td value={(t.avg_total ?? 0).toFixed(1)} color={BLUE} />
+            </tr>
+          ))}
         </tbody>
       </table>
     </div>

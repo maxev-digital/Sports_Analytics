@@ -420,7 +420,7 @@ async def get_team_rankings(
     # Available seasons per sport (most recent first)
     SEASONS: dict = {
         "mlb":   [{"key": "2026", "label": "2026", "current": True}],
-        "nfl":   [{"key": "2025", "label": "2025", "current": False}, {"key": "2024", "label": "2024", "current": False}, {"key": "2023", "label": "2023", "current": False}, {"key": "2022", "label": "2022", "current": False}],
+        "nfl":   [{"key": "2025", "label": "2025", "current": False}, {"key": "2024", "label": "2024", "current": False}, {"key": "2023", "label": "2023", "current": False}, {"key": "2022", "label": "2022", "current": False}, {"key": "2021", "label": "2021", "current": False}, {"key": "2020", "label": "2020", "current": False}, {"key": "2019", "label": "2019", "current": False}, {"key": "2018", "label": "2018", "current": False}, {"key": "2017", "label": "2017", "current": False}, {"key": "2016", "label": "2016", "current": False}, {"key": "2015", "label": "2015", "current": False}],
         "nba":   [{"key": "2024_25", "label": "2024-25", "current": False}, {"key": "2023_24", "label": "2023-24", "current": False}, {"key": "2022_23", "label": "2022-23", "current": False}],
         "nhl":   [{"key": "2024-25", "label": "2024-25", "current": False}],
         "ncaaf": [{"key": "2024", "label": "2024", "current": False}, {"key": "2023", "label": "2023", "current": False}],
@@ -454,6 +454,29 @@ async def get_team_rankings(
             return {"teams": json.load(f), "sport": sport, "season": "all", "seasons": available}
 
     return {"teams": [], "seasons": available, "error": f"No data for {sport} season {sel}"}
+
+
+@router.get("/ats-rankings")
+async def get_ats_rankings(
+    sport: Optional[str] = Query(default="nfl"),
+    season: Optional[str] = Query(default=None),
+):
+    """ATS and O/U records by team — currently NFL only."""
+    sport = (sport or "nfl").lower()
+
+    ATS_SEASONS: dict = {
+        "nfl": [{"key": str(y), "label": str(y), "current": False} for y in range(2025, 2014, -1)],
+    }
+
+    available = ATS_SEASONS.get(sport, [])
+    sel = season or (available[0]["key"] if available else "")
+
+    json_path = BACKTEST_DIR / f"nfl_ats_{sel}.json"
+    if json_path.exists():
+        with open(json_path) as f:
+            return {"teams": json.load(f), "sport": sport, "season": sel, "seasons": available}
+
+    return {"teams": [], "seasons": available, "error": f"No ATS data for {sport} {sel}"}
 
 
 @router.get("/results")
