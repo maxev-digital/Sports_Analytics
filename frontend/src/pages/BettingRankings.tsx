@@ -44,17 +44,15 @@ export function BettingRankings() {
   const [sortDesc, setSortDesc] = useState(true);
 
   useEffect(() => {
+    setTeams([]);
+    setView('full_game');
+    setSortKey(sport === 'mlb' ? 'fg_win_pct' : 'win_pct');
     setLoading(true);
     fetch(getApiUrl(`f5/team-rankings?sport=${sport}`))
       .then(r => r.json())
       .then(d => setTeams(d.teams ?? []))
       .catch(() => setTeams([]))
       .finally(() => setLoading(false));
-  }, [sport]);
-
-  useEffect(() => {
-    setView('full_game');
-    setSortKey(sport === 'mlb' ? 'fg_win_pct' : 'win_pct');
   }, [sport]);
 
   const handleSort = (key: string) => {
@@ -120,11 +118,11 @@ export function BettingRankings() {
         <ComingSoon sport={sport} />
       ) : (
         <div style={{ padding: '0 24px 24px', maxWidth: 1400 }}>
-          {sport === 'mlb' && view === 'full_game' && <MLBFullGame teams={sorted} sortKey={sortKey} sortDesc={sortDesc} onSort={handleSort} />}
-          {sport === 'mlb' && view === 'first_5' && <MLBF5 teams={sorted} sortKey={sortKey} sortDesc={sortDesc} onSort={handleSort} />}
-          {sport === 'mlb' && view === 'splits' && <MLBSplits teams={sorted} sortKey={sortKey} sortDesc={sortDesc} onSort={handleSort} />}
+          {sport === 'mlb' && view === 'full_game' && <MLBFullGame teams={sorted} sortKey={sortKey} sortDesc={sortDesc} onSort={handleSort} sport={sport} />}
+          {sport === 'mlb' && view === 'first_5' && <MLBF5 teams={sorted} sortKey={sortKey} sortDesc={sortDesc} onSort={handleSort} sport={sport} />}
+          {sport === 'mlb' && view === 'splits' && <MLBSplits teams={sorted} sortKey={sortKey} sortDesc={sortDesc} onSort={handleSort} sport={sport} />}
           {sport !== 'mlb' && view === 'full_game' && <GenericFullGame teams={sorted} sortKey={sortKey} sortDesc={sortDesc} onSort={handleSort} sport={sport} />}
-          {sport !== 'mlb' && view === 'splits' && <GenericSplits teams={sorted} sortKey={sortKey} sortDesc={sortDesc} onSort={handleSort} />}
+          {sport !== 'mlb' && view === 'splits' && <GenericSplits teams={sorted} sortKey={sortKey} sortDesc={sortDesc} onSort={handleSort} sport={sport} />}
           {sport !== 'mlb' && view !== 'full_game' && view !== 'splits' && (
             <div style={{ padding: 40, textAlign: 'center', color: MUTED_FG }}>
               {view.replace('_', ' ').toUpperCase()} data coming soon for {sport.toUpperCase()}. Full game stats available now.
@@ -190,8 +188,53 @@ function Td({ value, format, color, bold, align }: {
   );
 }
 
-function TeamTd({ name }: { name: string }) {
-  return <td style={{ padding: '6px 8px', fontWeight: 700, color: FG, fontFamily: 'Nunito' }}>{name}</td>;
+const ESPN_LOGO_MAP: Record<string, Record<string, string>> = {
+  nfl: {
+    ARI:'crd',ATL:'atl',BAL:'bal',BUF:'buf',CAR:'car',CHI:'chi',CIN:'cin',CLE:'cle',
+    DAL:'dal',DEN:'den',DET:'det',GB:'gb',HOU:'hou',IND:'ind',JAX:'jax',KC:'kc',
+    LAC:'lac',LAR:'lar',LV:'lv',MIA:'mia',MIN:'min',NE:'ne',NO:'no',NYG:'nyg',
+    NYJ:'nyj',PHI:'phi',PIT:'pit',SEA:'sea',SF:'sf',TB:'tb',TEN:'ten',WAS:'wsh',
+  },
+  nhl: {
+    ana:'ana',ari:'ari',bos:'bos',buf:'buf',car:'car',cbj:'cbj',cgy:'cgy',chi:'chi',
+    col:'col',dal:'dal',det:'det',edm:'edm',fla:'fla',lak:'la',min:'min',mtl:'mtl',
+    njd:'njd',nsh:'nsh',nyi:'nyi',nyr:'nyr',ott:'ott',phi:'phi',pit:'pit',sea:'sea',
+    sjs:'sj',stl:'stl',tbl:'tb',tor:'tor',van:'van',vgk:'vgs',wpg:'wpg',wsh:'wsh',
+  },
+};
+
+function getLogoUrl(team: string, sport: Sport): string | null {
+  if (sport === 'mlb') {
+    const abbr = team.split(' ').pop()?.toLowerCase() ?? '';
+    return `https://a.espncdn.com/i/teamlogos/mlb/500/${abbr}.png`;
+  }
+  if (sport === 'nfl') {
+    const map = ESPN_LOGO_MAP.nfl;
+    const abbr = map[team] ?? team.toLowerCase();
+    return `https://a.espncdn.com/i/teamlogos/nfl/500/${abbr}.png`;
+  }
+  if (sport === 'nhl') {
+    const map = ESPN_LOGO_MAP.nhl;
+    const abbr = map[team] ?? team.toLowerCase();
+    return `https://a.espncdn.com/i/teamlogos/nhl/500/${abbr}.png`;
+  }
+  if (sport === 'nba') {
+    const abbr = team.split(' ').pop()?.toLowerCase() ?? '';
+    return `https://a.espncdn.com/i/teamlogos/nba/500/${abbr}.png`;
+  }
+  return null;
+}
+
+function TeamTd({ name, sport }: { name: string; sport?: Sport }) {
+  const logo = sport ? getLogoUrl(name, sport) : null;
+  return (
+    <td style={{ padding: '6px 8px', fontWeight: 700, color: FG, fontFamily: 'Nunito' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        {logo && <img src={logo} alt="" style={{ width: 20, height: 20 }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />}
+        {name}
+      </div>
+    </td>
+  );
 }
 
 function diffColor(v: any): string { return (v ?? 0) > 0 ? EMERALD : (v ?? 0) < 0 ? BRAND_RED : MUTED_FG; }
@@ -200,7 +243,7 @@ function fmtDiff(v: any): string { const n = Number(v) || 0; return `${n > 0 ? '
 
 /* ─── MLB Tables ─── */
 
-function MLBFullGame({ teams, sortKey, sortDesc, onSort }: any) {
+function MLBFullGame({ teams, sortKey, sortDesc, onSort, sport }: any) {
   return (
     <div className="data-table-wrap" style={{ overflowX: 'auto' }}>
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.75rem' }}>
@@ -221,7 +264,7 @@ function MLBFullGame({ teams, sortKey, sortDesc, onSort }: any) {
         <tbody>
           {teams.map((t: any) => (
             <tr key={t.team} style={{ borderBottom: `1px solid ${BORDER}` }}>
-              <TeamTd name={t.team} />
+              <TeamTd name={t.team} sport={sport} />
               <Td value={t.games} />
               <Td value={t.fg_record} color={FG} />
               <Td value={`${t.fg_win_pct}%`} color={pctGood(t.fg_win_pct, 52, 45)} bold />
@@ -241,7 +284,7 @@ function MLBFullGame({ teams, sortKey, sortDesc, onSort }: any) {
   );
 }
 
-function MLBF5({ teams, sortKey, sortDesc, onSort }: any) {
+function MLBF5({ teams, sortKey, sortDesc, onSort, sport }: any) {
   return (
     <div className="data-table-wrap" style={{ overflowX: 'auto' }}>
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.75rem' }}>
@@ -263,7 +306,7 @@ function MLBF5({ teams, sortKey, sortDesc, onSort }: any) {
         <tbody>
           {teams.map((t: any) => (
             <tr key={t.team} style={{ borderBottom: `1px solid ${BORDER}` }}>
-              <TeamTd name={t.team} />
+              <TeamTd name={t.team} sport={sport} />
               <Td value={t.f5_record} color={FG} />
               <Td value={`${t.f5_win_pct}%`} color={pctGood(t.f5_win_pct, 48, 40)} bold />
               <Td value={`${t.f5_tie_pct}%`} color={t.f5_tie_pct > 16 ? BLUE : MUTED_FG} />
@@ -284,7 +327,7 @@ function MLBF5({ teams, sortKey, sortDesc, onSort }: any) {
   );
 }
 
-function MLBSplits({ teams, sortKey, sortDesc, onSort }: any) {
+function MLBSplits({ teams, sortKey, sortDesc, onSort, sport }: any) {
   return (
     <div className="data-table-wrap" style={{ overflowX: 'auto' }}>
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.75rem' }}>
@@ -307,7 +350,7 @@ function MLBSplits({ teams, sortKey, sortDesc, onSort }: any) {
             const f5Gap = t.f5_home_rpg - t.f5_away_rpg;
             return (
               <tr key={t.team} style={{ borderBottom: `1px solid ${BORDER}` }}>
-                <TeamTd name={t.team} />
+                <TeamTd name={t.team} sport={sport} />
                 <Td value={t.fg_home_record} color={FG} />
                 <Td value={t.fg_home_rpg.toFixed(2)} color={pctGood(t.fg_home_rpg, 4.5, 3.5)} />
                 <Td value={t.fg_away_record} color={FG} />
@@ -348,7 +391,7 @@ function GenericFullGame({ teams, sortKey, sortDesc, onSort, sport }: any) {
         <tbody>
           {teams.map((t: any) => (
             <tr key={t.team} style={{ borderBottom: `1px solid ${BORDER}` }}>
-              <TeamTd name={t.team} />
+              <TeamTd name={t.team} sport={sport} />
               <Td value={t.games} />
               <Td value={t.record} color={FG} />
               <Td value={`${t.win_pct}%`} color={pctGood(t.win_pct, 55, 45)} bold />
@@ -366,7 +409,7 @@ function GenericFullGame({ teams, sortKey, sortDesc, onSort, sport }: any) {
   );
 }
 
-function GenericSplits({ teams, sortKey, sortDesc, onSort }: any) {
+function GenericSplits({ teams, sortKey, sortDesc, onSort, sport }: any) {
   return (
     <div className="data-table-wrap" style={{ overflowX: 'auto' }}>
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.75rem' }}>
@@ -385,7 +428,7 @@ function GenericSplits({ teams, sortKey, sortDesc, onSort }: any) {
             const gap = Number(t.home_ppg || 0) - Number(t.away_ppg || 0);
             return (
               <tr key={t.team} style={{ borderBottom: `1px solid ${BORDER}` }}>
-                <TeamTd name={t.team} />
+                <TeamTd name={t.team} sport={sport} />
                 <Td value={t.home_record ?? '—'} color={FG} />
                 <Td value={Number(t.home_ppg || 0).toFixed(1)} />
                 <Td value={Number(t.home_papg || 0).toFixed(1)} />
