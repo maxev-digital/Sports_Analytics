@@ -234,7 +234,20 @@ function getLogoUrl(team: string, sport: Sport): string | null {
     const abbr = team.toLowerCase();
     return `https://a.espncdn.com/i/teamlogos/nba/500/${abbr}.png`;
   }
-  // NCAAF/NCAAB — too many schools, skip logos
+  if (sport === 'ncaaf') {
+    const NCAAF_IDS: Record<string, string> = {
+      'Air Force':'2005','Alabama':'6','Appalachian State':'2026','Boise State':'68',
+      'Cincinnati':'2132','Clemson':'228','Coastal Carolina':'324','Florida State':'52',
+      'Georgia':'59','Kansas State':'2306','LSU':'99','Louisiana Tech':'2348',
+      'Memphis':'235','Miami':'193','Michigan':'128','Ohio State':'194','Oklahoma':'199',
+      'Oregon':'204','Penn State':'213','San Diego State':'21','Texas':'251',
+      'Texas Tech':'2641','Toledo':'2649','UCF':'2116','UCLA':'26','USC':'30',
+      'UTSA':'2636','Washington':'265','Western Michigan':'2711',
+    };
+    const id = NCAAF_IDS[team];
+    return id ? `https://a.espncdn.com/i/teamlogos/ncaa/500/${id}.png` : null;
+  }
+  // NCAAB — 364 schools, skip for now
   return null;
 }
 
