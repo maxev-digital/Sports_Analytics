@@ -110,7 +110,12 @@ export function BettingRankings() {
         .catch(() => {})
         .finally(() => setLoading(false));
     }
-    setSortKey(v === 'ats' ? 'ats_cover_pct' : v === 'totals' ? 'over_pct' : v === 'first_5' ? 'f5_win_pct' : v === 'splits' ? (sport === 'mlb' ? 'fg_home_rpg' : 'home_ppg') : (sport === 'mlb' ? 'fg_win_pct' : 'win_pct'));
+    const sortMap: Record<string, string> = {
+      ats: 'ats_cover_pct', totals: 'over_pct', situational: 'division_win_pct',
+      first_5: 'f5_win_pct', splits: sport === 'mlb' ? 'fg_home_rpg' : 'home_ppg',
+      full_game: sport === 'mlb' ? 'fg_win_pct' : 'win_pct',
+    };
+    setSortKey(sortMap[v] ?? 'win_pct');
   };
 
   const handleSort = (key: string) => {
@@ -203,7 +208,8 @@ export function BettingRankings() {
           {sport !== 'mlb' && view === 'splits' && <GenericSplits teams={sorted} sortKey={sortKey} sortDesc={sortDesc} onSort={handleSort} sport={sport} />}
           {sport === 'nfl' && view === 'ats' && <NFLAtsTable teams={sortFn(atsTeams)} sortKey={sortKey} sortDesc={sortDesc} onSort={handleSort} sport={sport} />}
           {sport === 'nfl' && view === 'totals' && <NFLTotalsTable teams={sortFn(atsTeams)} sortKey={sortKey} sortDesc={sortDesc} onSort={handleSort} sport={sport} />}
-          {sport !== 'mlb' && !['full_game','splits','ats','totals'].includes(view) && (
+          {sport === 'nfl' && view === 'situational' && <NFLSituationalTable teams={sorted} sortKey={sortKey} sortDesc={sortDesc} onSort={handleSort} sport={sport} />}
+          {sport !== 'mlb' && !['full_game','splits','ats','totals','situational'].includes(view) && (
             <div style={{ padding: 40, textAlign: 'center', color: MUTED_FG }}>
               {view.replace('_', ' ').toUpperCase()} data coming soon for {sport.toUpperCase()}.
             </div>
@@ -603,6 +609,41 @@ function NFLTotalsTable({ teams, sortKey, sortDesc, onSort, sport }: any) {
               <Td value={t.ou_record ?? '—'} color={FG} />
               <Td value={`${t.over_pct ?? 0}%`} color={pctGood(t.over_pct, 55, 45)} bold />
               <Td value={(t.avg_total ?? 0).toFixed(1)} color={BLUE} />
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function NFLSituationalTable({ teams, sortKey, sortDesc, onSort, sport }: any) {
+  return (
+    <div className="data-table-wrap" style={{ overflowX: 'auto' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.75rem' }}>
+        <thead><tr>
+          <SortTh label="Team" field="team" sortKey={sortKey} sortDesc={sortDesc} onSort={onSort} />
+          <SortTh label="Division Rec" field="division_win_pct" sortKey={sortKey} sortDesc={sortDesc} onSort={onSort} />
+          <SortTh label="Div W%" field="division_win_pct" sortKey={sortKey} sortDesc={sortDesc} onSort={onSort} />
+          <SortTh label="Primetime Rec" field="primetime_win_pct" sortKey={sortKey} sortDesc={sortDesc} onSort={onSort} />
+          <SortTh label="PT W%" field="primetime_win_pct" sortKey={sortKey} sortDesc={sortDesc} onSort={onSort} />
+          <SortTh label="Short Rest" field="short_rest_win_pct" sortKey={sortKey} sortDesc={sortDesc} onSort={onSort} />
+          <SortTh label="SR W%" field="short_rest_win_pct" sortKey={sortKey} sortDesc={sortDesc} onSort={onSort} />
+          <SortTh label="Cold Weather" field="cold_weather_win_pct" sortKey={sortKey} sortDesc={sortDesc} onSort={onSort} />
+          <SortTh label="CW W%" field="cold_weather_win_pct" sortKey={sortKey} sortDesc={sortDesc} onSort={onSort} />
+        </tr></thead>
+        <tbody>
+          {teams.map((t: any) => (
+            <tr key={t.team} style={{ borderBottom: `1px solid ${BORDER}` }}>
+              <TeamTd name={t.team} sport={sport} />
+              <Td value={t.division_record ?? '—'} color={FG} />
+              <Td value={`${t.division_win_pct ?? 0}%`} color={pctGood(t.division_win_pct, 60, 40)} bold />
+              <Td value={t.primetime_record ?? '—'} color={FG} />
+              <Td value={`${t.primetime_win_pct ?? 0}%`} color={pctGood(t.primetime_win_pct, 60, 40)} bold />
+              <Td value={t.short_rest_record ?? '—'} color={FG} />
+              <Td value={`${t.short_rest_win_pct ?? 0}%`} color={pctGood(t.short_rest_win_pct, 55, 40)} />
+              <Td value={t.cold_weather_record ?? '—'} color={FG} />
+              <Td value={`${t.cold_weather_win_pct ?? 0}%`} color={pctGood(t.cold_weather_win_pct, 55, 40)} />
             </tr>
           ))}
         </tbody>

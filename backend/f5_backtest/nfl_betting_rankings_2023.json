@@ -27,7 +27,15 @@
     "home_papg": 0,
     "away_papg": 0,
     "home_win_pct": 0,
-    "away_win_pct": 0
+    "away_win_pct": 0,
+    "division_record": "\u2014",
+    "division_win_pct": 0,
+    "primetime_record": "\u2014",
+    "primetime_win_pct": 0,
+    "short_rest_record": "\u2014",
+    "short_rest_win_pct": 0,
+    "cold_weather_record": "\u2014",
+    "cold_weather_win_pct": 0
   },
   {
     "team": "Baltimore Ravens",
@@ -57,7 +65,15 @@
     "home_papg": 0,
     "away_papg": 0,
     "home_win_pct": 0,
-    "away_win_pct": 0
+    "away_win_pct": 0,
+    "division_record": "\u2014",
+    "division_win_pct": 0,
+    "primetime_record": "\u2014",
+    "primetime_win_pct": 0,
+    "short_rest_record": "\u2014",
+    "short_rest_win_pct": 0,
+    "cold_weather_record": "\u2014",
+    "cold_weather_win_pct": 0
   },
   {
     "team": "Buffalo Bills",
@@ -87,7 +103,15 @@
     "home_papg": 0,
     "away_papg": 0,
     "home_win_pct": 0,
-    "away_win_pct": 0
+    "away_win_pct": 0,
+    "division_record": "\u2014",
+    "division_win_pct": 0,
+    "primetime_record": "\u2014",
+    "primetime_win_pct": 0,
+    "short_rest_record": "\u2014",
+    "short_rest_win_pct": 0,
+    "cold_weather_record": "\u2014",
+    "cold_weather_win_pct": 0
   },
   {
     "team": "Philadelphia Eagles",
@@ -117,7 +141,15 @@
     "home_papg": 0,
     "away_papg": 0,
     "home_win_pct": 0,
-    "away_win_pct": 0
+    "away_win_pct": 0,
+    "division_record": "\u2014",
+    "division_win_pct": 0,
+    "primetime_record": "\u2014",
+    "primetime_win_pct": 0,
+    "short_rest_record": "\u2014",
+    "short_rest_win_pct": 0,
+    "cold_weather_record": "\u2014",
+    "cold_weather_win_pct": 0
   },
   {
     "team": "Kansas City Chiefs",
@@ -147,7 +179,15 @@
     "home_papg": 0,
     "away_papg": 0,
     "home_win_pct": 0,
-    "away_win_pct": 0
+    "away_win_pct": 0,
+    "division_record": "\u2014",
+    "division_win_pct": 0,
+    "primetime_record": "\u2014",
+    "primetime_win_pct": 0,
+    "short_rest_record": "\u2014",
+    "short_rest_win_pct": 0,
+    "cold_weather_record": "\u2014",
+    "cold_weather_win_pct": 0
   },
   {
     "team": "Detroit Lions",
@@ -177,7 +217,15 @@
     "home_papg": 0,
     "away_papg": 0,
     "home_win_pct": 0,
-    "away_win_pct": 0
+    "away_win_pct": 0,
+    "division_record": "\u2014",
+    "division_win_pct": 0,
+    "primetime_record": "\u2014",
+    "primetime_win_pct": 0,
+    "short_rest_record": "\u2014",
+    "short_rest_win_pct": 0,
+    "cold_weather_record": "\u2014",
+    "cold_weather_win_pct": 0
   },
   {
     "team": "Dallas Cowboys",
@@ -207,7 +255,15 @@
     "home_papg": 0,
     "away_papg": 0,
     "home_win_pct": 0,
-    "away_win_pct": 0
+    "away_win_pct": 0,
+    "division_record": "\u2014",
+    "division_win_pct": 0,
+    "primetime_record": "\u2014",
+    "primetime_win_pct": 0,
+    "short_rest_record": "\u2014",
+    "short_rest_win_pct": 0,
+    "cold_weather_record": "\u2014",
+    "cold_weather_win_pct": 0
   },
   {
     "team": "Miami Dolphins",
@@ -237,7 +293,15 @@
     "home_papg": 0,
     "away_papg": 0,
     "home_win_pct": 0,
-    "away_win_pct": 0
+    "away_win_pct": 0,
+    "division_record": "\u2014",
+    "division_win_pct": 0,
+    "primetime_record": "\u2014",
+    "primetime_win_pct": 0,
+    "short_rest_record": "\u2014",
+    "short_rest_win_pct": 0,
+    "cold_weather_record": "\u2014",
+    "cold_weather_win_pct": 0
   },
   {
     "team": "Pittsburgh Steelers",
@@ -267,7 +331,15 @@
     "home_papg": 0,
     "away_papg": 0,
     "home_win_pct": 0,
-    "away_win_pct": 0
+    "away_win_pct": 0,
+    "division_record": "\u2014",
+    "division_win_pct": 0,
+    "primetime_record": "\u2014",
+    "primetime_win_pct": 0,
+    "short_rest_record": "\u2014",
+    "short_rest_win_pct": 0,
+    "cold_weather_record": "\u2014",
+    "cold_weather_win_pct": 0
   },
   {
     "team": "Cincinnati Bengals",
@@ -297,7 +369,15 @@
     "home_papg": 0,
     "away_papg": 0,
     "home_win_pct": 0,
-    "away_win_pct": 0
+    "away_win_pct": 0,
+    "division_record": "\u2014",
+    "division_win_pct": 0,
+    "primetime_record": "\u2014",
+    "primetime_win_pct": 0,
+    "short_rest_record": "\u2014",
+    "short_rest_win_pct": 0,
+    "cold_weather_record": "\u2014",
+    "cold_weather_win_pct": 0
   },
   {
     "team": "Denver Broncos",
@@ -327,7 +407,15 @@
     "home_papg": 0,
     "away_papg": 0,
     "home_win_pct": 0,
-    "away_win_pct": 0
+    "away_win_pct": 0,
+    "division_record": "\u2014",
+    "division_win_pct": 0,
+    "primetime_record": "\u2014",
+    "primetime_win_pct": 0,
+    "short_rest_record": "\u2014",
+    "short_rest_win_pct": 0,
+    "cold_weather_record": "\u2014",
+    "cold_weather_win_pct": 0
   },
   {
     "team": "New Orleans Saints",
@@ -357,7 +445,15 @@
     "home_papg": 0,
     "away_papg": 0,
     "home_win_pct": 0,
-    "away_win_pct": 0
+    "away_win_pct": 0,
+    "division_record": "\u2014",
+    "division_win_pct": 0,
+    "primetime_record": "\u2014",
+    "primetime_win_pct": 0,
+    "short_rest_record": "\u2014",
+    "short_rest_win_pct": 0,
+    "cold_weather_record": "\u2014",
+    "cold_weather_win_pct": 0
   },
   {
     "team": "Houston Texans",
@@ -387,7 +483,15 @@
     "home_papg": 0,
     "away_papg": 0,
     "home_win_pct": 0,
-    "away_win_pct": 0
+    "away_win_pct": 0,
+    "division_record": "\u2014",
+    "division_win_pct": 0,
+    "primetime_record": "\u2014",
+    "primetime_win_pct": 0,
+    "short_rest_record": "\u2014",
+    "short_rest_win_pct": 0,
+    "cold_weather_record": "\u2014",
+    "cold_weather_win_pct": 0
   },
   {
     "team": "Atlanta Falcons",
@@ -417,7 +521,15 @@
     "home_papg": 0,
     "away_papg": 0,
     "home_win_pct": 0,
-    "away_win_pct": 0
+    "away_win_pct": 0,
+    "division_record": "\u2014",
+    "division_win_pct": 0,
+    "primetime_record": "\u2014",
+    "primetime_win_pct": 0,
+    "short_rest_record": "\u2014",
+    "short_rest_win_pct": 0,
+    "cold_weather_record": "\u2014",
+    "cold_weather_win_pct": 0
   },
   {
     "team": "Jacksonville Jaguars",
@@ -447,7 +559,15 @@
     "home_papg": 0,
     "away_papg": 0,
     "home_win_pct": 0,
-    "away_win_pct": 0
+    "away_win_pct": 0,
+    "division_record": "\u2014",
+    "division_win_pct": 0,
+    "primetime_record": "\u2014",
+    "primetime_win_pct": 0,
+    "short_rest_record": "\u2014",
+    "short_rest_win_pct": 0,
+    "cold_weather_record": "\u2014",
+    "cold_weather_win_pct": 0
   },
   {
     "team": "Cleveland Browns",
@@ -477,7 +597,15 @@
     "home_papg": 0,
     "away_papg": 0,
     "home_win_pct": 0,
-    "away_win_pct": 0
+    "away_win_pct": 0,
+    "division_record": "\u2014",
+    "division_win_pct": 0,
+    "primetime_record": "\u2014",
+    "primetime_win_pct": 0,
+    "short_rest_record": "\u2014",
+    "short_rest_win_pct": 0,
+    "cold_weather_record": "\u2014",
+    "cold_weather_win_pct": 0
   },
   {
     "team": "Los Angeles Rams",
@@ -507,7 +635,15 @@
     "home_papg": 0,
     "away_papg": 0,
     "home_win_pct": 0,
-    "away_win_pct": 0
+    "away_win_pct": 0,
+    "division_record": "\u2014",
+    "division_win_pct": 0,
+    "primetime_record": "\u2014",
+    "primetime_win_pct": 0,
+    "short_rest_record": "\u2014",
+    "short_rest_win_pct": 0,
+    "cold_weather_record": "\u2014",
+    "cold_weather_win_pct": 0
   },
   {
     "team": "Tampa Bay Buccaneers",
@@ -537,7 +673,15 @@
     "home_papg": 0,
     "away_papg": 0,
     "home_win_pct": 0,
-    "away_win_pct": 0
+    "away_win_pct": 0,
+    "division_record": "\u2014",
+    "division_win_pct": 0,
+    "primetime_record": "\u2014",
+    "primetime_win_pct": 0,
+    "short_rest_record": "\u2014",
+    "short_rest_win_pct": 0,
+    "cold_weather_record": "\u2014",
+    "cold_weather_win_pct": 0
   },
   {
     "team": "Indianapolis Colts",
@@ -567,7 +711,15 @@
     "home_papg": 0,
     "away_papg": 0,
     "home_win_pct": 0,
-    "away_win_pct": 0
+    "away_win_pct": 0,
+    "division_record": "\u2014",
+    "division_win_pct": 0,
+    "primetime_record": "\u2014",
+    "primetime_win_pct": 0,
+    "short_rest_record": "\u2014",
+    "short_rest_win_pct": 0,
+    "cold_weather_record": "\u2014",
+    "cold_weather_win_pct": 0
   },
   {
     "team": "Seattle Seahawks",
@@ -597,7 +749,15 @@
     "home_papg": 0,
     "away_papg": 0,
     "home_win_pct": 0,
-    "away_win_pct": 0
+    "away_win_pct": 0,
+    "division_record": "\u2014",
+    "division_win_pct": 0,
+    "primetime_record": "\u2014",
+    "primetime_win_pct": 0,
+    "short_rest_record": "\u2014",
+    "short_rest_win_pct": 0,
+    "cold_weather_record": "\u2014",
+    "cold_weather_win_pct": 0
   },
   {
     "team": "Green Bay Packers",
@@ -627,7 +787,15 @@
     "home_papg": 0,
     "away_papg": 0,
     "home_win_pct": 0,
-    "away_win_pct": 0
+    "away_win_pct": 0,
+    "division_record": "\u2014",
+    "division_win_pct": 0,
+    "primetime_record": "\u2014",
+    "primetime_win_pct": 0,
+    "short_rest_record": "\u2014",
+    "short_rest_win_pct": 0,
+    "cold_weather_record": "\u2014",
+    "cold_weather_win_pct": 0
   },
   {
     "team": "Los Angeles Chargers",
@@ -657,7 +825,15 @@
     "home_papg": 0,
     "away_papg": 0,
     "home_win_pct": 0,
-    "away_win_pct": 0
+    "away_win_pct": 0,
+    "division_record": "\u2014",
+    "division_win_pct": 0,
+    "primetime_record": "\u2014",
+    "primetime_win_pct": 0,
+    "short_rest_record": "\u2014",
+    "short_rest_win_pct": 0,
+    "cold_weather_record": "\u2014",
+    "cold_weather_win_pct": 0
   },
   {
     "team": "Minnesota Vikings",
@@ -687,7 +863,15 @@
     "home_papg": 0,
     "away_papg": 0,
     "home_win_pct": 0,
-    "away_win_pct": 0
+    "away_win_pct": 0,
+    "division_record": "\u2014",
+    "division_win_pct": 0,
+    "primetime_record": "\u2014",
+    "primetime_win_pct": 0,
+    "short_rest_record": "\u2014",
+    "short_rest_win_pct": 0,
+    "cold_weather_record": "\u2014",
+    "cold_weather_win_pct": 0
   },
   {
     "team": "Chicago Bears",
@@ -717,7 +901,15 @@
     "home_papg": 0,
     "away_papg": 0,
     "home_win_pct": 0,
-    "away_win_pct": 0
+    "away_win_pct": 0,
+    "division_record": "\u2014",
+    "division_win_pct": 0,
+    "primetime_record": "\u2014",
+    "primetime_win_pct": 0,
+    "short_rest_record": "\u2014",
+    "short_rest_win_pct": 0,
+    "cold_weather_record": "\u2014",
+    "cold_weather_win_pct": 0
   },
   {
     "team": "Las Vegas Raiders",
@@ -747,7 +939,15 @@
     "home_papg": 0,
     "away_papg": 0,
     "home_win_pct": 0,
-    "away_win_pct": 0
+    "away_win_pct": 0,
+    "division_record": "\u2014",
+    "division_win_pct": 0,
+    "primetime_record": "\u2014",
+    "primetime_win_pct": 0,
+    "short_rest_record": "\u2014",
+    "short_rest_win_pct": 0,
+    "cold_weather_record": "\u2014",
+    "cold_weather_win_pct": 0
   },
   {
     "team": "New York Jets",
@@ -777,7 +977,15 @@
     "home_papg": 0,
     "away_papg": 0,
     "home_win_pct": 0,
-    "away_win_pct": 0
+    "away_win_pct": 0,
+    "division_record": "\u2014",
+    "division_win_pct": 0,
+    "primetime_record": "\u2014",
+    "primetime_win_pct": 0,
+    "short_rest_record": "\u2014",
+    "short_rest_win_pct": 0,
+    "cold_weather_record": "\u2014",
+    "cold_weather_win_pct": 0
   },
   {
     "team": "Tennessee Titans",
@@ -807,7 +1015,15 @@
     "home_papg": 0,
     "away_papg": 0,
     "home_win_pct": 0,
-    "away_win_pct": 0
+    "away_win_pct": 0,
+    "division_record": "\u2014",
+    "division_win_pct": 0,
+    "primetime_record": "\u2014",
+    "primetime_win_pct": 0,
+    "short_rest_record": "\u2014",
+    "short_rest_win_pct": 0,
+    "cold_weather_record": "\u2014",
+    "cold_weather_win_pct": 0
   },
   {
     "team": "New York Giants",
@@ -837,7 +1053,15 @@
     "home_papg": 0,
     "away_papg": 0,
     "home_win_pct": 0,
-    "away_win_pct": 0
+    "away_win_pct": 0,
+    "division_record": "\u2014",
+    "division_win_pct": 0,
+    "primetime_record": "\u2014",
+    "primetime_win_pct": 0,
+    "short_rest_record": "\u2014",
+    "short_rest_win_pct": 0,
+    "cold_weather_record": "\u2014",
+    "cold_weather_win_pct": 0
   },
   {
     "team": "Washington Commanders",
@@ -867,7 +1091,15 @@
     "home_papg": 0,
     "away_papg": 0,
     "home_win_pct": 0,
-    "away_win_pct": 0
+    "away_win_pct": 0,
+    "division_record": "\u2014",
+    "division_win_pct": 0,
+    "primetime_record": "\u2014",
+    "primetime_win_pct": 0,
+    "short_rest_record": "\u2014",
+    "short_rest_win_pct": 0,
+    "cold_weather_record": "\u2014",
+    "cold_weather_win_pct": 0
   },
   {
     "team": "Arizona Cardinals",
@@ -897,7 +1129,15 @@
     "home_papg": 0,
     "away_papg": 0,
     "home_win_pct": 0,
-    "away_win_pct": 0
+    "away_win_pct": 0,
+    "division_record": "\u2014",
+    "division_win_pct": 0,
+    "primetime_record": "\u2014",
+    "primetime_win_pct": 0,
+    "short_rest_record": "\u2014",
+    "short_rest_win_pct": 0,
+    "cold_weather_record": "\u2014",
+    "cold_weather_win_pct": 0
   },
   {
     "team": "New England Patriots",
@@ -927,7 +1167,15 @@
     "home_papg": 0,
     "away_papg": 0,
     "home_win_pct": 0,
-    "away_win_pct": 0
+    "away_win_pct": 0,
+    "division_record": "\u2014",
+    "division_win_pct": 0,
+    "primetime_record": "\u2014",
+    "primetime_win_pct": 0,
+    "short_rest_record": "\u2014",
+    "short_rest_win_pct": 0,
+    "cold_weather_record": "\u2014",
+    "cold_weather_win_pct": 0
   },
   {
     "team": "Carolina Panthers",
@@ -957,6 +1205,14 @@
     "home_papg": 0,
     "away_papg": 0,
     "home_win_pct": 0,
-    "away_win_pct": 0
+    "away_win_pct": 0,
+    "division_record": "\u2014",
+    "division_win_pct": 0,
+    "primetime_record": "\u2014",
+    "primetime_win_pct": 0,
+    "short_rest_record": "\u2014",
+    "short_rest_win_pct": 0,
+    "cold_weather_record": "\u2014",
+    "cold_weather_win_pct": 0
   }
 ]
