@@ -76,12 +76,12 @@ def _parse_table(html: str, referee: str, season: int) -> PenaltyRecord | None:
 
     headers = [th.get_text(strip=True).lower() for th in thead.find_all(["th", "td"])]
 
-    home_flags_col = _find_col(headers, "home pen", "home flag", "hm pen")
-    home_yards_col = _find_col(headers, "home yds", "home yard")
-    away_flags_col = _find_col(headers, "away pen", "away flag", "aw pen")
-    away_yards_col = _find_col(headers, "away yds", "away yard")
-    dec_col        = _find_col(headers, "dec")
-    offs_col       = _find_col(headers, "offs")
+    home_flags_col = _find_col(headers, "home count", "home pen", "home flag", "hm pen")
+    home_yards_col = _find_col(headers, "home yards", "home yds", "home yard")
+    away_flags_col = _find_col(headers, "away count", "away pen", "away flag", "aw pen")
+    away_yards_col = _find_col(headers, "away yards", "away yds", "away yard")
+    dec_col        = _find_col(headers, "declined", "dec")
+    offs_col       = _find_col(headers, "offsetting", "offs")
 
     if home_flags_col is None or away_flags_col is None:
         logger.warning("%s %d: could not identify flag columns in: %s", referee, season, headers)
