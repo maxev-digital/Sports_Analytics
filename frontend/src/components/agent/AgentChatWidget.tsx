@@ -1,20 +1,11 @@
-import { useEffect } from 'react';
 import { useAgentContext } from '../../contexts/AgentContext';
 import { useAgentChat } from '../../hooks/useAgentChat';
 import { ChatPanel } from './ChatPanel';
 
 export function AgentChatWidget() {
   const { isOpen, unreadCount, openWidget, closeWidget } = useAgentContext();
-  const chatState = useAgentChat();
-  const { mode, setMode, fetchPicks } = chatState;
-
-  // Poll for new picks every 5 minutes when panel is collapsed
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (!isOpen) fetchPicks();
-    }, 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, [isOpen, fetchPicks]);
+  const chatState = useAgentChat(isOpen);
+  const { mode, setMode } = chatState;
 
   return (
     <>

@@ -12,7 +12,7 @@ import { QuarterStrategyAlertMonitor } from './components/QuarterStrategyAlertMo
 import { GoaliePullMonitor } from './components/GoaliePullMonitor';
 import { HedgeAlertMonitor } from './components/HedgeAlertMonitor';
 import { AgentChatWidget } from './components/agent/AgentChatWidget';
-import { AgentProvider } from './contexts/AgentContext';
+import { AgentProvider, useAgentContext } from './contexts/AgentContext';
 
 import { LandingPage } from './pages/LandingPage';
 import { Login } from './pages/Login';
@@ -65,8 +65,12 @@ import { RefereeTracker } from './pages/RefereeTracker';
 const bg = 'min-h-screen flex flex-col' /* dark matte via body bg */;
 const queryClient = new QueryClient();
 
+// PANEL_WIDTH must match AgentChatWidget's w-80 (320px)
+const PANEL_WIDTH_CLASS = 'pr-80' as const;
+
 function AppContent() {
   const location = useLocation();
+  const { isOpen } = useAgentContext();
   const excludedPaths = ['/login', '/signup', '/pricing', '/terms', '/privacy', '/disclaimer'];
   const needsAlerts = location.pathname !== '/' && !excludedPaths.some(path => location.pathname.startsWith(path));
 
@@ -74,7 +78,6 @@ function AppContent() {
     <AuthProvider>
       <ToastProvider>
         <BetSlipProvider>
-          <AgentProvider>
           <BetAlertNotificationProvider>
             <BetSlipToast />
 
@@ -129,7 +132,8 @@ function AppContent() {
               <Route path="/*" element={
                 <div className={bg}>
                   <Navigation />
-                  <div className="flex-grow">
+                  <div className={`flex flex-col flex-grow transition-[padding-right] duration-300 ease-in-out ${isOpen ? PANEL_WIDTH_CLASS : ''}`}>
+                    <div className="flex-grow">
                     <Routes>
                       {/* Public pages — no login required */}
                       <Route path="/live-games" element={<LiveGames />} />
@@ -174,14 +178,14 @@ function AppContent() {
                       <Route path="/player-leaders" element={<ProtectedRoute><PlayerLeaders /></ProtectedRoute>} />
                       <Route path="*" element={<Navigate to="/live-games" replace />} />
                     </Routes>
+                    </div>
+                    <Footer />
                   </div>
-                  <Footer />
                   <AgentChatWidget />
                 </div>
               } />
             </Routes>
           </BetAlertNotificationProvider>
-          </AgentProvider>
         </BetSlipProvider>
       </ToastProvider>
     </AuthProvider>
@@ -192,7 +196,9 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
-        <AppContent />
+        <AgentProvider>
+          <AppContent />
+        </AgentProvider>
       </Router>
     </QueryClientProvider>
   );

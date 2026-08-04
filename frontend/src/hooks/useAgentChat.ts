@@ -30,6 +30,7 @@ export interface PickCard {
 
 const HISTORY_KEY = 'agent_chat_history';
 const HISTORY_TTL_MS = 24 * 60 * 60 * 1000;
+const PICK_POLL_INTERVAL_MS = 5 * 60 * 1000;
 
 function loadHistory(): AgentMessage[] {
   try {
@@ -51,7 +52,7 @@ function saveHistory(messages: AgentMessage[]) {
   }
 }
 
-export function useAgentChat() {
+export function useAgentChat(isOpen: boolean = true) {
   const [mode, setMode] = useState<AgentMode>('picks');
   const [messages, setMessages] = useState<AgentMessage[]>(() => loadHistory());
   const [picks, setPicks] = useState<PickCard[]>([]);
@@ -63,6 +64,13 @@ export function useAgentChat() {
   useEffect(() => {
     saveHistory(messages);
   }, [messages]);
+
+  // Poll for new picks in the background only when panel is collapsed
+  useEffect(() => {
+    if (isOpen) return;
+    const interval = setInterval(() => { fetchPicks(); }, PICK_POLL_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [isOpen, fetchPicks]);
 
   const fetchPicks = useCallback(async (sport?: string) => {
     setLoadingPicks(true);
