@@ -125,6 +125,25 @@ TOOLS: list[dict[str, Any]] = [
         },
     },
     {
+        "name": "get_referee_analysis",
+        "description": (
+            "Look up an NFL referee's historical tendencies — O/U rates, home cover rate, "
+            "flags per game, and penalty bias. Call this when the user asks about a referee, "
+            "who is officiating a game, or when building a full NFL game analysis that should "
+            "account for officiating style. Returns tendency label and betting context."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "referee_name": {
+                    "type": "string",
+                    "description": "Full or partial referee name (e.g. 'Brad Allen', 'Cheffers').",
+                },
+            },
+            "required": ["referee_name"],
+        },
+    },
+    {
         "name": "get_game_script",
         "description": (
             "Generate a full handicapper-style game analysis for a specific matchup. "
@@ -211,6 +230,12 @@ def execute_tool(name: str, tool_input: dict[str, Any]) -> dict[str, Any]:
                 home_team=tool_input["home_team"],
                 away_team=tool_input["away_team"],
                 game_id=tool_input.get("game_id"),
+            )
+
+        if name == "get_referee_analysis":
+            from tools.referee_tool import get_referee_analysis
+            return get_referee_analysis(
+                referee_name=tool_input["referee_name"],
             )
 
         logger.warning("execute_tool: unknown tool %r", name)

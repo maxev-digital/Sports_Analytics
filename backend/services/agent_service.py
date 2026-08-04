@@ -201,6 +201,7 @@ def assemble_rag_context(sport: str | None = None, game_id: str | None = None) -
 def _run_tool_loop(
     messages: list[dict[str, Any]],
     tools: list[dict[str, Any]],
+    system: str = AGENT_SYSTEM_PROMPT,
 ) -> tuple[str, list[str]]:
     """
     Execute a Sonnet tool-use loop until the model stops calling tools.
@@ -217,7 +218,7 @@ def _run_tool_loop(
         resp = client.messages.create(
             model=SONNET,
             max_tokens=700,
-            system=AGENT_SYSTEM_PROMPT,
+            system=system,
             tools=tools,
             messages=current_messages,
         )
@@ -274,6 +275,16 @@ def chat(
         intent = classify_intent(message)
         rag = assemble_rag_context(sport=intent.get("sport"), game_id=game_id)
 
+        system_prompt = AGENT_SYSTEM_PROMPT
+        if intent.get("sport") == "nfl" and intent.get("is_game_analysis"):
+            try:
+                from services.referee_context_provider import get_referee_context_block
+                ref_ctx = get_referee_context_block(message)
+                if ref_ctx:
+                    system_prompt = f"{AGENT_SYSTEM_PROMPT}\n\n## Assigned Referee\n{ref_ctx}"
+            except Exception as ref_exc:
+                logger.warning("referee context error: %s", ref_exc)
+
         user_content = f"PLATFORM CONTEXT:\n{rag}\n\nUSER QUESTION:\n{message}"
 
         messages: list[dict[str, Any]] = []
@@ -290,14 +301,14 @@ def chat(
 
         if intent.get("needs_live_data"):
             from tools.tool_registry import TOOLS
-            response_text, tool_names = _run_tool_loop(messages, TOOLS)
+            response_text, tool_names = _run_tool_loop(messages, TOOLS, system=system_prompt)
             for tn in tool_names:
                 sources.append(f"live:{tn}")
         else:
             resp = client.messages.create(
                 model=SONNET,
                 max_tokens=600,
-                system=AGENT_SYSTEM_PROMPT,
+                system=system_prompt,
                 messages=messages,
             )
             response_text = resp.content[0].text.strip()

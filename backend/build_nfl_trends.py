@@ -37,7 +37,7 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
 DB_PATH   = Path(__file__).parent / "f5_backtest" / "nfl_trends.db"
-SEASONS   = [2022, 2023, 2024, 2025]
+SEASONS   = [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025]
 GAMES_URL = "https://github.com/nflverse/nfldata/raw/master/data/games.csv"
 TEAM_STATS_URL = "https://github.com/nflverse/nflverse-data/releases/download/team_stats/team_stats.parquet"
 HEADERS   = {"User-Agent": "MaxEVSports/1.0"}

@@ -8,6 +8,17 @@ export interface RefereeSummary {
   under_rate: number | null;
   home_cover_pct: number | null;
   tendency: TendencyLabel;
+  // Environment stats (from nfl_games)
+  ot_rate?: number | null;
+  dome_pct?: number | null;
+  primetime_pct?: number | null;
+  avg_temp?: number | null;
+  avg_wind?: number | null;
+  div_game_pct?: number | null;
+  // Penalty stats (from nfl_referee_penalties — null until scraper runs)
+  flags_per_game?: number | null;
+  yards_per_game?: number | null;
+  home_bias?: number | null;
 }
 
 export interface RefereeSeasonSplit {
@@ -29,3 +40,5 @@ export interface RefereeListResponse {
   count: number;
   referees: RefereeSummary[];
 }
+
+export type ColumnGroup = 'betting' | 'penalties' | 'environment';
