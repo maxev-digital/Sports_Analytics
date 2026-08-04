@@ -65,13 +65,6 @@ export function useAgentChat(isOpen: boolean = true) {
     saveHistory(messages);
   }, [messages]);
 
-  // Poll for new picks in the background only when panel is collapsed
-  useEffect(() => {
-    if (isOpen) return;
-    const interval = setInterval(() => { fetchPicks(); }, PICK_POLL_INTERVAL_MS);
-    return () => clearInterval(interval);
-  }, [isOpen, fetchPicks]);
-
   const fetchPicks = useCallback(async (sport?: string) => {
     setLoadingPicks(true);
     setError(null);
@@ -92,6 +85,13 @@ export function useAgentChat(isOpen: boolean = true) {
       setLoadingPicks(false);
     }
   }, []);
+
+  // Poll for new picks in the background only when panel is collapsed
+  useEffect(() => {
+    if (isOpen) return;
+    const interval = setInterval(() => { fetchPicks(); }, PICK_POLL_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [isOpen, fetchPicks]);
 
   const sendMessage = useCallback(async (text: string) => {
     const userMsg: AgentMessage = { role: 'user', content: text, timestamp: new Date() };

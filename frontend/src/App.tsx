@@ -13,66 +13,29 @@ import { GoaliePullMonitor } from './components/GoaliePullMonitor';
 import { HedgeAlertMonitor } from './components/HedgeAlertMonitor';
 import { AgentChatWidget } from './components/agent/AgentChatWidget';
 import { AgentProvider, useAgentContext } from './contexts/AgentContext';
+import { AppRoutes } from './components/AppRoutes';
 
 import { LandingPage } from './pages/LandingPage';
 import { Login } from './pages/Login';
 import { SignUp } from './pages/SignUp';
-import { LiveGames } from './pages/LiveGames';
-import { Odds } from './pages/Odds';
-import { MaxEvEdges } from './pages/MaxEvEdges';
-import { Kalshi } from './pages/Kalshi';
-import { Tools } from './pages/Tools';
-import { Analytics } from './pages/Analytics';
-import { Props } from './pages/Props';
-import { StrategyResults } from './pages/StrategyResults';
-import { PreGameStrategyResults } from './pages/PreGameStrategyResults';
-import { Alerts } from './pages/Alerts';
-import AlertPreferences from './pages/AlertPreferences';
-import { ModelPerformance } from './pages/ModelPerformance';
-import PredictionsDatabase from './pages/PredictionsDatabase';
-import { TeamRankings } from './pages/TeamRankings';
-import { AdvancedMetrics } from './pages/AdvancedMetrics';
-import { PlayerLeaders } from './pages/PlayerLeaders';
-import { Settings } from './pages/Settings';
-import { AdminDashboard } from './pages/AdminDashboard';
 import { Pricing } from './pages/Pricing';
-import { SystemHealth } from './pages/SystemHealth';
-import { Picks } from './pages/Picks';
-import SubscriptionSuccess from './pages/SubscriptionSuccess';
-import SubscriptionCancel from './pages/SubscriptionCancel';
 import { Terms } from './pages/Terms';
 import { Privacy } from './pages/Privacy';
 import { Disclaimer } from './pages/Disclaimer';
-import { NFLSystem } from './pages/NFLSystem';
-import { SystemOverview } from './pages/SystemOverview';
-import { F5Edge } from './pages/F5Edge';
-import { LineMovement } from './pages/LineMovement';
-import { Statcast } from './pages/Statcast';
-import { TrendsDashboard } from './pages/TrendsDashboard';
-import { PowerRankings } from './pages/PowerRankings';
-import { BettingRankings } from './pages/BettingRankings';
-import { TrackRecord } from './pages/TrackRecord';
-import { DailyRecap } from './pages/DailyRecap';
-import { Survivor } from './pages/Survivor';
-import { MatchupLab } from './pages/MatchupLab';
-import { ConfidencePool } from './pages/ConfidencePool';
-import { OpenBets } from './pages/OpenBets';
-import { MaddenRatings } from './pages/MaddenRatings';
-import { NFLTrends } from './pages/NFLTrends';
-import { InjuryImpact } from './pages/InjuryImpact';
-import { RefereeTracker } from './pages/RefereeTracker';
+import SubscriptionSuccess from './pages/SubscriptionSuccess';
+import SubscriptionCancel from './pages/SubscriptionCancel';
 
-const bg = 'min-h-screen flex flex-col' /* dark matte via body bg */;
+const bg = 'min-h-screen flex flex-col';
 const queryClient = new QueryClient();
 
-// PANEL_WIDTH must match AgentChatWidget's w-80 (320px)
+// Must match AgentChatWidget's w-80 (320px)
 const PANEL_WIDTH_CLASS = 'pr-80' as const;
 
 function AppContent() {
   const location = useLocation();
   const { isOpen } = useAgentContext();
   const excludedPaths = ['/login', '/signup', '/pricing', '/terms', '/privacy', '/disclaimer'];
-  const needsAlerts = location.pathname !== '/' && !excludedPaths.some(path => location.pathname.startsWith(path));
+  const needsAlerts = location.pathname !== '/' && !excludedPaths.some(p => location.pathname.startsWith(p));
 
   return (
     <AuthProvider>
@@ -80,7 +43,6 @@ function AppContent() {
         <BetSlipProvider>
           <BetAlertNotificationProvider>
             <BetSlipToast />
-
             <QuarterStrategyAlertMonitor enabled={needsAlerts} />
             <GoaliePullMonitor enabled={needsAlerts} pollInterval={3000} />
             <HedgeAlertMonitor enabled={needsAlerts} pollInterval={10000} />
@@ -104,13 +66,11 @@ function AppContent() {
                 </div>
               } />
 
-              {/* Landing page (public) */}
+              {/* Landing page */}
               <Route path="/" element={
                 <div className={bg}>
                   <Navigation />
-                  <div className="flex-grow">
-                    <LandingPage />
-                  </div>
+                  <div className="flex-grow"><LandingPage /></div>
                   <Footer />
                 </div>
               } />
@@ -128,57 +88,13 @@ function AppContent() {
                 </ProtectedRoute>
               } />
 
-              {/* App shell — public pages accessible to all, sensitive pages require login */}
+              {/* App shell */}
               <Route path="/*" element={
                 <div className={bg}>
                   <Navigation />
+                  {/* Shift content right when panel is open so it doesn't overlay */}
                   <div className={`flex flex-col flex-grow transition-[padding-right] duration-300 ease-in-out ${isOpen ? PANEL_WIDTH_CLASS : ''}`}>
-                    <div className="flex-grow">
-                    <Routes>
-                      {/* Public pages — no login required */}
-                      <Route path="/live-games" element={<LiveGames />} />
-                      <Route path="/odds" element={<Odds />} />
-                      <Route path="/max-ev-edges" element={<MaxEvEdges />} />
-                      <Route path="/team-rankings" element={<TeamRankings />} />
-                      <Route path="/picks" element={<Picks />} />
-                      <Route path="/system-nfl" element={<NFLSystem />} />
-                      <Route path="/system-overview" element={<SystemOverview />} />
-
-                      {/* Login-required pages */}
-                      <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-                      <Route path="/alerts" element={<ProtectedRoute><Alerts /></ProtectedRoute>} />
-                      <Route path="/alert-preferences" element={<ProtectedRoute><AlertPreferences /></ProtectedRoute>} />
-                      <Route path="/admin-dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
-                      <Route path="/system-health" element={<ProtectedRoute><SystemHealth /></ProtectedRoute>} />
-                      <Route path="/kalshi" element={<ProtectedRoute><Kalshi /></ProtectedRoute>} />
-                      <Route path="/tools" element={<ProtectedRoute><Tools /></ProtectedRoute>} />
-                      <Route path="/f5-edge" element={<F5Edge />} />
-                      <Route path="/line-movement" element={<LineMovement />} />
-                      <Route path="/statcast" element={<Statcast />} />
-                      <Route path="/trends" element={<TrendsDashboard />} />
-                      <Route path="/power-rankings" element={<PowerRankings />} />
-                      <Route path="/matchup-lab" element={<MatchupLab />} />
-                      <Route path="/betting-rankings" element={<BettingRankings />} />
-                      <Route path="/track-record" element={<TrackRecord />} />
-                      <Route path="/recap" element={<DailyRecap />} />
-                      <Route path="/survivor" element={<Survivor />} />
-                      <Route path="/confidence-pool" element={<ConfidencePool />} />
-                      <Route path="/open-bets" element={<OpenBets />} />
-                      <Route path="/madden-ratings" element={<MaddenRatings />} />
-                      <Route path="/nfl-trends" element={<NFLTrends />} />
-                      <Route path="/injury-impact" element={<InjuryImpact />} />
-                      <Route path="/referee-trends" element={<RefereeTracker />} />
-                      <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
-                      <Route path="/props" element={<ProtectedRoute><Props /></ProtectedRoute>} />
-                      <Route path="/strategy-results" element={<ProtectedRoute><StrategyResults /></ProtectedRoute>} />
-                      <Route path="/pre-game-strategy-results" element={<ProtectedRoute><PreGameStrategyResults /></ProtectedRoute>} />
-                      <Route path="/model-performance" element={<ProtectedRoute><ModelPerformance /></ProtectedRoute>} />
-                      <Route path="/predictions-database" element={<ProtectedRoute><PredictionsDatabase /></ProtectedRoute>} />
-                      <Route path="/advanced-metrics" element={<ProtectedRoute><AdvancedMetrics /></ProtectedRoute>} />
-                      <Route path="/player-leaders" element={<ProtectedRoute><PlayerLeaders /></ProtectedRoute>} />
-                      <Route path="*" element={<Navigate to="/live-games" replace />} />
-                    </Routes>
-                    </div>
+                    <div className="flex-grow"><AppRoutes /></div>
                     <Footer />
                   </div>
                   <AgentChatWidget />
