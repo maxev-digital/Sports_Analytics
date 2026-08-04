@@ -11,13 +11,26 @@ import json
 import logging
 
 import pytz
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Header, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
+
+from auth import verify_session
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/agent", tags=["agent"])
+
+
+def _require_session(authorization: Optional[str] = None) -> str:
+    """Validate platform Bearer token. Raises 401 on missing or invalid token."""
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Authentication required")
+    token = authorization.removeprefix("Bearer ")
+    username = verify_session(token)
+    if not username:
+        raise HTTPException(status_code=401, detail="Invalid or expired session")
+    return username
 CST = pytz.timezone("America/Chicago")
 
 
@@ -73,8 +86,9 @@ class PicksResponse(BaseModel):
 # ── Endpoints ────────────────────────────────────────────────────────────────
 
 @router.post("/chat", response_model=ChatResponse)
-def agent_chat(req: ChatRequest):
+def agent_chat(req: ChatRequest, authorization: Optional[str] = Header(None)):
     """Freeform conversational Q&A with the MAX EV Analyst agent."""
+    _require_session(authorization)
     try:
         from services.agent_service import chat
         result = chat(
@@ -94,11 +108,13 @@ def agent_chat(req: ChatRequest):
 
 
 @router.post("/chat/stream")
-def agent_chat_stream(req: ChatRequest):
+def agent_chat_stream(req: ChatRequest, authorization: Optional[str] = Header(None)):
     """
     Streaming SSE version of agent chat.
     Emits: data: {"text": "..."} per token, then data: [DONE]
     """
+    _require_session(authorization)
+
     def generate() -> Generator[str, None, None]:
         try:
             from services.agent_service import (
@@ -138,8 +154,9 @@ def agent_chat_stream(req: ChatRequest):
 
 
 @router.post("/picks", response_model=PicksResponse)
-def agent_picks(req: PicksRequest):
+def agent_picks(req: PicksRequest, authorization: Optional[str] = Header(None)):
     """Return top pending picks formatted as PickCards for the proactive widget."""
+    _require_session(authorization)
     try:
         from services.agent_service import get_top_picks
         picks = get_top_picks(sport=req.sport, limit=req.limit)

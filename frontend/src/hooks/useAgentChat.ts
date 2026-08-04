@@ -1,4 +1,5 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { getApiUrl } from '../config';
 import { logger } from '../utils/logger';
 
@@ -52,52 +53,49 @@ function saveHistory(messages: AgentMessage[]) {
   }
 }
 
-export function useAgentChat(isOpen: boolean = true) {
+function buildHeaders(token: string | null): Record<string, string> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  return headers;
+}
+
+export function useAgentChat(isOpen: boolean = true, token: string | null = null) {
   const [mode, setMode] = useState<AgentMode>('picks');
   const [messages, setMessages] = useState<AgentMessage[]>(() => loadHistory());
-  const [picks, setPicks] = useState<PickCard[]>([]);
   const [loadingChat, setLoadingChat] = useState(false);
-  const [loadingPicks, setLoadingPicks] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const picksFetchedRef = useRef(false);
+  const [chatError, setChatError] = useState<string | null>(null);
 
   useEffect(() => {
     saveHistory(messages);
   }, [messages]);
 
-  const fetchPicks = useCallback(async (sport?: string) => {
-    setLoadingPicks(true);
-    setError(null);
-    try {
+  // React Query for picks — polls in background when panel is collapsed, pauses when open
+  const { data: picks = [], isFetching: loadingPicks, isFetched: picksFetched, refetch: refetchPicks, error: picksQueryError } = useQuery({
+    queryKey: ['agent-picks', token] as const,
+    queryFn: async () => {
       const resp = await fetch(getApiUrl('agent/picks'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sport: sport ?? null, limit: 5 }),
+        headers: buildHeaders(token),
+        body: JSON.stringify({ sport: null, limit: 5 }),
       });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data = await resp.json() as { picks: PickCard[]; count: number };
-      setPicks(data.picks);
-      picksFetchedRef.current = true;
-    } catch (err) {
-      logger.error('fetchPicks error:', err);
-      setError('Could not load picks. Please try again.');
-    } finally {
-      setLoadingPicks(false);
-    }
-  }, []);
+      return data.picks;
+    },
+    enabled: !!token,
+    staleTime: PICK_POLL_INTERVAL_MS,
+    refetchInterval: isOpen ? false : PICK_POLL_INTERVAL_MS,
+  });
 
-  // Poll for new picks in the background only when panel is collapsed
-  useEffect(() => {
-    if (isOpen) return;
-    const interval = setInterval(() => { fetchPicks(); }, PICK_POLL_INTERVAL_MS);
-    return () => clearInterval(interval);
-  }, [isOpen, fetchPicks]);
+  const fetchPicks = useCallback(() => {
+    refetchPicks().catch(err => logger.error('fetchPicks error:', err));
+  }, [refetchPicks]);
 
   const sendMessage = useCallback(async (text: string) => {
     const userMsg: AgentMessage = { role: 'user', content: text, timestamp: new Date() };
     setMessages(prev => [...prev, userMsg]);
     setLoadingChat(true);
-    setError(null);
+    setChatError(null);
 
     // Streaming: add a placeholder assistant message and fill it token by token
     const assistantMsg: AgentMessage = { role: 'assistant', content: '', timestamp: new Date() };
@@ -107,7 +105,7 @@ export function useAgentChat(isOpen: boolean = true) {
       const history = messages.slice(-8).map(m => ({ role: m.role, content: m.content }));
       const resp = await fetch(getApiUrl('agent/chat/stream'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: buildHeaders(token),
         body: JSON.stringify({ message: text, history }),
       });
 
@@ -146,17 +144,19 @@ export function useAgentChat(isOpen: boolean = true) {
       }
     } catch (err) {
       logger.error('sendMessage error:', err);
-      setError('Failed to get a response. Please try again.');
+      setChatError('Failed to get a response. Please try again.');
       setMessages(prev => prev.slice(0, -2)); // remove user + empty assistant
     } finally {
       setLoadingChat(false);
     }
-  }, [messages]);
+  }, [messages, token]);
 
   const clearHistory = useCallback(() => {
     setMessages([]);
     localStorage.removeItem(HISTORY_KEY);
   }, []);
+
+  const error = chatError ?? (picksQueryError ? 'Could not load picks. Please try again.' : null);
 
   return {
     mode, setMode,
@@ -168,6 +168,6 @@ export function useAgentChat(isOpen: boolean = true) {
     fetchPicks,
     sendMessage,
     clearHistory,
-    picksFetched: picksFetchedRef.current,
+    picksFetched,
   };
 }

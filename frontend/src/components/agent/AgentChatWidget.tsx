@@ -1,10 +1,12 @@
 import { useAgentContext } from '../../contexts/AgentContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { useAgentChat } from '../../hooks/useAgentChat';
 import { ChatPanel } from './ChatPanel';
 
 export function AgentChatWidget() {
   const { isOpen, unreadCount, openWidget, closeWidget } = useAgentContext();
-  const chatState = useAgentChat(isOpen);
+  const { token } = useAuth();
+  const chatState = useAgentChat(isOpen, token);
   const { mode, setMode } = chatState;
 
   return (
