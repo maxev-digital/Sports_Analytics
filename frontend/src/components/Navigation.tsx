@@ -64,6 +64,7 @@ export function Navigation() {
     { path: '/matchup-lab',       label: 'MATCHUP LAB' },
     { path: '/trends',           label: 'TEAM TRENDS' },
     { path: '/nfl-trends',       label: 'NFL ATS & TRENDS' },
+    { path: '/referee-trends',   label: 'REFEREE TRACKER' },
     { path: '/line-movement',    label: 'LINE MOVEMENT' },
     { path: '/track-record',     label: 'TRACK RECORD' },
     { path: '/recap',            label: 'DAILY RECAP' },

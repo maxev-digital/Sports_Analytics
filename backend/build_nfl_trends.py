@@ -278,7 +278,7 @@ def save_games(con: sqlite3.Connection, games: pd.DataFrame) -> int:
         "div_game", "location", "roof", "surface",
         "temp", "wind", "overtime",
         "away_qb_name", "home_qb_name", "away_coach", "home_coach",
-        "away_rest", "home_rest",
+        "away_rest", "home_rest", "referee",
     ]
     present = [c for c in cols if c in games.columns]
     subset  = games[present].copy()

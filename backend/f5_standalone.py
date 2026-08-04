@@ -15,6 +15,7 @@ os.environ.setdefault("ODDS_API_KEY", os.getenv("ODDS_API_KEY", ""))
 from routes.f5_live import router as f5_live_router
 from routes.f5_fade_tie import router as f5_calc_router
 from routes.verification import router as verification_router
+from routes.referee import router as referee_router
 
 app = FastAPI(title="F5 Edge Engine")
 
@@ -33,6 +34,7 @@ app.add_middleware(
 app.include_router(f5_live_router)
 app.include_router(f5_calc_router)
 app.include_router(verification_router)
+app.include_router(referee_router, prefix="/api/f5")
 
 
 @app.get("/api/health")

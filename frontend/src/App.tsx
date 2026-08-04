@@ -1,4 +1,5 @@
 import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Navigation } from './components/Navigation';
@@ -59,8 +60,10 @@ import { OpenBets } from './pages/OpenBets';
 import { MaddenRatings } from './pages/MaddenRatings';
 import { NFLTrends } from './pages/NFLTrends';
 import { InjuryImpact } from './pages/InjuryImpact';
+import { RefereeTracker } from './pages/RefereeTracker';
 
 const bg = 'min-h-screen flex flex-col' /* dark matte via body bg */;
+const queryClient = new QueryClient();
 
 function AppContent() {
   const location = useLocation();
@@ -160,6 +163,7 @@ function AppContent() {
                       <Route path="/madden-ratings" element={<MaddenRatings />} />
                       <Route path="/nfl-trends" element={<NFLTrends />} />
                       <Route path="/injury-impact" element={<InjuryImpact />} />
+                      <Route path="/referee-trends" element={<RefereeTracker />} />
                       <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
                       <Route path="/props" element={<ProtectedRoute><Props /></ProtectedRoute>} />
                       <Route path="/strategy-results" element={<ProtectedRoute><StrategyResults /></ProtectedRoute>} />
@@ -186,9 +190,11 @@ function AppContent() {
 
 function App() {
   return (
-    <Router>
-      <AppContent />
-    </Router>
+    <QueryClientProvider client={queryClient}>
+      <Router>
+        <AppContent />
+      </Router>
+    </QueryClientProvider>
   );
 }
 

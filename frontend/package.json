@@ -17,6 +17,7 @@
     "electron:dist": "electron-builder"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.101.4",
     "lucide-react": "^0.553.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
