@@ -7,6 +7,7 @@ import { BetHistory } from '../components/BetHistory';
 import { BankrollManager } from '../components/BankrollManager';
 import { WelcomeModal } from '../components/WelcomeModal';
 import { getApiUrl } from '../config';
+import { logger } from '../utils/logger';
 
 interface StrategyData {
   total_alerts: number;
@@ -224,7 +225,7 @@ export function Analytics() {
 
         setLoading(false);
       } catch (error) {
-        console.error('Error fetching analytics data:', error);
+        logger.error('Error fetching analytics data:', error);
         setLoading(false);
       }
     };
@@ -255,7 +256,7 @@ export function Analytics() {
         setSettledBets(settled.filter((b: any) => ['won', 'lost', 'push'].includes(b.status)));
         setPersonalLoading(false);
       } catch (error) {
-        console.error('Error fetching personal bet data:', error);
+        logger.error('Error fetching personal bet data:', error);
         setPersonalLoading(false);
       }
     };

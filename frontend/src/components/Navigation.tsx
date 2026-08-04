@@ -48,6 +48,7 @@ export function Navigation() {
     { path: '/advanced-metrics',  label: 'ADVANCED METRICS'  },
     { path: '/player-leaders',    label: 'PLAYER LEADERS'    },
     { path: '/statcast',          label: 'STATCAST'          },
+    { path: '/madden-ratings',    label: 'MADDEN 26 RATINGS' },
   ];
 
   const edgesItems = [
@@ -62,7 +63,12 @@ export function Navigation() {
   const dataLabItems = [
     { path: '/matchup-lab',       label: 'MATCHUP LAB' },
     { path: '/trends',           label: 'TEAM TRENDS' },
+    { path: '/nfl-trends',       label: 'NFL ATS & TRENDS' },
     { path: '/line-movement',    label: 'LINE MOVEMENT' },
+    { path: '/track-record',     label: 'TRACK RECORD' },
+    { path: '/recap',            label: 'DAILY RECAP' },
+    { path: '/survivor',         label: 'SURVIVOR HELPER' },
+    { path: '/confidence-pool',  label: 'CONFIDENCE POOL' },
   ];
 
   const strategyItems: { path: string; label: string }[] = [];
@@ -72,6 +78,8 @@ export function Navigation() {
   ];
 
   const toolsItems = [
+    { path: '/injury-impact',    label: 'INJURY IMPACT ENGINE' },
+    { path: '/open-bets',        label: 'OPEN BETS' },
     { path: '/tools',            label: 'BETTING TOOLS' },
     { path: '/settings',         label: 'BOOKMAKER SETTINGS' },
     { path: '/system-overview',  label: 'HOW WE PICK: ALL SPORTS' },

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getApiUrl } from '../../config';
 import { formatTeamName } from '../../utils/teamNames';
+import { logger } from '../../utils/logger';
 
 interface LineEntry {
   id: number;
@@ -41,7 +42,7 @@ export function LineMovementTracker() {
           setLiveLineMovements(data.alerts || []);
         }
       } catch (error) {
-        console.error('Error fetching live line movements:', error);
+        logger.error('Error fetching live line movements:', error);
       }
     };
 

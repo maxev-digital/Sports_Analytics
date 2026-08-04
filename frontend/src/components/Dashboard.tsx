@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { LiveGame } from '../types';
-import { GameCard } from './GameCard';
+import { GameCardV2 as GameCard } from './game-card/GameCardV2';
 import { sportEmojis } from '../utils/sportDetection';
 import { useWebSocket } from '../hooks/useWebSocket';
 import { formatTeamName } from '../utils/teamNames';
+import { logger } from '../utils/logger';
 
 type Sport = 'NBA' | 'NHL' | 'NCAAF' | 'NFL' | 'MLB' | 'ALL';
 
@@ -40,7 +41,7 @@ export function Dashboard() {
   // Function to speak announcement using Web Speech API
   const speakAlert = (game: LiveGame) => {
     if (!('speechSynthesis' in window)) {
-      console.log('Speech synthesis not supported');
+      logger.info('Speech synthesis not supported');
       return;
     }
 
@@ -65,7 +66,7 @@ export function Dashboard() {
     // Play beep first, then speak
     if (audioRef.current) {
       audioRef.current.currentTime = 0;
-      audioRef.current.play().catch(err => console.log('Audio play failed:', err));
+      audioRef.current.play().catch(err => logger.info('Audio play failed:', err));
 
       // Delay speech slightly to let beep play
       setTimeout(() => {
@@ -93,8 +94,8 @@ export function Dashboard() {
         speakAlert(game);
 
         // Log the alert
-        console.log(`🔔 ALERT: Strong bet detected for ${formatTeamName(game.state.away_team.name, game.state.sport_key)} vs ${formatTeamName(game.state.home_team.name, game.state.sport_key)}`);
-        console.log(`   Recommendation: ${game.projection.recommendation} with ${strength.toFixed(1)}% strength`);
+        logger.info(`🔔 ALERT: Strong bet detected for ${formatTeamName(game.state.away_team.name, game.state.sport_key)} vs ${formatTeamName(game.state.home_team.name, game.state.sport_key)}`);
+        logger.info(`   Recommendation: ${game.projection.recommendation} with ${strength.toFixed(1)}% strength`);
       }
 
       // Clean up alerted games that no longer meet criteria

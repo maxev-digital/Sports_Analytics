@@ -9,6 +9,7 @@ import { useQuarterReversalWebSocket } from '../hooks/useQuarterReversalWebSocke
 import { useBetAlertNotification } from '../contexts/BetAlertNotificationContext';
 import { StrategyAlert } from '../types';
 import { getBookmaker } from '../utils/bookmakers';
+import { logger } from '../utils/logger';
 
 interface QuarterStrategyAlertMonitorProps {
   enabled?: boolean;
@@ -61,7 +62,7 @@ export function QuarterStrategyAlertMonitor({ enabled = true }: QuarterStrategyA
       if (!seenQRAlerts.current.has(alertKey)) {
         seenQRAlerts.current.add(alertKey);
 
-        console.log('🔄 New Quarter Reversal Alert:', opp.matchup, opp.trigger);
+        logger.info('🔄 New Quarter Reversal Alert:', opp.matchup, opp.trigger);
 
         const strategyAlert = convertQuarterReversalToStrategyAlert(opp);
         queueAlert(strategyAlert);
@@ -80,7 +81,7 @@ export function QuarterStrategyAlertMonitor({ enabled = true }: QuarterStrategyA
       if (!seenCTAlerts.current.has(alertKey)) {
         seenCTAlerts.current.add(alertKey);
 
-        console.log('❄️ New Cold Team Alert:', opp.matchup, opp.trigger);
+        logger.info('❄️ New Cold Team Alert:', opp.matchup, opp.trigger);
 
         const strategyAlert = convertColdTeamToStrategyAlert(opp);
         queueAlert(strategyAlert);

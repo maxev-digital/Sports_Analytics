@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getApiUrl } from '../../config';
+import { logger } from '../../utils/logger';
 
 interface BookLine {
   id: number;
@@ -41,7 +42,7 @@ export function SteamMoveDetector() {
           setLiveSteamMoves(data.alerts || []);
         }
       } catch (error) {
-        console.error('Error fetching live steam moves:', error);
+        logger.error('Error fetching live steam moves:', error);
       }
     };
 

@@ -4,6 +4,7 @@ import { SystemStatusBadge } from './SystemStatusBadge';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from './Toast';
 import { toggleSystemAlerts, getSystemPreference } from '../api/alertPreferences';
+import { logger } from '../utils/logger';
 
 interface AdvancedSystemCardProps {
   system: AdvancedSystem;
@@ -44,7 +45,7 @@ export const AdvancedSystemCard: React.FC<AdvancedSystemCardProps> = ({ system }
           setIsEnabled(prefs.alerts_enabled);
         }
       } catch (error) {
-        console.error('Failed to load alert status:', error);
+        logger.error('Failed to load alert status:', error);
       }
     };
 
@@ -66,7 +67,7 @@ export const AdvancedSystemCard: React.FC<AdvancedSystemCardProps> = ({ system }
       const action = response.alerts_enabled ? 'enabled' : 'disabled';
       showToast(`Alerts ${action} for ${system.name}`, 'success');
     } catch (error) {
-      console.error('Failed to toggle alerts:', error);
+      logger.error('Failed to toggle alerts:', error);
       showToast('Failed to update alert preferences', 'error');
     } finally {
       setIsLoading(false);

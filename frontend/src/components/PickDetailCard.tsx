@@ -40,6 +40,7 @@ export interface LineSnapshot {
   books_sampled: number | null;
   snapshot_label: string | null;
   snapshot_at: string | null;
+  id?: string;
 }
 
 export interface H2HGame {
@@ -128,12 +129,12 @@ function fmtTime(ts: string | null): string {
   return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Chicago' }) + ' CST';
 }
 
-function fmtPct(n: number | null, decimals = 1): string {
+function fmtPct(n: number | null | undefined, decimals = 1): string {
   if (n == null) return '—';
   return `${n.toFixed(decimals)}%`;
 }
 
-function fmtRating(n: number | null, decimals = 1, sign = true): string {
+function fmtRating(n: number | null | undefined, decimals = 1, sign = true): string {
   if (n == null) return '—';
   if (sign && n > 0) return `+${n.toFixed(decimals)}`;
   return n.toFixed(decimals);

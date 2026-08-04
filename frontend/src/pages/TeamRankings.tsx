@@ -5,6 +5,7 @@ import {
 } from 'recharts';
 import '../styles/analytics.css';
 import { getApiUrl } from '../config';
+import { logger } from '../utils/logger';
 
 type Sport = 'mlb' | 'nba' | 'wnba' | 'nfl' | 'nhl' | 'ncaab' | 'ncaaf';
 type SortDir = 'asc' | 'desc';
@@ -121,7 +122,7 @@ export function TeamRankings() {
       .catch(err => {
         setError('Could not load standings.');
         setLoading(false);
-        console.error(err);
+        logger.error(err);
       });
   }, [sport]);
 

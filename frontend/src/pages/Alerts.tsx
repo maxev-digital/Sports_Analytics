@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getApiUrl } from '../config';
+import { logger } from '../utils/logger';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -138,7 +139,7 @@ function AnalysisCard({ item, onAnalyze }: { item: NewsItem; onAnalyze: (id: num
         </div>
 
         {/* One-line betting hint from Haiku */}
-        {cls?.one_line && (
+        {!!cls?.one_line && (
           <p className="mt-2 text-xs text-yellow-300 italic">{cls.one_line as string}</p>
         )}
       </div>
@@ -157,7 +158,7 @@ function AnalysisCard({ item, onAnalyze }: { item: NewsItem; onAnalyze: (id: num
           {expanded && (
             <div className="px-4 pb-4 space-y-3 text-sm">
               {/* Recommendation */}
-              {analysis.reasoning && (
+              {!!analysis.reasoning && (
                 <div>
                   <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Edge Reasoning</p>
                   <p className="text-gray-200">{analysis.reasoning as string}</p>
@@ -166,19 +167,19 @@ function AnalysisCard({ item, onAnalyze }: { item: NewsItem; onAnalyze: (id: num
 
               {/* Target + edge */}
               <div className="flex gap-4 text-xs">
-                {analysis.target_team && (
+                {!!analysis.target_team && (
                   <div>
                     <span className="text-gray-500">Target: </span>
                     <span className="text-white font-medium">{analysis.target_team as string}</span>
                   </div>
                 )}
-                {analysis.bet_type && (
+                {!!analysis.bet_type && (
                   <div>
                     <span className="text-gray-500">Market: </span>
                     <span className="text-white">{analysis.bet_type as string} / {analysis.direction as string}</span>
                   </div>
                 )}
-                {analysis.edge_estimate && (
+                {!!analysis.edge_estimate && (
                   <div>
                     <span className="text-gray-500">Edge: </span>
                     <span className="text-green-400">{analysis.edge_estimate as string}</span>
@@ -187,7 +188,7 @@ function AnalysisCard({ item, onAnalyze }: { item: NewsItem; onAnalyze: (id: num
               </div>
 
               {/* Contrarian risk */}
-              {analysis.contrarian_risk && (
+              {!!analysis.contrarian_risk && (
                 <div className="bg-red-950 border border-red-800 rounded p-2">
                   <p className="text-xs text-red-400 font-medium mb-0.5">Contrarian Risk</p>
                   <p className="text-xs text-red-200">{analysis.contrarian_risk as string}</p>
@@ -209,7 +210,7 @@ function AnalysisCard({ item, onAnalyze }: { item: NewsItem; onAnalyze: (id: num
               )}
 
               {/* Time sensitivity */}
-              {analysis.time_sensitivity && (
+              {!!analysis.time_sensitivity && (
                 <p className="text-xs text-gray-500">
                   Time sensitivity: <span className="text-gray-300">{analysis.time_sensitivity as string}</span>
                 </p>
@@ -266,7 +267,7 @@ export function Alerts() {
       setLastFetch(new Date());
       setPollCountdown(AUTO_REFRESH_MS / 1000);
     } catch (e) {
-      console.error('Feed fetch failed:', e);
+      logger.error('Feed fetch failed:', e);
     } finally {
       setLoading(false);
     }
@@ -278,7 +279,7 @@ export function Alerts() {
       await fetch(getApiUrl(`news/refresh?sport=${sport}`), { method: 'POST' });
       setTimeout(() => fetchFeed(), 8000);
     } catch (e) {
-      console.error('Refresh trigger failed:', e);
+      logger.error('Refresh trigger failed:', e);
     }
   }, [sport, fetchFeed]);
 
@@ -299,7 +300,7 @@ export function Alerts() {
       const d = await r.json();
       setItems(d.insights || []);
     } catch (e) {
-      console.error('Insights fetch failed:', e);
+      logger.error('Insights fetch failed:', e);
     } finally {
       setLoading(false);
     }
@@ -353,7 +354,7 @@ export function Alerts() {
         } catch {}
       }, 1500);
     } catch (e) {
-      console.error('Analyze failed:', e);
+      logger.error('Analyze failed:', e);
       setAnalyzing(s => { const n = new Set(s); n.delete(id); return n; });
     }
   };

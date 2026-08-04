@@ -8,6 +8,7 @@ import { useEffect, useRef } from 'react';
 import { getApiUrl } from '../config';
 import { useBetAlertNotification } from '../contexts/BetAlertNotificationContext';
 import { StrategyAlert } from '../types';
+import { logger } from '../utils/logger';
 
 interface GoaliePullMonitorProps {
   enabled?: boolean;
@@ -23,11 +24,11 @@ export function GoaliePullMonitor({
 
   useEffect(() => {
     if (!enabled) {
-      console.log('[GOALIE PULL MONITOR] Disabled - not on eligible page');
+      logger.info('[GOALIE PULL MONITOR] Disabled - not on eligible page');
       return;
     }
 
-    console.log('[GOALIE PULL MONITOR] Active and monitoring...');
+    logger.info('[GOALIE PULL MONITOR] Active and monitoring...');
 
     const checkForGoaliePulls = async () => {
       try {
@@ -40,7 +41,7 @@ export function GoaliePullMonitor({
         const opportunities = data.opportunities || [];
 
         if (opportunities.length > 0) {
-          console.log(`[GOALIE PULL MONITOR] Found ${opportunities.length} goalie pull opportunity(ies)`);
+          logger.info(`[GOALIE PULL MONITOR] Found ${opportunities.length} goalie pull opportunity(ies)`);
         }
 
         // Process each opportunity from backend
@@ -52,10 +53,10 @@ export function GoaliePullMonitor({
             continue;
           }
 
-          console.log(`[GOALIE PULL MONITOR] 🥅 Goalie Pull Alert: ${opp.away_team} @ ${opp.home_team}`);
-          console.log(`  Trailing: ${opp.trailing_team} by ${opp.score_diff} goal(s)`);
-          console.log(`  Time: ${opp.time_remaining} in period ${opp.period}`);
-          console.log(`  Recommendation: ${opp.recommendation || 'N/A'}`);
+          logger.info(`[GOALIE PULL MONITOR] 🥅 Goalie Pull Alert: ${opp.away_team} @ ${opp.home_team}`);
+          logger.info(`  Trailing: ${opp.trailing_team} by ${opp.score_diff} goal(s)`);
+          logger.info(`  Time: ${opp.time_remaining} in period ${opp.period}`);
+          logger.info(`  Recommendation: ${opp.recommendation || 'N/A'}`);
 
           // Convert to strategy alert format
           const alert: StrategyAlert = {
@@ -84,10 +85,10 @@ export function GoaliePullMonitor({
           showBetAlert(alert);
           alertedGamesRef.current.add(alertKey);
 
-          console.log(`[GOALIE PULL MONITOR] ✅ Alert shown for ${opp.away_team} @ ${opp.home_team}`);
+          logger.info(`[GOALIE PULL MONITOR] ✅ Alert shown for ${opp.away_team} @ ${opp.home_team}`);
         }
       } catch (error) {
-        console.error('[GOALIE PULL MONITOR] Error:', error);
+        logger.error('[GOALIE PULL MONITOR] Error:', error);
       }
     };
 

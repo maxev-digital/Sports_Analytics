@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { logger } from '../utils/logger';
 
 const SubscriptionSuccess: React.FC = () => {
   const navigate = useNavigate();
@@ -13,7 +14,7 @@ const SubscriptionSuccess: React.FC = () => {
   useEffect(() => {
     const verifyAndActivate = async () => {
       if (!sessionId || !username) {
-        console.error('Missing session ID or username');
+        logger.error('Missing session ID or username');
         setVerifying(false);
         return;
       }
@@ -31,10 +32,10 @@ const SubscriptionSuccess: React.FC = () => {
 
         if (response.ok) {
           const data = await response.json();
-          console.log('Subscription verified:', data);
+          logger.info('Subscription verified:', data);
         }
       } catch (error) {
-        console.error('Error verifying checkout:', error);
+        logger.error('Error verifying checkout:', error);
       }
 
       // Retry subscription refresh up to 5 times to ensure it's updated
@@ -51,7 +52,7 @@ const SubscriptionSuccess: React.FC = () => {
         const currentTier = localStorage.getItem('subscription_tier');
         if (currentTier && currentTier !== 'free' && currentTier !== 'trial') {
           subscriptionUpdated = true;
-          console.log('✅ Subscription successfully updated to:', currentTier);
+          logger.info('✅ Subscription successfully updated to:', currentTier);
 
           // Track successful purchase for X Ads conversion
           if (typeof (window as any).twq !== 'undefined') {
@@ -72,11 +73,11 @@ const SubscriptionSuccess: React.FC = () => {
               num_items: '1',
               content_name: currentTier
             });
-            console.log('✅ X Ads Purchase event tracked:', purchaseValue, currentTier);
+            logger.info('✅ X Ads Purchase event tracked:', purchaseValue, currentTier);
           }
         } else {
           retries--;
-          console.log(`⏳ Waiting for subscription update... ${retries} retries left`);
+          logger.info(`⏳ Waiting for subscription update... ${retries} retries left`);
         }
       }
 

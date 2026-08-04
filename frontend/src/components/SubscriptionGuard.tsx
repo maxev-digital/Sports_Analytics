@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { logger } from '../utils/logger';
 
 interface SubscriptionGuardProps {
   children: React.ReactNode;
@@ -23,19 +24,19 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
 
     // DEVELOPMENT MODE: Bypass subscription check on localhost
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      console.log(`DEV MODE: Bypassing subscription check for ${username}`);
+      logger.info(`DEV MODE: Bypassing subscription check for ${username}`);
       return;
     }
 
     // Admins bypass subscription checks
     if (role === 'admin') {
-      console.log(`User ${username} is admin - bypassing subscription check`);
+      logger.info(`User ${username} is admin - bypassing subscription check`);
       return;
     }
 
     // Only redirect if user has NO subscription (free tier only, not free_trial)
     if (subscriptionTier === 'free') {
-      console.log(`User ${username} has tier ${subscriptionTier} - redirecting to pricing`);
+      logger.info(`User ${username} has tier ${subscriptionTier} - redirecting to pricing`);
       navigate('/pricing', { replace: true });
     }
   }, [subscriptionTier, navigate, username, role, location.pathname]);

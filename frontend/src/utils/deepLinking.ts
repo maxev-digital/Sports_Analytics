@@ -1,3 +1,4 @@
+import { logger } from './logger';
 /**
  * Mobile Deep Linking Utility
  * Handles smart deep linking for sportsbook apps
@@ -68,7 +69,7 @@ export const openSportsbook = (url: string, bookmakerName: string): void => {
   const mobile = isMobile();
   const mobileOS = getMobileOS();
 
-  console.log(`Opening ${bookmakerName} - Mobile: ${mobile}, OS: ${mobileOS}`);
+  logger.info(`Opening ${bookmakerName} - Mobile: ${mobile}, OS: ${mobileOS}`);
 
   if (mobile) {
     // Mobile: Use Universal Links approach
@@ -103,7 +104,7 @@ export const getMobileUrl = (desktopUrl: string, bookmakerKey: string): string =
  */
 export const trackDeepLink = (bookmakerName: string, opened: boolean): void => {
   // Add analytics tracking here if needed
-  console.log(`Deep link - ${bookmakerName}: ${opened ? 'Opened' : 'Failed'}`);
+  logger.info(`Deep link - ${bookmakerName}: ${opened ? 'Opened' : 'Failed'}`);
 };
 
 export default {

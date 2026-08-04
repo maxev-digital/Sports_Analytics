@@ -87,7 +87,7 @@ export function B2BAlertProvider({ children }: { children: ReactNode }) {
           homeRestDays: game.home_rest_days || 0,
           awayRestDays: game.away_rest_days || 0,
           restDifferential: game.rest_differential,
-          fatigueEdge: game.fatigue_edge as 'HOME' | 'AWAY',
+          fatigueEdge: game.fatigue_edge as unknown as 'HOME' | 'AWAY',
           edgePoints: game.fatigue_edge_points || 0,
           timestamp: Date.now(),
         };

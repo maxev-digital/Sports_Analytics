@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { getApiUrl } from '../config';
+import { logger } from '../utils/logger';
 
 interface FeedbackModalProps {
   isOpen: boolean;
@@ -47,7 +48,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
         onClose();
       }, 2000);
     } catch (err) {
-      console.error('Feedback submission error:', err);
+      logger.error('Feedback submission error:', err);
       setError('Failed to submit feedback. Please try again.');
     } finally {
       setLoading(false);

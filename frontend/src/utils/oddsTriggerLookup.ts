@@ -1,3 +1,4 @@
+import { logger } from './logger';
 /**
  * Odds Trigger Lookup Utility
  * Calculates minimum acceptable betting odds based on strategy win rate
@@ -23,7 +24,7 @@ export async function loadOddsLookupTable(): Promise<void> {
     const response = await fetch('/odds_trigger_lookup.json');
     oddsLookupTable = await response.json();
   } catch (error) {
-    console.error('Failed to load odds trigger lookup table:', error);
+    logger.error('Failed to load odds trigger lookup table:', error);
     oddsLookupTable = [];
   }
 }

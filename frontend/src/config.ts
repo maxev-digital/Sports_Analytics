@@ -1,3 +1,4 @@
+import { logger } from './utils/logger';
 /**
  * API Configuration for Development and Production
  * UPDATED: 2025-12-01 - Nginx proxies to port 8888
@@ -22,7 +23,7 @@ export function getApiUrl(endpoint: string): string {
 }
 
 // Debug logging
-console.log('🔧 API Config:', {
+logger.info('🔧 API Config:', {
   isDevelopment,
   hostname: window.location.hostname,
   protocol: window.location.protocol,

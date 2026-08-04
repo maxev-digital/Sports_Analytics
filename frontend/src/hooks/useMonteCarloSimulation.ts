@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { getApiUrl } from '../config';
+import { logger } from '../utils/logger';
 
 interface SimulationRequest {
   game_id: string;
@@ -67,7 +68,7 @@ export function useMonteCarloSimulation() {
 
     try {
       const url = getApiUrl('simulation/monte-carlo');
-      console.log('🎲 Running Monte Carlo simulation:', url, request);
+      logger.info('🎲 Running Monte Carlo simulation:', url, request);
 
       const response = await fetch(url, {
         method: 'POST',
@@ -85,12 +86,12 @@ export function useMonteCarloSimulation() {
       }
 
       const data = await response.json();
-      console.log('✅ Simulation complete:', data);
+      logger.info('✅ Simulation complete:', data);
       setSimulation(data);
       return data;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Simulation failed';
-      console.error('❌ Simulation error:', errorMessage);
+      logger.error('❌ Simulation error:', errorMessage);
       setError(errorMessage);
       return null;
     } finally {

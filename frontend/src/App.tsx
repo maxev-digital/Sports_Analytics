@@ -10,7 +10,8 @@ import { BetSlipToast } from './components/BetSlipToast';
 import { QuarterStrategyAlertMonitor } from './components/QuarterStrategyAlertMonitor';
 import { GoaliePullMonitor } from './components/GoaliePullMonitor';
 import { HedgeAlertMonitor } from './components/HedgeAlertMonitor';
-import { FloatingFeedbackButton } from './components/FloatingFeedbackButton';
+import { AgentChatWidget } from './components/agent/AgentChatWidget';
+import { AgentProvider } from './contexts/AgentContext';
 
 import { LandingPage } from './pages/LandingPage';
 import { Login } from './pages/Login';
@@ -49,7 +50,15 @@ import { Statcast } from './pages/Statcast';
 import { TrendsDashboard } from './pages/TrendsDashboard';
 import { PowerRankings } from './pages/PowerRankings';
 import { BettingRankings } from './pages/BettingRankings';
+import { TrackRecord } from './pages/TrackRecord';
+import { DailyRecap } from './pages/DailyRecap';
+import { Survivor } from './pages/Survivor';
 import { MatchupLab } from './pages/MatchupLab';
+import { ConfidencePool } from './pages/ConfidencePool';
+import { OpenBets } from './pages/OpenBets';
+import { MaddenRatings } from './pages/MaddenRatings';
+import { NFLTrends } from './pages/NFLTrends';
+import { InjuryImpact } from './pages/InjuryImpact';
 
 const bg = 'min-h-screen flex flex-col' /* dark matte via body bg */;
 
@@ -62,6 +71,7 @@ function AppContent() {
     <AuthProvider>
       <ToastProvider>
         <BetSlipProvider>
+          <AgentProvider>
           <BetAlertNotificationProvider>
             <BetSlipToast />
 
@@ -142,6 +152,14 @@ function AppContent() {
                       <Route path="/power-rankings" element={<PowerRankings />} />
                       <Route path="/matchup-lab" element={<MatchupLab />} />
                       <Route path="/betting-rankings" element={<BettingRankings />} />
+                      <Route path="/track-record" element={<TrackRecord />} />
+                      <Route path="/recap" element={<DailyRecap />} />
+                      <Route path="/survivor" element={<Survivor />} />
+                      <Route path="/confidence-pool" element={<ConfidencePool />} />
+                      <Route path="/open-bets" element={<OpenBets />} />
+                      <Route path="/madden-ratings" element={<MaddenRatings />} />
+                      <Route path="/nfl-trends" element={<NFLTrends />} />
+                      <Route path="/injury-impact" element={<InjuryImpact />} />
                       <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
                       <Route path="/props" element={<ProtectedRoute><Props /></ProtectedRoute>} />
                       <Route path="/strategy-results" element={<ProtectedRoute><StrategyResults /></ProtectedRoute>} />
@@ -154,11 +172,12 @@ function AppContent() {
                     </Routes>
                   </div>
                   <Footer />
-                  <FloatingFeedbackButton />
+                  <AgentChatWidget />
                 </div>
               } />
             </Routes>
           </BetAlertNotificationProvider>
+          </AgentProvider>
         </BetSlipProvider>
       </ToastProvider>
     </AuthProvider>

@@ -5,6 +5,7 @@ import { getApiUrl } from '../config';
 import { ImageSlider } from '../components/ImageSlider';
 import { DesktopClientSlider } from '../components/DesktopClientSlider';
 import { PricingToastSequence } from '../components/PricingToastSequence';
+import { logger } from '../utils/logger';
 
 interface SubscriptionStatus {
   tier: string;
@@ -55,7 +56,7 @@ export function Pricing() {
           setSubscriptionStatus(data);
         }
       } catch (error) {
-        console.error('Error fetching subscription status:', error);
+        logger.error('Error fetching subscription status:', error);
       } finally {
         setLoadingStatus(false);
       }
@@ -98,7 +99,7 @@ export function Pricing() {
         throw new Error(data.message || 'Failed to sign up');
       }
     } catch (error) {
-      console.error('Error submitting signup:', error);
+      logger.error('Error submitting signup:', error);
       alert('Error signing up. Please try the signup page directly.');
       window.location.href = '/signup';
     } finally {
@@ -133,7 +134,7 @@ export function Pricing() {
         setLoading(null);
       }
     } catch (error) {
-      console.error('Portal error:', error);
+      logger.error('Portal error:', error);
       alert('Network error. Please try again.');
       setLoading(null);
     }
@@ -195,7 +196,7 @@ export function Pricing() {
         setLoading(null);
       }
     } catch (error) {
-      console.error('Checkout error:', error);
+      logger.error('Checkout error:', error);
       alert('Network error. Please try again.');
       setLoading(null);
     }

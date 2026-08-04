@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { getApiUrl } from '../config';
+import { logger } from '../utils/logger';
 
 interface MetricsData {
   userMetrics: {
@@ -51,7 +52,7 @@ export function OddsMetricsDashboard() {
         }
       });
     } catch (error) {
-      console.error('Error fetching metrics:', error);
+      logger.error('Error fetching metrics:', error);
     } finally {
       setLoading(false);
     }

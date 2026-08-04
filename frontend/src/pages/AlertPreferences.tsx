@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../components/Toast';
 import { ADVANCED_SYSTEMS } from '../data/advancedSystems';
 import { SystemStatusBadge } from '../components/SystemStatusBadge';
+import { logger } from '../utils/logger';
 import {
   getAlertPreferences,
   toggleSystemAlerts,
@@ -33,7 +34,7 @@ export default function AlertPreferences() {
       const prefs = await getAlertPreferences(username);
       setPreferences(prefs);
     } catch (error) {
-      console.error('Failed to load preferences:', error);
+      logger.error('Failed to load preferences:', error);
       showToast('Failed to load alert preferences', 'error');
     } finally {
       setLoading(false);
@@ -61,7 +62,7 @@ export default function AlertPreferences() {
       const action = response.alerts_enabled ? 'enabled' : 'disabled';
       showToast(`Alerts ${action} for ${systemName}`, 'success');
     } catch (error) {
-      console.error('Failed to toggle alerts:', error);
+      logger.error('Failed to toggle alerts:', error);
       showToast('Failed to update alert preferences', 'error');
     } finally {
       setTogglingSystem(null);
@@ -86,7 +87,7 @@ export default function AlertPreferences() {
       await loadPreferences();
       showToast(`Enabled alerts for ${eligibleSystems.length} systems`, 'success');
     } catch (error) {
-      console.error('Failed to enable all:', error);
+      logger.error('Failed to enable all:', error);
       showToast('Failed to enable all alerts', 'error');
     } finally {
       setLoading(false);
@@ -105,7 +106,7 @@ export default function AlertPreferences() {
       await loadPreferences();
       showToast('Disabled all alerts', 'success');
     } catch (error) {
-      console.error('Failed to disable all:', error);
+      logger.error('Failed to disable all:', error);
       showToast('Failed to disable all alerts', 'error');
     } finally {
       setLoading(false);

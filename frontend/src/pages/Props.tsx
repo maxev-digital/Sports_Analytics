@@ -3,6 +3,7 @@ import { OddsMetricsDashboard } from '../components/OddsMetricsDashboard';
 import { BetTypePerformance } from '../components/BetTypePerformance';
 import { getApiUrl } from '../config';
 import { TierGate } from '../components/TierGate';
+import { logger } from '../utils/logger';
 
 interface PlayerProp {
   event_id: string;
@@ -149,7 +150,7 @@ export function Props() {
           setEdgeProps(data);
         }
       } catch (error) {
-        console.error('Error fetching edge props:', error);
+        logger.error('Error fetching edge props:', error);
       } finally {
         setLoading(false);
       }
@@ -182,7 +183,7 @@ export function Props() {
           setCombos(data);
         }
       } catch (error) {
-        console.error('Error fetching combos:', error);
+        logger.error('Error fetching combos:', error);
       } finally {
         setLoading(false);
       }

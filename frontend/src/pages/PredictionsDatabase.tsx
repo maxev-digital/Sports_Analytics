@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getApiUrl } from '../config';
 import { uiEmojis } from '../utils/sportDetection';
+import { logger } from '../utils/logger';
 
 interface Prediction {
   prediction_id: string;
@@ -71,7 +72,7 @@ export default function PredictionsDatabase() {
       const data = await response.json();
       setPredictions(data.predictions || []);
     } catch (error) {
-      console.error('Error fetching predictions:', error);
+      logger.error('Error fetching predictions:', error);
     } finally {
       setLoading(false);
     }

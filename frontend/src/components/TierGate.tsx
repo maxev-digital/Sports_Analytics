@@ -13,6 +13,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { logger } from '../utils/logger';
 
 // Feature access mapping - defines which tiers can access each feature
 // TIER STRUCTURE:
@@ -115,7 +116,7 @@ export function TierGate({
 
   // Development mode bypass
   const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-  console.log('🔐 TierGate Debug:', {
+  logger.info('🔐 TierGate Debug:', {
     feature,
     hostname: window.location.hostname,
     isDev,
@@ -125,13 +126,13 @@ export function TierGate({
   });
 
   if (isDev) {
-    console.log('✅ TierGate: Dev mode bypass - showing content');
+    logger.info('✅ TierGate: Dev mode bypass - showing content');
     return <>{children}</>;
   }
 
   // Check if user has access
   const hasAccess = hasFeatureAccess(subscriptionTier, feature);
-  console.log('🔐 TierGate: hasAccess =', hasAccess, 'for feature', feature);
+  logger.info('🔐 TierGate: hasAccess =', hasAccess, 'for feature', feature);
 
   if (hasAccess) {
     return <>{children}</>;

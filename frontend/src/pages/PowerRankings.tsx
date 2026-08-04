@@ -89,19 +89,177 @@ function DarkTooltip({ active, payload, label }: any) {
   );
 }
 
+const WALTERS_TIER_COLORS: Record<string, string> = {
+  ELITE: EMERALD, CONTENDER: BLUE, AVERAGE: YELLOW, BELOW: MUTED_FG, BOTTOM: BRAND_RED,
+};
+
+const NFL_LOGO_MAP: Record<string, string> = {
+  ARI:'crd',ATL:'atl',BAL:'bal',BUF:'buf',CAR:'car',CHI:'chi',CIN:'cin',CLE:'cle',
+  DAL:'dal',DEN:'den',DET:'det',GB:'gb',HOU:'hou',IND:'ind',JAX:'jax',KC:'kc',
+  LAC:'lac',LAR:'lar',LV:'lv',MIA:'mia',MIN:'min',NE:'ne',NO:'no',NYG:'nyg',
+  NYJ:'nyj',PHI:'phi',PIT:'pit',SEA:'sea',SF:'sf',TB:'tb',TEN:'ten',WSH:'wsh',
+};
+
+interface WaltersEngineData {
+  season: string;
+  last_updated_week: number;
+  updated_at: string | null;
+  weeks_processed: string[];
+  current: { rank: number; team: string; team_name: string; rating: number; tier: string }[];
+  week_changes: { team: string; rating: number; change: number }[];
+}
+
+function WaltersTable({ teams, seasons, selectedSeason, onSeasonChange, engine }: {
+  teams: any[];
+  seasons: any[];
+  selectedSeason: string;
+  onSeasonChange: (s: string) => void;
+  engine: WaltersEngineData | null;
+}) {
+  const TIER_C = WALTERS_TIER_COLORS;
+  const changeMap: Record<string, number> = {};
+  if (engine && engine.week_changes.length > 0) {
+    engine.week_changes.forEach(c => { changeMap[c.team] = c.change; });
+  }
+  const isLive = engine && engine.last_updated_week > 0;
+  const weekLabel = isLive ? `Week ${engine.last_updated_week}` : 'Preseason Baseline';
+
+  return (
+    <div>
+      {/* Engine status banner */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12,
+        padding: '8px 14px', borderRadius: 6,
+        background: isLive
+          ? 'color-mix(in oklch, oklch(69.6% .17 162.48) 10%, transparent)'
+          : 'oklch(20% 0 0)',
+        border: `1px solid ${isLive ? 'color-mix(in oklch, oklch(69.6% .17 162.48) 30%, transparent)' : BORDER}`,
+      }}>
+        <div style={{
+          width: 8, height: 8, borderRadius: '50%',
+          background: isLive ? EMERALD : YELLOW,
+          boxShadow: isLive ? `0 0 6px ${EMERALD}` : 'none',
+        }} />
+        <span style={{ fontSize: '0.72rem', fontWeight: 700, color: isLive ? EMERALD : YELLOW }}>
+          {isLive ? `LIVE — ${weekLabel} processed` : 'PRESEASON — Awaiting Week 1 results (Sept 10)'}
+        </span>
+        {engine?.updated_at && (
+          <span style={{ fontSize: '0.65rem', color: MUTED_FG, marginLeft: 'auto' }}>
+            Updated {new Date(engine.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+          </span>
+        )}
+      </div>
+
+      <div className="filter-bar" style={{ marginBottom: 12 }}>
+        <span style={{ fontSize: '0.68rem', fontWeight: 700, color: MUTED_FG, letterSpacing: '0.1em' }}>SEASON</span>
+        {seasons.map(s => (
+          <button key={s.key} className={`filter-pill ${selectedSeason === s.key ? 'active' : ''}`}
+            onClick={() => onSeasonChange(s.key)} style={s.current ? { borderColor: EMERALD } : {}}>
+            {s.label} {s.current ? '●' : ''}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ fontSize: '0.7rem', color: MUTED_FG, marginBottom: 12 }}>
+        Formula: New Rating = 90% × Old + 10% × TGPL &nbsp;|&nbsp; TGPL = Score Margin + Opp Rating − 2.5 (home field)
+        &nbsp;|&nbsp; Auto-updates after each game week via ESPN.
+      </div>
+
+      <div className="data-table-wrap" style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
+          <thead>
+            <tr>
+              {['#', 'Team', 'Rating', isLive ? 'Wk Chg' : '', 'Tier'].filter(Boolean).map(h => (
+                <th key={h} style={{
+                  padding: '8px 10px', textAlign: h === 'Team' || h === 'Tier' ? 'left' : 'right',
+                  fontSize: '0.65rem', fontWeight: 700, color: MUTED_FG,
+                  letterSpacing: '0.1em', textTransform: 'uppercase', borderBottom: `1px solid ${BORDER}`,
+                }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {teams.map(t => {
+              const tier = (t.tier ?? 'AVERAGE').toUpperCase();
+              const tc = TIER_C[tier] ?? MUTED_FG;
+              const logoUrl = `https://a.espncdn.com/i/teamlogos/nfl/500/${NFL_LOGO_MAP[t.team] ?? t.team.toLowerCase()}.png`;
+              const chg = changeMap[t.team];
+              return (
+                <tr key={t.team} style={{ borderBottom: `1px solid ${BORDER}` }}>
+                  <td style={{ padding: '6px 10px', textAlign: 'right', fontFamily: 'var(--d3-mono)', fontWeight: 700, color: t.rank <= 3 ? EMERALD : MUTED_FG }}>{t.rank}</td>
+                  <td style={{ padding: '6px 10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <img src={logoUrl} alt="" style={{ width: 20, height: 20 }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                      <span style={{ fontWeight: 600, color: 'var(--foreground)' }}>{t.team_name ?? t.team}</span>
+                    </div>
+                  </td>
+                  <td style={{ padding: '6px 10px', textAlign: 'right', fontFamily: 'var(--d3-mono)', fontWeight: 800, color: tc, fontSize: '0.9rem' }}>
+                    {t.rating >= 0 ? '+' : ''}{t.rating.toFixed(1)}
+                  </td>
+                  {isLive && (
+                    <td style={{ padding: '6px 10px', textAlign: 'right', fontFamily: 'var(--d3-mono)', fontWeight: 700,
+                      fontSize: '0.78rem', color: chg == null ? MUTED_FG : chg > 0 ? EMERALD : chg < 0 ? BRAND_RED : MUTED_FG }}>
+                      {chg == null ? '—' : chg > 0 ? `▲ +${chg.toFixed(1)}` : chg < 0 ? `▼ ${chg.toFixed(1)}` : '—'}
+                    </td>
+                  )}
+                  <td style={{ padding: '6px 10px' }}>
+                    <span style={{
+                      padding: '2px 8px', borderRadius: 20, fontSize: '0.62rem', fontWeight: 700,
+                      letterSpacing: '0.08em', textTransform: 'uppercase',
+                      background: `color-mix(in oklch, ${tc} 18%, transparent)`,
+                      color: tc, border: `1px solid color-mix(in oklch, ${tc} 40%, transparent)`,
+                    }}>{tier}</span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 export function PowerRankings() {
   const [sport, setSport] = useState<Sport>('mlb');
   const [rankings, setRankings] = useState<TeamRank[]>([]);
+  const [waltersTeams, setWaltersTeams] = useState<any[]>([]);
+  const [waltersSeasons, setWaltersSeasons] = useState<any[]>([]);
+  const [waltersSeason, setWaltersSeason] = useState('current');
+  const [nflView, setNflView] = useState<'composite' | 'walters'>('composite');
+  const [waltersEngine, setWaltersEngine] = useState<WaltersEngineData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
-    fetch(getApiUrl(`analytics-data/team-scoring/${sport}`))
-      .then(r => r.json())
-      .then(d => setRankings(computeRankings(d.teams ?? [])))
-      .catch(() => setRankings([]))
-      .finally(() => setLoading(false));
+    setNflView('composite');
+    const fetches: Promise<unknown>[] = [
+      fetch(getApiUrl(`analytics-data/team-scoring/${sport}`)).then(r => r.json()),
+    ];
+    if (sport === 'nfl') {
+      fetches.push(
+        fetch(getApiUrl('f5/power-ratings')).then(r => r.json()).catch(() => ({ teams: [], seasons: [] })),
+        fetch(getApiUrl('f5/walters-ratings')).then(r => r.json()).catch(() => null),
+      );
+    }
+    Promise.all(fetches).then(([main, walters, engine]) => {
+      setRankings(computeRankings((main as { teams?: unknown[] }).teams ?? []));
+      if (walters) {
+        const w = walters as { teams?: unknown[]; seasons?: unknown[] };
+        setWaltersTeams(w.teams ?? []);
+        setWaltersSeasons(w.seasons ?? []);
+        setWaltersSeason('current');
+      }
+      if (engine) {
+        setWaltersEngine(engine as WaltersEngineData);
+      }
+    }).catch(() => setRankings([])).finally(() => setLoading(false));
   }, [sport]);
+
+  const handleWaltersSeasonChange = (s: string) => {
+    setWaltersSeason(s);
+    fetch(getApiUrl(`f5/power-ratings?season=${s}`)).then(r => r.json()).then(d => setWaltersTeams(d.teams ?? [])).catch(() => {});
+  };
 
   return (
     <div className="analytics-page">
@@ -115,10 +273,20 @@ export function PowerRankings() {
             </button>
           ))}
         </div>
+        {sport === 'nfl' && !loading && (
+          <div className="filter-bar" style={{ marginTop: 10 }}>
+            <button className={`filter-pill ${nflView === 'composite' ? 'active' : ''}`} onClick={() => setNflView('composite')}>COMPOSITE</button>
+            <button className={`filter-pill ${nflView === 'walters' ? 'active' : ''}`} onClick={() => setNflView('walters')}>WALTERS METHOD</button>
+          </div>
+        )}
       </div>
 
       {loading ? (
         <div style={{ padding: 40, textAlign: 'center', color: MUTED_FG }}>Loading...</div>
+      ) : sport === 'nfl' && nflView === 'walters' ? (
+        <div style={{ padding: '16px 24px', maxWidth: 900 }}>
+          <WaltersTable teams={waltersTeams} seasons={waltersSeasons} selectedSeason={waltersSeason} onSeasonChange={handleWaltersSeasonChange} engine={waltersEngine} />
+        </div>
       ) : (
         <div style={{ padding: '16px 24px', maxWidth: 1200 }}>
           {/* Power Score bar chart */}

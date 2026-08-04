@@ -10,6 +10,7 @@ import { useBetAlertNotification } from '../contexts/BetAlertNotificationContext
 import { StrategyAlert } from '../types';
 import { getBookmaker, formatOdds, getMarketLabel } from '../utils/bookmakers';
 import { useAuth } from '../contexts/AuthContext';
+import { logger } from '../utils/logger';
 
 interface AlertsData {
   arbitrage: { count: number; alerts: any[] };
@@ -109,7 +110,7 @@ export function GlobalAlertMonitor({
         newAlertsToQueue.forEach(alert => queueAlert(alert));
 
       } catch (error) {
-        console.error('[GLOBAL ALERT MONITOR] Error fetching alerts:', error);
+        logger.error('[GLOBAL ALERT MONITOR] Error fetching alerts:', error);
       }
     };
 

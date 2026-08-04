@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { logger } from '../utils/logger';
 
 interface PerformanceSummary {
   overall: {
@@ -102,7 +103,7 @@ export default function Performance() {
       const chartDataRes = await chartRes.json();
       setChartData(chartDataRes.chart_data || []);
     } catch (error) {
-      console.error('Error fetching performance data:', error);
+      logger.error('Error fetching performance data:', error);
     } finally {
       setLoading(false);
     }

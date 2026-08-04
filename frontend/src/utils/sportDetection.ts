@@ -3,7 +3,7 @@
  * Based on design system from DESIGN_SYSTEM.md
  */
 
-export type SportType = 'NBA' | 'NFL' | 'NHL' | 'MLB' | 'NCAAF' | 'NCAAB' | 'SOCCER' | 'PGA' | 'TENNIS' | 'MMA';
+export type SportType = 'NBA' | 'NFL' | 'NHL' | 'MLB' | 'NCAAF' | 'NCAAB' | 'SOCCER' | 'PGA' | 'TENNIS' | 'MMA' | 'WNBA';
 
 /**
  * Detect sport from game data
@@ -22,6 +22,7 @@ export function detectSport(game: any): SportType {
   if (sportKeyLower.includes('golf') || sportKeyLower.includes('pga')) return 'PGA';
   if (sportKeyLower.includes('tennis') || sportKeyLower.includes('atp') || sportKeyLower.includes('wta')) return 'TENNIS';
   if (sportKeyLower.includes('mma') || sportKeyLower.includes('ufc') || sportKeyLower.includes('boxing')) return 'MMA';
+  if (sportKeyLower.includes('basketball_wnba')) return 'WNBA';
 
   return 'NBA'; // default
 }
@@ -39,7 +40,8 @@ export const sportEmojis: Record<SportType, string> = {
   'SOCCER': 'https://em-content.zobj.net/source/microsoft-teams/363/soccer-ball_26bd.png',
   'PGA': 'https://em-content.zobj.net/source/microsoft-teams/363/flag-in-hole_26f3.png',
   'TENNIS': 'https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Tennis/3D/tennis_3d.png',
-  'MMA': 'https://em-content.zobj.net/source/microsoft-teams/363/boxing-glove_1f94a.png'
+  'MMA': 'https://em-content.zobj.net/source/microsoft-teams/363/boxing-glove_1f94a.png',
+  'WNBA': 'https://em-content.zobj.net/source/microsoft-teams/363/basketball_1f3c0.png'
 };
 
 /**
@@ -141,6 +143,12 @@ export const sportStyles: Record<SportType, SportStyle> = {
     gradientTo: 'to-slate-800',
     borderColor: 'border-rose-500',
     glowColor: 'rgba(244, 63, 94, 0.3)'
+  },
+  'WNBA': {
+    gradientFrom: 'from-orange-900',
+    gradientTo: 'to-slate-800',
+    borderColor: 'border-orange-500',
+    glowColor: 'rgba(249, 115, 22, 0.3)'
   }
 };
 

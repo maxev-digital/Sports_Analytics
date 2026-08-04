@@ -28,6 +28,39 @@ ODDS_API = "https://api.the-odds-api.com/v4"
 MLB_API = "https://statsapi.mlb.com/api/v1"
 BACKTEST_DIR = Path(__file__).parent.parent / "f5_backtest"
 
+# ── Odds cache: disk-backed, survives restarts, one Odds API hit per day ─────
+_ODDS_CACHE_FILE = BACKTEST_DIR / "odds_cache_today.json"
+_mem_cache: dict = {}  # hot path: avoid disk read on every request
+
+
+def _get_cached_odds() -> tuple[dict, str] | None:
+    today = date.today().isoformat()
+    # 1. Check hot in-memory cache first
+    if _mem_cache.get("date") == today and _mem_cache.get("data"):
+        return _mem_cache["data"], _mem_cache.get("remaining", "?")
+    # 2. Fall back to disk cache (survives restarts)
+    try:
+        if _ODDS_CACHE_FILE.exists():
+            payload = json.loads(_ODDS_CACHE_FILE.read_text())
+            if payload.get("date") == today and payload.get("data"):
+                # Warm the in-memory cache
+                _mem_cache.update(payload)
+                logger.info("Odds loaded from disk cache")
+                return payload["data"], payload.get("remaining", "?")
+    except Exception as exc:
+        logger.warning(f"Odds disk cache read failed: {exc}")
+    return None
+
+
+def _set_cached_odds(data: dict, remaining: str) -> None:
+    today = date.today().isoformat()
+    payload = {"date": today, "data": data, "remaining": remaining}
+    _mem_cache.update(payload)
+    try:
+        _ODDS_CACHE_FILE.write_text(json.dumps(payload))
+    except Exception as exc:
+        logger.warning(f"Odds disk cache write failed: {exc}")
+
 HIGH_TIE_UMPS = {
     "Bill Miller", "Lance Barrett", "Larry Vanover", "CB Bucknor",
     "Gabe Morales", "Will Little", "Shane Livensparger", "Alfonso Márquez",
@@ -86,9 +119,11 @@ async def _fetch_mlb_games(scan_date: str) -> list:
                 weather = g.get("weather", {})
                 status = g.get("status", {}).get("abstractGameState", "")
 
-                away_era = await _fetch_era(client, ap.get("id"), scan_date[:4])
-                home_era = await _fetch_era(client, hp.get("id"), scan_date[:4])
+                away_stats = await _fetch_pitcher_stats(client, ap.get("id"), scan_date[:4])
+                home_stats = await _fetch_pitcher_stats(client, hp.get("id"), scan_date[:4])
 
+                away_era = away_stats.get("era")
+                home_era = home_stats.get("era")
                 era_diff = abs(away_era - home_era) if away_era and home_era else None
 
                 games.append({
@@ -100,6 +135,8 @@ async def _fetch_mlb_games(scan_date: str) -> list:
                     "away_era": away_era,
                     "home_era": home_era,
                     "era_diff": round(era_diff, 2) if era_diff else None,
+                    "away_pitcher_stats": away_stats,
+                    "home_pitcher_stats": home_stats,
                     "hp_umpire": hp_ump,
                     "ump_tag": (
                         "HIGH_TIE" if hp_ump in HIGH_TIE_UMPS
@@ -122,19 +159,65 @@ async def _fetch_mlb_games(scan_date: str) -> list:
 
 
 async def _fetch_era(client: httpx.AsyncClient, pid: int | None, season: str) -> float | None:
+    """Legacy: season ERA only."""
+    stats = await _fetch_pitcher_stats(client, pid, season)
+    return stats.get("era")
+
+
+async def _fetch_pitcher_stats(client: httpx.AsyncClient, pid: int | None, season: str) -> dict:
+    """Full pitcher stats: season ERA/K9/BB9/WHIP + last 3 starts form."""
     if not pid:
-        return None
+        return {}
+    result: dict = {}
     try:
+        # Season stats
         r = await client.get(
             f"{MLB_API}/people/{pid}/stats",
             params={"stats": "season", "season": season, "group": "pitching"},
         )
         splits = r.json().get("stats", [{}])[0].get("splits", [])
         if splits:
-            return float(splits[0]["stat"].get("era", 99))
-    except Exception:
-        pass
-    return None
+            s = splits[0]["stat"]
+            era = float(s.get("era", 99))
+            ip_str = s.get("inningsPitched", "0")
+            ip = float(ip_str) if ip_str else 0
+            so = int(s.get("strikeOuts", 0))
+            bb = int(s.get("baseOnBalls", 0))
+            whip = float(s.get("whip", 0)) if s.get("whip") else None
+            k9 = round((so / ip) * 9, 1) if ip > 0 else None
+            bb9 = round((bb / ip) * 9, 1) if ip > 0 else None
+            result.update({
+                "era": era if era < 99 else None,
+                "k9": k9,
+                "bb9": bb9,
+                "whip": round(whip, 2) if whip else None,
+                "season_ip": round(ip, 1),
+                "season_so": so,
+                "season_gs": int(s.get("gamesStarted", 0)),
+            })
+
+        # Last 3 starts
+        r2 = await client.get(
+            f"{MLB_API}/people/{pid}/stats",
+            params={"stats": "gameLog", "season": season, "group": "pitching"},
+        )
+        all_splits = r2.json().get("stats", [{}])[0].get("splits", [])
+        # Filter to starts only (inningsPitched > 1.0 typically, or gamesStarted)
+        starts = [sp for sp in all_splits if int(sp["stat"].get("gamesStarted", 0)) > 0]
+        last3 = starts[-3:] if len(starts) >= 3 else starts
+        if last3:
+            recent_era = sum(float(sp["stat"].get("era", 9)) for sp in last3) / len(last3)
+            recent_ip = sum(float(sp["stat"].get("inningsPitched", 0)) for sp in last3) / len(last3)
+            recent_k = sum(int(sp["stat"].get("strikeOuts", 0)) for sp in last3)
+            result.update({
+                "recent_era": round(recent_era, 2),
+                "recent_avg_ip": round(recent_ip, 1),
+                "recent_k": recent_k,
+                "recent_starts": len(last3),
+            })
+    except Exception as exc:
+        logger.debug(f"Pitcher stats fetch failed pid={pid}: {exc}")
+    return result
 
 
 async def _fetch_fg_odds() -> tuple[dict, str]:
@@ -301,8 +384,11 @@ def _score_game(game: dict, odds: dict) -> list[dict]:
 async def get_today(
     scan_date: Optional[str] = Query(default=None),
     use_odds: bool = Query(default=True),
+    force: bool = Query(default=False),
 ):
-    """Today's games scored against all signals. Uses ~30 Odds API credits."""
+    """Today's games scored against all signals.
+    Odds are cached per calendar day — only costs credits on first load or force=true.
+    """
     target = scan_date or date.today().isoformat()
 
     games = await _fetch_mlb_games(target)
@@ -310,7 +396,14 @@ async def get_today(
     fg_odds: dict = {}
     credits = "skipped"
     if use_odds and ODDS_KEY:
-        fg_odds, credits = await _fetch_fg_odds()
+        cached = None if force else _get_cached_odds()
+        if cached:
+            fg_odds, credits = cached
+            logger.info("Odds served from cache (0 credits used)")
+        else:
+            fg_odds, credits = await _fetch_fg_odds()
+            _set_cached_odds(fg_odds, credits)
+            logger.info(f"Fresh odds fetched — {credits} credits remaining")
 
     results = []
     total_plays = 0
@@ -479,6 +572,105 @@ async def get_ats_rankings(
     return {"teams": [], "seasons": available, "error": f"No ATS data for {sport} {sel}"}
 
 
+@router.get("/nhl-goalie-rankings")
+async def get_nhl_goalie_rankings():
+    """NHL team stats + goalie save%, GAA, shutouts (2024-25)."""
+    json_path = BACKTEST_DIR / "nhl_goalie_rankings_2024_25.json"
+    if json_path.exists():
+        with open(json_path) as f:
+            return json.load(f)
+    return {"teams": [], "goalies": [], "error": "NHL goalie data not available"}
+
+
+@router.get("/nba-efficiency")
+async def get_nba_efficiency():
+    """NBA pace + efficiency ratings (ESPN-derived)."""
+    json_path = BACKTEST_DIR / "nba_efficiency_2024_25.json"
+    if json_path.exists():
+        with open(json_path) as f:
+            return json.load(f)
+    return {"teams": [], "error": "NBA efficiency data not available"}
+
+
+
+@router.get("/ncaab-efficiency")
+async def get_ncaab_efficiency(season: Optional[str] = Query(default="2025")):
+    """NCAAB efficiency ratings with conference SOS proxy (composite AdjEM)."""
+    json_path = BACKTEST_DIR / "ncaab_efficiency.json"
+    if not json_path.exists():
+        return {"teams": [], "error": "NCAAB efficiency data not available"}
+    with open(json_path) as f:
+        data = json.load(f)
+    sel = season or "2025"
+    teams = data.get("seasons", {}).get(sel, [])
+    seasons = [
+        {"key": "2025", "label": "2024-25", "current": True},
+        {"key": "2024", "label": "2023-24", "current": False},
+        {"key": "2023", "label": "2022-23", "current": False},
+    ]
+    return {
+        "teams": teams,
+        "season": sel,
+        "seasons": seasons,
+        "method": data.get("method"),
+        "note": data.get("note"),
+    }
+
+@router.get("/power-ratings")
+async def get_power_ratings(
+    season: Optional[str] = Query(default="current"),
+):
+    """Walters-method NFL power ratings by season."""
+    json_path = BACKTEST_DIR / "nfl_power_ratings.json"
+    if not json_path.exists():
+        return {"teams": [], "error": "Power ratings not built yet"}
+
+    with open(json_path) as f:
+        data = json.load(f)
+
+    seasons_list = [{"key": "current", "label": "2025 (Current)", "current": True}]
+    seasons_list += [{"key": yr, "label": yr, "current": False} for yr in reversed(sorted(data.get("seasons", {}).keys()))]
+
+    if season == "current":
+        teams = data.get("current", [])
+    else:
+        teams = data.get("seasons", {}).get(season, [])
+
+    return {
+        "teams": teams,
+        "season": season,
+        "seasons": seasons_list,
+        "method": data.get("method"),
+        "formula": data.get("formula"),
+    }
+
+
+@router.get("/firsthalf-rankings")
+async def get_firsthalf_rankings(
+    sport: Optional[str] = Query(default="nfl"),
+    season: Optional[str] = Query(default=None),
+):
+    """First-half scoring stats by team — NFL only currently."""
+    sport = (sport or "nfl").lower()
+
+    FH_SEASONS: dict = {
+        "nfl": [{"key": str(y), "label": str(y), "current": y == 2025} for y in range(2025, 2014, -1)],
+    }
+    FH_SEASONS["nfl"].insert(0, {"key": "all", "label": "All-Time", "current": False})
+
+    available = FH_SEASONS.get(sport, [])
+    sel = season or "2025"
+
+    json_path = BACKTEST_DIR / "nfl_firsthalf_rankings.json"
+    if json_path.exists():
+        with open(json_path) as f:
+            data = json.load(f)
+        teams = data.get(sel, data.get("2025", []))
+        return {"teams": teams, "sport": sport, "season": sel, "seasons": available}
+
+    return {"teams": [], "seasons": available, "error": "No first-half data available"}
+
+
 @router.get("/results")
 async def get_results():
     """2026 backtest results by signal."""
@@ -487,6 +679,337 @@ async def get_results():
         with open(json_path) as f:
             return json.load(f)
     return {"signals": [], "games": 0, "ties": 0, "season": 2026}
+
+
+@router.get("/recap")
+async def get_recap(date: Optional[str] = Query(default=None)):
+    """
+    Grade yesterday's (or any date's) MLB F5 games against our signals.
+    Pulls final scores from MLB Stats API (free) and reconstructs signal outcomes.
+    """
+    from datetime import date as dt_date, timedelta
+    import re
+
+    scan_date = date or str(dt_date.today() - timedelta(days=1))
+
+    HIGH_TIE_UMPS = {
+        "Bill Miller", "Lance Barrett", "Larry Vanover", "CB Bucknor",
+        "Gabe Morales", "Will Little", "Shane Livensparger", "Alfonso Márquez",
+        "Dan Merzel", "Quinn Wolcott", "Mark Wegner", "Nestor Ceja",
+        "Mike Muchlinski", "D.J. Reyburn", "Vic Carapazza", "Phil Cuzzi",
+        "Ryan Additon", "Tripp Gibson", "Adrian Johnson",
+    }
+    LOW_TIE_UMPS = {
+        "Edwin Jimenez", "Mark Carlson", "Hunter Wendelstedt", "Erich Bacchus",
+        "Roberto Ortiz", "Paul Clemons", "Chad Whitson", "Jim Wolf",
+    }
+    HIGH_TIE_VENUES = {
+        "Chase Field", "Globe Life Field", "Yankee Stadium", "Citi Field",
+        "Busch Stadium", "American Family Field",
+    }
+    UNDER_VENUES = {
+        "Globe Life Field", "Kauffman Stadium", "Comerica Park",
+        "Wrigley Field", "Citi Field",
+    }
+
+    MLB_STATS = "https://statsapi.mlb.com/api/v1"
+
+    async def fetch_era(client: httpx.AsyncClient, pitcher_id: int, season: str) -> Optional[float]:
+        try:
+            r = await client.get(
+                f"{MLB_STATS}/people/{pitcher_id}/stats",
+                params={"stats": "season", "season": season, "group": "pitching"},
+                timeout=8,
+            )
+            splits = r.json().get("stats", [{}])[0].get("splits", [])
+            if splits:
+                return float(splits[0]["stat"].get("era", 99))
+        except Exception:
+            pass
+        return None
+
+    season_year = scan_date[:4]
+
+    async with httpx.AsyncClient(timeout=15) as client:
+        r = await client.get(f"{MLB_STATS}/schedule", params={
+            "sportId": 1, "startDate": scan_date, "endDate": scan_date,
+            "gameType": "R", "hydrate": "linescore,probablePitcher,officials,venue",
+        })
+        raw_games = []
+        for d in r.json().get("dates", []):
+            for g in d.get("games", []):
+                raw_games.append(g)
+
+    games_out = []
+    for g in raw_games:
+        state = g.get("status", {}).get("detailedState", "")
+        if state not in ("Final", "Completed Early"):
+            continue
+
+        ls = g.get("linescore", {})
+        innings = ls.get("innings", [])
+        if len(innings) < 5:
+            continue
+
+        away = g["teams"]["away"]["team"]["name"]
+        home = g["teams"]["home"]["team"]["name"]
+        venue = g.get("venue", {}).get("name", "")
+
+        away_r5 = sum(inn.get("away", {}).get("runs", 0) for inn in innings[:5])
+        home_r5 = sum(inn.get("home", {}).get("runs", 0) for inn in innings[:5])
+        f1_away = innings[0].get("away", {}).get("runs", 0)
+        f1_home = innings[0].get("home", {}).get("runs", 0)
+        away_final = ls.get("teams", {}).get("away", {}).get("runs", 0)
+        home_final = ls.get("teams", {}).get("home", {}).get("runs", 0)
+
+        ap = g["teams"]["away"].get("probablePitcher", {})
+        hp = g["teams"]["home"].get("probablePitcher", {})
+        officials = g.get("officials", [])
+        hp_ump = next(
+            (o["official"]["fullName"] for o in officials if o.get("officialType") == "Home Plate"),
+            None,
+        )
+
+        # Fetch ERAs concurrently
+        async with httpx.AsyncClient(timeout=10) as ec:
+            tasks = []
+            if ap.get("id"):
+                tasks.append(fetch_era(ec, ap["id"], season_year))
+            else:
+                tasks.append(None)
+            if hp.get("id"):
+                tasks.append(fetch_era(ec, hp["id"], season_year))
+            else:
+                tasks.append(None)
+            import asyncio
+            results_era = await asyncio.gather(*[t if t is not None else asyncio.coroutine(lambda: None)() for t in tasks], return_exceptions=True)
+
+        away_era = results_era[0] if not isinstance(results_era[0], Exception) else None
+        home_era = results_era[1] if not isinstance(results_era[1], Exception) else None
+        era_diff = abs(away_era - home_era) if away_era and home_era else None
+
+        f5_total = away_r5 + home_r5
+        f5_tied = away_r5 == home_r5
+        f5_leader = "away" if away_r5 > home_r5 else "home" if home_r5 > away_r5 else "tie"
+
+        # Determine signals that fired
+        ace_ace = away_era and home_era and away_era < 3.5 and home_era < 3.5
+        both_under_4 = away_era and home_era and away_era < 4.0 and home_era < 4.0
+        both_under_45 = away_era and home_era and away_era < 4.5 and home_era < 4.5
+        venue_tie = venue in HIGH_TIE_VENUES and bool(both_under_4)
+        hi_ump = hp_ump in HIGH_TIE_UMPS if hp_ump else False
+        lo_ump = hp_ump in LOW_TIE_UMPS if hp_ump else False
+        venue_under = venue in UNDER_VENUES
+
+        signals_fired: list[dict] = []
+
+        # F5 Tie (Ace vs Ace)
+        if ace_ace:
+            won = f5_tied
+            pl = round(100 * 4.5 if won else -100, 2)
+            signals_fired.append({"name": "F5 Tie (Ace vs Ace)", "tier": "STRONG", "won": won, "pl": pl, "result": "TIE" if f5_tied else f5_leader.upper()})
+
+        # F5 Tie (Hi-Venue + ERA<4)
+        if venue_tie and not ace_ace:
+            won = f5_tied
+            pl = round(100 * 4.5 if won else -100, 2)
+            signals_fired.append({"name": "F5 Tie (Hi-Venue+ERA<4)", "tier": "STRONG", "won": won, "pl": pl, "result": "TIE" if f5_tied else f5_leader.upper()})
+
+        # F5 Under
+        if both_under_45:
+            est_line = 4.5
+            won = f5_total < est_line
+            push = f5_total == est_line
+            if not push:
+                pl = round(100 * 0.91 if won else -100, 2)
+                lbl = "UNDER" if won else "OVER"
+                signals_fired.append({"name": f"F5 Under (ERA<4.50) — F5 Total: {f5_total}", "tier": "GOOD" if not (away_era and home_era and away_era < 3.5 and home_era < 3.5) else "STRONG", "won": won, "pl": pl, "result": lbl})
+
+        # F5 Fav ML
+        if era_diff and era_diff >= 1.5:
+            fav = "home" if home_era and away_era and home_era < away_era else "away"
+            won = f5_leader == fav
+            tied = f5_leader == "tie"
+            pl = round((-100 if tied else (100 * 0.77 if won else -100)), 2)
+            signals_fired.append({"name": f"F5 Fav ML (diff>={era_diff:.1f})", "tier": "STRONG", "won": won, "pl": pl, "result": f5_leader.upper()})
+
+        # Venue Under
+        if venue_under:
+            won = f5_total <= 4
+            signals_fired.append({"name": f"F5 Under (Venue: {venue})", "tier": "GOOD", "won": won, "pl": round(100 * 0.91 if won else -100, 2), "result": f"F5={f5_total}"})
+
+        game_record = {
+            "away_team": away,
+            "home_team": home,
+            "away_pitcher": ap.get("fullName", "TBD"),
+            "home_pitcher": hp.get("fullName", "TBD"),
+            "away_era": away_era,
+            "home_era": home_era,
+            "venue": venue,
+            "hp_umpire": hp_ump,
+            "hi_ump": hi_ump,
+            "lo_ump": lo_ump,
+            "away_r5": away_r5,
+            "home_r5": home_r5,
+            "f5_total": f5_total,
+            "f5_tied": f5_tied,
+            "f5_leader": f5_leader,
+            "f1_away": f1_away,
+            "f1_home": f1_home,
+            "away_final": away_final,
+            "home_final": home_final,
+            "signals": signals_fired,
+        }
+        games_out.append(game_record)
+
+    # Daily summary
+    all_signals = [s for g in games_out for s in g["signals"]]
+    total_bets = len(all_signals)
+    total_wins = sum(1 for s in all_signals if s["won"])
+    total_pl = round(sum(s["pl"] for s in all_signals), 2)
+    ties_today = sum(1 for g in games_out if g["f5_tied"])
+
+    # Persist to rolling signal performance log for verification pipeline
+    if games_out and total_bets > 0:
+        try:
+            from verification.signal_logger import append_day
+            append_day(scan_date, games_out)
+        except Exception as log_err:
+            logger.warning(f"signal_logger append failed: {log_err}")
+
+    return {
+        "date": scan_date,
+        "games": games_out,
+        "total_games": len(games_out),
+        "ties_today": ties_today,
+        "tie_rate": round(ties_today / len(games_out) * 100, 1) if games_out else 0,
+        "summary": {
+            "total_bets": total_bets,
+            "wins": total_wins,
+            "losses": total_bets - total_wins,
+            "win_rate": round(total_wins / total_bets * 100, 1) if total_bets else 0,
+            "total_pl": total_pl,
+        },
+    }
+
+
+@router.get("/survivor")
+async def get_survivor_data():
+    """
+    Circa Survivor helper — 2025 NFL season.
+    Returns full 17-week schedule cross-referenced with Walters power ratings.
+    Each game scored: win_prob = sigmoid of (home_rating - away_rating + 2.5 HFA) / 7.
+    """
+    import math
+
+    schedule_path = BACKTEST_DIR / "nfl_schedule_2026.json"
+    ratings_path  = BACKTEST_DIR / "nfl_power_ratings.json"
+
+    if not schedule_path.exists() or not ratings_path.exists():
+        return {"error": "Schedule or ratings data not available", "weeks": {}}
+
+    with open(schedule_path) as f:
+        raw_schedule = json.load(f)
+    with open(ratings_path) as f:
+        ratings_data = json.load(f)
+
+    # Build rating lookup: abbr -> rating
+    rating_map: dict[str, float] = {}
+    tier_map:   dict[str, str]   = {}
+    for t in ratings_data.get("current", []):
+        rating_map[t["team"]] = t["rating"]
+        tier_map[t["team"]]   = t.get("tier", "AVERAGE")
+
+    def win_prob(home_rating: float, away_rating: float, home: bool = True) -> float:
+        hfa = 2.5 if home else 0.0
+        diff = home_rating - away_rating + hfa
+        return round(1 / (1 + math.exp(-diff / 7)), 3)
+
+    def matchup_label(prob: float) -> str:
+        if prob >= 0.72:  return "GREAT"
+        if prob >= 0.60:  return "GOOD"
+        if prob >= 0.50:  return "LEAN"
+        if prob >= 0.40:  return "TOUGH"
+        return "TRAP"
+
+    weeks_out: dict = {}
+    for week_str, games in raw_schedule.items():
+        week = int(week_str)
+        week_games = []
+        for g in games:
+            home_abbr = g["home"]
+            away_abbr = g["away"]
+            home_rat = rating_map.get(home_abbr, 0.0)
+            away_rat = rating_map.get(away_abbr, 0.0)
+            home_wp  = win_prob(home_rat, away_rat, home=True)
+            away_wp  = win_prob(away_rat, home_rat, home=False)
+            week_games.append({
+                "home": home_abbr,
+                "away": away_abbr,
+                "home_name": g.get("home_name", home_abbr),
+                "away_name": g.get("away_name", away_abbr),
+                "date": g.get("date", ""),
+                "home_rating": round(home_rat, 2),
+                "away_rating": round(away_rat, 2),
+                "home_wp": home_wp,
+                "away_wp": away_wp,
+                "home_tier": tier_map.get(home_abbr, "AVERAGE"),
+                "away_tier": tier_map.get(away_abbr, "AVERAGE"),
+                "home_label": matchup_label(home_wp),
+                "away_label": matchup_label(away_wp),
+            })
+        # Sort by best home win prob descending so top picks show first
+        week_games.sort(key=lambda x: -max(x["home_wp"], x["away_wp"]))
+        weeks_out[week] = week_games
+
+    # Build per-team schedule view: team -> [{week, opponent, home, wp, label}]
+    team_schedule: dict[str, list] = {}
+    for week_str, games in raw_schedule.items():
+        week = int(week_str)
+        for g in games:
+            for side in ("home", "away"):
+                opp_side = "away" if side == "home" else "home"
+                team  = g[side]
+                opp   = g[opp_side]
+                is_home = side == "home"
+                t_rat = rating_map.get(team, 0.0)
+                o_rat = rating_map.get(opp, 0.0)
+                wp = win_prob(t_rat, o_rat, home=is_home)
+                if team not in team_schedule:
+                    team_schedule[team] = []
+                team_schedule[team].append({
+                    "week": week,
+                    "opp": opp,
+                    "home": is_home,
+                    "wp": wp,
+                    "label": matchup_label(wp),
+                    "team_rating": round(t_rat, 2),
+                    "opp_rating":  round(o_rat, 2),
+                    "date": g.get("date", ""),
+                })
+            # Handle bye weeks implicitly (no entry for that week = bye)
+
+    # Sort each team's schedule by week
+    for team in team_schedule:
+        team_schedule[team].sort(key=lambda x: x["week"])
+
+    # Build team list with ratings + tier
+    teams_out = []
+    for t in ratings_data.get("current", []):
+        teams_out.append({
+            "team": t["team"],
+            "team_name": t.get("team_name", t["team"]),
+            "rating": t["rating"],
+            "tier": t.get("tier", "AVERAGE"),
+            "schedule": team_schedule.get(t["team"], []),
+        })
+    teams_out.sort(key=lambda x: -x["rating"])
+
+    return {
+        "season": 2026,
+        "weeks": weeks_out,
+        "teams": teams_out,
+    }
 
 
 @router.get("/credits")

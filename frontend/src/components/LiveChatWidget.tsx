@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { getApiUrl } from '../config';
+import { logger } from '../utils/logger';
 
 interface ChatMessage {
   id: string;
@@ -68,7 +69,7 @@ export function LiveChatWidget() {
         }
       }
     } catch (error) {
-      console.error('Error loading chat history:', error);
+      logger.error('Error loading chat history:', error);
     } finally {
       if (!silent) setLoading(false);
     }
@@ -100,7 +101,7 @@ export function LiveChatWidget() {
         setMessages(prev => [...prev, data.message]);
       }
     } catch (error) {
-      console.error('Error sending message:', error);
+      logger.error('Error sending message:', error);
     } finally {
       setLoading(false);
     }

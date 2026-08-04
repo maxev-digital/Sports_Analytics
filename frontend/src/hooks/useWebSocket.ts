@@ -5,6 +5,7 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { LiveGame } from '../types';
+import { logger } from '../utils/logger';
 
 interface WebSocketMessage {
   type: string;
@@ -42,11 +43,11 @@ export const useWebSocket = (userId: string = 'default'): UseWebSocketReturn => 
     const websocketUrl = `${baseUrl}?user_id=${userId}`;
 
     try {
-      console.log('🔌 Connecting to WebSocket...', websocketUrl);
+      logger.info('🔌 Connecting to WebSocket...', websocketUrl);
       const ws = new WebSocket(websocketUrl);
 
       ws.onopen = () => {
-        console.log('✅ WebSocket Connected');
+        logger.info('✅ WebSocket Connected');
         setConnected(true);
         setError(null);
         reconnectAttemptsRef.current = 0;
@@ -69,24 +70,24 @@ export const useWebSocket = (userId: string = 'default'): UseWebSocketReturn => 
           if (message.type === 'games_update' && message.games) {
             setGames(message.games as LiveGame[]);
             setLastUpdate(new Date());
-            console.log(`📊 Received ${message.games.length} games via WebSocket`);
+            logger.info(`📊 Received ${message.games.length} games via WebSocket`);
           } else if (message.type === 'ping' || message.type === 'pong') {
             // Keep alive message, no action needed
-            console.log('💓 Keep-alive:', message.type);
+            logger.info('💓 Keep-alive:', message.type);
           }
         } catch (err) {
-          console.error('❌ Error parsing WebSocket message:', err);
+          logger.error('❌ Error parsing WebSocket message:', err);
         }
       };
 
       ws.onerror = (event) => {
-        console.error('❌ WebSocket Error:', event);
+        logger.error('❌ WebSocket Error:', event);
         setError('Connection error');
         setConnected(false);
       };
 
       ws.onclose = (event) => {
-        console.log('🔌 WebSocket Disconnected', event.code, event.reason);
+        logger.info('🔌 WebSocket Disconnected', event.code, event.reason);
         setConnected(false);
 
         // Clear ping interval
@@ -99,7 +100,7 @@ export const useWebSocket = (userId: string = 'default'): UseWebSocketReturn => 
         const delay = Math.min(RECONNECT_DELAY * Math.pow(1.5, reconnectAttemptsRef.current), 30000);
         reconnectAttemptsRef.current += 1;
 
-        console.log(`🔄 Reconnecting in ${delay / 1000}s... (attempt ${reconnectAttemptsRef.current})`);
+        logger.info(`🔄 Reconnecting in ${delay / 1000}s... (attempt ${reconnectAttemptsRef.current})`);
 
         reconnectTimeoutRef.current = window.setTimeout(() => {
           connect();
@@ -108,7 +109,7 @@ export const useWebSocket = (userId: string = 'default'): UseWebSocketReturn => 
 
       wsRef.current = ws;
     } catch (err) {
-      console.error('❌ Failed to create WebSocket:', err);
+      logger.error('❌ Failed to create WebSocket:', err);
       setError('Failed to connect');
 
       // Retry connection

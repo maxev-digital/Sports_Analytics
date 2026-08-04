@@ -4,6 +4,7 @@
  */
 
 import { getApiUrl } from '../config';
+import { logger } from './logger';
 
 interface TrackBetClickParams {
   userId: string;
@@ -58,14 +59,14 @@ export async function trackBetClick(params: TrackBetClickParams): Promise<UserBe
     });
 
     if (!response.ok) {
-      console.error('Failed to track bet click:', await response.text());
+      logger.error('Failed to track bet click:', await response.text());
       return null;
     }
 
     const bet = await response.json();
     return bet;
   } catch (error) {
-    console.error('Error tracking bet click:', error);
+    logger.error('Error tracking bet click:', error);
     return null;
   }
 }
@@ -77,12 +78,12 @@ export async function getPendingBets(userId: string): Promise<UserBet[]> {
   try {
     const response = await fetch(getApiUrl(`/bets/pending?user_id=${userId}`));
     if (!response.ok) {
-      console.error('Failed to fetch pending bets');
+      logger.error('Failed to fetch pending bets');
       return [];
     }
     return await response.json();
   } catch (error) {
-    console.error('Error fetching pending bets:', error);
+    logger.error('Error fetching pending bets:', error);
     return [];
   }
 }
@@ -102,12 +103,12 @@ export async function getUserBets(
 
     const response = await fetch(getApiUrl(`/bets/my-bets?${params}`));
     if (!response.ok) {
-      console.error('Failed to fetch user bets');
+      logger.error('Failed to fetch user bets');
       return [];
     }
     return await response.json();
   } catch (error) {
-    console.error('Error fetching user bets:', error);
+    logger.error('Error fetching user bets:', error);
     return [];
   }
 }
@@ -126,13 +127,13 @@ export async function addStakeToBet(betId: string, stake: number): Promise<UserB
     });
 
     if (!response.ok) {
-      console.error('Failed to add stake to bet');
+      logger.error('Failed to add stake to bet');
       return null;
     }
 
     return await response.json();
   } catch (error) {
-    console.error('Error adding stake to bet:', error);
+    logger.error('Error adding stake to bet:', error);
     return null;
   }
 }
@@ -168,13 +169,13 @@ export async function updateBet(
     });
 
     if (!response.ok) {
-      console.error('Failed to update bet');
+      logger.error('Failed to update bet');
       return null;
     }
 
     return await response.json();
   } catch (error) {
-    console.error('Error updating bet:', error);
+    logger.error('Error updating bet:', error);
     return null;
   }
 }
@@ -196,13 +197,13 @@ export async function settleBet(
     });
 
     if (!response.ok) {
-      console.error('Failed to settle bet');
+      logger.error('Failed to settle bet');
       return null;
     }
 
     return await response.json();
   } catch (error) {
-    console.error('Error settling bet:', error);
+    logger.error('Error settling bet:', error);
     return null;
   }
 }
@@ -218,7 +219,7 @@ export async function deleteBet(betId: string): Promise<boolean> {
 
     return response.ok;
   } catch (error) {
-    console.error('Error deleting bet:', error);
+    logger.error('Error deleting bet:', error);
     return false;
   }
 }
@@ -230,12 +231,12 @@ export async function getUserBettingStats(userId: string) {
   try {
     const response = await fetch(getApiUrl(`/bets/user/${userId}/stats`));
     if (!response.ok) {
-      console.error('Failed to fetch betting stats');
+      logger.error('Failed to fetch betting stats');
       return null;
     }
     return await response.json();
   } catch (error) {
-    console.error('Error fetching betting stats:', error);
+    logger.error('Error fetching betting stats:', error);
     return null;
   }
 }
@@ -282,13 +283,13 @@ export async function addManualBet(params: {
     });
 
     if (!response.ok) {
-      console.error('Failed to add manual bet:', await response.text());
+      logger.error('Failed to add manual bet:', await response.text());
       return null;
     }
 
     return await response.json();
   } catch (error) {
-    console.error('Error adding manual bet:', error);
+    logger.error('Error adding manual bet:', error);
     return null;
   }
 }

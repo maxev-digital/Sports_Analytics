@@ -9,6 +9,7 @@ import { useBetAlertNotification } from '../contexts/BetAlertNotificationContext
 import { getAlertPreferences } from '../api/alertPreferences';
 import { getSystemById } from '../data/advancedSystems';
 import { StrategyAlert } from '../types';
+import { logger } from '../utils/logger';
 
 interface AlertTrigger {
   systemId: number;
@@ -36,7 +37,7 @@ export function useAlertMonitoring(games: any[]) {
         const prefs = await getAlertPreferences(username);
         setEnabledSystems(prefs.enabled_systems);
       } catch (error) {
-        console.error('Failed to load alert preferences:', error);
+        logger.error('Failed to load alert preferences:', error);
       }
     };
 

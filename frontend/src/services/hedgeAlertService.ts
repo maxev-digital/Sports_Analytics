@@ -4,6 +4,7 @@
 
 import { HedgeAlertData } from '../components/HedgeAlertModal';
 import { getApiUrl } from '../config';
+import { logger } from '../utils/logger';
 
 export interface HedgeToastData {
   id: string;
@@ -39,7 +40,7 @@ class HedgeAlertService {
       this.checkForNewAlerts(userId);
     }, intervalMs);
 
-    console.log(`[HedgeAlertService] Started polling for user ${userId} every ${intervalMs}ms`);
+    logger.info(`[HedgeAlertService] Started polling for user ${userId} every ${intervalMs}ms`);
   }
 
   /**
@@ -49,7 +50,7 @@ class HedgeAlertService {
     if (this.pollingInterval !== null) {
       clearInterval(this.pollingInterval);
       this.pollingInterval = null;
-      console.log('[HedgeAlertService] Stopped polling');
+      logger.info('[HedgeAlertService] Stopped polling');
     }
   }
 
@@ -63,7 +64,7 @@ class HedgeAlertService {
       );
 
       if (!response.ok) {
-        console.error('[HedgeAlertService] Failed to fetch alerts:', response.statusText);
+        logger.error('[HedgeAlertService] Failed to fetch alerts:', response.statusText);
         return;
       }
 
@@ -115,10 +116,10 @@ class HedgeAlertService {
           this.onNewAlertCallback(toastData);
         }
 
-        console.log('[HedgeAlertService] New hedge alert detected:', toastData);
+        logger.info('[HedgeAlertService] New hedge alert detected:', toastData);
       }
     } catch (error) {
-      console.error('[HedgeAlertService] Error checking for alerts:', error);
+      logger.error('[HedgeAlertService] Error checking for alerts:', error);
     }
   }
 
@@ -170,7 +171,7 @@ class HedgeAlertService {
         timestamp: latestAlert.timestamp
       };
     } catch (error) {
-      console.error('[HedgeAlertService] Error fetching latest alert:', error);
+      logger.error('[HedgeAlertService] Error fetching latest alert:', error);
       return null;
     }
   }

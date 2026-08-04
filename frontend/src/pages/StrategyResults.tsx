@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { getApiUrl } from '../config';
 import { loadOddsLookupTable, getOddsWithColor, formatOddsDisplay } from '../utils/oddsTriggerLookup';
 import { useAuth } from '../contexts/AuthContext';
+import { logger } from '../utils/logger';
 
 // Strategy interfaces
 interface Strategy {
@@ -99,7 +100,7 @@ const AlertModal = ({ strategy, onClose }: { strategy: Strategy; onClose: () => 
         alert('Subscription failed. Please try again.');
       }
     } catch (error) {
-      console.error('Subscription error:', error);
+      logger.error('Subscription error:', error);
       alert('Network error. Please check your connection.');
     }
   };
@@ -209,7 +210,7 @@ export function StrategyResults() {
           return response;
         } catch (error) {
           if (i === retries - 1) throw error;
-          console.warn(`Retry ${i + 1}/${retries} for ${url}:`, error);
+          logger.warn(`Retry ${i + 1}/${retries} for ${url}:`, error);
           await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
@@ -268,7 +269,7 @@ export function StrategyResults() {
         setPerformanceSummary(summaryData);
         setLoading(false);
       } catch (error) {
-        console.error('Error fetching strategies:', error);
+        logger.error('Error fetching strategies:', error);
         alert('Failed to load strategies. Please refresh the page.');
         setLoading(false);
       }
@@ -280,7 +281,7 @@ export function StrategyResults() {
   // Load odds trigger lookup table on component mount
   useEffect(() => {
     loadOddsLookupTable().catch(error => {
-      console.error('Failed to load odds lookup table:', error);
+      logger.error('Failed to load odds lookup table:', error);
     });
   }, []);
 
@@ -307,7 +308,7 @@ export function StrategyResults() {
           });
         }
       } catch (error) {
-        console.error('Error fetching user statistics:', error);
+        logger.error('Error fetching user statistics:', error);
       }
     };
 
@@ -394,8 +395,9 @@ export function StrategyResults() {
   const totalProfit = performanceSummary?.total_profit || 0;
   const avgROI = performanceSummary?.overall_roi || 0;
   const backtestedCount = performanceSummary?.backtested_strategies || 0;
-  const avgEdge = performanceSummary?.strategies?.length > 0
-    ? performanceSummary.strategies.reduce((sum, s) => sum + (s.avg_edge || 0), 0) / performanceSummary.strategies.length
+  const _strategies = performanceSummary?.strategies ?? [];
+  const avgEdge = _strategies.length > 0
+    ? _strategies.reduce((sum, s) => sum + (s.avg_edge || 0), 0) / _strategies.length
     : 0;
   const collectingCount = filteredStrategies.filter(s => s.status === 'pending').length;
 

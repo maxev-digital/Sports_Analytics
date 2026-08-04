@@ -285,6 +285,8 @@ def generate_mlb_picks(min_edge: Optional[float] = None) -> list[dict]:
         home_batting = _safe_batting_stats(home_team)
         away_batting = _safe_batting_stats(away_team)
 
+        _picks_before = len(picks)
+
         # ── TOTALS market ──────────────────────────────────────────────────
         if total_models:
             try:
@@ -392,6 +394,15 @@ def generate_mlb_picks(min_edge: Optional[float] = None) -> list[dict]:
                     "[mlb_predictor] ML market failed for %s @ %s: %s",
                     away_team, home_team, exc,
                 )
+
+        # Inject pitcher metadata into every pick generated for this game
+        for p in picks[_picks_before:]:
+            p["home_pitcher"]      = home_sp_name
+            p["away_pitcher"]      = away_sp_name
+            p["home_pitcher_era"]  = home_sp.get("era") if home_sp else None
+            p["away_pitcher_era"]  = away_sp.get("era") if away_sp else None
+            p["home_pitcher_xera"] = home_sp.get("xera") if home_sp else None
+            p["away_pitcher_xera"] = away_sp.get("xera") if away_sp else None
 
     picks.sort(key=lambda p: p["edge_pct"], reverse=True)
     logger.info(
@@ -521,6 +532,8 @@ def rule_based_mlb_edges(min_edge: float = 3.0) -> list[dict]:
         )
         home_sp_game = _safe_pitcher_stats(home_sp_name, "home") if home_sp_name else {}
         away_sp_game = _safe_pitcher_stats(away_sp_name, "away") if away_sp_name else {}
+
+        _picks_before_rb = len(picks)
 
         # ── Detector 1: Pitching Luck ─────────────────────────────────────
         try:
@@ -914,6 +927,16 @@ def rule_based_mlb_edges(min_edge: float = 3.0) -> list[dict]:
                 "[mlb_predictor] K-rate xwOBA detector failed for %s @ %s: %s",
                 away_team, home_team, exc,
             )
+
+        # Inject pitcher metadata into every pick generated for this game
+        for p in picks[_picks_before_rb:]:
+            p["home_pitcher"]      = home_sp_name
+            p["away_pitcher"]      = away_sp_name
+            p["home_pitcher_era"]  = home_sp_game.get("era") if home_sp_game else None
+            p["away_pitcher_era"]  = away_sp_game.get("era") if away_sp_game else None
+            p["home_pitcher_xera"] = home_sp_game.get("xera") if home_sp_game else None
+            p["away_pitcher_xera"] = away_sp_game.get("xera") if away_sp_game else None
+        _picks_before_rb = len(picks)
 
     # Deduplicate step 1: same game + market + side → keep highest edge per side
     seen_per_side: dict[str, dict] = {}

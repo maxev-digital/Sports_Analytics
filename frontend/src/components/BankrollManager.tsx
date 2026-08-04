@@ -4,6 +4,7 @@ import { getApiUrl } from '../config';
 import { BOOKMAKERS } from '../data/bookmakers';
 import { useToast } from './Toast';
 import { useSettings } from '../hooks/useSettings';
+import { logger } from '../utils/logger';
 
 interface BookmakerBankroll {
   bookmaker: string;
@@ -68,7 +69,7 @@ export function BankrollManager() {
         setBookmakerBankrolls({});
       }
     } catch (error) {
-      console.error('Error fetching bankroll data:', error);
+      logger.error('Error fetching bankroll data:', error);
     } finally {
       setLoading(false);
     }
@@ -143,7 +144,7 @@ export function BankrollManager() {
         showToast('Failed to save bankroll data', 'error');
       }
     } catch (error) {
-      console.error('Error saving bankroll:', error);
+      logger.error('Error saving bankroll:', error);
       showToast('Error saving bankroll data', 'error');
     } finally {
       setSaving(false);

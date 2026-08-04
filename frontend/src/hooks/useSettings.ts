@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BOOKMAKERS, getAllBookmakerKeys } from '../data/bookmakers';
 import { getApiUrl } from '../config';
+import { logger } from '../utils/logger';
 
 export interface UserSettings {
   user_id: string;
@@ -40,7 +41,7 @@ export function useSettings(userId: string = 'default') {
       setSettings(data.settings);
       setError(null);
     } catch (err) {
-      console.error('Error fetching settings:', err);
+      logger.error('Error fetching settings:', err);
       setError(err instanceof Error ? err.message : 'Failed to load settings');
     } finally {
       setLoading(false);
@@ -73,7 +74,7 @@ export function useSettings(userId: string = 'default') {
       setError(null);
       return true;
     } catch (err) {
-      console.error('Error updating bookmakers:', err);
+      logger.error('Error updating bookmakers:', err);
       setError(err instanceof Error ? err.message : 'Failed to save bookmakers');
       return false;
     } finally {
@@ -124,7 +125,7 @@ export function useSettings(userId: string = 'default') {
       setError(null);
       return true;
     } catch (err) {
-      console.error('Error resetting settings:', err);
+      logger.error('Error resetting settings:', err);
       setError(err instanceof Error ? err.message : 'Failed to reset settings');
       return false;
     } finally {

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { getApiUrl } from '../config';
+import { logger } from '../utils/logger';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -39,7 +40,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return tier;
       }
     } catch (err) {
-      console.error('Error fetching subscription:', err);
+      logger.error('Error fetching subscription:', err);
     }
     return 'free';
   };
@@ -47,7 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshSubscription = async () => {
     if (username) {
       fetchSubscription(username).catch(err => {
-        console.error('Refresh subscription failed:', err);
+        logger.error('Refresh subscription failed:', err);
       });
     }
   };
@@ -106,11 +107,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const loginSuccess = await login('admin', 'admin123');
           if (loginSuccess) {
           } else {
-            console.error(`❌ ${mode}: Auto-login failed`);
+            logger.error(`❌ ${mode}: Auto-login failed`);
             setLoading(false);
           }
         } catch (err) {
-          console.error(`❌ ${mode}: Auto-login error:`, err);
+          logger.error(`❌ ${mode}: Auto-login error:`, err);
           setLoading(false);
         }
       })();
@@ -145,25 +146,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUsername(username);
           setToken(token);
           fetchSubscription(username).catch(err => {
-            console.error('Token verification subscription fetch failed:', err);
+            logger.error('Token verification subscription fetch failed:', err);
           });
         } else {
           // Token invalid - keep user logged in but mark for re-auth later
-          console.warn('Token marked invalid by backend, keeping session');
+          logger.warn('Token marked invalid by backend, keeping session');
           setIsAuthenticated(true);
           setUsername(username);
           setToken(token);
         }
       } else {
         // Verification failed - keep user logged in anyway (lenient mode)
-        console.warn('Token verification failed (401/403), keeping session active');
+        logger.warn('Token verification failed (401/403), keeping session active');
         setIsAuthenticated(true);
         setUsername(username);
         setToken(token);
       }
     } catch (err) {
       // Network error - keep user logged in
-      console.error('Error verifying token (network issue), keeping session:', err);
+      logger.error('Error verifying token (network issue), keeping session:', err);
       setIsAuthenticated(true);
       setUsername(username);
       setToken(token);
@@ -203,7 +204,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // PERF FIX: Fetch subscription in background (non-blocking)
         // Complete login immediately, fetch subscription after
         fetchSubscription(data.username).catch(err => {
-          console.error('Background subscription fetch failed:', err);
+          logger.error('Background subscription fetch failed:', err);
           setSubscriptionTier('free'); // Fallback to free tier
         });
 
@@ -215,7 +216,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return false;
       }
     } catch (err) {
-      console.error('Login error:', err);
+      logger.error('Login error:', err);
       setError('Network error. Please try again.');
       setLoading(false);
       return false;
@@ -233,7 +234,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           body: JSON.stringify({ token }),
         });
       } catch (err) {
-        console.error('Logout error:', err);
+        logger.error('Logout error:', err);
       }
     }
 

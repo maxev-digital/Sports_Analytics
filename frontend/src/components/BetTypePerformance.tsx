@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getUserBets } from '../utils/betTracking';
 import { useAuth } from '../contexts/AuthContext';
+import { logger } from '../utils/logger';
 
 interface BetTypePerformanceProps {
   sport: string; // 'NBA', 'NFL', 'NHL', etc.
@@ -127,7 +128,7 @@ export function BetTypePerformance({ sport }: BetTypePerformanceProps) {
         setBetTypeStats(stats);
         setLoading(false);
       } catch (error) {
-        console.error('Error fetching bet type performance:', error);
+        logger.error('Error fetching bet type performance:', error);
         setLoading(false);
       }
     };

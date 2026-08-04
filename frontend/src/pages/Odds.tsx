@@ -9,6 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useBetSlip } from '../contexts/BetSlipContext';
 import { openSportsbook } from '../utils/deepLinking';
 import { useSettings } from '../hooks/useSettings';
+import { logger } from '../utils/logger';
 
 interface WeatherInfo {
   temp_high?: number;
@@ -50,6 +51,8 @@ interface GameOdds {
 
 type SportKey = 'basketball_nba' | 'basketball_ncaab' | 'americanfootball_nfl' | 'americanfootball_ncaaf' | 'icehockey_nhl' | 'baseball_mlb' | 'basketball_wnba' | 'tennis_atp_wimbledon' | 'tennis_wta_wimbledon';
 type BetType = 'moneyline' | 'spread' | 'total';
+type OddsRow = GameOdds['odds'][number];
+type BestOddsResult = { away: OddsRow; home: OddsRow } | { over: OddsRow; under: OddsRow } | null;
 
 export function Odds() {
   const { username } = useAuth();
@@ -67,16 +70,16 @@ export function Odds() {
 
   const fetchGames = async () => {
     setLoading(true);
-    console.log('🎮 Loading games for sport:', activeSport);
+    logger.info('🎮 Loading games for sport:', activeSport);
 
     try {
       const response = await fetch(getApiUrl(`games?user_id=default`));
       if (!response.ok) throw new Error('API not available');
 
       const apiGames = await response.json();
-      console.log('📊 API returned:', apiGames.length, 'total games');
+      logger.info('📊 API returned:', apiGames.length, 'total games');
 
-      const transformedGames = apiGames.map((game: any) => ({
+      const transformedGames: GameOdds[] = apiGames.map((game: any) => ({
         id: game.state.id,
         sport_key: game.state.sport_key,
         home_team: game.state.home_team.name,
@@ -92,10 +95,10 @@ export function Odds() {
 
       const filteredGames = transformedGames.filter((game: GameOdds) => game.sport_key === activeSport);
       filteredGames.sort((a, b) => new Date(a.commence_time).getTime() - new Date(b.commence_time).getTime());
-      console.log('✅ Showing', filteredGames.length, 'games for', activeSport);
+      logger.info('✅ Showing', filteredGames.length, 'games for', activeSport);
       setGames(filteredGames);
     } catch (error) {
-      console.error('❌ API error:', error);
+      logger.error('❌ API error:', error);
       setGames([]);
     } finally {
       setLoading(false);
@@ -170,7 +173,7 @@ export function Odds() {
   };
 
   // Find best odds for a game based on bet type
-  const getBestOdds = (game: GameOdds) => {
+  const getBestOdds = (game: GameOdds): BestOddsResult => {
     // Only consider bookmakers the user has enabled - otherwise "best odds"
     // could point at a book that's filtered out of the table right below it.
     const odds = settings?.enabled_bookmakers?.length
@@ -943,5 +946,8 @@ const mockData: Record<SportKey, GameOdds[]> = {
   americanfootball_nfl: [],
   americanfootball_ncaaf: [],
   icehockey_nhl: [],
-  baseball_mlb: []
+  baseball_mlb: [],
+  basketball_wnba: [],
+  tennis_atp_wimbledon: [],
+  tennis_wta_wimbledon: []
 };

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useEdgeLab, ModelId } from '../hooks/useEdgeLab';
 import { ModelCard } from './ModelCard';
 import { EnsembleConsensus } from './EnsembleConsensus';
+import { logger } from '../utils/logger';
 
 interface EdgeLabDropdownProps {
   gameId: string;
@@ -78,7 +79,7 @@ export function EdgeLabDropdown({ gameId, marketLine, sport = 'nba', betType = '
 
   const handleViewDetails = (modelId: ModelId) => {
     // TODO: Open detailed model view modal
-    console.log('View details for:', modelId);
+    logger.info('View details for:', modelId);
   };
 
   const hasAnyResults = availableModels.some(id => modelResults[id]);

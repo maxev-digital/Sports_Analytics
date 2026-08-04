@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { logger } from '../utils/logger';
 
 export function Login() {
   const [username, setUsername] = useState('');
@@ -22,7 +23,7 @@ export function Login() {
 
       // Play bull sound only
       if (bullAudioRef.current) {
-        bullAudioRef.current.play().catch(err => console.log('Bull audio play failed:', err));
+        bullAudioRef.current.play().catch(err => logger.info('Bull audio play failed:', err));
       }
 
       // Redirect after bull sound finishes (giving it time to play)

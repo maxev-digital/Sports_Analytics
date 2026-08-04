@@ -60,6 +60,13 @@ predictions = Table(
     Column("pl_units", Float, nullable=True),
     Column("haiku_flags", Text, nullable=True),           # JSON string of flag list
     Column("sonnet_narrative", Text, nullable=True),
+    # Starting pitcher context (MLB only — null for other sports)
+    Column("home_pitcher", String(100), nullable=True),
+    Column("away_pitcher", String(100), nullable=True),
+    Column("home_pitcher_era", Float, nullable=True),
+    Column("away_pitcher_era", Float, nullable=True),
+    Column("home_pitcher_xera", Float, nullable=True),
+    Column("away_pitcher_xera", Float, nullable=True),
 )
 
 # ---------------------------------------------------------------------------

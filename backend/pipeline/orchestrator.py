@@ -420,8 +420,11 @@ def save_picks(picks: list[dict], skip_indices: list[int] = None) -> int:
                    (created_at_cst, sport, home_team, away_team, game_time_cst,
                     pick_side, pick_type, our_probability, market_odds,
                     market_implied_prob, edge_pct, detector, reasoning,
-                    confidence_tier, status, sonnet_narrative, game_id, total_line)
-                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'pending',%s,%s,%s)
+                    confidence_tier, status, sonnet_narrative, game_id, total_line,
+                    home_pitcher, away_pitcher,
+                    home_pitcher_era, away_pitcher_era,
+                    home_pitcher_xera, away_pitcher_xera)
+                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'pending',%s,%s,%s,%s,%s,%s,%s,%s,%s)
                    ON CONFLICT DO NOTHING""",
                 (
                     now_cst(), pick["sport"], pick["home_team"], pick["away_team"],
@@ -433,6 +436,12 @@ def save_picks(picks: list[dict], skip_indices: list[int] = None) -> int:
                     pick.get("sonnet_narrative"),
                     pick.get("game_id", ""),
                     pick.get("total_line"),
+                    pick.get("home_pitcher"),
+                    pick.get("away_pitcher"),
+                    pick.get("home_pitcher_era"),
+                    pick.get("away_pitcher_era"),
+                    pick.get("home_pitcher_xera"),
+                    pick.get("away_pitcher_xera"),
                 ),
             )
             saved += 1

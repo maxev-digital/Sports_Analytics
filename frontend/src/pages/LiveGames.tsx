@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { LiveGame } from '../types';
-import { GameCard } from '../components/GameCard';
+import { GameCardV2 as GameCard } from '../components/game-card/GameCardV2';
 import { LiveGamesTicker } from '../components/LiveGamesTicker';
 import { GolfOddsBoard } from '../components/GolfOddsBoard';
 import { sportEmojis } from '../utils/sportDetection';
 import { getApiUrl } from '../config';
 import { useAlertMonitoring } from '../hooks/useAlertMonitoring';
 import { useAuth } from '../contexts/AuthContext';
+import { logger } from '../utils/logger';
 
 const SPORT_BACKGROUNDS: Record<string, string> = {
   nfl:   '/Footballfield.jpg',
@@ -76,27 +77,27 @@ export function LiveGames() {
   const fetchGames = async () => {
     try {
       const url = getApiUrl(`games?user_id=default`);
-      console.log('🔄 Fetching games from:', url);
+      logger.info('🔄 Fetching games from:', url);
       const response = await fetch(url);
-      console.log('✅ Response received:', response.status, response.statusText);
+      logger.info('✅ Response received:', response.status, response.statusText);
 
       if (!response.ok) {
-        console.error('❌ Response not OK:', response.status);
+        logger.error('❌ Response not OK:', response.status);
         setLoading(false);
         return;
       }
 
       const data = await response.json();
-      console.log('📊 Fetched games:', data);
-      console.log('📊 Number of games:', data.length);
+      logger.info('📊 Fetched games:', data);
+      logger.info('📊 Number of games:', data.length);
       if (data.length > 0) {
-        console.log('📊 First game structure:', data[0]);
+        logger.info('📊 First game structure:', data[0]);
       }
       setGames(data);
       setLoading(false);
     } catch (error) {
-      console.error('❌ Error fetching games:', error);
-      console.error('❌ Error details:', error instanceof Error ? error.message : String(error));
+      logger.error('❌ Error fetching games:', error);
+      logger.error('❌ Error details:', error instanceof Error ? error.message : String(error));
       setLoading(false);
     }
   };
@@ -132,7 +133,7 @@ export function LiveGames() {
     ? games  // Show all games when "All Games" is selected
     : games.filter(game => {
         const sport = sports.find(s => s.key === selectedSport);
-        return sport && game.state.sport_key.includes(sport.filter);
+        return sport && game.state.sport_key.includes(sport.filter ?? '');
       });
 
   // Check if current selection is tennis (ATP or WTA)
@@ -176,11 +177,11 @@ export function LiveGames() {
   const liveGames = sortByPinned(filteredGames.filter(g => g.state.status === 'live'));
   const upcomingGames = sortByPinned(filteredGames.filter(g => g.state.status === 'upcoming'));
 
-  console.log('🎮 Selected sport:', selectedSport);
-  console.log('🎮 Total games:', games.length);
-  console.log('🎮 Filtered games:', filteredGames.length);
-  console.log('🎮 Live games:', liveGames.length);
-  console.log('🎮 Upcoming games:', upcomingGames.length);
+  logger.info('🎮 Selected sport:', selectedSport);
+  logger.info('🎮 Total games:', games.length);
+  logger.info('🎮 Filtered games:', filteredGames.length);
+  logger.info('🎮 Live games:', liveGames.length);
+  logger.info('🎮 Upcoming games:', upcomingGames.length);
 
   // Scroll to game when ticker item is clicked
   const handleGameClick = (gameId: string) => {

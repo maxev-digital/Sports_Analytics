@@ -5,6 +5,7 @@
  */
 
 import { useRef, useCallback } from 'react';
+import { logger } from '../utils/logger';
 
 export function useSoundEffect(soundFile: string, volume: number = 0.3) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -18,10 +19,10 @@ export function useSoundEffect(soundFile: string, volume: number = 0.3) {
       audioRef.current.currentTime = 0;
       audioRef.current.play().catch(err => {
         // Silently fail if audio can't play (e.g., user hasn't interacted with page yet)
-        console.log('Sound play failed:', err);
+        logger.info('Sound play failed:', err);
       });
     } catch (error) {
-      console.log('Sound error:', error);
+      logger.info('Sound error:', error);
     }
   }, [soundFile, volume]);
 

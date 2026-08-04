@@ -3,6 +3,7 @@ import { useBetSlip } from '../contexts/BetSlipContext';
 import { useAuth } from '../contexts/AuthContext';
 import { addManualBet } from '../utils/betTracking';
 import { getSportStyle } from '../utils/sportDetection';
+import { logger } from '../utils/logger';
 
 export function BetSlipToast() {
   const { isOpen, betData, closeBetSlip } = useBetSlip();
@@ -88,7 +89,7 @@ export function BetSlipToast() {
       }
     } catch (err) {
       setError('Error tracking bet. Please try again.');
-      console.error('Bet tracking error:', err);
+      logger.error('Bet tracking error:', err);
     } finally {
       setIsSubmitting(false);
     }

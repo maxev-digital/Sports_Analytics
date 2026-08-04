@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getApiUrl } from '../config';
+import { logger } from '../utils/logger';
 
 export function SignUp() {
   const [formData, setFormData] = useState({
@@ -45,7 +46,7 @@ export function SignUp() {
 
     // Show partner welcome message if coming from partner application
     if (isPartner) {
-      console.log('Partner signup flow detected');
+      logger.info('Partner signup flow detected');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
@@ -83,7 +84,7 @@ export function SignUp() {
       const result = await response.json();
       setReferralValidation(result);
     } catch (err) {
-      console.error('Error validating code:', err);
+      logger.error('Error validating code:', err);
       setReferralValidation(null);
     } finally {
       setCheckingCode(false);
@@ -101,7 +102,7 @@ export function SignUp() {
       const result = await response.json();
       setPromoValidation(result);
     } catch (err) {
-      console.error('Error validating promo code:', err);
+      logger.error('Error validating promo code:', err);
       setPromoValidation(null);
     } finally {
       setCheckingPromo(false);
@@ -158,7 +159,7 @@ export function SignUp() {
 
         // Play bull snort sound (same as login)
         if (audioRef.current) {
-          audioRef.current.play().catch(err => console.log('Audio play failed:', err));
+          audioRef.current.play().catch(err => logger.info('Audio play failed:', err));
         }
 
         // Redirect to live games page after animation
@@ -170,7 +171,7 @@ export function SignUp() {
         setLoading(false);
       }
     } catch (err) {
-      console.error('Registration error:', err);
+      logger.error('Registration error:', err);
       setError('Network error. Please try again.');
       setLoading(false);
     }

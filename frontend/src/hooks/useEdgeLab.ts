@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { getApiUrl } from '../config';
+import { logger } from '../utils/logger';
 
 export type ModelId =
   | 'monte_carlo'
@@ -164,7 +165,7 @@ export function useEdgeLab(gameId: string, gameData?: GameData, isLive: boolean 
   const runModel = useCallback(async (modelId: ModelId, useMock: boolean = false) => {
     // Guard against undefined modelId
     if (!modelId) {
-      console.error('❌ runModel called with undefined modelId');
+      logger.error('❌ runModel called with undefined modelId');
       return;
     }
 
@@ -277,7 +278,7 @@ export function useEdgeLab(gameId: string, gameData?: GameData, isLive: boolean 
       return result;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Model prediction failed';
-      console.error(`❌ ${modelId} error:`, errorMessage);
+      logger.error(`❌ ${modelId} error:`, errorMessage);
 
       const errorResult: ModelResult = {
         model_id: modelId,
@@ -400,7 +401,7 @@ export function useEdgeLab(gameId: string, gameData?: GameData, isLive: boolean 
       return result;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Comparison failed';
-      console.error('❌ Comparison error:', errorMessage);
+      logger.error('❌ Comparison error:', errorMessage);
       setError(errorMessage);
       return null;
     }

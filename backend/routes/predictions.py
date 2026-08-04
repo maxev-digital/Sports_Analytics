@@ -498,3 +498,60 @@ def get_predictions_with_edges(
     except Exception as e:
         logger.error("get_predictions_with_edges: %s", e)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/recap")
+def get_predictions_recap(
+    date: Optional[str] = Query(None, description="YYYY-MM-DD, defaults to yesterday"),
+):
+    """
+    All pipeline predictions for a given date with results, pitcher context,
+    and daily summary. Used by the Daily Recap page alongside F5 signals.
+    """
+    from datetime import date as dt_date, timedelta
+    try:
+        recap_date = date or str(dt_date.today() - timedelta(days=1))
+
+        rows = _rows(
+            """
+            SELECT id, sport, home_team, away_team, game_time_cst,
+                   pick_side, pick_type, edge_pct, confidence_tier,
+                   market_odds, our_probability, detector,
+                   status, pl_units, sonnet_narrative,
+                   home_pitcher, away_pitcher,
+                   home_pitcher_era, away_pitcher_era,
+                   home_pitcher_xera, away_pitcher_xera
+            FROM predictions
+            WHERE (game_time_cst::date = %s OR created_at_cst::date = %s)
+            ORDER BY
+              CASE confidence_tier WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END,
+              edge_pct DESC
+            """,
+            (recap_date, recap_date),
+        )
+
+        wins    = sum(1 for r in rows if r.get("status") == "win")
+        losses  = sum(1 for r in rows if r.get("status") == "loss")
+        pushes  = sum(1 for r in rows if r.get("status") == "push")
+        pending = sum(1 for r in rows if r.get("status") == "pending")
+        total_pl = sum(float(r.get("pl_units") or 0) for r in rows if r.get("pl_units") is not None)
+        graded  = wins + losses + pushes
+        win_rate = round(wins / graded * 100, 1) if graded > 0 else None
+
+        return {
+            "date": recap_date,
+            "picks": rows,
+            "summary": {
+                "total": len(rows),
+                "wins": wins,
+                "losses": losses,
+                "pushes": pushes,
+                "pending": pending,
+                "graded": graded,
+                "win_rate": win_rate,
+                "total_pl": round(total_pl, 2),
+            },
+        }
+    except Exception as e:
+        logger.error("get_predictions_recap: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))

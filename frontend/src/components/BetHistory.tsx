@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { getApiUrl } from '../config';
 import { formatTeamName } from '../utils/teamNames';
+import { logger } from '../utils/logger';
 
 
 // Helper function to convert sport names to sport keys
@@ -75,10 +76,10 @@ export function BetHistory() {
         );
         setBets(gradedBets);
       } else {
-        console.error('Failed to fetch bet history:', response.status);
+        logger.error('Failed to fetch bet history:', response.status);
       }
     } catch (error) {
-      console.error('Error fetching bet history:', error);
+      logger.error('Error fetching bet history:', error);
     } finally {
       setLoading(false);
     }
@@ -120,11 +121,11 @@ export function BetHistory() {
         await fetchBetHistory();
         closeEditModal();
       } else {
-        console.error('Failed to update bet:', response.status);
+        logger.error('Failed to update bet:', response.status);
         alert('Failed to update bet. Please try again.');
       }
     } catch (error) {
-      console.error('Error updating bet:', error);
+      logger.error('Error updating bet:', error);
       alert('Error updating bet. Please try again.');
     }
   };

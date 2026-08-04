@@ -9,6 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { hedgeAlertService, HedgeToastData } from '../services/hedgeAlertService';
 import { HedgeAlertToast } from './HedgeAlertToast';
 import { HedgeAlertModal, HedgeAlertData } from './HedgeAlertModal';
+import { logger } from '../utils/logger';
 
 interface HedgeAlertMonitorProps {
   enabled?: boolean;
@@ -26,15 +27,15 @@ export function HedgeAlertMonitor({
 
   useEffect(() => {
     if (!enabled || !username) {
-      console.log('[HEDGE ALERT MONITOR] Disabled - not enabled or no user');
+      logger.info('[HEDGE ALERT MONITOR] Disabled - not enabled or no user');
       return;
     }
 
-    console.log(`[HEDGE ALERT MONITOR] Active - monitoring hedge opportunities for user: ${username}`);
+    logger.info(`[HEDGE ALERT MONITOR] Active - monitoring hedge opportunities for user: ${username}`);
 
     // Callback when new hedge alert is detected
     const handleNewHedgeAlert = (toast: HedgeToastData) => {
-      console.log('[HEDGE ALERT MONITOR] 🔒 New hedge opportunity detected!', toast);
+      logger.info('[HEDGE ALERT MONITOR] 🔒 New hedge opportunity detected!', toast);
       setCurrentToast(toast);
     };
 
@@ -47,7 +48,7 @@ export function HedgeAlertMonitor({
 
     // Cleanup on unmount
     return () => {
-      console.log('[HEDGE ALERT MONITOR] Stopping polling');
+      logger.info('[HEDGE ALERT MONITOR] Stopping polling');
       hedgeAlertService.stopPolling();
     };
   }, [enabled, username, pollInterval]);
@@ -72,7 +73,7 @@ export function HedgeAlertMonitor({
 
   // Handle place hedge action
   const handlePlaceHedge = async (alertData: HedgeAlertData) => {
-    console.log('[HEDGE ALERT MONITOR] User placing hedge bet:', alertData);
+    logger.info('[HEDGE ALERT MONITOR] User placing hedge bet:', alertData);
     // TODO: Open bet slip or external link to bookmaker
     // For now, just show browser alert
     window.alert(`Hedge bet: ${alertData.hedge_bet.side} $${alertData.hedge_bet.stake.toFixed(2)} at ${alertData.hedge_bet.odds > 0 ? '+' : ''}${alertData.hedge_bet.odds} on ${alertData.hedge_bet.bookmaker}`);
@@ -80,7 +81,7 @@ export function HedgeAlertMonitor({
 
   // Handle dismiss action
   const handleDismissAlert = async (alert: HedgeAlertData) => {
-    console.log('[HEDGE ALERT MONITOR] User dismissed hedge alert:', alert.alert_id);
+    logger.info('[HEDGE ALERT MONITOR] User dismissed hedge alert:', alert.alert_id);
     // TODO: Mark alert as dismissed in backend
     setCurrentToast(null);
     setIsModalOpen(false);

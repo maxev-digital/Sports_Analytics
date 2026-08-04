@@ -34,6 +34,7 @@ export interface F5GameWithPlays {
   game: F5Game;
   plays: F5Play[];
   odds: Record<string, unknown>;
+  has_plays?: boolean;
 }
 
 export interface SignalStats {

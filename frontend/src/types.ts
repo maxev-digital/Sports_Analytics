@@ -5,6 +5,7 @@ export interface Team {
   spread_price?: number | null;
   money_line?: number | null;
   momentum?: number | null;  // -100 to 100 scale, negative favors opponent
+  record?: string | null;
 }
 
 export interface GameState {
@@ -338,6 +339,7 @@ export interface MLBTeamStats {
   form_trend?: string | null;  // "HOT", "COLD", "NEUTRAL"
   home_record?: string | null;  // "45-36"
   away_record?: string | null;  // "40-41"
+  runs_allowed_per_game?: number | null;
   // Rankings (1-30 for MLB)
   runs_per_game_rank?: number | null;
   batting_avg_rank?: number | null;

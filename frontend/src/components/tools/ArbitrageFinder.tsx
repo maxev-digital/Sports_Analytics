@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getApiUrl } from '../../config';
 import { formatTeamName } from '../../utils/teamNames';
+import { logger } from '../../utils/logger';
 
 interface BookOdds {
   id: number;
@@ -60,7 +61,7 @@ export function ArbitrageFinder() {
           setLiveOpportunities(data.alerts || []);
         }
       } catch (error) {
-        console.error('Error fetching live arbitrage:', error);
+        logger.error('Error fetching live arbitrage:', error);
       }
     };
 
@@ -82,7 +83,7 @@ export function ArbitrageFinder() {
           setPerformanceStats(data.arbitrage);
         }
       } catch (error) {
-        console.error('Error fetching performance stats:', error);
+        logger.error('Error fetching performance stats:', error);
       }
     };
 
@@ -524,7 +525,7 @@ export function ArbitrageFinder() {
                 </p>
               ) : (
                 <p className="text-red-400">
-                  Market has {arb.margin.toFixed(2)}% vig. No arbitrage opportunity.
+                  Market has {arb.margin?.toFixed(2)}% vig. No arbitrage opportunity.
                 </p>
               )}
             </div>
@@ -605,7 +606,7 @@ export function ArbitrageFinder() {
                   }`}>
                     {arb.isArbitrage
                       ? `${arb.arbitragePercent?.toFixed(2)}%`
-                      : `${arb.margin.toFixed(2)}%`
+                      : `${arb.margin?.toFixed(2)}%`
                     }
                   </div>
                 </div>

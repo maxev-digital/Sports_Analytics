@@ -30,11 +30,12 @@ export function useF5Today() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (force = false) => {
     setLoading(true);
     setError(null);
     try {
-      const r = await fetch(`${API_BASE}/today`);
+      const url = force ? `${API_BASE}/today?force=true` : `${API_BASE}/today`;
+      const r = await fetch(url);
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       setData(await r.json());
     } catch (e) {

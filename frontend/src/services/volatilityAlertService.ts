@@ -6,6 +6,7 @@
  */
 
 import { ToastAlertData } from '../components/ToastAlert';
+import { logger } from '../utils/logger';
 
 let shownAlerts = new Set<string>();
 let pollingInterval: NodeJS.Timeout | null = null;
@@ -18,7 +19,7 @@ export async function pollVolatilityAlerts(userId: string): Promise<void> {
     const response = await fetch(`/api/volatility/alerts?user_id=${userId}`);
 
     if (!response.ok) {
-      console.error('Failed to fetch volatility alerts:', response.statusText);
+      logger.error('Failed to fetch volatility alerts:', response.statusText);
       return;
     }
 
@@ -70,10 +71,10 @@ export async function pollVolatilityAlerts(userId: string): Promise<void> {
         shownAlerts.add(alert.id);
       });
 
-      console.log(`[Volatility Alerts] Dispatched ${newAlerts.length} new alerts`);
+      logger.info(`[Volatility Alerts] Dispatched ${newAlerts.length} new alerts`);
     }
   } catch (error) {
-    console.error('Error polling volatility alerts:', error);
+    logger.error('Error polling volatility alerts:', error);
   }
 }
 
@@ -84,7 +85,7 @@ export function startVolatilityAlertPolling(userId: string, intervalMs: number =
   // Stop existing polling if any
   stopVolatilityAlertPolling();
 
-  console.log(`[Volatility Alerts] Starting polling every ${intervalMs / 1000}s for user ${userId}`);
+  logger.info(`[Volatility Alerts] Starting polling every ${intervalMs / 1000}s for user ${userId}`);
 
   // Initial check
   pollVolatilityAlerts(userId);
@@ -102,7 +103,7 @@ export function stopVolatilityAlertPolling(): void {
   if (pollingInterval) {
     clearInterval(pollingInterval);
     pollingInterval = null;
-    console.log('[Volatility Alerts] Stopped polling');
+    logger.info('[Volatility Alerts] Stopped polling');
   }
 }
 
@@ -111,7 +112,7 @@ export function stopVolatilityAlertPolling(): void {
  */
 export function clearShownAlerts(): void {
   shownAlerts.clear();
-  console.log('[Volatility Alerts] Cleared shown alerts cache');
+  logger.info('[Volatility Alerts] Cleared shown alerts cache');
 }
 
 /**

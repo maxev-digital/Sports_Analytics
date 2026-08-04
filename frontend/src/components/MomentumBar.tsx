@@ -1,4 +1,5 @@
 import React from 'react';
+import { logger } from '../utils/logger';
 
 interface MomentumBarProps {
   homeTeam: string;
@@ -42,7 +43,7 @@ export const MomentumBar: React.FC<MomentumBarProps> = ({
   const awayPercentage = 100 - homePercentage;
 
   // DEBUG: Log momentum values
-  console.log('🎯 MomentumBar DEBUG:', {
+  logger.info('🎯 MomentumBar DEBUG:', {
     homeTeam,
     awayTeam,
     'Raw homeMomentum (-100 to +100)': homeMomentum,

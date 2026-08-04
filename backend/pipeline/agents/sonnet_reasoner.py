@@ -407,6 +407,37 @@ def _build_game_context(enriched: dict) -> str:
         lines.extend(imp_inj[:8])
         lines.append("")
 
+    # Injury cascade opportunities (populated by game_script_tool._run_cascade_analysis)
+    cascades = enriched.get("cascade_opportunities") or []
+    if cascades:
+        lines.append("INJURY CASCADE ANALYSIS:")
+        for cas in cascades[:3]:
+            player = cas.get("player_name", "Unknown")
+            team   = cas.get("player_team", "")
+            opp    = cas.get("opponent", "")
+            pre    = cas.get("pregame_total", 0)
+            cur    = cas.get("current_total", 0)
+            exp_d  = cas.get("expected_drop", 0)
+            act_d  = cas.get("actual_drop", 0)
+            react  = cas.get("overreaction", 0)
+            edge   = cas.get("edge", 0)
+            conf   = cas.get("confidence", "LOW")
+            rec    = cas.get("recommendation", "")
+            lines.append(
+                f"  ALERT — {player} ({team}) OUT vs {opp}: "
+                f"Books dropped total {pre} → {cur} ({act_d:+.1f} pts). "
+                f"Expected drop: {exp_d:.1f} pts. "
+                f"OVERREACTION: {react:+.1f} pts. "
+                f"Signal: {rec} | Edge: +{edge:.1f}% | Confidence: {conf}"
+            )
+            for reason in (cas.get("reasoning") or [])[:3]:
+                lines.append(f"    - {reason}")
+        lines.append(
+            "  NOTE: Integrate the cascade analysis above into your game script — "
+            "explain WHY the books overreacted and what the correct market expectation should be."
+        )
+        lines.append("")
+
     lines.append(
         "Write a full-page game analysis in the style of a professional handicapper. "
         "Use the data above to ground your analysis. For any coaching tendencies, "

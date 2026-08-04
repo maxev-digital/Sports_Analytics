@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { BOOKMAKERS, getPopularBookmakers, getAllBookmakerKeys } from '../data/bookmakers';
 import { getApiUrl } from '../config';
 import { BetAlertTestPanel } from '../components/BetAlertTestPanel';
+import { logger } from '../utils/logger';
 
 interface BookmakersByRegion {
   [region: string]: typeof BOOKMAKERS;
@@ -37,7 +38,7 @@ export function Settings() {
       fetch(getApiUrl(`subscription/status?user_id=${encodeURIComponent(username)}`))
         .then(res => res.json())
         .then(data => setSubscriptionStatus(data))
-        .catch(err => console.error('Error fetching subscription:', err));
+        .catch(err => logger.error('Error fetching subscription:', err));
     }
   }, [username]);
 
@@ -62,7 +63,7 @@ export function Settings() {
         alert('Failed to open subscription management portal');
       }
     } catch (error) {
-      console.error('Error opening portal:', error);
+      logger.error('Error opening portal:', error);
       alert('Error opening subscription portal');
     } finally {
       setLoadingPortal(false);
@@ -102,7 +103,7 @@ export function Settings() {
 
       return filtered;
     } catch (err) {
-      console.error('Error filtering bookmakers:', err);
+      logger.error('Error filtering bookmakers:', err);
       return [];
     }
   };

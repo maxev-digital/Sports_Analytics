@@ -5,7 +5,7 @@
  * Tabs: Today's Plays, Game Breakdown, Signals, Edge Matrix, Venues
  */
 import { useState } from 'react';
-import { Target, BarChart3, Layout, Database, MapPin, RefreshCw, Trophy } from 'lucide-react';
+import { Target, BarChart3, Layout, Database, MapPin, RefreshCw, Trophy, ShieldCheck } from 'lucide-react';
 import { StatCard } from '../components/f5edge/StatCard';
 import { PlayCard } from '../components/f5edge/PlayCard';
 import { GameBreakdownCard } from '../components/f5edge/GameBreakdownCard';
@@ -13,11 +13,13 @@ import { SignalTable } from '../components/f5edge/SignalTable';
 import { EdgeMatrix } from '../components/f5edge/EdgeMatrix';
 import { VenueTable } from '../components/f5edge/VenueTable';
 import { ResultsTab } from '../components/f5edge/ResultsTab';
+import { VerificationTab } from '../components/f5edge/VerificationTab';
 import { useF5Today } from '../components/f5edge/useF5Data';
+import type { F5GameWithPlays } from '../components/f5edge/types';
 import { EMERALD, BLUE, MUTED_FG } from '../components/f5edge/tokens';
 import '../styles/analytics.css';
 
-type Tab = 'plays' | 'games' | 'signals' | 'matrix' | 'venues' | 'results';
+type Tab = 'plays' | 'games' | 'signals' | 'matrix' | 'venues' | 'results' | 'verify';
 
 const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: 'plays',   label: "TODAY'S PLAYS", icon: <Target size={14} /> },
@@ -26,6 +28,7 @@ const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: 'matrix',  label: 'EDGE MATRIX',    icon: <Database size={14} /> },
   { key: 'venues',  label: 'VENUES',         icon: <MapPin size={14} /> },
   { key: 'results', label: '2026 RESULTS',   icon: <Trophy size={14} /> },
+  { key: 'verify',  label: 'VERIFICATION',  icon: <ShieldCheck size={14} /> },
 ];
 
 export function F5Edge() {
@@ -47,7 +50,7 @@ export function F5Edge() {
             </p>
           </div>
           <button
-            onClick={refresh}
+            onClick={() => refresh(true)}
             disabled={loading}
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
@@ -129,12 +132,13 @@ export function F5Edge() {
         {activeTab === 'matrix' && <EdgeMatrix />}
         {activeTab === 'venues' && <VenueTable />}
         {activeTab === 'results' && <ResultsTab />}
+        {activeTab === 'verify' && <VerificationTab />}
       </div>
     </div>
   );
 }
 
-function TodaysPlays({ results, loading }: { results: any[]; loading: boolean }) {
+function TodaysPlays({ results, loading }: { results: F5GameWithPlays[]; loading: boolean }) {
   if (loading) return <LoadingState />;
   if (results.length === 0) {
     return (
@@ -145,25 +149,25 @@ function TodaysPlays({ results, loading }: { results: any[]; loading: boolean })
   }
   return (
     <div>
-      {results.flatMap((entry: any) =>
-        entry.plays.map((play: any, i: number) => (
-          <PlayCard key={`${entry.game.game_pk}-${i}`} game={entry.game} play={play} />
+      {results.flatMap((entry) =>
+        entry.plays.map((play, i) => (
+          <PlayCard key={`${entry.game.game_pk}-${i}`} game={entry.game} play={play} odds={entry.odds} />
         ))
       )}
     </div>
   );
 }
 
-function GameBreakdown({ results, loading }: { results: any[]; loading: boolean }) {
+function GameBreakdown({ results, loading }: { results: F5GameWithPlays[]; loading: boolean }) {
   if (loading) return <LoadingState />;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      {results.map((entry: any) => (
+      {results.map((entry) => (
         <GameBreakdownCard
           key={entry.game.game_pk}
           game={entry.game}
           plays={entry.plays}
-          fgTotal={entry.odds?.fg_total as number}
+          odds={entry.odds}
         />
       ))}
     </div>

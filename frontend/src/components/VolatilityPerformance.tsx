@@ -10,6 +10,7 @@
 
 import { useState, useEffect } from 'react';
 import { TrendingUp, DollarSign, Target, BarChart3, Activity, Info } from 'lucide-react';
+import { logger } from '../utils/logger';
 
 interface PerformanceStats {
   // Position counts
@@ -83,7 +84,7 @@ export function VolatilityPerformance() {
       setStats(data);
       setLoading(false);
     } catch (error) {
-      console.error('Error fetching performance stats:', error);
+      logger.error('Error fetching performance stats:', error);
       setLoading(false);
     }
   };

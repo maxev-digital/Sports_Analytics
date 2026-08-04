@@ -11,6 +11,7 @@ import { MomentumBar } from './MomentumBar';
 import { formatTeamName } from '../utils/teamNames';
 import { getTeamLogoUrl } from '../utils/teamLogos';
 import { useSettings } from '../hooks/useSettings';
+import { logger } from '../utils/logger';
 
 interface PickSummary {
   id: number;
@@ -152,7 +153,7 @@ export function GameCard({ game, isPinned = false, onTogglePin, matchingPicks = 
     : rawOdds;
 
   // DEBUG: Log stats data
-  console.log(`🏀 ${formatTeamName(state.away_team.name, state.sport_key)} @ ${formatTeamName(state.home_team.name, state.sport_key)}:`, {
+  logger.info(`🏀 ${formatTeamName(state.away_team.name, state.sport_key)} @ ${formatTeamName(state.home_team.name, state.sport_key)}:`, {
     sport: state.sport_key,
     nba_stats: { home: !!home_team_stats, away: !!away_team_stats },
     nhl_stats: { home: !!home_nhl_stats, away: !!away_nhl_stats },
@@ -723,14 +724,14 @@ export function GameCard({ game, isPinned = false, onTogglePin, matchingPicks = 
                       )}
                       {selectedMarket === 'spread' && (
                         <div className={`${shouldHighlight ? 'text-blue-200' : textSecondary} text-base font-bold flex gap-3`}>
-                          <span>{formatTeamName(state.home_team.name, state.sport_key).split(' ').pop()}: <span className="font-extrabold text-base">{odd.home_spread > 0 ? '+' : ''}{odd.home_spread}</span> <span className="text-sm">({odd.home_spread_price > 0 ? '+' : ''}{odd.home_spread_price})</span></span>
-                          <span>{formatTeamName(state.away_team.name, state.sport_key).split(' ').pop()}: <span className="font-extrabold text-base">{odd.away_spread > 0 ? '+' : ''}{odd.away_spread}</span> <span className="text-sm">({odd.away_spread_price > 0 ? '+' : ''}{odd.away_spread_price})</span></span>
+                          <span>{formatTeamName(state.home_team.name, state.sport_key).split(' ').pop()}: <span className="font-extrabold text-base">{(odd.home_spread ?? 0) > 0 ? '+' : ''}{odd.home_spread}</span> <span className="text-sm">({(odd.home_spread_price ?? 0) > 0 ? '+' : ''}{odd.home_spread_price})</span></span>
+                          <span>{formatTeamName(state.away_team.name, state.sport_key).split(' ').pop()}: <span className="font-extrabold text-base">{(odd.away_spread ?? 0) > 0 ? '+' : ''}{odd.away_spread}</span> <span className="text-sm">({(odd.away_spread_price ?? 0) > 0 ? '+' : ''}{odd.away_spread_price})</span></span>
                         </div>
                       )}
                       {selectedMarket === 'moneyline' && (
                         <div className={`${shouldHighlight ? 'text-blue-200' : textSecondary} text-base font-bold flex gap-3`}>
-                          <span>{formatTeamName(state.home_team.name, state.sport_key).split(' ').pop()}: <span className="font-extrabold text-base">{odd.home_ml > 0 ? '+' : ''}{odd.home_ml}</span></span>
-                          <span>{formatTeamName(state.away_team.name, state.sport_key).split(' ').pop()}: <span className="font-extrabold text-base">{odd.away_ml > 0 ? '+' : ''}{odd.away_ml}</span></span>
+                          <span>{formatTeamName(state.home_team.name, state.sport_key).split(' ').pop()}: <span className="font-extrabold text-base">{(odd.home_ml ?? 0) > 0 ? '+' : ''}{odd.home_ml}</span></span>
+                          <span>{formatTeamName(state.away_team.name, state.sport_key).split(' ').pop()}: <span className="font-extrabold text-base">{(odd.away_ml ?? 0) > 0 ? '+' : ''}{odd.away_ml}</span></span>
                         </div>
                       )}
                       <button
@@ -1262,14 +1263,14 @@ export function GameCard({ game, isPinned = false, onTogglePin, matchingPicks = 
                 <div className={`${textSecondary}`}>
                   <span className={`${textLabel}`}>{formatTeamName(state.away_team.name, state.sport_key).split(' ').pop()}: </span>
                   <span className="font-bold text-green-400">
-                    {state.away_team.spread !== null ? `${state.away_team.spread > 0 ? '+' : ''}${(state.away_team.spread / 2).toFixed(1)}` : 'N/A'}
+                    {state.away_team.spread != null ? `${state.away_team.spread > 0 ? '+' : ''}${(state.away_team.spread / 2).toFixed(1)}` : 'N/A'}
                     {state.away_team.spread_price && <span className="text-sm"> ({state.away_team.spread_price > 0 ? '+' : ''}{state.away_team.spread_price})</span>}
                   </span>
                 </div>
                 <div className={`${textSecondary}`}>
                   <span className={`${textLabel}`}>{formatTeamName(state.home_team.name, state.sport_key).split(' ').pop()}: </span>
                   <span className="font-bold text-green-400">
-                    {state.home_team.spread !== null ? `${state.home_team.spread > 0 ? '+' : ''}${(state.home_team.spread / 2).toFixed(1)}` : 'N/A'}
+                    {state.home_team.spread != null ? `${state.home_team.spread > 0 ? '+' : ''}${(state.home_team.spread / 2).toFixed(1)}` : 'N/A'}
                     {state.home_team.spread_price && <span className="text-sm"> ({state.home_team.spread_price > 0 ? '+' : ''}{state.home_team.spread_price})</span>}
                   </span>
                 </div>
@@ -1285,13 +1286,13 @@ export function GameCard({ game, isPinned = false, onTogglePin, matchingPicks = 
                 <div className={`${textSecondary}`}>
                   <span className={`${textLabel}`}>{formatTeamName(state.away_team.name, state.sport_key).split(' ').pop()}: </span>
                   <span className={`font-bold ${(state.away_team.money_line || 0) > 0 ? 'text-blue-400' : textValue}`}>
-                    {state.away_team.money_line !== null ? `${state.away_team.money_line > 0 ? '+' : ''}${state.away_team.money_line}` : 'N/A'}
+                    {state.away_team.money_line != null ? `${state.away_team.money_line > 0 ? '+' : ''}${state.away_team.money_line}` : 'N/A'}
                   </span>
                 </div>
                 <div className={`${textSecondary}`}>
                   <span className={`${textLabel}`}>{formatTeamName(state.home_team.name, state.sport_key).split(' ').pop()}: </span>
                   <span className={`font-bold ${(state.home_team.money_line || 0) > 0 ? 'text-blue-400' : textValue}`}>
-                    {state.home_team.money_line !== null ? `${state.home_team.money_line > 0 ? '+' : ''}${state.home_team.money_line}` : 'N/A'}
+                    {state.home_team.money_line != null ? `${state.home_team.money_line > 0 ? '+' : ''}${state.home_team.money_line}` : 'N/A'}
                   </span>
                 </div>
               </div>
@@ -2298,11 +2299,11 @@ export function GameCard({ game, isPinned = false, onTogglePin, matchingPicks = 
                             <span className={`font-bold text-base ${textValue}`}>
                               {displayAwayFootballStats.ats_wins}-{displayAwayFootballStats.ats_losses}-{displayAwayFootballStats.ats_pushes}
                               <span className={`text-sm ml-1 ${
-                                (displayAwayFootballStats.ats_wins / (displayAwayFootballStats.ats_wins + displayAwayFootballStats.ats_losses)) > 0.55 ? 'text-green-400' :
-                                (displayAwayFootballStats.ats_wins / (displayAwayFootballStats.ats_wins + displayAwayFootballStats.ats_losses)) < 0.45 ? 'text-red-400' :
+                                (displayAwayFootballStats.ats_wins / (displayAwayFootballStats.ats_wins + (displayAwayFootballStats.ats_losses ?? 0))) > 0.55 ? 'text-green-400' :
+                                (displayAwayFootballStats.ats_wins / (displayAwayFootballStats.ats_wins + (displayAwayFootballStats.ats_losses ?? 0))) < 0.45 ? 'text-red-400' :
                                 'text-slate-400'
                               }`}>
-                                ({((displayAwayFootballStats.ats_wins / (displayAwayFootballStats.ats_wins + displayAwayFootballStats.ats_losses)) * 100).toFixed(1)}%)
+                                ({((displayAwayFootballStats.ats_wins / (displayAwayFootballStats.ats_wins + (displayAwayFootballStats.ats_losses ?? 0))) * 100).toFixed(1)}%)
                               </span>
                             </span>
                           </div>
@@ -2323,11 +2324,11 @@ export function GameCard({ game, isPinned = false, onTogglePin, matchingPicks = 
                             <span className={`font-bold text-base ${textValue}`}>
                               {displayAwayFootballStats.ou_overs}O-{displayAwayFootballStats.ou_unders}U-{displayAwayFootballStats.ou_pushes}P
                               <span className={`text-sm ml-1 ${
-                                (displayAwayFootballStats.ou_overs / (displayAwayFootballStats.ou_overs + displayAwayFootballStats.ou_unders)) > 0.55 ? 'text-orange-400' :
-                                (displayAwayFootballStats.ou_overs / (displayAwayFootballStats.ou_overs + displayAwayFootballStats.ou_unders)) < 0.45 ? 'text-blue-400' :
+                                (displayAwayFootballStats.ou_overs / (displayAwayFootballStats.ou_overs + (displayAwayFootballStats.ou_unders ?? 0))) > 0.55 ? 'text-orange-400' :
+                                (displayAwayFootballStats.ou_overs / (displayAwayFootballStats.ou_overs + (displayAwayFootballStats.ou_unders ?? 0))) < 0.45 ? 'text-blue-400' :
                                 'text-slate-400'
                               }`}>
-                                ({((displayAwayFootballStats.ou_overs / (displayAwayFootballStats.ou_overs + displayAwayFootballStats.ou_unders)) * 100).toFixed(1)}% O)
+                                ({((displayAwayFootballStats.ou_overs / (displayAwayFootballStats.ou_overs + (displayAwayFootballStats.ou_unders ?? 0))) * 100).toFixed(1)}% O)
                               </span>
                             </span>
                           </div>
@@ -2566,11 +2567,11 @@ export function GameCard({ game, isPinned = false, onTogglePin, matchingPicks = 
                             <span className={`font-bold text-base ${textValue}`}>
                               {displayHomeFootballStats.ats_wins}-{displayHomeFootballStats.ats_losses}-{displayHomeFootballStats.ats_pushes}
                               <span className={`text-sm ml-1 ${
-                                (displayHomeFootballStats.ats_wins / (displayHomeFootballStats.ats_wins + displayHomeFootballStats.ats_losses)) > 0.55 ? 'text-green-400' :
-                                (displayHomeFootballStats.ats_wins / (displayHomeFootballStats.ats_wins + displayHomeFootballStats.ats_losses)) < 0.45 ? 'text-red-400' :
+                                (displayHomeFootballStats.ats_wins / (displayHomeFootballStats.ats_wins + (displayHomeFootballStats.ats_losses ?? 0))) > 0.55 ? 'text-green-400' :
+                                (displayHomeFootballStats.ats_wins / (displayHomeFootballStats.ats_wins + (displayHomeFootballStats.ats_losses ?? 0))) < 0.45 ? 'text-red-400' :
                                 'text-slate-400'
                               }`}>
-                                ({((displayHomeFootballStats.ats_wins / (displayHomeFootballStats.ats_wins + displayHomeFootballStats.ats_losses)) * 100).toFixed(1)}%)
+                                ({((displayHomeFootballStats.ats_wins / (displayHomeFootballStats.ats_wins + (displayHomeFootballStats.ats_losses ?? 0))) * 100).toFixed(1)}%)
                               </span>
                             </span>
                           </div>
@@ -2591,11 +2592,11 @@ export function GameCard({ game, isPinned = false, onTogglePin, matchingPicks = 
                             <span className={`font-bold text-base ${textValue}`}>
                               {displayHomeFootballStats.ou_overs}O-{displayHomeFootballStats.ou_unders}U-{displayHomeFootballStats.ou_pushes}P
                               <span className={`text-sm ml-1 ${
-                                (displayHomeFootballStats.ou_overs / (displayHomeFootballStats.ou_overs + displayHomeFootballStats.ou_unders)) > 0.55 ? 'text-orange-400' :
-                                (displayHomeFootballStats.ou_overs / (displayHomeFootballStats.ou_overs + displayHomeFootballStats.ou_unders)) < 0.45 ? 'text-blue-400' :
+                                (displayHomeFootballStats.ou_overs / (displayHomeFootballStats.ou_overs + (displayHomeFootballStats.ou_unders ?? 0))) > 0.55 ? 'text-orange-400' :
+                                (displayHomeFootballStats.ou_overs / (displayHomeFootballStats.ou_overs + (displayHomeFootballStats.ou_unders ?? 0))) < 0.45 ? 'text-blue-400' :
                                 'text-slate-400'
                               }`}>
-                                ({((displayHomeFootballStats.ou_overs / (displayHomeFootballStats.ou_overs + displayHomeFootballStats.ou_unders)) * 100).toFixed(1)}% O)
+                                ({((displayHomeFootballStats.ou_overs / (displayHomeFootballStats.ou_overs + (displayHomeFootballStats.ou_unders ?? 0))) * 100).toFixed(1)}% O)
                               </span>
                             </span>
                           </div>
@@ -3307,10 +3308,10 @@ export function GameCard({ game, isPinned = false, onTogglePin, matchingPicks = 
               <div className={`text-sm ${textLabel} mb-1`}>Spread (Games)</div>
               <div className="flex justify-center gap-4 flex-wrap">
                 <span className={`font-bold text-sm ${textValue}`}>
-                  {state.away_team.name.split(' ').slice(-1)[0]}: {odds[0].away_spread > 0 ? '+' : ''}{odds[0].away_spread} ({odds[0].away_spread_price > 0 ? '+' : ''}{odds[0].away_spread_price})
+                  {state.away_team.name.split(' ').slice(-1)[0]}: {odds[0].away_spread > 0 ? '+' : ''}{odds[0].away_spread} ({(odds[0].away_spread_price ?? 0) > 0 ? '+' : ''}{odds[0].away_spread_price})
                 </span>
                 <span className={`font-bold text-sm ${textValue}`}>
-                  {state.home_team.name.split(' ').slice(-1)[0]}: {odds[0].home_spread > 0 ? '+' : ''}{odds[0].home_spread} ({odds[0].home_spread_price > 0 ? '+' : ''}{odds[0].home_spread_price})
+                  {state.home_team.name.split(' ').slice(-1)[0]}: {odds[0].home_spread > 0 ? '+' : ''}{odds[0].home_spread} ({(odds[0].home_spread_price ?? 0) > 0 ? '+' : ''}{odds[0].home_spread_price})
                 </span>
               </div>
             </div>

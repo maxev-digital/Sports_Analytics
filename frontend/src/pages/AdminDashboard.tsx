@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getApiUrl } from '../config';
+import { logger } from '../utils/logger';
 
 interface FeedbackEntry {
   id: string;
@@ -83,7 +84,7 @@ export function AdminDashboard() {
         await loadInfluencers();
       }
     } catch (error) {
-      console.error('Error loading data:', error);
+      logger.error('Error loading data:', error);
     }
   };
 
@@ -95,7 +96,7 @@ export function AdminDashboard() {
         setFeedback(data.feedback || []);
       }
     } catch (error) {
-      console.error('Error loading feedback:', error);
+      logger.error('Error loading feedback:', error);
     } finally {
       setLoading(false);
     }
@@ -109,7 +110,7 @@ export function AdminDashboard() {
         setConversations(data.conversations || []);
       }
     } catch (error) {
-      console.error('Error loading conversations:', error);
+      logger.error('Error loading conversations:', error);
     } finally {
       setLoading(false);
     }
@@ -127,7 +128,7 @@ export function AdminDashboard() {
         setInfluencers(data.influencers || []);
       }
     } catch (error) {
-      console.error('Error loading influencers:', error);
+      logger.error('Error loading influencers:', error);
     } finally {
       setLoading(false);
     }
@@ -150,7 +151,7 @@ export function AdminDashboard() {
       }
       return false;
     } catch (error) {
-      console.error('Error updating influencer status:', error);
+      logger.error('Error updating influencer status:', error);
       return false;
     }
   };
@@ -164,7 +165,7 @@ export function AdminDashboard() {
         setSelectedConversation(username);
       }
     } catch (error) {
-      console.error('Error loading conversation:', error);
+      logger.error('Error loading conversation:', error);
     }
   };
 
@@ -189,7 +190,7 @@ export function AdminDashboard() {
         await loadConversations();
       }
     } catch (error) {
-      console.error('Error sending reply:', error);
+      logger.error('Error sending reply:', error);
     }
   };
 
@@ -769,7 +770,7 @@ export function AdminDashboard() {
                               alert('Failed to send response');
                             }
                           } catch (error) {
-                            console.error('Error sending response:', error);
+                            logger.error('Error sending response:', error);
                             alert('Failed to send response');
                           } finally {
                             setSendingResponse(false);

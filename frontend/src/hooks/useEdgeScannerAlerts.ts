@@ -9,6 +9,7 @@ import { useEffect, useRef } from 'react';
 import { getApiUrl } from '../config';
 import { useBetAlertNotification } from '../contexts/BetAlertNotificationContext';
 import { StrategyAlert } from '../types';
+import { logger } from '../utils/logger';
 
 interface BestPlay {
   id: string;
@@ -91,7 +92,7 @@ export function useEdgeScannerAlerts(options: UseEdgeScannerAlertsOptions = {}) 
         const response = await fetch(getApiUrl(`edge-scanner/best-plays?${params.toString()}`));
 
         if (!response.ok) {
-          console.error('Failed to fetch live projections:', response.statusText);
+          logger.error('Failed to fetch live projections:', response.statusText);
           return;
         }
 
@@ -111,7 +112,7 @@ export function useEdgeScannerAlerts(options: UseEdgeScannerAlertsOptions = {}) 
           showBetAlert(strategyAlert);
 
           // Log for debugging
-          console.log('🤖 New Live ML Projection Alert:', {
+          logger.info('🤖 New Live ML Projection Alert:', {
             model: play.model_name,
             game: `${play.away_team} @ ${play.home_team}`,
             bet: play.recommendation,
@@ -122,7 +123,7 @@ export function useEdgeScannerAlerts(options: UseEdgeScannerAlertsOptions = {}) 
         });
 
       } catch (error) {
-        console.error('Error checking for live projections:', error);
+        logger.error('Error checking for live projections:', error);
       } finally {
         isPolling.current = false;
       }

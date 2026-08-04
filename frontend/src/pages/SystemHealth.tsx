@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import '../styles/analytics.css';
 import { getApiUrl } from '../config';
+import { logger } from '../utils/logger';
 
 const BRAND_RED  = 'oklch(63.7% .237 25.331)';
 const EMERALD    = 'oklch(69.6% .17 162.48)';
@@ -155,7 +156,7 @@ export function SystemHealth() {
       await fetch(getApiUrl('v2/edges/run-pipeline'), { method: 'POST' });
       setTimeout(fetchAll, 5000); // re-fetch after 5s
     } catch (e) {
-      console.error('Pipeline trigger failed:', e);
+      logger.error('Pipeline trigger failed:', e);
     } finally {
       setTimeout(() => setPipelineRunning(false), 3000);
     }

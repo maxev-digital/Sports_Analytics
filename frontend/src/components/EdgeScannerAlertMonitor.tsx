@@ -10,6 +10,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useEdgeScannerAlerts } from '../hooks/useEdgeScannerAlerts';
+import { logger } from '../utils/logger';
 
 interface EdgeScannerAlertMonitorProps {
   enabled?: boolean;           // Enable/disable monitoring
@@ -33,7 +34,7 @@ export function EdgeScannerAlertMonitor({
 
   // Use the Edge Scanner alerts hook
   const { seenCount, isEnabled } = useEdgeScannerAlerts({
-    enabled: shouldMonitor,
+    enabled: !!shouldMonitor,
     minEdge,
     minConfidence,
     pollInterval,
@@ -42,23 +43,23 @@ export function EdgeScannerAlertMonitor({
 
   // Track monitoring status
   useEffect(() => {
-    setIsMonitoring(isEnabled && shouldMonitor);
+    setIsMonitoring(isEnabled && !!shouldMonitor);
   }, [isEnabled, shouldMonitor]);
 
   // Log monitoring status for debugging
   useEffect(() => {
     if (isMonitoring) {
-      console.log('🤖 Edge Scanner Alert Monitor: ACTIVE');
-      console.log(`   - Min Edge: ${minEdge}+`);
-      console.log(`   - Min Confidence: ${(minConfidence * 100).toFixed(0)}%+`);
-      console.log(`   - Poll Interval: ${pollInterval / 1000}s`);
-      console.log(`   - Sports Filter: ${sports.length > 0 ? sports.join(', ') : 'ALL'}`);
-      console.log(`   - Alerts Seen: ${seenCount}`);
+      logger.info('🤖 Edge Scanner Alert Monitor: ACTIVE');
+      logger.info(`   - Min Edge: ${minEdge}+`);
+      logger.info(`   - Min Confidence: ${(minConfidence * 100).toFixed(0)}%+`);
+      logger.info(`   - Poll Interval: ${pollInterval / 1000}s`);
+      logger.info(`   - Sports Filter: ${sports.length > 0 ? sports.join(', ') : 'ALL'}`);
+      logger.info(`   - Alerts Seen: ${seenCount}`);
     } else {
-      console.log('🤖 Edge Scanner Alert Monitor: INACTIVE');
-      if (!username) console.log('   - Reason: Not logged in');
-      if (subscriptionTier !== 'elite') console.log('   - Reason: No Elite subscription');
-      if (!enabled) console.log('   - Reason: Manually disabled');
+      logger.info('🤖 Edge Scanner Alert Monitor: INACTIVE');
+      if (!username) logger.info('   - Reason: Not logged in');
+      if (subscriptionTier !== 'elite') logger.info('   - Reason: No Elite subscription');
+      if (!enabled) logger.info('   - Reason: Manually disabled');
     }
   }, [isMonitoring, minEdge, minConfidence, pollInterval, sports, seenCount, username, subscriptionTier, enabled]);
 

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { getApiUrl } from '../config';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { sportEmojis, uiEmojis } from '../utils/sportDetection';
+import { logger } from '../utils/logger';
 
 interface PerformanceSummary {
   total_predictions: number;
@@ -153,7 +154,7 @@ export function ModelPerformance() {
       const data = await response.json();
 
       if (data.error) {
-        console.error('API error:', data.error);
+        logger.error('API error:', data.error);
         setLoading(false);
         return;
       }
@@ -262,7 +263,7 @@ export function ModelPerformance() {
 
       setLoading(false);
     } catch (error) {
-      console.error('Error loading performance data:', error);
+      logger.error('Error loading performance data:', error);
       setLoading(false);
     }
   };
@@ -607,7 +608,7 @@ export function ModelPerformance() {
                       +${(bestDay.units_won * unitSize).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                     </div>
                     <div className="text-sm text-green-400">
-                      {bestDay.period} • {bestDay.wins}W-{bestDay.losses}L ({(bestDay.daily_win_rate * 100).toFixed(1)}%)
+                      {bestDay.period} • {bestDay.wins}W-{bestDay.losses}L ({((bestDay.daily_win_rate ?? 0) * 100).toFixed(1)}%)
                     </div>
                   </div>
                 );

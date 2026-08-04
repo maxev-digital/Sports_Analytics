@@ -4,6 +4,7 @@
  */
 
 import { useEffect, useState, useRef, useCallback } from 'react';
+import { logger } from '../utils/logger';
 
 interface BetRecommendation {
   rank: number;
@@ -106,11 +107,11 @@ export const useQuarterReversalWebSocket = (userId: string = 'default'): UseQuar
     const websocketUrl = `${baseUrl}?user_id=${userId}`;
 
     try {
-      console.log('🔌 Connecting to Quarter Reversal WebSocket...', websocketUrl);
+      logger.info('🔌 Connecting to Quarter Reversal WebSocket...', websocketUrl);
       const ws = new WebSocket(websocketUrl);
 
       ws.onopen = () => {
-        console.log('✅ Quarter Reversal WebSocket Connected');
+        logger.info('✅ Quarter Reversal WebSocket Connected');
         setConnected(true);
         setError(null);
         reconnectAttemptsRef.current = 0;
@@ -133,7 +134,7 @@ export const useQuarterReversalWebSocket = (userId: string = 'default'): UseQuar
           // Handle nested quarter reversal alerts (new structure from main.py)
           if (message.quarter_reversal_alerts) {
             const qrAlerts = message.quarter_reversal_alerts;
-            console.log(`🔄 Received ${qrAlerts.count} quarter reversal opportunities`);
+            logger.info(`🔄 Received ${qrAlerts.count} quarter reversal opportunities`);
             setOpportunities(qrAlerts.opportunities || []);
             setLastUpdate(new Date());
           }
@@ -141,37 +142,37 @@ export const useQuarterReversalWebSocket = (userId: string = 'default'): UseQuar
           // Handle nested cold team bounce-back alerts (new structure from main.py)
           if (message.cold_team_alerts) {
             const ctAlerts = message.cold_team_alerts;
-            console.log(`❄️ Received ${ctAlerts.count} cold team bounce-back opportunities`);
+            logger.info(`❄️ Received ${ctAlerts.count} cold team bounce-back opportunities`);
             setColdTeamOpportunities(ctAlerts.opportunities || []);
             setLastUpdate(new Date());
           }
 
           // Legacy: Handle old direct quarter reversal updates
           if (message.type === 'quarter_reversal_update' && message.opportunities) {
-            console.log(`🔄 Received ${message.opportunities.length} quarter reversal opportunities (legacy)`);
+            logger.info(`🔄 Received ${message.opportunities.length} quarter reversal opportunities (legacy)`);
             setOpportunities(message.opportunities);
             setLastUpdate(new Date());
           } else if (message.type === 'quarter_reversal_batch' && message.opportunities) {
-            console.log(`📦 Received batch of ${message.opportunities.length} quarter reversal opportunities (legacy)`);
+            logger.info(`📦 Received batch of ${message.opportunities.length} quarter reversal opportunities (legacy)`);
             setOpportunities(message.opportunities);
             setLastUpdate(new Date());
           } else if (message.type === 'ping' || message.type === 'pong') {
             // Keep alive message, no action needed
-            console.log('💓 Quarter Reversal Keep-alive:', message.type);
+            logger.info('💓 Quarter Reversal Keep-alive:', message.type);
           }
         } catch (err) {
-          console.error('❌ Error parsing Quarter Reversal WebSocket message:', err);
+          logger.error('❌ Error parsing Quarter Reversal WebSocket message:', err);
         }
       };
 
       ws.onerror = (event) => {
-        console.error('❌ Quarter Reversal WebSocket Error:', event);
+        logger.error('❌ Quarter Reversal WebSocket Error:', event);
         setError('Connection error');
         setConnected(false);
       };
 
       ws.onclose = (event) => {
-        console.log('🔌 Quarter Reversal WebSocket Disconnected', event.code, event.reason);
+        logger.info('🔌 Quarter Reversal WebSocket Disconnected', event.code, event.reason);
         setConnected(false);
 
         // Clear ping interval
@@ -184,7 +185,7 @@ export const useQuarterReversalWebSocket = (userId: string = 'default'): UseQuar
         const delay = Math.min(RECONNECT_DELAY * Math.pow(1.5, reconnectAttemptsRef.current), 30000);
         reconnectAttemptsRef.current += 1;
 
-        console.log(`🔄 Reconnecting Quarter Reversal WebSocket in ${delay / 1000}s... (attempt ${reconnectAttemptsRef.current})`);
+        logger.info(`🔄 Reconnecting Quarter Reversal WebSocket in ${delay / 1000}s... (attempt ${reconnectAttemptsRef.current})`);
 
         reconnectTimeoutRef.current = window.setTimeout(() => {
           connect();
@@ -193,7 +194,7 @@ export const useQuarterReversalWebSocket = (userId: string = 'default'): UseQuar
 
       wsRef.current = ws;
     } catch (err) {
-      console.error('❌ Failed to create Quarter Reversal WebSocket:', err);
+      logger.error('❌ Failed to create Quarter Reversal WebSocket:', err);
       setError('Failed to connect');
 
       // Retry connection

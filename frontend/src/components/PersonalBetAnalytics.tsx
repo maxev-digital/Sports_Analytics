@@ -4,6 +4,34 @@ import { useAuth } from '../contexts/AuthContext';
 import { useToast } from './Toast';
 import { formatTeamName } from '../utils/teamNames';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { logger } from '../utils/logger';
+
+interface SportBreakdown {
+  sport: string;
+  total: number;
+  wins: number;
+  losses: number;
+  win_rate: number;
+  profit_loss: number;
+  roi: number;
+}
+
+interface BetTypeBreakdown {
+  bet_type: string;
+  total: number;
+  wins: number;
+  losses: number;
+  win_rate: number;
+  profit_loss: number;
+  roi: number;
+}
+
+interface HistoryEntry {
+  date: string;
+  cumulative_pl: number;
+  wins: number;
+  losses: number;
+}
 
 // Temporary type definition
 interface PerformanceData {
@@ -14,6 +42,10 @@ interface PerformanceData {
   winRate: number;
   totalProfit: number;
   roi: number;
+  summary?: Record<string, unknown>;
+  history?: HistoryEntry[];
+  by_sport?: SportBreakdown[];
+  by_bet_type?: BetTypeBreakdown[];
 }
 
 // Temporary stub function
@@ -106,7 +138,7 @@ export function PersonalBetAnalytics({
       const data = await getUserPerformanceData(username, days);
       setPerformanceData(data);
     } catch (error) {
-      console.error('Error fetching performance data:', error);
+      logger.error('Error fetching performance data:', error);
     } finally {
       setLoadingPerformance(false);
     }
