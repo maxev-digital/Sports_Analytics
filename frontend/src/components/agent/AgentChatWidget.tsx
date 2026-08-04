@@ -4,7 +4,7 @@ import { useAgentChat } from '../../hooks/useAgentChat';
 import { ChatPanel } from './ChatPanel';
 
 export function AgentChatWidget() {
-  const { isOpen, unreadCount, openWidget, closeWidget } = useAgentContext();
+  const { isOpen, openWidget, closeWidget } = useAgentContext();
   const { token } = useAuth();
   const chatState = useAgentChat(isOpen, token);
   const { mode, setMode } = chatState;
@@ -63,12 +63,6 @@ export function AgentChatWidget() {
         <svg className="w-3 h-3 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
         </svg>
-        {/* Unread badge */}
-        {unreadCount > 0 && (
-          <span className="w-5 h-5 rounded-full bg-red-500 text-xs flex items-center justify-center font-bold">
-            {unreadCount > 9 ? '9+' : unreadCount}
-          </span>
-        )}
       </button>
     </>
   );

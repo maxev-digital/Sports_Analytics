@@ -37,7 +37,12 @@ function loadHistory(): AgentMessage[] {
   try {
     const raw = localStorage.getItem(HISTORY_KEY);
     if (!raw) return [];
-    const { messages, savedAt } = JSON.parse(raw) as { messages: AgentMessage[]; savedAt: number };
+    const parsed = JSON.parse(raw) as unknown;
+    if (
+      typeof parsed !== 'object' || parsed === null ||
+      !('messages' in parsed) || !('savedAt' in parsed)
+    ) return [];
+    const { messages, savedAt } = parsed as { messages: AgentMessage[]; savedAt: number };
     if (Date.now() - savedAt > HISTORY_TTL_MS) return [];
     return messages.map(m => ({ ...m, timestamp: new Date(m.timestamp) }));
   } catch {
@@ -65,15 +70,17 @@ export function useAgentChat(isOpen: boolean = true, token: string | null = null
   const [loadingChat, setLoadingChat] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
 
-  useEffect(() => {
-    saveHistory(messages);
-  }, [messages]);
-
-  // React Query for picks — polls in background when panel is collapsed, pauses when open
-  const { data: picks = [], isFetching: loadingPicks, isFetched: picksFetched, refetch: refetchPicks, error: picksQueryError } = useQuery({
+  // React Query for picks — polls in background when panel is collapsed
+  const {
+    data: picks = [],
+    isFetching: loadingPicks,
+    isFetched: picksFetched,
+    refetch: refetchPicks,
+    error: picksQueryError,
+  } = useQuery({
     queryKey: ['agent-picks', token] as const,
     queryFn: async () => {
-      const resp = await fetch(getApiUrl('agent/picks'), {
+      const resp = await fetch(getApiUrl('v1/agent/picks'), {
         method: 'POST',
         headers: buildHeaders(token),
         body: JSON.stringify({ sport: null, limit: 5 }),
@@ -93,17 +100,18 @@ export function useAgentChat(isOpen: boolean = true, token: string | null = null
 
   const sendMessage = useCallback(async (text: string) => {
     const userMsg: AgentMessage = { role: 'user', content: text, timestamp: new Date() };
-    setMessages(prev => [...prev, userMsg]);
+    const assistantMsg: AgentMessage = { role: 'assistant', content: '', timestamp: new Date() };
+
+    setMessages(prev => [...prev, userMsg, assistantMsg]);
     setLoadingChat(true);
     setChatError(null);
 
-    // Streaming: add a placeholder assistant message and fill it token by token
-    const assistantMsg: AgentMessage = { role: 'assistant', content: '', timestamp: new Date() };
-    setMessages(prev => [...prev, assistantMsg]);
+    let accumulated = '';
+    let succeeded = false;
 
     try {
       const history = messages.slice(-8).map(m => ({ role: m.role, content: m.content }));
-      const resp = await fetch(getApiUrl('agent/chat/stream'), {
+      const resp = await fetch(getApiUrl('v1/agent/chat/stream'), {
         method: 'POST',
         headers: buildHeaders(token),
         body: JSON.stringify({ message: text, history }),
@@ -115,7 +123,6 @@ export function useAgentChat(isOpen: boolean = true, token: string | null = null
 
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
-      let accumulated = '';
 
       while (true) {
         const { done, value } = await reader.read();
@@ -142,12 +149,21 @@ export function useAgentChat(isOpen: boolean = true, token: string | null = null
           }
         }
       }
+      succeeded = true;
     } catch (err) {
       logger.error('sendMessage error:', err);
       setChatError('Failed to get a response. Please try again.');
       setMessages(prev => prev.slice(0, -2)); // remove user + empty assistant
     } finally {
       setLoadingChat(false);
+      if (succeeded) {
+        // Persist the complete exchange — no useEffect needed
+        saveHistory([
+          ...messages,
+          userMsg,
+          { ...assistantMsg, content: accumulated },
+        ]);
+      }
     }
   }, [messages, token]);
 
@@ -155,6 +171,13 @@ export function useAgentChat(isOpen: boolean = true, token: string | null = null
     setMessages([]);
     localStorage.removeItem(HISTORY_KEY);
   }, []);
+
+  // Sync mode to picks tab when panel opens and picks are already loaded
+  useEffect(() => {
+    if (isOpen && picksFetched && picks.length > 0 && messages.length === 0) {
+      setMode('picks');
+    }
+  }, [isOpen]);
 
   const error = chatError ?? (picksQueryError ? 'Could not load picks. Please try again.' : null);
 

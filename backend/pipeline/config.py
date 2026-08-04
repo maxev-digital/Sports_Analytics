@@ -23,10 +23,7 @@ import pytz
 # ---------------------------------------------------------------------------
 # Database
 # ---------------------------------------------------------------------------
-DB_URL: str = os.environ.get(
-    "DATABASE_URL",
-    "postgresql://maxev:maxev_sports@localhost:5432/maxev_sports",
-)
+DB_URL: str = os.environ.get("DATABASE_URL", "")
 
 # ---------------------------------------------------------------------------
 # API keys
