@@ -1,252 +1,271 @@
 /**
- * Statcast Leaders — MLB expected stats from Baseball Savant.
- * Shows xwOBA, xBA, xSLG, barrel%, hard-hit%, exit velocity leaders.
+ * Statcast — MLB agent signal verification table.
+ * Shows the exact stats the handicapping agent uses: xERA, ERA gap, K%, BB%, wOBA, xwOBA.
+ * Sortable by any column. Pulls from DB-backed endpoints with full K%/BB% coverage.
  */
-import { useState, useEffect } from 'react';
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Cell, ScatterChart, Scatter, ZAxis,
-} from 'recharts';
-import '../styles/analytics.css';
+import { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { getApiUrl } from '../config';
 
-const EMERALD   = 'oklch(69.6% .17 162.48)';
-const BRAND_RED = 'oklch(63.7% .237 25.331)';
-const BLUE      = 'oklch(62.3% .214 259.815)';
-const YELLOW    = 'oklch(79.5% .184 86.047)';
-const MUTED_FG  = 'oklch(70.8% 0 0)';
-const BORDER    = 'oklch(100% 0 0 / .1)';
-const SIDEBAR_BG = 'oklch(20.5% 0 0)';
+type Tab = 'pitching' | 'batting';
+type SortDir = 'asc' | 'desc';
 
-type View = 'batting' | 'pitching';
-type Stat = 'xwOBA' | 'xBA' | 'xSLG' | 'xwOBADiff';
-
-const STAT_OPTIONS: { key: Stat; label: string; description: string }[] = [
-  { key: 'xwOBA',     label: 'xwOBA',      description: 'Expected weighted on-base average — best single measure of hitting quality' },
-  { key: 'xBA',       label: 'xBA',        description: 'Expected batting average based on exit velocity and launch angle' },
-  { key: 'xSLG',      label: 'xSLG',       description: 'Expected slugging based on contact quality' },
-  { key: 'xwOBADiff', label: 'xwOBA Diff',  description: 'Difference between actual and expected — positive = lucky, negative = unlucky' },
-];
-
+interface PitcherRow {
+  name: string; pa: number;
+  era: number | null; xera: number | null; era_gap: number | null;
+  k_pct: number | null; bb_pct: number | null; k_bb_pct: number | null;
+}
 interface BatterRow {
-  name: string;
-  team: string;
-  pa: number;
-  ba: number;
-  xBA: number;
-  xBADiff: number;
-  slg: number;
-  xSLG: number;
-  xSLGDiff: number;
-  woba: number;
-  xwOBA: number;
-  xwOBADiff: number;
+  name: string; pa: number;
+  woba: number | null; xwoba: number | null; woba_gap: number | null;
 }
 
-function DarkTooltip({ active, payload, label }: any) {
-  if (!active || !payload?.length) return null;
+const N = (v: number | null, dec = 3) => v == null ? '—' : v.toFixed(dec);
+const Pct = (v: number | null) => v == null ? '—' : `${(v * 100).toFixed(1)}%`;
+
+function gapColor(gap: number | null, invert = false): string {
+  if (gap == null) return 'text-slate-400';
+  const pos = invert ? gap < 0 : gap > 0;
+  const neg = invert ? gap > 0 : gap < 0;
+  if (pos) return 'text-emerald-400';
+  if (neg) return 'text-red-400';
+  return 'text-slate-400';
+}
+
+function eraColor(v: number | null): string {
+  if (v == null) return 'text-slate-400';
+  if (v <= 3.00) return 'text-emerald-400';
+  if (v <= 4.00) return 'text-blue-400';
+  return 'text-red-400';
+}
+function wobaColor(v: number | null): string {
+  if (v == null) return 'text-slate-400';
+  if (v >= 0.380) return 'text-emerald-400';
+  if (v >= 0.330) return 'text-blue-400';
+  return 'text-red-400';
+}
+function kbbColor(v: number | null): string {
+  if (v == null) return 'text-slate-400';
+  if (v >= 0.20) return 'text-emerald-400';
+  if (v >= 0.12) return 'text-blue-400';
+  return 'text-red-400';
+}
+
+type PitchCol = keyof PitcherRow;
+type BatCol   = keyof BatterRow;
+
+function SortTh({ label, col, sortCol, sortDir, onClick, right = true, title }: {
+  label: string; col: string; sortCol: string; sortDir: SortDir;
+  onClick: (c: string) => void; right?: boolean; title?: string;
+}) {
+  const active = sortCol === col;
   return (
-    <div style={{ background: SIDEBAR_BG, border: `1px solid ${BORDER}`, borderRadius: 6, padding: '10px 14px', fontSize: '0.78rem' }}>
-      {label && <p style={{ color: 'oklch(98.5% 0 0)', fontWeight: 700, marginBottom: 4 }}>{label}</p>}
-      {payload.map((p: any) => (
-        <p key={p.dataKey} style={{ color: p.color || MUTED_FG, margin: '2px 0' }}>
-          {p.name}: <strong>{typeof p.value === 'number' ? p.value.toFixed(3) : p.value}</strong>
-        </p>
-      ))}
+    <th
+      title={title}
+      onClick={() => onClick(col)}
+      className={`px-3 py-2 cursor-pointer select-none text-xs font-bold tracking-wider uppercase whitespace-nowrap
+        ${right ? 'text-right' : 'text-left'}
+        ${active ? 'text-blue-400' : 'text-slate-400 hover:text-slate-200'}`}
+    >
+      {label}{active ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''}
+    </th>
+  );
+}
+
+function PitchingTable({ rows }: { rows: PitcherRow[] }) {
+  const [sortCol, setSortCol] = useState<PitchCol>('xera');
+  const [sortDir, setSortDir] = useState<SortDir>('asc');
+  const [minPA, setMinPA] = useState(100);
+
+  const sorted = useMemo(() => {
+    const filtered = rows.filter(r => r.pa >= minPA);
+    return [...filtered].sort((a, b) => {
+      const av = (a[sortCol] as number) ?? (sortDir === 'asc' ? Infinity : -Infinity);
+      const bv = (b[sortCol] as number) ?? (sortDir === 'asc' ? Infinity : -Infinity);
+      return sortDir === 'asc' ? av - bv : bv - av;
+    });
+  }, [rows, sortCol, sortDir, minPA]);
+
+  function toggle(col: string) {
+    if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortCol(col as PitchCol); setSortDir(col === 'era_gap' ? 'desc' : 'asc'); }
+  }
+
+  const thProps = (col: string, label: string, title?: string) =>
+    ({ col, label, sortCol, sortDir, onClick: toggle, title } as const);
+
+  return (
+    <div>
+      <div className="flex items-center gap-4 mb-3">
+        <span className="text-xs text-slate-400 uppercase tracking-wider font-bold">Min PA</span>
+        {[50, 100, 200, 300].map(v => (
+          <button key={v} onClick={() => setMinPA(v)}
+            className={`px-3 py-1 rounded text-xs font-bold ${minPA === v ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}>
+            {v}
+          </button>
+        ))}
+        <span className="ml-auto text-xs text-slate-500">{sorted.length} pitchers</span>
+      </div>
+      <div className="overflow-x-auto rounded-lg border border-slate-700">
+        <table className="w-full text-sm border-collapse">
+          <thead className="bg-slate-900 border-b border-slate-700">
+            <tr>
+              <th className="px-3 py-2 text-xs font-bold text-slate-400 text-right w-10">#</th>
+              <SortTh {...thProps('name','PLAYER')} right={false} />
+              <SortTh {...thProps('pa','PA','Batters faced')} />
+              <SortTh {...thProps('era','ERA','Earned run average (actual)')} />
+              <SortTh {...thProps('xera','xERA','Expected ERA based on contact quality — agent primary anchor')} />
+              <SortTh {...thProps('era_gap','ERA GAP','ERA minus xERA. Positive = pitching worse than expected (regression risk). Negative = pitching better than deserved (buy).')} />
+              <SortTh {...thProps('k_pct','K%','Strikeout rate (K per batter faced)')} />
+              <SortTh {...thProps('bb_pct','BB%','Walk rate (BB per batter faced)')} />
+              <SortTh {...thProps('k_bb_pct','K-BB%','K% minus BB% — command quality metric. Agent uses ≥20% as elite.')} />
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.map((p, i) => (
+              <tr key={p.name} className="border-b border-slate-800 hover:bg-slate-800/40">
+                <td className="px-3 py-2 text-right text-slate-500 text-xs font-mono">{i + 1}</td>
+                <td className="px-3 py-2 font-semibold text-white whitespace-nowrap">{p.name}</td>
+                <td className="px-3 py-2 text-right text-slate-400 font-mono text-xs">{p.pa}</td>
+                <td className={`px-3 py-2 text-right font-mono font-bold ${eraColor(p.era)}`}>{N(p.era)}</td>
+                <td className={`px-3 py-2 text-right font-mono font-bold ${eraColor(p.xera)}`}>{N(p.xera)}</td>
+                <td className={`px-3 py-2 text-right font-mono font-bold ${gapColor(p.era_gap, true)}`}>
+                  {p.era_gap != null ? (p.era_gap > 0 ? '+' : '') + p.era_gap.toFixed(2) : '—'}
+                </td>
+                <td className={`px-3 py-2 text-right font-mono ${p.k_pct != null && p.k_pct >= 0.26 ? 'text-emerald-400 font-bold' : 'text-slate-300'}`}>{Pct(p.k_pct)}</td>
+                <td className={`px-3 py-2 text-right font-mono ${p.bb_pct != null && p.bb_pct >= 0.10 ? 'text-red-400' : 'text-slate-300'}`}>{Pct(p.bb_pct)}</td>
+                <td className={`px-3 py-2 text-right font-mono font-bold ${kbbColor(p.k_bb_pct)}`}>{Pct(p.k_bb_pct)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function BattingTable({ rows }: { rows: BatterRow[] }) {
+  const [sortCol, setSortCol] = useState<BatCol>('xwoba');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [minPA, setMinPA] = useState(100);
+
+  const sorted = useMemo(() => {
+    const filtered = rows.filter(r => r.pa >= minPA);
+    return [...filtered].sort((a, b) => {
+      const av = (a[sortCol] as number) ?? (sortDir === 'asc' ? Infinity : -Infinity);
+      const bv = (b[sortCol] as number) ?? (sortDir === 'asc' ? Infinity : -Infinity);
+      return sortDir === 'asc' ? av - bv : bv - av;
+    });
+  }, [rows, sortCol, sortDir, minPA]);
+
+  function toggle(col: string) {
+    if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortCol(col as BatCol); setSortDir(col === 'woba_gap' ? 'asc' : 'desc'); }
+  }
+
+  const thProps = (col: string, label: string, title?: string) =>
+    ({ col, label, sortCol, sortDir, onClick: toggle, title } as const);
+
+  return (
+    <div>
+      <div className="flex items-center gap-4 mb-3">
+        <span className="text-xs text-slate-400 uppercase tracking-wider font-bold">Min PA</span>
+        {[50, 100, 200, 300].map(v => (
+          <button key={v} onClick={() => setMinPA(v)}
+            className={`px-3 py-1 rounded text-xs font-bold ${minPA === v ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}>
+            {v}
+          </button>
+        ))}
+        <span className="ml-auto text-xs text-slate-500">{sorted.length} batters</span>
+      </div>
+      <div className="overflow-x-auto rounded-lg border border-slate-700">
+        <table className="w-full text-sm border-collapse">
+          <thead className="bg-slate-900 border-b border-slate-700">
+            <tr>
+              <th className="px-3 py-2 text-xs font-bold text-slate-400 text-right w-10">#</th>
+              <SortTh {...thProps('name','PLAYER')} right={false} />
+              <SortTh {...thProps('pa','PA','Plate appearances')} />
+              <SortTh {...thProps('woba','wOBA','Weighted on-base average (actual — includes luck)')} />
+              <SortTh {...thProps('xwoba','xwOBA','Expected wOBA based on contact quality — agent primary anchor for offense')} />
+              <SortTh {...thProps('woba_gap','GAP','wOBA minus xwOBA. Positive = lucky/hot streak. Negative = unlucky, due for positive regression.')} />
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.map((p, i) => (
+              <tr key={p.name} className="border-b border-slate-800 hover:bg-slate-800/40">
+                <td className="px-3 py-2 text-right text-slate-500 text-xs font-mono">{i + 1}</td>
+                <td className="px-3 py-2 font-semibold text-white whitespace-nowrap">{p.name}</td>
+                <td className="px-3 py-2 text-right text-slate-400 font-mono text-xs">{p.pa}</td>
+                <td className={`px-3 py-2 text-right font-mono ${wobaColor(p.woba)}`}>{N(p.woba)}</td>
+                <td className={`px-3 py-2 text-right font-mono font-bold ${wobaColor(p.xwoba)}`}>{N(p.xwoba)}</td>
+                <td className={`px-3 py-2 text-right font-mono font-bold ${gapColor(p.woba_gap)}`}>
+                  {p.woba_gap != null ? (p.woba_gap > 0 ? '+' : '') + p.woba_gap.toFixed(3) : '—'}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
 
 export function Statcast() {
-  const [view, setView] = useState<View>('batting');
-  const [stat, setStat] = useState<Stat>('xwOBA');
-  const [players, setPlayers] = useState<BatterRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [minPA, setMinPA] = useState(200);
+  const [tab, setTab] = useState<Tab>('pitching');
 
-  useEffect(() => {
-    setLoading(true);
-    const endpoint = view === 'batting'
-      ? `analytics-data/statcast/batting?season=2026&min_pa=${minPA}`
-      : `analytics-data/statcast/pitching?season=2026&min_pa=${minPA}`;
-
-    fetch(getApiUrl(endpoint))
-      .then(r => r.json())
-      .then(d => {
-        const list = d.players ?? d ?? [];
-        const qualified = list.filter((p: BatterRow) => p.pa >= minPA);
-        setPlayers(qualified);
-      })
-      .catch(() => setPlayers([]))
-      .finally(() => setLoading(false));
-  }, [view, minPA]);
-
-  const sorted = [...players].sort((a, b) => {
-    const av = (a as any)[stat] ?? 0;
-    const bv = (b as any)[stat] ?? 0;
-    return stat === 'xwOBADiff' ? av - bv : bv - av;  // Diff: most unlucky first (negative)
+  const { data: pitchData, isLoading: pitchLoading } = useQuery({
+    queryKey: ['statcast-pitching-db'],
+    queryFn: () => fetch(getApiUrl('analytics-data/statcast/pitching-db?min_pa=1&year=2025')).then(r => r.json()),
+    staleTime: 6 * 60 * 60 * 1000,
+  });
+  const { data: batData, isLoading: batLoading } = useQuery({
+    queryKey: ['statcast-batting-db'],
+    queryFn: () => fetch(getApiUrl('analytics-data/statcast/batting-db?min_pa=1&year=2025')).then(r => r.json()),
+    staleTime: 6 * 60 * 60 * 1000,
   });
 
-  const top20 = stat === 'xwOBADiff'
-    ? [...sorted.slice(0, 10), ...sorted.slice(-10).reverse()]  // Most unlucky + most lucky
-    : sorted.slice(0, 20);
-
-  const selectedStat = STAT_OPTIONS.find(s => s.key === stat);
+  const pitchers: PitcherRow[] = pitchData?.pitchers ?? [];
+  const batters: BatterRow[]   = batData?.batters ?? [];
+  const loading = tab === 'pitching' ? pitchLoading : batLoading;
 
   return (
-    <div className="analytics-page">
-      <div className="analytics-header">
-        <h1>Statcast Leaders</h1>
-        <p className="subtitle">MLB expected stats from Baseball Savant — contact quality metrics that predict future performance</p>
-
-        <div className="sport-tabs" style={{ marginTop: 12 }}>
-          <button className={`sport-tab ${view === 'batting' ? 'active' : ''}`} onClick={() => setView('batting')}>
-            BATTING
-          </button>
-          <button className={`sport-tab ${view === 'pitching' ? 'active' : ''}`} onClick={() => setView('pitching')}>
-            PITCHING
-          </button>
+    <div className="min-h-screen bg-slate-950 text-white">
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="mb-6">
+          <h1 className="text-3xl font-black italic text-white mb-1">STATCAST</h1>
+          <p className="text-slate-400 text-sm">
+            Exact MLB metrics the handicapping agent uses — xERA, ERA gap, K%, BB%, xwOBA, wOBA gap.
+            Click any column header to sort. Color: <span className="text-emerald-400">green = elite</span> · <span className="text-blue-400">blue = solid</span> · <span className="text-red-400">red = weak</span>
+          </p>
         </div>
-      </div>
 
-      {/* Stat selector + filter */}
-      <div className="filter-bar">
-        <span className="filter-label">METRIC</span>
-        {STAT_OPTIONS.map(s => (
-          <button
-            key={s.key}
-            className={`filter-pill ${stat === s.key ? 'active' : ''}`}
-            onClick={() => setStat(s.key)}
-          >
-            {s.label}
-          </button>
-        ))}
-        <span className="filter-label" style={{ marginLeft: 16 }}>MIN PA</span>
-        <select
-          className="filter-select"
-          value={minPA}
-          onChange={e => setMinPA(Number(e.target.value))}
-        >
-          <option value={100}>100</option>
-          <option value={200}>200</option>
-          <option value={300}>300</option>
-          <option value={400}>400</option>
-        </select>
-        <span style={{ marginLeft: 'auto', fontSize: '0.72rem', color: MUTED_FG }}>
-          {players.length} qualified players
-        </span>
-      </div>
+        {/* Tabs */}
+        <div className="flex gap-2 mb-6">
+          {(['pitching', 'batting'] as Tab[]).map(t => (
+            <button key={t} onClick={() => setTab(t)}
+              className={`px-5 py-2 rounded-lg font-bold text-sm uppercase italic transition-all
+                ${tab === t ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}>
+              {t}
+            </button>
+          ))}
+        </div>
 
-      <div style={{ padding: '16px 24px', maxWidth: 1200 }}>
+        {/* Agent signal legend */}
+        <div className="mb-4 p-3 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-400 leading-relaxed">
+          {tab === 'pitching'
+            ? <><span className="text-blue-400 font-bold">xERA</span> = agent primary anchor (strips luck from ERA). <span className="text-blue-400 font-bold">ERA GAP</span> = ERA–xERA: negative means pitching better than deserved (buy); positive means regression risk (fade). <span className="text-blue-400 font-bold">K-BB%</span> ≥20% = elite command signal.</>
+            : <><span className="text-blue-400 font-bold">xwOBA</span> = agent primary offensive anchor (contact quality). <span className="text-blue-400 font-bold">GAP</span> = wOBA–xwOBA: negative means unlucky, positive regression incoming; positive means hot streak above expected (fade risk).</>
+          }
+        </div>
+
         {loading ? (
-          <div style={{ padding: 40, textAlign: 'center', color: MUTED_FG }}>Loading Statcast data...</div>
+          <div className="text-center py-20 text-slate-500">Loading Statcast data...</div>
+        ) : tab === 'pitching' ? (
+          <PitchingTable rows={pitchers} />
         ) : (
-          <>
-            {/* Description */}
-            {selectedStat && (
-              <div style={{ fontSize: '0.78rem', color: MUTED_FG, marginBottom: 16 }}>
-                {selectedStat.description}
-              </div>
-            )}
-
-            {/* Bar chart — top 20 */}
-            <div className="data-table-wrap" style={{ padding: '14px 18px', marginBottom: 16 }}>
-              <div style={{ fontSize: '0.65rem', fontWeight: 700, color: MUTED_FG, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>
-                {stat === 'xwOBADiff' ? 'MOST UNLUCKY (negative) vs MOST LUCKY (positive)' : `TOP 20 — ${selectedStat?.label}`}
-              </div>
-              <ResponsiveContainer width="100%" height={400}>
-                <BarChart data={top20} layout="vertical" margin={{ top: 4, right: 24, left: 0, bottom: 4 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="oklch(100% 0 0 / .05)" />
-                  <XAxis type="number" tick={{ fill: MUTED_FG, fontSize: 10, fontFamily: 'var(--d3-mono)' }} tickLine={false} axisLine={false} />
-                  <YAxis type="category" dataKey="name" width={130} tick={{ fill: 'oklch(98.5% 0 0)', fontSize: 11, fontFamily: 'Nunito' }} tickLine={false} axisLine={false} />
-                  <Tooltip content={<DarkTooltip />} />
-                  {stat === 'xwOBADiff' ? (
-                    <Bar dataKey={stat} radius={[0, 4, 4, 0]}>
-                      {top20.map((p, i) => (
-                        <Cell key={i} fill={(p as any)[stat] >= 0 ? EMERALD : BRAND_RED} />
-                      ))}
-                    </Bar>
-                  ) : (
-                    <Bar dataKey={stat} fill={EMERALD} radius={[0, 4, 4, 0]} />
-                  )}
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Data table */}
-            <StatcastTable players={sorted} stat={stat} />
-
-            {/* Scatter: actual vs expected */}
-            {stat !== 'xwOBADiff' && (
-              <div className="data-table-wrap" style={{ padding: '14px 18px', marginTop: 16 }}>
-                <div style={{ fontSize: '0.65rem', fontWeight: 700, color: MUTED_FG, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>
-                  ACTUAL vs EXPECTED — dots above the line are over-performing
-                </div>
-                <ResponsiveContainer width="100%" height={350}>
-                  <ScatterChart margin={{ top: 10, right: 24, left: 0, bottom: 10 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="oklch(100% 0 0 / .05)" />
-                    <XAxis type="number" dataKey={`x${stat.slice(1)}`} name={`Expected (${stat})`}
-                      tick={{ fill: MUTED_FG, fontSize: 10, fontFamily: 'var(--d3-mono)' }} tickLine={false}
-                      label={{ value: stat, position: 'bottom', fill: MUTED_FG, fontSize: 11 }} />
-                    <YAxis type="number" dataKey={stat === 'xBA' ? 'ba' : stat === 'xSLG' ? 'slg' : 'woba'}
-                      name="Actual" tick={{ fill: MUTED_FG, fontSize: 10, fontFamily: 'var(--d3-mono)' }} tickLine={false}
-                      label={{ value: 'Actual', angle: -90, position: 'insideLeft', fill: MUTED_FG, fontSize: 11 }} />
-                    <ZAxis range={[30, 30]} />
-                    <Tooltip content={<DarkTooltip />} />
-                    <Scatter data={sorted.map(p => ({
-                      ...p,
-                      [`x${stat.slice(1)}`]: (p as any)[stat],
-                    }))} fill={BLUE} />
-                  </ScatterChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-          </>
+          <BattingTable rows={batters} />
         )}
       </div>
-    </div>
-  );
-}
-
-function StatcastTable({ players, stat }: { players: BatterRow[]; stat: Stat }) {
-  return (
-    <div className="data-table-wrap" style={{ overflowX: 'auto' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
-        <thead>
-          <tr>
-            {['#', 'Player', 'Team', 'PA', 'BA', 'xBA', 'SLG', 'xSLG', 'wOBA', 'xwOBA', 'Diff'].map(h => (
-              <th key={h} style={{
-                padding: '8px 10px', textAlign: h === 'Player' || h === 'Team' ? 'left' : 'right',
-                fontSize: '0.65rem', fontWeight: 700, color: MUTED_FG,
-                letterSpacing: '0.1em', textTransform: 'uppercase',
-                borderBottom: `1px solid ${BORDER}`,
-              }}>{h}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {players.slice(0, 50).map((p, i) => (
-            <tr key={p.name + i} style={{ borderBottom: `1px solid ${BORDER}` }}>
-              <td style={{ padding: '6px 10px', textAlign: 'right', color: MUTED_FG, fontFamily: 'var(--d3-mono)', fontSize: '0.72rem' }}>{i + 1}</td>
-              <td style={{ padding: '6px 10px', fontWeight: 600, color: 'var(--foreground)' }}>{p.name}</td>
-              <td style={{ padding: '6px 10px', color: MUTED_FG }}>{p.team || '—'}</td>
-              <td style={{ padding: '6px 10px', textAlign: 'right', color: MUTED_FG, fontFamily: 'var(--d3-mono)' }}>{p.pa}</td>
-              <td style={{ padding: '6px 10px', textAlign: 'right', fontFamily: 'var(--d3-mono)', color: 'var(--foreground)' }}>{p.ba?.toFixed(3)}</td>
-              <td style={{ padding: '6px 10px', textAlign: 'right', fontFamily: 'var(--d3-mono)', color: EMERALD }}>{p.xBA?.toFixed(3)}</td>
-              <td style={{ padding: '6px 10px', textAlign: 'right', fontFamily: 'var(--d3-mono)', color: 'var(--foreground)' }}>{p.slg?.toFixed(3)}</td>
-              <td style={{ padding: '6px 10px', textAlign: 'right', fontFamily: 'var(--d3-mono)', color: EMERALD }}>{p.xSLG?.toFixed(3)}</td>
-              <td style={{ padding: '6px 10px', textAlign: 'right', fontFamily: 'var(--d3-mono)', color: 'var(--foreground)' }}>{p.woba?.toFixed(3)}</td>
-              <td style={{ padding: '6px 10px', textAlign: 'right', fontFamily: 'var(--d3-mono)', color: BLUE, fontWeight: 700 }}>{p.xwOBA?.toFixed(3)}</td>
-              <td style={{
-                padding: '6px 10px', textAlign: 'right', fontFamily: 'var(--d3-mono)', fontWeight: 700,
-                color: p.xwOBADiff > 0 ? EMERALD : p.xwOBADiff < -0.02 ? BRAND_RED : MUTED_FG,
-              }}>
-                {p.xwOBADiff > 0 ? '+' : ''}{p.xwOBADiff?.toFixed(3)}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
     </div>
   );
 }
