@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BookmakerLogo } from '../components/BookmakerLogo';
-import { getBookmaker } from '../data/bookmakers';
+import { getBookmaker, getBookmakerUrl } from '../data/bookmakers';
 import { OddsMetricsDashboard } from '../components/OddsMetricsDashboard';
 import { formatTeamName } from '../utils/teamNames';
 import { getTeamLogoUrl } from '../utils/teamLogos';
@@ -58,7 +58,7 @@ export function Odds() {
   const { username } = useAuth();
   const { openBetSlip } = useBetSlip();
   const { settings } = useSettings('default');
-  const [activeSport, setActiveSport] = useState<SportKey>('baseball_mlb');
+  const [activeSport, setActiveSport] = useState<SportKey>('americanfootball_nfl');
   const [activeBetType, setActiveBetType] = useState<BetType>('moneyline');
   const [games, setGames] = useState<GameOdds[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,11 +73,11 @@ export function Odds() {
     logger.info('🎮 Loading games for sport:', activeSport);
 
     try {
-      const response = await fetch(getApiUrl(`games?user_id=default`));
+      const response = await fetch(getApiUrl(`games?user_id=default&sport_key=${activeSport}`));
       if (!response.ok) throw new Error('API not available');
 
       const apiGames = await response.json();
-      logger.info('📊 API returned:', apiGames.length, 'total games');
+      logger.info('📊 API returned:', apiGames.length, 'games for', activeSport);
 
       const transformedGames: GameOdds[] = apiGames.map((game: any) => ({
         id: game.state.id,
@@ -93,10 +93,9 @@ export function Odds() {
         odds: game.odds
       }));
 
-      const filteredGames = transformedGames.filter((game: GameOdds) => game.sport_key === activeSport);
-      filteredGames.sort((a, b) => new Date(a.commence_time).getTime() - new Date(b.commence_time).getTime());
-      logger.info('✅ Showing', filteredGames.length, 'games for', activeSport);
-      setGames(filteredGames);
+      transformedGames.sort((a, b) => new Date(a.commence_time).getTime() - new Date(b.commence_time).getTime());
+      logger.info('✅ Showing', transformedGames.length, 'games for', activeSport);
+      setGames(transformedGames);
     } catch (error) {
       logger.error('❌ API error:', error);
       setGames([]);
@@ -167,9 +166,18 @@ export function Odds() {
     return `${month}/${day} - ${time}`;
   };
 
-  const formatOdds = (price: number): string => {
+  const formatOdds = (price: number | null | undefined): string => {
+    if (price == null) return '—';
     if (price > 0) return `+${price}`;
     return price.toString();
+  };
+
+  const normalizeBookmakerKey = (bookmaker: string): string => {
+    return bookmaker
+      .toLowerCase()
+      .replace(/\s+/g, '')
+      .replace(/\./g, '')
+      .replace(/\(au\)/g, '');
   };
 
   // Find best odds for a game based on bet type
@@ -182,31 +190,22 @@ export function Odds() {
     if (odds.length === 0) return null;
 
     if (activeBetType === 'moneyline') {
-      // Best is highest value (most positive or least negative)
-      const bestAway = odds.reduce((best, curr) =>
-        curr.away_ml > best.away_ml ? curr : best
-      );
-      const bestHome = odds.reduce((best, curr) =>
-        curr.home_ml > best.home_ml ? curr : best
-      );
+      const mlOdds = odds.filter(o => o.away_ml != null && o.home_ml != null);
+      if (!mlOdds.length) return null;
+      const bestAway = mlOdds.reduce((best, curr) => (curr.away_ml ?? -Infinity) > (best.away_ml ?? -Infinity) ? curr : best);
+      const bestHome = mlOdds.reduce((best, curr) => (curr.home_ml ?? -Infinity) > (best.home_ml ?? -Infinity) ? curr : best);
       return { away: bestAway, home: bestHome };
     } else if (activeBetType === 'spread') {
-      // Best is highest price (most positive or least negative)
-      const bestAway = odds.reduce((best, curr) =>
-        curr.away_spread_price > best.away_spread_price ? curr : best
-      );
-      const bestHome = odds.reduce((best, curr) =>
-        curr.home_spread_price > best.home_spread_price ? curr : best
-      );
+      const spOdds = odds.filter(o => o.away_spread_price != null && o.home_spread_price != null);
+      if (!spOdds.length) return null;
+      const bestAway = spOdds.reduce((best, curr) => (curr.away_spread_price ?? -Infinity) > (best.away_spread_price ?? -Infinity) ? curr : best);
+      const bestHome = spOdds.reduce((best, curr) => (curr.home_spread_price ?? -Infinity) > (best.home_spread_price ?? -Infinity) ? curr : best);
       return { away: bestAway, home: bestHome };
     } else {
-      // Total - best is highest price
-      const bestOver = odds.reduce((best, curr) =>
-        curr.over_price > best.over_price ? curr : best
-      );
-      const bestUnder = odds.reduce((best, curr) =>
-        curr.under_price > best.under_price ? curr : best
-      );
+      const ouOdds = odds.filter(o => o.over_price != null && o.under_price != null);
+      if (!ouOdds.length) return null;
+      const bestOver  = ouOdds.reduce((best, curr) => (curr.over_price  ?? -Infinity) > (best.over_price  ?? -Infinity) ? curr : best);
+      const bestUnder = ouOdds.reduce((best, curr) => (curr.under_price ?? -Infinity) > (best.under_price ?? -Infinity) ? curr : best);
       return { over: bestOver, under: bestUnder };
     }
   };
@@ -230,8 +229,8 @@ export function Odds() {
     // CRITICAL: Get bookmaker info and open sportsbook IMMEDIATELY to avoid popup blockers
     // Must be first lines - browsers block window.open() if not direct user action
     const bookmakerInfo = getBookmaker(bookmaker);
-    if (bookmakerInfo?.url) {
-      openSportsbook(bookmakerInfo.url, bookmakerInfo.name);
+    if (bookmakerInfo) {
+      openSportsbook(getBookmakerUrl(bookmaker, game.sport_key), bookmakerInfo.name);
     }
 
     // If user is not logged in, just open sportsbook (already done above) and return
@@ -262,23 +261,15 @@ export function Odds() {
     );
   }
 
-  // Normalize bookmaker keys to match bookmakers.ts format
-  const normalizeBookmakerKey = (bookmaker: string): string => {
-    return bookmaker
-      .toLowerCase()
-      .replace(/\s+/g, '')
-      .replace(/\./g, '')
-      .replace(/\(au\)/g, '');
-  };
-
-  // Get all available bookmakers from the games
+  // All bookmakers that actually have lines in the current game data
   const allBookmakers = Array.from(new Set(games.flatMap(game =>
     game.odds.map(odd => normalizeBookmakerKey(odd.bookmaker))
   ))).sort();
 
-  // Only show bookmakers the user has enabled in Settings. Falls back to
-  // showing everything if settings haven't loaded yet or nothing is enabled -
-  // "0 columns" would look broken, not like a valid filtered state.
+  // Show only enabled bookmakers that have at least one game with actual odds.
+  // This means toggling a book on in Settings shows it if it has data, and
+  // hides it cleanly if it has no lines for the current sport.
+  // Falls back to all books from game data if settings haven't loaded yet.
   const bookmakers = settings?.enabled_bookmakers?.length
     ? allBookmakers.filter(bm => settings.enabled_bookmakers.includes(bm))
     : allBookmakers;
@@ -381,9 +372,10 @@ export function Odds() {
                     return (
                       <th key={bookmaker} className={`py-0.5 px-0.5 text-center min-w-[55px] border-b-2 border-slate-600 border-r border-slate-600`}>
                         <a
-                          href={bookmakerData?.url || '#'}
+                          href={getBookmakerUrl(bookmaker, activeSport)}
                           target="_blank"
                           rel="noopener noreferrer"
+                          referrerPolicy="no-referrer"
                           className="flex flex-col items-center gap-0 hover:opacity-80 transition-opacity cursor-pointer py-0.5"
                           title={`Visit ${displayName}`}
                         >
@@ -483,9 +475,10 @@ export function Odds() {
                               <div className="space-y-0.5">
                                 <div className="flex items-center justify-between gap-2 bg-slate-800/50 rounded px-3 py-0.5">
                                   <a
-                                    href={getBookmaker(normalizeBookmakerKey(bestOdds.away.bookmaker))?.url || '#'}
+                                    href={getBookmakerUrl(normalizeBookmakerKey(bestOdds.away.bookmaker), game.sport_key)}
                                     target="_blank"
                                     rel="noopener noreferrer"
+                                    referrerPolicy="no-referrer"
                                     className="hover:opacity-70 transition-opacity"
                                     title={`Visit ${getBookmaker(normalizeBookmakerKey(bestOdds.away.bookmaker))?.name}`}
                                   >
@@ -497,9 +490,10 @@ export function Odds() {
                                 </div>
                                 <div className="flex items-center justify-between gap-2 bg-slate-800/50 rounded px-3 py-0.5">
                                   <a
-                                    href={getBookmaker(normalizeBookmakerKey(bestOdds.home.bookmaker))?.url || '#'}
+                                    href={getBookmakerUrl(normalizeBookmakerKey(bestOdds.home.bookmaker), game.sport_key)}
                                     target="_blank"
                                     rel="noopener noreferrer"
+                                    referrerPolicy="no-referrer"
                                     className="hover:opacity-70 transition-opacity"
                                     title={`Visit ${getBookmaker(normalizeBookmakerKey(bestOdds.home.bookmaker))?.name}`}
                                   >
@@ -517,9 +511,10 @@ export function Odds() {
                               <div className="space-y-0.5">
                                 <div className="flex items-center justify-between gap-3 bg-slate-800/50 rounded px-3 py-0.5">
                                   <a
-                                    href={getBookmaker(normalizeBookmakerKey(bestOdds.away.bookmaker))?.url || '#'}
+                                    href={getBookmakerUrl(normalizeBookmakerKey(bestOdds.away.bookmaker), game.sport_key)}
                                     target="_blank"
                                     rel="noopener noreferrer"
+                                    referrerPolicy="no-referrer"
                                     className="hover:opacity-70 transition-opacity"
                                     title={`Visit ${getBookmaker(normalizeBookmakerKey(bestOdds.away.bookmaker))?.name}`}
                                   >
@@ -527,7 +522,7 @@ export function Odds() {
                                   </a>
                                   <div className="flex items-center gap-2">
                                     <div className="text-base font-bold text-slate-100 leading-tight">
-                                      {bestOdds.away.away_spread > 0 ? '+' : ''}{bestOdds.away.away_spread}
+                                      {bestOdds.away.away_spread != null ? `${bestOdds.away.away_spread > 0 ? '+' : ''}${bestOdds.away.away_spread}` : '—'}
                                     </div>
                                     <div className="text-sm text-green-300 font-semibold leading-tight">
                                       {formatOdds(bestOdds.away.away_spread_price)}
@@ -536,9 +531,10 @@ export function Odds() {
                                 </div>
                                 <div className="flex items-center justify-between gap-3 bg-slate-800/50 rounded px-3 py-0.5">
                                   <a
-                                    href={getBookmaker(normalizeBookmakerKey(bestOdds.home.bookmaker))?.url || '#'}
+                                    href={getBookmakerUrl(normalizeBookmakerKey(bestOdds.home.bookmaker), game.sport_key)}
                                     target="_blank"
                                     rel="noopener noreferrer"
+                                    referrerPolicy="no-referrer"
                                     className="hover:opacity-70 transition-opacity"
                                     title={`Visit ${getBookmaker(normalizeBookmakerKey(bestOdds.home.bookmaker))?.name}`}
                                   >
@@ -546,7 +542,7 @@ export function Odds() {
                                   </a>
                                   <div className="flex items-center gap-2">
                                     <div className="text-base font-bold text-slate-100 leading-tight">
-                                      {bestOdds.home.home_spread > 0 ? '+' : ''}{bestOdds.home.home_spread}
+                                      {bestOdds.home.home_spread != null ? `${bestOdds.home.home_spread > 0 ? '+' : ''}${bestOdds.home.home_spread}` : '—'}
                                     </div>
                                     <div className="text-sm text-green-300 font-semibold leading-tight">
                                       {formatOdds(bestOdds.home.home_spread_price)}
@@ -561,9 +557,10 @@ export function Odds() {
                               <div className="space-y-0.5">
                                 <div className="flex items-center gap-3 bg-slate-800/50 rounded px-3 py-0.5">
                                   <a
-                                    href={getBookmaker(normalizeBookmakerKey(bestOdds.over.bookmaker))?.url || '#'}
+                                    href={getBookmakerUrl(normalizeBookmakerKey(bestOdds.over.bookmaker), game.sport_key)}
                                     target="_blank"
                                     rel="noopener noreferrer"
+                                    referrerPolicy="no-referrer"
                                     className="hover:opacity-70 transition-opacity"
                                     title={`Visit ${getBookmaker(normalizeBookmakerKey(bestOdds.over.bookmaker))?.name}`}
                                   >
@@ -581,9 +578,10 @@ export function Odds() {
                                 </div>
                                 <div className="flex items-center gap-3 bg-slate-800/50 rounded px-3 py-0.5">
                                   <a
-                                    href={getBookmaker(normalizeBookmakerKey(bestOdds.under.bookmaker))?.url || '#'}
+                                    href={getBookmakerUrl(normalizeBookmakerKey(bestOdds.under.bookmaker), game.sport_key)}
                                     target="_blank"
                                     rel="noopener noreferrer"
+                                    referrerPolicy="no-referrer"
                                     className="hover:opacity-70 transition-opacity"
                                     title={`Visit ${getBookmaker(normalizeBookmakerKey(bestOdds.under.bookmaker))?.name}`}
                                   >
@@ -656,7 +654,7 @@ export function Odds() {
                                     title={`Track bet: ${formatTeamName(game.away_team, game.sport_key)} ${bookOdds.away_spread > 0 ? '+' : ''}${bookOdds.away_spread} ${formatOdds(bookOdds.away_spread_price)} on ${getBookmaker(bookmaker)?.name}`}
                                   >
                                     <div className="text-lg font-medium text-slate-100 leading-tight">
-                                      {bookOdds.away_spread > 0 ? '+' : ''}{bookOdds.away_spread}
+                                      {bookOdds.away_spread != null ? `${bookOdds.away_spread > 0 ? '+' : ''}${bookOdds.away_spread}` : '—'}
                                     </div>
                                     <div className="text-base text-slate-400 mt-0 leading-tight">
                                       {formatOdds(bookOdds.away_spread_price)}
@@ -675,7 +673,7 @@ export function Odds() {
                                     title={`Track bet: ${formatTeamName(game.home_team, game.sport_key)} ${bookOdds.home_spread > 0 ? '+' : ''}${bookOdds.home_spread} ${formatOdds(bookOdds.home_spread_price)} on ${getBookmaker(bookmaker)?.name}`}
                                   >
                                     <div className="text-lg font-medium text-slate-100 leading-tight">
-                                      {bookOdds.home_spread > 0 ? '+' : ''}{bookOdds.home_spread}
+                                      {bookOdds.home_spread != null ? `${bookOdds.home_spread > 0 ? '+' : ''}${bookOdds.home_spread}` : '—'}
                                     </div>
                                     <div className="text-base text-slate-400 mt-0 leading-tight">
                                       {formatOdds(bookOdds.home_spread_price)}

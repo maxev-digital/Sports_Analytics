@@ -1,372 +1,178 @@
-import { useState, useEffect, useRef } from 'react';
-import { LiveGame } from '../types';
-import { GameCardV2 as GameCard } from '../components/game-card/GameCardV2';
-import { LiveGamesTicker } from '../components/LiveGamesTicker';
-import { GolfOddsBoard } from '../components/GolfOddsBoard';
-import { sportEmojis } from '../utils/sportDetection';
+/**
+ * Live Games — Game Cards screen
+ * Fetches today's games from /api/games for active sports and renders
+ * them using GameCardV2. No WebSocket dependency — REST polling only.
+ */
+import { useState, useEffect } from 'react';
+import { GameCardMatchup } from '../components/game-card/GameCardMatchup';
+import { LiveGame, GameOdds } from '../types';
 import { getApiUrl } from '../config';
-import { useAlertMonitoring } from '../hooks/useAlertMonitoring';
-import { useAuth } from '../contexts/AuthContext';
 import { logger } from '../utils/logger';
+import '../styles/analytics.css';
 
-const SPORT_BACKGROUNDS: Record<string, string> = {
-  nfl:   '/Footballfield.jpg',
-  ncaaf: '/Footballfield.jpg',
-  nba:   '/Bballcourt.jpg',
-  ncaab: '/Bballcourt.jpg',
-  wnba:  '/Bballcourt.jpg',
-  nhl:   '/hockeyrink.jpg',
-  mlb:   '/baseballldiamiond.jpg',
-  atp:   '/Tennis_Court.jpg',
-  wta:   '/Tennis_Court.jpg',
-  pga:   '/GolfCourse.jpg',
-  mma:   '/MMARink.jpg',
+const ACTIVE_SPORTS: Array<{ key: string; label: string; emoji: string }> = [
+  { key: 'americanfootball_nfl',   label: 'NFL',  emoji: '🏈' },
+  { key: 'americanfootball_ncaaf', label: 'CFB',  emoji: '🏈' },
+  { key: 'baseball_mlb',           label: 'MLB',  emoji: '⚾' },
+  { key: 'basketball_nba',         label: 'NBA',  emoji: '🏀' },
+  { key: 'icehockey_nhl',          label: 'NHL',  emoji: '🏒' },
+  { key: 'basketball_ncaab',       label: 'NCAAB',emoji: '🏀' },
+];
+
+const EMPTY_PROJECTION = {
+  current_total: 0,
+  projected_final: 0,
+  pregame_total: 0,
+  current_live_total: null,
+  line_movement: null,
+  best_book_disparity: null,
+  best_disparity_amount: null,
+  edge: null,
+  confidence: 'LOW' as const,
+  recommendation: null,
+  strength_factor: null,
 };
 
+function apiGameToLiveGame(apiGame: any): LiveGame {
+  const odds: GameOdds[] = (apiGame.odds ?? []).map((o: any) => ({
+    bookmaker:        o.bookmaker,
+    total:            o.total ?? 0,
+    over_price:       o.over_price ?? 0,
+    under_price:      o.under_price ?? 0,
+    is_best_over:     o.is_best_over ?? false,
+    is_best_under:    o.is_best_under ?? false,
+    latency_ms:       null,
+    home_spread:      o.home_spread ?? null,
+    away_spread:      o.away_spread ?? null,
+    home_spread_price:o.home_spread_price ?? null,
+    away_spread_price:o.away_spread_price ?? null,
+    home_ml:          o.home_ml ?? null,
+    away_ml:          o.away_ml ?? null,
+  }));
+
+  return {
+    state: {
+      id:             apiGame.state.id,
+      sport_key:      apiGame.state.sport_key,
+      home_team:      { name: apiGame.state.home_team.name, score: apiGame.state.home_team.score },
+      away_team:      { name: apiGame.state.away_team.name, score: apiGame.state.away_team.score },
+      commence_time:  apiGame.state.commence_time,
+      status:         apiGame.state.status ?? 'upcoming',
+      quarter:        null,
+      time_remaining: null,
+    },
+    odds,
+    projection:           EMPTY_PROJECTION,
+    home_team_stats:      null,
+    away_team_stats:      null,
+    home_nfl_live_stats:  null,
+    away_nfl_live_stats:  null,
+    home_nfl_stats:       null,
+    away_nfl_stats:       null,
+    home_ncaaf_stats:     null,
+    away_ncaaf_stats:     null,
+    home_nhl_momentum:    null,
+    away_nhl_momentum:    null,
+    home_nhl_stats:       null,
+    away_nhl_stats:       null,
+    home_nba_momentum:    null,
+    away_nba_momentum:    null,
+    home_nfl_momentum:    null,
+    away_nfl_momentum:    null,
+    home_ncaaf_momentum:  null,
+    away_ncaaf_momentum:  null,
+    home_mlb_stats:       null,
+    away_mlb_stats:       null,
+    alternate_lines:      null,
+  };
+}
+
 export function LiveGames() {
-  const { username } = useAuth();
-  const [games, setGames] = useState<LiveGame[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedSport, setSelectedSport] = useState<string>('live');
-  const [picks, setPicks] = useState<any[]>([]);
-
-  // Real-time alert monitoring
-  const alertMonitoring = useAlertMonitoring(games);
-  const [pinnedGames, setPinnedGames] = useState<Set<string>>(() => {
-    // Load pinned games from localStorage on mount
-    const saved = localStorage.getItem('pinnedGames');
-    return saved ? new Set(JSON.parse(saved)) : new Set();
-  });
-  const gameRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
-
-  const fetchPicks = async () => {
-    try {
-      const response = await fetch(getApiUrl('predictions/pending'));
-      if (response.ok) {
-        const d = await response.json();
-        setPicks(d.predictions ?? []);
-      }
-    } catch (_) {}
-  };
+  const [activeSport, setActiveSport] = useState(ACTIVE_SPORTS[0].key);
+  const [games, setGames]             = useState<LiveGame[]>([]);
+  const [loading, setLoading]         = useState(true);
+  const [error, setError]             = useState<string | null>(null);
 
   useEffect(() => {
-    fetchGames();
-    fetchPicks();
-    const interval = setInterval(fetchGames, 15000); // PERF FIX: Reduced from 5s to 15s (70% fewer requests)
-    const picksInterval = setInterval(fetchPicks, 60000); // refresh picks every minute
-    return () => { clearInterval(interval); clearInterval(picksInterval); };
-  }, []);
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
 
-  // Save pinned games to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem('pinnedGames', JSON.stringify(Array.from(pinnedGames)));
-  }, [pinnedGames]);
+    fetch(getApiUrl(`games?user_id=default&sport_key=${activeSport}`))
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then(data => {
+        if (cancelled) return;
+        const mapped = (data as any[]).map(apiGameToLiveGame);
+        mapped.sort((a, b) =>
+          new Date(a.state.commence_time).getTime() - new Date(b.state.commence_time).getTime()
+        );
+        setGames(mapped);
+        logger.info(`[LiveGames] ${mapped.length} games for ${activeSport}`);
+      })
+      .catch(err => {
+        if (!cancelled) setError(`Failed to load games (${err})`);
+      })
+      .finally(() => { if (!cancelled) setLoading(false); });
 
-  const togglePin = (gameId: string) => {
-    setPinnedGames(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(gameId)) {
-        newSet.delete(gameId);
-      } else {
-        newSet.add(gameId);
-      }
-      return newSet;
-    });
-  };
-
-  const fetchGames = async () => {
-    try {
-      const url = getApiUrl(`games?user_id=default`);
-      logger.info('🔄 Fetching games from:', url);
-      const response = await fetch(url);
-      logger.info('✅ Response received:', response.status, response.statusText);
-
-      if (!response.ok) {
-        logger.error('❌ Response not OK:', response.status);
-        setLoading(false);
-        return;
-      }
-
-      const data = await response.json();
-      logger.info('📊 Fetched games:', data);
-      logger.info('📊 Number of games:', data.length);
-      if (data.length > 0) {
-        logger.info('📊 First game structure:', data[0]);
-      }
-      setGames(data);
-      setLoading(false);
-    } catch (error) {
-      logger.error('❌ Error fetching games:', error);
-      logger.error('❌ Error details:', error instanceof Error ? error.message : String(error));
-      setLoading(false);
-    }
-  };
-
-  const picksMap = picks.reduce((acc: Record<string, any[]>, pick: any) => {
-    const key = `${(pick.home_team || '').toLowerCase()}|${(pick.away_team || '').toLowerCase()}`;
-    if (!acc[key]) acc[key] = [];
-    acc[key].push(pick);
-    return acc;
-  }, {});
-
-  const getGamePicks = (game: LiveGame) => {
-    const key = `${game.state.home_team.name.toLowerCase()}|${game.state.away_team.name.toLowerCase()}`;
-    return picksMap[key] || [];
-  };
-
-  const sports = [
-    { key: 'live', label: 'All Games', emoji: null },
-    { key: 'nfl', label: 'NFL', filter: 'americanfootball_nfl', emoji: sportEmojis.NFL },
-    { key: 'ncaaf', label: 'NCAAF', filter: 'americanfootball_ncaaf', emoji: sportEmojis.NCAAF },
-    { key: 'nba', label: 'NBA', filter: 'basketball_nba', emoji: sportEmojis.NBA },
-    { key: 'ncaab', label: 'NCAAB', filter: 'basketball_ncaab', emoji: sportEmojis.NCAAB },
-    { key: 'nhl', label: 'NHL', filter: 'icehockey_nhl', emoji: sportEmojis.NHL },
-    { key: 'mlb', label: 'MLB', filter: 'baseball_mlb', emoji: sportEmojis.MLB },
-    { key: 'wnba', label: 'WNBA', filter: 'basketball_wnba', emoji: sportEmojis.NBA },
-    { key: 'atp', label: 'ATP', filter: 'tennis_atp_wimbledon', emoji: sportEmojis.TENNIS },
-    { key: 'wta', label: 'WTA', filter: 'tennis_wta_wimbledon', emoji: sportEmojis.TENNIS },
-    { key: 'mma', label: 'MMA', filter: 'mma_mixed_martial_arts', emoji: sportEmojis.MMA },
-    { key: 'pga', label: 'PGA', filter: 'golf_pga', emoji: sportEmojis.PGA },
-  ];
-
-  const filteredGames = selectedSport === 'live'
-    ? games  // Show all games when "All Games" is selected
-    : games.filter(game => {
-        const sport = sports.find(s => s.key === selectedSport);
-        return sport && game.state.sport_key.includes(sport.filter ?? '');
-      });
-
-  // Check if current selection is tennis (ATP or WTA)
-  const isTennisSelected = selectedSport === 'atp' || selectedSport === 'wta' ||
-    (selectedSport === 'all' && filteredGames.some(g => g.state.sport_key.includes('tennis')));
-
-  // Group tennis games by tournament
-  const groupTennisByTournament = (games: LiveGame[]) => {
-    const grouped: Record<string, LiveGame[]> = {};
-    games.forEach(game => {
-      const tournament = game.state.tournament || 'Other Matches';
-      if (!grouped[tournament]) {
-        grouped[tournament] = [];
-      }
-      grouped[tournament].push(game);
-    });
-
-    // Sort each tournament group: live games first, then by commence_time
-    Object.keys(grouped).forEach(tournament => {
-      grouped[tournament].sort((a, b) => {
-        if (a.state.status === 'live' && b.state.status !== 'live') return -1;
-        if (a.state.status !== 'live' && b.state.status === 'live') return 1;
-        return new Date(a.state.commence_time).getTime() - new Date(b.state.commence_time).getTime();
-      });
-    });
-
-    return grouped;
-  };
-
-  // Sort helper: pinned games first, then by status
-  const sortByPinned = (games: LiveGame[]) => {
-    return [...games].sort((a, b) => {
-      const aPinned = pinnedGames.has(a.state.id);
-      const bPinned = pinnedGames.has(b.state.id);
-      if (aPinned && !bPinned) return -1;
-      if (!aPinned && bPinned) return 1;
-      return 0; // Keep original order if both pinned or both unpinned
-    });
-  };
-
-  const liveGames = sortByPinned(filteredGames.filter(g => g.state.status === 'live'));
-  const upcomingGames = sortByPinned(filteredGames.filter(g => g.state.status === 'upcoming'));
-
-  logger.info('🎮 Selected sport:', selectedSport);
-  logger.info('🎮 Total games:', games.length);
-  logger.info('🎮 Filtered games:', filteredGames.length);
-  logger.info('🎮 Live games:', liveGames.length);
-  logger.info('🎮 Upcoming games:', upcomingGames.length);
-
-  // Scroll to game when ticker item is clicked
-  const handleGameClick = (gameId: string) => {
-    const element = gameRefs.current[gameId];
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-  };
-
-  // For tennis, group by tournament and sort each tournament's games
-  const tennisGames = filteredGames.filter(g => g.state.sport_key.includes('tennis'));
-  const tennisByTournament = groupTennisByTournament(tennisGames);
-  // Sort games within each tournament by pinned status
-  Object.keys(tennisByTournament).forEach(tournament => {
-    tennisByTournament[tournament] = sortByPinned(tennisByTournament[tournament]);
-  });
-  const isShowingOnlyTennis = (selectedSport === 'atp' || selectedSport === 'wta') && tennisGames.length > 0;
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-xl text-slate-300">Loading games...</div>
-      </div>
-    );
-  }
-
-  const bgImage = SPORT_BACKGROUNDS[selectedSport];
+    return () => { cancelled = true; };
+  }, [activeSport]);
 
   return (
-    <div
-      className="min-h-screen"
-      style={bgImage ? {
-        backgroundImage: `linear-gradient(rgba(0,0,0,0.72), rgba(0,0,0,0.72)), url(${bgImage})`,
-        backgroundSize: 'cover',
-        backgroundAttachment: 'fixed',
-        backgroundPosition: 'center',
-      } : { background: 'linear-gradient(135deg, #000 0%, #0f172a 50%, #000 100%)' }}
-    >
-      {/* Sport Filter Tabs */}
-      <div className="sticky top-0 z-10 bg-gradient-to-br from-red-900 via-red-950 to-black border-b border-red-800">
-        <div className="max-w-7xl mx-auto px-4 py-3">
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide">
-            {sports.map(sport => (
-              <button
-                key={sport.key}
-                onClick={() => setSelectedSport(sport.key)}
-                className={`px-3 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
-                  selectedSport === sport.key
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
-                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                }`}
-              >
-                {sport.emoji && (
-                  <img
-                    src={sport.emoji}
-                    alt={sport.label}
-                    className="w-4 h-4"
-                    style={{ imageRendering: 'crisp-edges' }}
-                  />
-                )}
-                {sport.label}
-              </button>
-            ))}
-          </div>
-        </div>
+    <div className="analytics-page p-4">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-slate-100 mb-1" style={{ letterSpacing: '-0.02em' }}>
+          GAME CARDS
+        </h1>
+        <p className="text-slate-400 text-sm">Today's games with live odds across all books</p>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        {/* Golf Odds Board — replaces game cards for PGA tab */}
-        {selectedSport === 'pga' && <GolfOddsBoard />}
+      {/* Sport tabs */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        {ACTIVE_SPORTS.map(s => (
+          <button
+            key={s.key}
+            onClick={() => setActiveSport(s.key)}
+            className={`px-3 py-1.5 rounded text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+              activeSport === s.key
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'
+                : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
+            }`}
+          >
+            <span>{s.emoji}</span> {s.label}
+          </button>
+        ))}
+      </div>
 
-        {selectedSport !== 'pga' && <>
-        {/* Live Games Ticker */}
-        <LiveGamesTicker games={filteredGames} onGameClick={handleGameClick} />
+      {loading && (
+        <div className="flex items-center justify-center py-20 text-slate-400">
+          Loading games...
+        </div>
+      )}
 
-        {/* Tennis Tournament View */}
-        {isShowingOnlyTennis && Object.keys(tennisByTournament).length > 0 ? (
-          <div>
-            {Object.entries(tennisByTournament).map(([tournament, tournamentGames]) => (
-              <div key={tournament} className="mb-8">
-                {/* Tournament Header */}
-                <div className="flex items-center gap-3 mb-4">
-                  <img
-                    src="https://em-content.zobj.net/source/microsoft-teams/363/tennis_1f3be.png"
-                    alt="Tennis"
-                    className="w-8 h-8"
-                    style={{ imageRendering: 'crisp-edges' }}
-                  />
-                  <h2 className="text-2xl font-bold text-slate-100">{tournament}</h2>
-                  <span className="text-sm text-slate-400">({tournamentGames.length} matches)</span>
-                  {tournamentGames.some(g => g.state.status === 'live') && (
-                    <div className="flex items-center gap-1.5 ml-2">
-                      <div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse"></div>
-                      <span className="text-xs text-red-400 font-semibold">LIVE</span>
-                    </div>
-                  )}
-                </div>
+      {error && !loading && (
+        <div className="flex items-center justify-center py-20 text-red-400">{error}</div>
+      )}
 
-                {/* Tournament Matches */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {tournamentGames.map((game) => (
-                    <GameCard
-                      key={game.state.id}
-                      game={game}
-                      isPinned={pinnedGames.has(game.state.id)}
-                      onTogglePin={togglePin}
-                      matchingPicks={getGamePicks(game)}
-                    />
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <>
-            {/* Live Games Section (Non-Tennis) */}
-            {liveGames.length > 0 && (
-              <div className="mb-8">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                    <h2 className="text-2xl font-bold text-slate-100">Live Games</h2>
-                  </div>
-                  <span className="text-sm text-slate-400">({liveGames.length})</span>
-                </div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {liveGames.map((game) => (
-                    <div key={game.state.id} ref={(el) => {gameRefs.current[game.state.id] = el}}>
-                      <GameCard
-                        game={game}
-                        isPinned={pinnedGames.has(game.state.id)}
-                        onTogglePin={togglePin}
-                        matchingPicks={getGamePicks(game)}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+      {!loading && !error && games.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-20 gap-3">
+          <span className="text-4xl">📭</span>
+          <p className="text-slate-400">No games scheduled for this sport today.</p>
+        </div>
+      )}
 
-            {/* Upcoming Games Section (Non-Tennis) */}
-            {upcomingGames.length > 0 && (
-              <div>
-                <div className="flex items-center gap-3 mb-4">
-                  <h2 className="text-2xl font-bold text-slate-100">Upcoming Games</h2>
-                  <span className="text-sm text-slate-400">({upcomingGames.length})</span>
-                </div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {upcomingGames.map((game) => (
-                    <GameCard
-                      key={game.state.id}
-                      game={game}
-                      isPinned={pinnedGames.has(game.state.id)}
-                      onTogglePin={togglePin}
-                      matchingPicks={getGamePicks(game)}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-          </>
-        )}
+      {!loading && !error && games.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {games.map(game => (
+            <GameCardMatchup
+              key={game.state.id}
+              game={game}
+            />
+          ))}
+        </div>
+      )}
 
-        {/* No Games Message */}
-        {filteredGames.length === 0 && selectedSport !== 'pga' && (
-          <div className="text-center py-20">
-            {(() => {
-              const currentSport = sports.find(s => s.key === selectedSport);
-              const emojiUrl = currentSport?.emoji || sportEmojis.NBA;
-              return (
-                <img
-                  src={emojiUrl}
-                  alt="No games"
-                  className="w-16 h-16 mx-auto mb-4"
-                  style={{ imageRendering: 'crisp-edges' }}
-                />
-              );
-            })()}
-            <h3 className="text-xl font-semibold text-slate-300 mb-2">
-              No {selectedSport !== 'all' ? sports.find(s => s.key === selectedSport)?.label : ''} games available
-            </h3>
-            <p className="text-slate-400">Check back later for more games</p>
-          </div>
-        )}
-        </>}
+      <div className="mt-4 text-xs text-slate-600 text-center">
+        {games.length} games · odds cached 24h · data via The Odds API
       </div>
     </div>
   );

@@ -1,8 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Cell, ReferenceLine,
-} from 'recharts';
+import ReactECharts from 'echarts-for-react';
 import '../styles/analytics.css';
 import { getApiUrl } from '../config';
 import { logger } from '../utils/logger';
@@ -60,20 +57,6 @@ const CARD_BG    = 'oklch(24% 0 0)';
 const SIDEBAR_BG = 'oklch(20.5% 0 0)';
 const BORDER     = 'oklch(100% 0 0 / .1)';
 
-// Custom dark tooltip for Recharts
-function DarkTooltip({ active, payload, label }: any) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div style={{ background: SIDEBAR_BG, border: `1px solid ${BORDER}`, borderRadius: 6, padding: '10px 14px', fontSize: '0.78rem' }}>
-      <p style={{ color: 'oklch(98.5% 0 0)', fontWeight: 700, marginBottom: 4 }}>{label}</p>
-      {payload.map((p: any) => (
-        <p key={p.dataKey} style={{ color: p.color || MUTED_FG, margin: '2px 0' }}>
-          {p.name}: <strong>{typeof p.value === 'number' ? p.value.toFixed(2) : p.value}</strong>
-        </p>
-      ))}
-    </div>
-  );
-}
 
 function colorDiff(val: number) {
   if (val > 0.5)  return 'val-pos';
@@ -261,77 +244,108 @@ export function TeamRankings() {
             {/* Run/Point Differential Bar Chart */}
             <div className="data-table-wrap" style={{ padding: '20px 16px' }}>
               <p className="section-title" style={{ marginBottom: 16 }}>Scoring Differential — Top 15</p>
-              <ResponsiveContainer width="100%" height={320}>
-                <BarChart data={chartData} margin={{ top: 4, right: 16, left: 0, bottom: 60 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={BORDER} vertical={false} />
-                  <XAxis
-                    dataKey="abbr"
-                    tick={{ fill: MUTED_FG, fontSize: 11, fontFamily: 'Nunito' }}
-                    axisLine={{ stroke: BORDER }}
-                    tickLine={false}
-                    angle={-45}
-                    textAnchor="end"
-                    interval={0}
-                  />
-                  <YAxis
-                    tick={{ fill: MUTED_FG, fontSize: 11, fontFamily: 'Nunito' }}
-                    axisLine={false}
-                    tickLine={false}
-                    tickFormatter={v => v > 0 ? `+${v}` : String(v)}
-                  />
-                  <Tooltip content={<DarkTooltip />} />
-                  <ReferenceLine y={0} stroke={BORDER} strokeDasharray="4 4" />
-                  <Bar dataKey="differential" name="Differential" radius={[3, 3, 0, 0]}>
-                    {chartData.map(entry => (
-                      <Cell
-                        key={entry.abbr}
-                        fill={entry.differential >= 0 ? EMERALD : BRAND_RED}
-                        fillOpacity={0.85}
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+              <ReactECharts
+                option={{
+                  backgroundColor: 'transparent',
+                  grid: { top: 8, right: 16, bottom: 56, left: 8, containLabel: true },
+                  xAxis: {
+                    type: 'category',
+                    data: chartData.map(t => t.abbr),
+                    axisLabel: { color: '#9ca3af', fontSize: 11, rotate: -45, interval: 0 },
+                    axisLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } },
+                    axisTick: { show: false },
+                  },
+                  yAxis: {
+                    type: 'value',
+                    axisLabel: { color: '#9ca3af', fontSize: 11, formatter: (v: number) => v > 0 ? `+${v}` : String(v) },
+                    axisLine: { show: false },
+                    axisTick: { show: false },
+                    splitLine: { lineStyle: { color: 'rgba(255,255,255,0.06)' } },
+                  },
+                  tooltip: {
+                    backgroundColor: '#1a1a1a',
+                    borderColor: 'rgba(255,255,255,0.12)',
+                    textStyle: { color: '#e5e7eb', fontSize: 12 },
+                  },
+                  series: [{
+                    type: 'bar',
+                    barMaxWidth: 40,
+                    data: chartData.map(t => ({
+                      name: t.abbr,
+                      value: t.differential,
+                      itemStyle: {
+                        color: t.differential >= 0
+                          ? { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: '#4ade80' }, { offset: 1, color: 'rgba(74,222,128,0.4)' }] }
+                          : { type: 'linear', x: 0, y: 1, x2: 0, y2: 0, colorStops: [{ offset: 0, color: '#ef4444' }, { offset: 1, color: 'rgba(239,68,68,0.4)' }] },
+                        borderRadius: [3, 3, 0, 0],
+                      },
+                    })),
+                    markLine: {
+                      silent: true,
+                      symbol: 'none',
+                      data: [{ yAxis: 0 }],
+                      lineStyle: { color: 'rgba(255,255,255,0.2)', type: 'dashed', width: 1 },
+                      label: { show: false },
+                    },
+                  }],
+                }}
+                style={{ height: 320 }}
+              />
             </div>
 
             {/* Win % Bar Chart */}
             <div className="data-table-wrap" style={{ padding: '20px 16px' }}>
               <p className="section-title" style={{ marginBottom: 16 }}>Win Percentage — All Teams</p>
-              <ResponsiveContainer width="100%" height={320}>
-                <BarChart
-                  data={[...teams].sort((a, b) => b.pct - a.pct)}
-                  margin={{ top: 4, right: 16, left: 0, bottom: 60 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke={BORDER} vertical={false} />
-                  <XAxis
-                    dataKey="abbr"
-                    tick={{ fill: MUTED_FG, fontSize: 11, fontFamily: 'Nunito' }}
-                    axisLine={{ stroke: BORDER }}
-                    tickLine={false}
-                    angle={-45}
-                    textAnchor="end"
-                    interval={0}
-                  />
-                  <YAxis
-                    domain={[0, 1]}
-                    tick={{ fill: MUTED_FG, fontSize: 11, fontFamily: 'Nunito' }}
-                    axisLine={false}
-                    tickLine={false}
-                    tickFormatter={v => `${(v * 100).toFixed(0)}%`}
-                  />
-                  <Tooltip content={<DarkTooltip />} formatter={(v: number) => `${(v * 100).toFixed(1)}%`} />
-                  <ReferenceLine y={0.5} stroke={BORDER} strokeDasharray="4 4" />
-                  <Bar dataKey="pct" name="Win %" radius={[3, 3, 0, 0]}>
-                    {[...teams].sort((a, b) => b.pct - a.pct).map(entry => (
-                      <Cell
-                        key={entry.abbr}
-                        fill={entry.pct >= 0.5 ? EMERALD : BRAND_RED}
-                        fillOpacity={0.85}
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+              <ReactECharts
+                option={{
+                  backgroundColor: 'transparent',
+                  grid: { top: 8, right: 16, bottom: 56, left: 8, containLabel: true },
+                  xAxis: {
+                    type: 'category',
+                    data: [...teams].sort((a, b) => b.pct - a.pct).map(t => t.abbr),
+                    axisLabel: { color: '#9ca3af', fontSize: 11, rotate: -45, interval: 0 },
+                    axisLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } },
+                    axisTick: { show: false },
+                  },
+                  yAxis: {
+                    type: 'value',
+                    min: 0,
+                    max: 1,
+                    axisLabel: { color: '#9ca3af', fontSize: 11, formatter: (v: number) => `${(v * 100).toFixed(0)}%` },
+                    axisLine: { show: false },
+                    axisTick: { show: false },
+                    splitLine: { lineStyle: { color: 'rgba(255,255,255,0.06)' } },
+                  },
+                  tooltip: {
+                    backgroundColor: '#1a1a1a',
+                    borderColor: 'rgba(255,255,255,0.12)',
+                    textStyle: { color: '#e5e7eb', fontSize: 12 },
+                    valueFormatter: (v: number) => `${(v * 100).toFixed(1)}%`,
+                  },
+                  series: [{
+                    type: 'bar',
+                    barMaxWidth: 28,
+                    data: [...teams].sort((a, b) => b.pct - a.pct).map(t => ({
+                      name: t.abbr,
+                      value: t.pct,
+                      itemStyle: {
+                        color: t.pct >= 0.5
+                          ? { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: '#4ade80' }, { offset: 1, color: 'rgba(74,222,128,0.4)' }] }
+                          : { type: 'linear', x: 0, y: 1, x2: 0, y2: 0, colorStops: [{ offset: 0, color: '#ef4444' }, { offset: 1, color: 'rgba(239,68,68,0.4)' }] },
+                        borderRadius: [3, 3, 0, 0],
+                      },
+                    })),
+                    markLine: {
+                      silent: true,
+                      symbol: 'none',
+                      data: [{ yAxis: 0.5 }],
+                      lineStyle: { color: 'rgba(255,255,255,0.2)', type: 'dashed', width: 1 },
+                      label: { show: false },
+                    },
+                  }],
+                }}
+                style={{ height: 320 }}
+              />
             </div>
 
           </div>

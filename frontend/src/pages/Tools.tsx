@@ -5,14 +5,11 @@ import { KellyCriterionCalculator } from '../components/tools/KellyCriterionCalc
 import { ParlayCalculator } from '../components/tools/ParlayCalculator';
 import { HedgeCalculator } from '../components/tools/HedgeCalculator';
 import { DerivativeMarketsCalculator } from '../components/tools/DerivativeMarketsCalculator';
-import { LineMovementTracker } from '../components/tools/LineMovementTracker';
-import { SteamMoveDetector } from '../components/tools/SteamMoveDetector';
 import { MarketConsensusLine } from '../components/tools/MarketConsensusLine';
 import { ClosingLineValueTracker } from '../components/tools/ClosingLineValueTracker';
-import { ArbitrageFinder } from '../components/tools/ArbitrageFinder';
 import { WeatherImpactTool } from '../components/tools/WeatherImpactTool';
 
-type ToolId = 'novig' | 'ev' | 'kelly' | 'parlay' | 'hedge' | 'derivative' | 'linetracker' | 'steam' | 'consensus' | 'clv' | 'arbitrage' | 'weather' | null;
+type ToolId = 'novig' | 'ev' | 'kelly' | 'parlay' | 'hedge' | 'derivative' | 'consensus' | 'clv' | 'weather' | null;
 
 export function Tools() {
   const [activeTool, setActiveTool] = useState<ToolId>(null);
@@ -51,22 +48,6 @@ export function Tools() {
       component: DerivativeMarketsCalculator
     },
     {
-      id: 'linetracker' as ToolId,
-      name: 'Line Movement Tracker',
-      description: 'Monitor how lines move across all sportsbooks',
-      status: 'Active',
-      category: 'Market Analysis',
-      component: LineMovementTracker
-    },
-    {
-      id: 'steam' as ToolId,
-      name: 'Steam Move Detector',
-      description: 'Alert when sharp money hits the market',
-      status: 'Active',
-      category: 'Market Analysis',
-      component: SteamMoveDetector
-    },
-    {
       id: 'consensus' as ToolId,
       name: 'Market Consensus Line',
       description: 'Sharp line consensus from market makers',
@@ -81,14 +62,6 @@ export function Tools() {
       status: 'Active',
       category: 'Performance',
       component: ClosingLineValueTracker
-    },
-    {
-      id: 'arbitrage' as ToolId,
-      name: 'Arbitrage Finder',
-      description: 'Find guaranteed profit opportunities across books',
-      status: 'Active',
-      category: 'Opportunities',
-      component: ArbitrageFinder
     },
     {
       id: 'hedge' as ToolId,

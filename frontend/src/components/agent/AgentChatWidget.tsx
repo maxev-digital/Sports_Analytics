@@ -1,25 +1,109 @@
+import { useCallback } from 'react';
 import { useAgentContext } from '../../contexts/AgentContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAgentChat } from '../../hooks/useAgentChat';
 import { ChatPanel } from './ChatPanel';
 
+// Width of the always-visible blue divider strip
+const DIVIDER_W = 28;
+
 export function AgentChatWidget() {
-  const { isOpen, openWidget, closeWidget } = useAgentContext();
-  const { token } = useAuth();
+  const { isOpen, openWidget, closeWidget, panelWidth, setPanelWidth } = useAgentContext();
+  const { token, isAuthenticated, loading: authLoading } = useAuth();
   const chatState = useAgentChat(isOpen, token);
   const { mode, setMode } = chatState;
+
+  // Anchor-based drag: startX + startWidth are captured once on mousedown.
+  // Each mousemove computes new width relative to the original position,
+  // avoiding the stale-closure bug that plagued the delta approach.
+  const handleDragStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = panelWidth;
+
+    const onMove = (ev: MouseEvent) => {
+      // Dragging LEFT increases width; dragging RIGHT decreases it
+      const newWidth = startWidth + (startX - ev.clientX);
+      setPanelWidth(newWidth);
+    };
+
+    const onUp = () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  }, [panelWidth, setPanelWidth]);
+
+  const handleDividerMouseDown = useCallback((e: React.MouseEvent) => {
+    if (isOpen) {
+      handleDragStart(e);
+    } else {
+      openWidget();
+    }
+  }, [isOpen, handleDragStart, openWidget]);
 
   return (
     <>
       {/*
-        Side panel — always mounted so the CSS slide transition plays.
-        Positioned below the sticky nav (top-20 = 80px = nav h-20).
-        translate-x-full when closed so it's off-screen but still in the DOM.
+        Always-visible blue divider.
+        - Panel closed → sits at right: 0, cursor pointer, click opens panel
+        - Panel open   → sits at right: panelWidth, cursor col-resize, drag resizes
+        Transitions in sync with the panel slide (both 300ms ease-in-out).
       */}
       <div
-        className={`fixed right-0 top-20 h-[calc(100vh-5rem)] w-80 z-40 bg-slate-900 border-l border-slate-700 shadow-2xl shadow-black/60 flex flex-col overflow-hidden transition-transform duration-300 ease-in-out ${
+        className="fixed top-20 bottom-0 z-50 bg-gradient-to-b from-blue-800 via-blue-600 to-blue-800 hover:from-blue-600 hover:via-blue-400 hover:to-blue-600 flex flex-col items-center justify-center gap-3 transition-[right] duration-300 ease-in-out shadow-[-3px_0_12px_rgba(37,99,235,0.5)]"
+        style={{
+          width: DIVIDER_W,
+          right: isOpen ? panelWidth : 0,
+          cursor: isOpen ? 'col-resize' : 'pointer',
+        }}
+        onMouseDown={handleDividerMouseDown}
+        title={isOpen ? 'Drag to resize' : 'Open MAX EV Analyst'}
+        role="button"
+        aria-label={isOpen ? 'Resize analyst panel' : 'Open analyst panel'}
+      >
+        {/* Robot / bot icon */}
+        <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <rect x="3" y="7" width="18" height="13" rx="2" strokeWidth="1.5" />
+          <circle cx="9" cy="13" r="1.5" fill="white" stroke="none" />
+          <circle cx="15" cy="13" r="1.5" fill="white" stroke="none" />
+          <path strokeLinecap="round" strokeWidth="1.5" d="M9 17h6" />
+          <path strokeLinecap="round" strokeWidth="1.5" d="M12 7V4" />
+          <circle cx="12" cy="3" r="1" fill="white" stroke="none" />
+        </svg>
+
+        {/* Horizontal grip lines */}
+        <div className="flex flex-col gap-1">
+          <div className="h-px w-4 bg-white/70 rounded-full" />
+          <div className="h-px w-4 bg-white/70 rounded-full" />
+          <div className="h-px w-4 bg-white/70 rounded-full" />
+        </div>
+
+        {/* Chevron — points left (open) / right (closed) */}
+        <svg
+          className={`w-3.5 h-3.5 text-blue-200 transition-transform duration-300 ${isOpen ? '' : 'rotate-180'}`}
+          fill="none" stroke="currentColor" viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+        </svg>
+      </div>
+
+      {/*
+        Side panel.
+        Always mounted so the CSS slide transition plays.
+        translate-x-full when closed keeps it off-screen without unmounting.
+      */}
+      <div
+        className={`fixed right-0 top-20 h-[calc(100vh-5rem)] z-40 bg-slate-900 shadow-2xl shadow-black/60 flex flex-col overflow-hidden transition-transform duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : 'translate-x-full pointer-events-none'
         }`}
+        style={{ width: panelWidth }}
       >
         {/* Panel header */}
         <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-900/80 to-slate-900 border-b border-slate-700 flex-shrink-0">
@@ -32,38 +116,40 @@ export function AgentChatWidget() {
             className="text-slate-400 hover:text-white transition-colors p-0.5"
             title="Collapse panel"
           >
-            {/* Chevron-right — indicates collapsing toward the right */}
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </button>
         </div>
 
-        <ChatPanel mode={mode} onModeChange={setMode} chatState={chatState} />
+        {authLoading ? (
+          <div className="flex items-center justify-center flex-grow">
+            <div className="w-5 h-5 rounded-full border-2 border-blue-400 border-t-transparent animate-spin" />
+          </div>
+        ) : isAuthenticated && token ? (
+          <ChatPanel mode={mode} onModeChange={setMode} chatState={chatState} token={token} />
+        ) : (
+          <div className="flex flex-col items-center justify-center flex-grow gap-4 px-6 text-center">
+            <div className="w-12 h-12 rounded-full bg-blue-900/50 flex items-center justify-center">
+              <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                />
+              </svg>
+            </div>
+            <div>
+              <p className="text-white font-bold text-sm mb-1">Sign in to access the analyst</p>
+              <p className="text-slate-400 text-xs">MAX EV Analyst is available to registered members.</p>
+            </div>
+            <a
+              href="#/login"
+              className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-lg transition-colors text-center"
+            >
+              Sign In
+            </a>
+          </div>
+        )}
       </div>
-
-      {/*
-        Vertical tab trigger — visible when panel is collapsed.
-        Fades out and slides right as the panel opens.
-      */}
-      <button
-        onClick={openWidget}
-        className={`fixed right-0 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-2 py-5 rounded-l-xl shadow-lg shadow-blue-500/30 transition-all duration-300 ${
-          isOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'
-        }`}
-        title="Open MAX EV Analyst"
-      >
-        {/* Brain / analyst icon */}
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-            d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-          />
-        </svg>
-        {/* Chevron-left indicating panel opens to the left */}
-        <svg className="w-3 h-3 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-        </svg>
-      </button>
     </>
   );
 }

@@ -1,20 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { AdvancedSystem } from '../types';
 import { SystemStatusBadge } from './SystemStatusBadge';
-import { useAuth } from '../contexts/AuthContext';
-import { useToast } from './Toast';
-import { toggleSystemAlerts, getSystemPreference } from '../api/alertPreferences';
-import { logger } from '../utils/logger';
 
 interface AdvancedSystemCardProps {
   system: AdvancedSystem;
 }
 
 export const AdvancedSystemCard: React.FC<AdvancedSystemCardProps> = ({ system }) => {
-  const { username } = useAuth();
-  const { showToast } = useToast();
-  const [isEnabled, setIsEnabled] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const difficultyColors = {
     EASY: 'bg-green-600 text-white',
     MEDIUM: 'bg-yellow-600 text-white',
@@ -32,46 +24,6 @@ export const AdvancedSystemCard: React.FC<AdvancedSystemCardProps> = ({ system }
       'baseball_mlb': 'MLB'
     };
     return sportMap[sportKey] || sportKey;
-  };
-
-  // Load alert status on mount
-  useEffect(() => {
-    const loadAlertStatus = async () => {
-      if (!username) return;
-
-      try {
-        const prefs = await getSystemPreference(username, system.id);
-        if (prefs) {
-          setIsEnabled(prefs.alerts_enabled);
-        }
-      } catch (error) {
-        logger.error('Failed to load alert status:', error);
-      }
-    };
-
-    loadAlertStatus();
-  }, [username, system.id]);
-
-  // Handle toggle alerts
-  const handleToggleAlerts = async () => {
-    if (!username) {
-      showToast('Please log in to enable alerts', 'warning');
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const response = await toggleSystemAlerts(username, system.id);
-      setIsEnabled(response.alerts_enabled);
-
-      const action = response.alerts_enabled ? 'enabled' : 'disabled';
-      showToast(`Alerts ${action} for ${system.name}`, 'success');
-    } catch (error) {
-      logger.error('Failed to toggle alerts:', error);
-      showToast('Failed to update alert preferences', 'error');
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   return (
@@ -102,12 +54,6 @@ export const AdvancedSystemCard: React.FC<AdvancedSystemCardProps> = ({ system }
               <div className="bg-slate-700 rounded px-3 py-2">
                 <div className="text-xs text-slate-400">ROI</div>
                 <div className="text-lg font-bold text-green-400">+{system.performance.roi}%</div>
-              </div>
-            )}
-            {system.performance.alerts && (
-              <div className="bg-slate-700 rounded px-3 py-2">
-                <div className="text-xs text-slate-400">Alerts</div>
-                <div className="text-lg font-bold text-blue-400">{system.performance.alerts}</div>
               </div>
             )}
             {system.performance.games && (
@@ -149,25 +95,12 @@ export const AdvancedSystemCard: React.FC<AdvancedSystemCardProps> = ({ system }
         ))}
       </div>
 
-      {/* Action Buttons */}
+      {/* Action Button */}
       <div className="flex gap-2">
         {(system.status === 'live' || system.status === 'proven' || system.status === 'active') ? (
-          <>
-            <button
-              onClick={handleToggleAlerts}
-              disabled={isLoading}
-              className={`flex-1 px-3 py-2 rounded font-semibold text-sm transition-all ${
-                isEnabled
-                  ? 'bg-green-600 hover:bg-green-700 text-white'
-                  : 'bg-blue-600 hover:bg-blue-700 text-white'
-              } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              {isLoading ? 'Loading...' : isEnabled ? '✓ Alerts Enabled' : 'Enable Alerts'}
-            </button>
-            <button className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded font-semibold text-sm transition-colors">
-              Details
-            </button>
-          </>
+          <button className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded font-semibold text-sm transition-colors">
+            Details
+          </button>
         ) : (
           <button
             className="flex-1 px-3 py-2 bg-gray-600 text-gray-400 rounded font-semibold text-sm cursor-not-allowed"

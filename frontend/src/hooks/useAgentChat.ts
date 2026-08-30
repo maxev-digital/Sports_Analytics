@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getApiUrl } from '../config';
 import { logger } from '../utils/logger';
 
-export type AgentMode = 'picks' | 'chat';
+export type AgentMode = 'picks' | 'chat' | 'bets';
 
 export interface AgentMessage {
   role: 'user' | 'assistant';

@@ -34,7 +34,7 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white px-4 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-slate-900 px-4 relative overflow-hidden">
       {/* Hidden audio elements for sound effects */}
       <audio
         ref={audioRef}
@@ -50,14 +50,14 @@ export function Login() {
       <div className="max-w-md w-full space-y-6">
         <div className="text-center relative">
           <img
-            src="/assets/12225.png"
+            src="/3DMaxLogo.png"
             alt="Max EV Sports - Bull Market Betting"
-            className={`mx-auto h-64 w-auto mb-6 transition-all duration-500 ${showFireRing ? 'scale-110 brightness-125 drop-shadow-[0_0_30px_rgba(239,68,68,0.8)]' : ''}`}
+            className={`mx-auto h-64 w-auto mb-6 mix-blend-screen transition-all duration-500 ${showFireRing ? 'scale-110 brightness-125 drop-shadow-[0_0_30px_rgba(239,68,68,0.8)]' : ''}`}
           />
-          <h2 className="text-center text-4xl font-bold text-slate-900">
+          <h2 className="text-center text-4xl font-bold text-white">
             Max-EV Members Only
           </h2>
-          <p className="mt-2 text-center text-sm text-slate-600">
+          <p className="mt-2 text-center text-sm text-slate-400">
             Authorized Access Required
           </p>
         </div>
@@ -123,6 +123,16 @@ export function Login() {
               </div>
             </div>
 
+
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => navigate('/forgot-password')}
+                className="text-xs text-slate-400 hover:text-blue-300 transition-colors"
+              >
+                Forgot password?
+              </button>
+            </div>
 
             <div>
               <button

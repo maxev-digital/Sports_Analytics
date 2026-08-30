@@ -368,3 +368,153 @@ async def get_injury_impact():
         "madden_season": madden_raw.get("season"),
         "week": games[0].get("week") if games else None,
     }
+
+
+# ── INJURY HEATMAP ────────────────────────────────────────────────────────────
+
+import re as _re
+import time as _time
+from concurrent.futures import ThreadPoolExecutor as _TPE, as_completed as _as_completed
+from pathlib import Path as _Path
+
+_HEATMAP_CACHE_FILE = _Path(__file__).parent.parent / "f5_backtest" / "_injury_heatmap_cache.json"
+_HEATMAP_CACHE_TTL  = 6 * 3600  # 6 hours
+
+_ESPN_TEAMS: dict[int, tuple[str, str]] = {
+    1:  ("ATL", "Atlanta Falcons"),    2:  ("BUF", "Buffalo Bills"),
+    3:  ("CHI", "Chicago Bears"),      4:  ("CIN", "Cincinnati Bengals"),
+    5:  ("CLE", "Cleveland Browns"),   6:  ("DAL", "Dallas Cowboys"),
+    7:  ("DEN", "Denver Broncos"),     8:  ("DET", "Detroit Lions"),
+    9:  ("GB",  "Green Bay Packers"),  10: ("TEN", "Tennessee Titans"),
+    11: ("IND", "Indianapolis Colts"), 12: ("KC",  "Kansas City Chiefs"),
+    13: ("LV",  "Las Vegas Raiders"),  14: ("LAR", "LA Rams"),
+    15: ("MIA", "Miami Dolphins"),     16: ("MIN", "Minnesota Vikings"),
+    17: ("NE",  "New England Patriots"), 18: ("NO", "New Orleans Saints"),
+    19: ("NYG", "New York Giants"),    20: ("NYJ", "New York Jets"),
+    21: ("PHI", "Philadelphia Eagles"), 22: ("ARI", "Arizona Cardinals"),
+    23: ("PIT", "Pittsburgh Steelers"), 24: ("LAC", "LA Chargers"),
+    25: ("SF",  "San Francisco 49ers"), 26: ("SEA", "Seattle Seahawks"),
+    27: ("TB",  "Tampa Bay Buccaneers"), 28: ("WSH", "Washington Commanders"),
+    29: ("CAR", "Carolina Panthers"),  30: ("JAX", "Jacksonville Jaguars"),
+    33: ("BAL", "Baltimore Ravens"),   34: ("HOU", "Houston Texans"),
+}
+
+_HM_POS_GROUP: dict[str, str] = {
+    "QB": "QB",
+    "RB": "RB", "HB": "RB", "FB": "RB",
+    "WR": "WR", "TE": "WR",
+    "LT": "OL", "RT": "OL", "LG": "OL", "RG": "OL", "C": "OL",
+    "T":  "OL", "G":  "OL", "OT": "OL", "OG": "OL",
+    "DE": "DL", "DT": "DL", "NT": "DL", "DL": "DL",
+    "MLB": "LB", "OLB": "LB", "ILB": "LB", "LB": "LB",
+    "CB": "DB", "FS": "DB", "SS": "DB", "S": "DB", "DB": "DB",
+}
+
+_HM_STATUS_WEIGHT: dict[str, int] = {"Out": 3, "Doubtful": 2, "Questionable": 1, "Probable": 0}
+_HM_HDRS = {"User-Agent": "Mozilla/5.0", "Accept": "application/json"}
+_OFF_COLS = ["QB", "OL", "WR", "RB"]
+_DEF_COLS = ["DL", "LB", "DB"]
+
+
+def _hm_fetch(url: str) -> dict:
+    try:
+        import urllib.request as _ur
+        req = _ur.Request(url, headers=_HM_HDRS)
+        return json.loads(_ur.urlopen(req, timeout=8).read())
+    except Exception:
+        return {}
+
+
+def _hm_fetch_team(team_id: int, abbr: str, full_name: str) -> dict:
+    """Fetch all injuries for one team. Returns per-position-group counts + players list."""
+    base = "https://sports.core.api.espn.com/v2/sports/football/leagues/nfl"
+    list_url = f"{base}/teams/{team_id}/injuries?limit=100"
+    list_data = _hm_fetch(list_url)
+    refs = [item.get("$ref", "") for item in list_data.get("items", []) if item.get("$ref")]
+
+    if not refs:
+        empty = {col: {"count": 0, "weight": 0, "players": []} for col in _OFF_COLS + _DEF_COLS}
+        return {"team": abbr, "team_name": full_name, "groups": empty,
+                "off_total": 0, "def_total": 0, "total_weight": 0, "players": []}
+
+    # Resolve each injury ref to get status + athlete ref
+    with _TPE(max_workers=20) as ex:
+        futures = {ex.submit(_hm_fetch, ref): ref for ref in refs}
+        inj_details = [f.result() for f in _as_completed(futures)]
+
+    # Resolve unique athlete refs to get position
+    ath_refs = {}
+    for inj in inj_details:
+        ath = inj.get("athlete", {})
+        ref = ath.get("$ref", "") if isinstance(ath, dict) else ""
+        if ref and ref not in ath_refs:
+            ath_refs[ref] = None
+
+    with _TPE(max_workers=20) as ex:
+        futures = {ex.submit(_hm_fetch, ref): ref for ref in ath_refs}
+        for f in _as_completed(futures):
+            ref = futures[f]
+            ath_refs[ref] = f.result()
+
+    groups: dict[str, dict] = {col: {"count": 0, "weight": 0, "players": []} for col in _OFF_COLS + _DEF_COLS}
+    all_players = []
+
+    for inj in inj_details:
+        status = inj.get("status", "")
+        weight = _HM_STATUS_WEIGHT.get(status, 0)
+        if weight == 0:
+            continue
+        ath_ref_url = inj.get("athlete", {}).get("$ref", "") if isinstance(inj.get("athlete"), dict) else ""
+        ath_data = ath_refs.get(ath_ref_url, {}) or {}
+        pos_raw = ath_data.get("position", {}).get("abbreviation", "") if isinstance(ath_data.get("position"), dict) else ""
+        pos_group = _HM_POS_GROUP.get(pos_raw, "")
+        name = ath_data.get("displayName", "Unknown")
+        comment = inj.get("shortComment", "")
+
+        player_entry = {"name": name, "pos": pos_raw, "group": pos_group, "status": status, "comment": comment}
+        all_players.append(player_entry)
+
+        if pos_group in groups:
+            groups[pos_group]["count"] += 1
+            groups[pos_group]["weight"] += weight
+            groups[pos_group]["players"].append(player_entry)
+
+    off_total = sum(groups[c]["count"] for c in _OFF_COLS)
+    def_total = sum(groups[c]["count"] for c in _DEF_COLS)
+    total_weight = sum(groups[c]["weight"] for c in _OFF_COLS + _DEF_COLS)
+
+    return {
+        "team": abbr,
+        "team_name": full_name,
+        "groups": groups,
+        "off_total": off_total,
+        "def_total": def_total,
+        "total_weight": total_weight,
+        "players": all_players,
+    }
+
+
+def _build_heatmap() -> dict:
+    with _TPE(max_workers=8) as ex:
+        futures = {
+            ex.submit(_hm_fetch_team, tid, abbr, name): tid
+            for tid, (abbr, name) in _ESPN_TEAMS.items()
+        }
+        teams = [f.result() for f in _as_completed(futures)]
+
+    teams.sort(key=lambda t: -t["total_weight"])
+    return {"teams": teams, "built_at": _time.time(), "columns": {"offense": _OFF_COLS, "defense": _DEF_COLS}}
+
+
+@router.get("/injury-heatmap")
+async def get_injury_heatmap(refresh: bool = False):
+    """Per-team injury heatmap grouped by position (QB/OL/WR/RB offense, DL/LB/DB defense).
+    Results cached 6h on disk. Pass ?refresh=true to force rebuild."""
+    if not refresh and _HEATMAP_CACHE_FILE.exists():
+        age = _time.time() - _HEATMAP_CACHE_FILE.stat().st_mtime
+        if age < _HEATMAP_CACHE_TTL:
+            return json.loads(_HEATMAP_CACHE_FILE.read_text())
+
+    data = _build_heatmap()
+    _HEATMAP_CACHE_FILE.write_text(json.dumps(data))
+    return data

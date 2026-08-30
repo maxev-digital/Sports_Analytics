@@ -3,7 +3,6 @@ import { useSettings } from '../hooks/useSettings';
 import { useAuth } from '../contexts/AuthContext';
 import { BOOKMAKERS, getPopularBookmakers, getAllBookmakerKeys } from '../data/bookmakers';
 import { getApiUrl } from '../config';
-import { BetAlertTestPanel } from '../components/BetAlertTestPanel';
 import { logger } from '../utils/logger';
 
 interface BookmakersByRegion {
@@ -153,9 +152,6 @@ export function Settings() {
             Manage your subscription and bookmaker preferences
           </p>
         </div>
-
-        {/* Bet Alert Test Panel */}
-        <BetAlertTestPanel />
 
         {/* Subscription Management Section */}
         {subscriptionStatus && subscriptionStatus.tier !== 'free' && (

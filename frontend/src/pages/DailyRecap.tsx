@@ -103,6 +103,10 @@ interface RecapData {
 
 const TIER_COLOR: Record<string, string> = { STRONG: EMERALD, GOOD: YELLOW, WEAK: MUTED };
 
+/** Return today's date in CST as YYYY-MM-DD regardless of browser timezone. */
+function todayCst(): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Chicago' }).format(new Date());
+}
 function prevDate(d: string): string {
   const dt = new Date(d + 'T12:00:00');
   dt.setDate(dt.getDate() - 1);
@@ -114,9 +118,9 @@ function nextDate(d: string): string {
   return dt.toISOString().slice(0, 10);
 }
 function yesterday(): string {
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  return d.toISOString().slice(0, 10);
+  const dt = new Date(todayCst() + 'T12:00:00');
+  dt.setDate(dt.getDate() - 1);
+  return dt.toISOString().slice(0, 10);
 }
 function fmtDate(d: string): string {
   return new Date(d + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
@@ -332,7 +336,7 @@ export function DailyRecap() {
 
   const gamesWithSignals = data?.games.filter(g => g.signals.length > 0) ?? [];
   const gamesNoSignals   = data?.games.filter(g => g.signals.length === 0) ?? [];
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayStr = todayCst();
 
   return (
     <div style={{ background: BG, minHeight: '100vh', padding: '32px 24px', color: FG }}>

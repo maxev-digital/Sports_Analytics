@@ -1,7 +1,9 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import ReactECharts from 'echarts-for-react';
+import { D3Scatter } from '../charts/D3Scatter';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
-  ReferenceLine, Legend, ScatterChart, Scatter, ZAxis, ComposedChart, Line,
+  ReferenceLine, Legend, ComposedChart, Line,
   AreaChart, Area, RadarChart, Radar, PolarGrid, PolarAngleAxis,
 } from 'recharts';
 import '../styles/analytics.css';
@@ -16,279 +18,45 @@ const MUTED_FG   = 'oklch(70.8% 0 0)';
 const SIDEBAR_BG = 'oklch(20.5% 0 0)';
 const BORDER     = 'oklch(100% 0 0 / .1)';
 
-const AXIS_PROPS = {
-  tick:    { fill: MUTED_FG, fontSize: 11, fontFamily: 'Nunito' },
-  axisLine: { stroke: BORDER },
-  tickLine: false,
-};
+// ECharts hex color equivalents (oklch doesn't render in ECharts/zrender)
+const EC_GREEN  = '#4ade80';
+const EC_RED    = '#ef4444';
+const EC_BLUE   = '#60a5fa';
+const EC_YELLOW = '#fbbf24';
+const EC_MUTED  = '#9ca3af';
+const EC_BG     = '#1a1a1a';
+const EC_BORDER = 'rgba(255,255,255,0.12)';
+const EC_GRID   = 'rgba(255,255,255,0.05)';
 
-// Shared margin + YAxis width used by every zoomable scatter chart.
-// YAXIS_W must match the explicit width= set on each YAxis so pixel→data conversion is accurate.
-const ZOOM_M   = { top: 10, right: 32, left: 0, bottom: 40 };
-const YAXIS_W  = 44;
-
-function useScatterZoom(
-  containerRef: React.RefObject<HTMLDivElement | null>,
-  data: any[],
-  xKey: string,
-  yKey: string,
-) {
-  const [zoomMode, _setZoomMode] = useState(false);
-  const [xDomain, setXDomain]   = useState<[number, number] | null>(null);
-  const [yDomain, setYDomain]   = useState<[number, number] | null>(null);
-  const [selRect, setSelRect]   = useState<{ left: number; top: number; width: number; height: number } | null>(null);
-  const [isPanning, setIsPanning] = useState(false);
-
-  const startPx  = useRef<{ x: number; y: number } | null>(null);
-  const panStartDomains = useRef<{ cX: [number,number]; cY: [number,number] } | null>(null);
-
-  const dataLen = data.length;
-  useEffect(() => { setXDomain(null); setYDomain(null); setSelRect(null); startPx.current = null; }, [dataLen]);
-
-  const setZoomMode = useCallback((v: boolean | ((prev: boolean) => boolean)) => _setZoomMode(v), []);
-
-  const fullX = useMemo(() => {
-    const vals = data.map(d => d[xKey]).filter((v): v is number => v != null && isFinite(+v));
-    if (!vals.length) return null;
-    const mn = Math.min(...vals), mx = Math.max(...vals);
-    const pad = (mx - mn) * 0.07 || 0.05;
-    return [mn - pad, mx + pad] as [number, number];
-  }, [data, xKey]);
-
-  const fullY = useMemo(() => {
-    const vals = data.map(d => d[yKey]).filter((v): v is number => v != null && isFinite(+v));
-    if (!vals.length) return null;
-    const mn = Math.min(...vals), mx = Math.max(...vals);
-    const pad = (mx - mn) * 0.07 || 0.05;
-    return [mn - pad, mx + pad] as [number, number];
-  }, [data, yKey]);
-
-  const curX = xDomain ?? fullX;
-  const curY = yDomain ?? fullY;
-
-  const curXRef = useRef(curX);
-  const curYRef = useRef(curY);
-  curXRef.current = curX;
-  curYRef.current = curY;
-
-  const getPlotDims = useCallback(() => {
-    const el = containerRef.current;
-    if (!el) return null;
-    const pLeft = ZOOM_M.left + YAXIS_W;
-    const pW    = el.offsetWidth  - pLeft - ZOOM_M.right;
-    const pH    = el.offsetHeight - ZOOM_M.top - ZOOM_M.bottom;
-    if (pW <= 0 || pH <= 0) return null;
-    return { pLeft, pW, pH };
-  }, [containerRef]);
-
-  const pxToDataRaw = useCallback((px: { x: number; y: number }, cX: [number,number], cY: [number,number]) => {
-    const dims = getPlotDims();
-    if (!dims) return null;
-    const fx = Math.max(0, Math.min(1, (px.x - dims.pLeft) / dims.pW));
-    const fy = Math.max(0, Math.min(1, (px.y - ZOOM_M.top) / dims.pH));
-    return {
-      x: cX[0] + fx * (cX[1] - cX[0]),
-      y: cY[1] - fy * (cY[1] - cY[0]),
-    };
-  }, [getPlotDims]);
-
-  const pxToData = useCallback((px: { x: number; y: number }) => {
-    const cX = curXRef.current;
-    const cY = curYRef.current;
-    if (!cX || !cY) return null;
-    return pxToDataRaw(px, cX, cY);
-  }, [pxToDataRaw]);
-
-  // Scroll-wheel zoom centered on cursor — very aggressive factor.
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const handleWheel = (e: WheelEvent) => {
-      const cX = curXRef.current;
-      const cY = curYRef.current;
-      if (!cX || !cY) return;
-      e.preventDefault();
-      const rect = el.getBoundingClientRect();
-      const px   = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-      const pt   = pxToDataRaw(px, cX, cY);
-      if (!pt) return;
-      const factor = e.deltaY > 0 ? 1.7 : 0.35; // zoom out / zoom in — very aggressive
-      setXDomain([pt.x - (pt.x - cX[0]) * factor, pt.x + (cX[1] - pt.x) * factor]);
-      setYDomain([pt.y - (pt.y - cY[0]) * factor, pt.y + (cY[1] - pt.y) * factor]);
-    };
-    el.addEventListener('wheel', handleWheel, { passive: false });
-    return () => el.removeEventListener('wheel', handleWheel);
-  }, [containerRef, pxToDataRaw]);
-
-  const onPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    e.currentTarget.setPointerCapture(e.pointerId);
-    const rect = e.currentTarget.getBoundingClientRect();
-    const px = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-
-    if (zoomMode) {
-      // Box-select mode
-      startPx.current = px;
-      setSelRect({ left: px.x, top: px.y, width: 0, height: 0 });
-    } else {
-      // Pan mode — record start pixel and starting domains
-      const cX = curXRef.current;
-      const cY = curYRef.current;
-      if (!cX || !cY) return;
-      startPx.current = { x: e.clientX, y: e.clientY };
-      panStartDomains.current = { cX: [...cX] as [number,number], cY: [...cY] as [number,number] };
-      setIsPanning(true);
-    }
-  }, [zoomMode]);
-
-  const onPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (!startPx.current) return;
-
-    if (zoomMode) {
-      const rect = e.currentTarget.getBoundingClientRect();
-      const cur = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-      setSelRect({
-        left:   Math.min(startPx.current.x, cur.x),
-        top:    Math.min(startPx.current.y, cur.y),
-        width:  Math.abs(cur.x - startPx.current.x),
-        height: Math.abs(cur.y - startPx.current.y),
-      });
-    } else if (panStartDomains.current) {
-      // Pan: translate domains by pixel delta mapped to data space
-      const dims = getPlotDims();
-      if (!dims) return;
-      const { cX, cY } = panStartDomains.current;
-      const dx = e.clientX - startPx.current.x;
-      const dy = e.clientY - startPx.current.y;
-      const dataXPerPx = (cX[1] - cX[0]) / dims.pW;
-      const dataYPerPx = (cY[1] - cY[0]) / dims.pH;
-      setXDomain([cX[0] - dx * dataXPerPx, cX[1] - dx * dataXPerPx]);
-      setYDomain([cY[0] - dy * dataYPerPx, cY[1] - dy * dataYPerPx]);
-    }
-  }, [zoomMode, getPlotDims]);
-
-  const onPointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (!startPx.current) return;
-    setIsPanning(false);
-
-    if (zoomMode) {
-      const rect = e.currentTarget.getBoundingClientRect();
-      const end   = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-      const start = { x: startPx.current.x, y: startPx.current.y };
-      startPx.current = null;
-      setSelRect(null);
-      if (Math.abs(end.x - start.x) < 10 || Math.abs(end.y - start.y) < 10) return;
-      const d0 = pxToData(start);
-      const d1 = pxToData(end);
-      if (!d0 || !d1) return;
-      setXDomain([Math.min(d0.x, d1.x), Math.max(d0.x, d1.x)]);
-      setYDomain([Math.min(d0.y, d1.y), Math.max(d0.y, d1.y)]);
-    } else {
-      startPx.current = null;
-      panStartDomains.current = null;
-    }
-  }, [zoomMode, pxToData]);
-
-  const reset = useCallback(() => {
-    setXDomain(null); setYDomain(null); setSelRect(null);
-    setIsPanning(false);
-    _setZoomMode(false);
-    startPx.current = null;
-    panStartDomains.current = null;
-  }, []);
-
-  const isZoomed = xDomain != null || yDomain != null;
-
-  return {
-    xDomainProps: (xDomain ?? fullX ?? ['auto', 'auto']) as [number, number] | ['auto', 'auto'],
-    yDomainProps: (yDomain ?? fullY ?? ['auto', 'auto']) as [number, number] | ['auto', 'auto'],
-    isZoomed,
-    isPanning,
-    zoomMode, setZoomMode,
-    selRect, onPointerDown, onPointerMove, onPointerUp,
-    reset,
-  };
-}
-
-function ZoomToolbar({ zoom, showLabels, onToggleLabels }: {
-  zoom: ReturnType<typeof useScatterZoom>;
-  showLabels?: boolean;
-  onToggleLabels?: () => void;
-}) {
-  const hint = zoom.zoomMode
-    ? 'Drag a box to zoom into that region'
-    : zoom.isZoomed
-    ? 'Drag to pan · Scroll to zoom · Drag Zoom for box-select'
-    : 'Scroll to zoom in · Drag Zoom to box-select a region';
-  return (
-    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap' }}>
-      <span style={{ color: MUTED_FG, fontSize: '0.7rem', fontFamily: 'Nunito', marginRight: 4 }}>{hint}</span>
-      {onToggleLabels && (
-        <button
-          className={`filter-pill${showLabels ? ' active' : ''}`}
-          style={{ fontSize: '0.7rem', padding: '3px 12px' }}
-          onClick={onToggleLabels}
-        >
-          {showLabels ? 'Hide Labels' : 'Show Labels'}
-        </button>
-      )}
-      <button
-        className={`filter-pill${zoom.zoomMode ? ' active' : ''}`}
-        style={{ fontSize: '0.7rem', padding: '3px 12px' }}
-        onClick={() => zoom.setZoomMode((v: boolean) => !v)}
-      >
-        {zoom.zoomMode ? 'Exit Zoom' : 'Drag Zoom'}
-      </button>
-      {zoom.isZoomed && (
-        <button className="filter-pill" style={{ fontSize: '0.7rem', padding: '3px 12px' }} onClick={zoom.reset}>
-          Reset View
-        </button>
-      )}
-    </div>
-  );
-}
-
-// Overlay: always present when zoomed (for pan) or in zoom mode (for box-select).
-// When panning: transparent, grab cursor, no selection rect.
-// When in zoom mode: crosshair cursor, draws selection rectangle.
-function ZoomOverlay({ zoom }: { zoom: ReturnType<typeof useScatterZoom> }) {
-  if (!zoom.zoomMode && !zoom.isZoomed) return null;
-  const cursor = zoom.zoomMode ? 'crosshair' : zoom.isPanning ? 'grabbing' : 'grab';
-  return (
-    <div
-      style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, cursor, zIndex: 10, userSelect: 'none' }}
-      onPointerDown={zoom.onPointerDown}
-      onPointerMove={zoom.onPointerMove}
-      onPointerUp={zoom.onPointerUp}
-    >
-      {zoom.zoomMode && zoom.selRect && zoom.selRect.width > 4 && zoom.selRect.height > 4 && (
-        <div style={{
-          position: 'absolute',
-          left:   zoom.selRect.left,
-          top:    zoom.selRect.top,
-          width:  zoom.selRect.width,
-          height: zoom.selRect.height,
-          border: `2px dashed ${EMERALD}`,
-          background: `${EMERALD}18`,
-          pointerEvents: 'none',
-        }} />
-      )}
-    </div>
-  );
-}
-
-function DarkTooltip({ active, payload, label }: any) {
+// Recharts DarkTooltip — still used by bar/area/composed/radar charts
+function DarkTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ dataKey: string; name: string; color?: string; value: unknown }>; label?: string }) {
   if (!active || !payload?.length) return null;
   return (
     <div style={{ background: SIDEBAR_BG, border: `1px solid ${BORDER}`, borderRadius: 6, padding: '10px 14px', fontSize: '0.78rem' }}>
       {label && <p style={{ color: 'oklch(98.5% 0 0)', fontWeight: 700, marginBottom: 4 }}>{label}</p>}
-      {payload.map((p: any) => (
+      {payload.map(p => (
         <p key={p.dataKey} style={{ color: p.color || MUTED_FG, margin: '2px 0' }}>
-          {p.name}: <strong>{typeof p.value === 'number' ? p.value.toFixed(3) : p.value}</strong>
+          {p.name}: <strong>{typeof p.value === 'number' ? p.value.toFixed(3) : String(p.value)}</strong>
         </p>
       ))}
     </div>
   );
 }
+
+const SCATTER_TOOLTIP = {
+  backgroundColor: EC_BG,
+  borderColor: EC_BORDER,
+  textStyle: { color: '#e5e7eb', fontSize: 12 },
+};
+
+const SCATTER_GRID = { top: 24, right: 24, bottom: 56, left: 52, containLabel: false };
+
+// Recharts axis defaults — used by all remaining recharts bar/area/composed/radar charts
+const AXIS_PROPS = {
+  tick: { fill: MUTED_FG, fontSize: 10, fontFamily: 'Nunito' },
+  axisLine: { stroke: BORDER },
+  tickLine: { stroke: BORDER },
+};
 
 function BettingSignalCard({ title, signals }: {
   title: string;
@@ -317,168 +85,125 @@ function BettingSignalCard({ title, signals }: {
   );
 }
 
-// ── MLB scatter sub-components (each owns its own zoom state) ──────────────
+// ── MLB scatter sub-components ─────────────────────────────────────────────
 
-function WobaScatter({ data }: { data: any[] }) {
-  const cRef = useRef<HTMLDivElement>(null);
-  const zoom = useScatterZoom(cRef, data, 'xwOBA', 'woba');
+function WobaScatter({ data }: { data: { xwOBA?: number; woba?: number; name?: string }[] }) {
   const [showLabels, setShowLabels] = useState(false);
-  const pts  = data.filter(p => (p.xwOBA ?? 0) > 0 && (p.woba ?? 0) > 0);
+  const pts = data.filter(p => (p.xwOBA ?? 0) > 0 && (p.woba ?? 0) > 0);
+  const lastName = (n: string) => n.split(' ').pop() ?? '';
   return (
     <>
-      <ZoomToolbar zoom={zoom} showLabels={showLabels} onToggleLabels={() => setShowLabels(v => !v)} />
-      <div ref={cRef} style={{ position: 'relative' }}>
-        <ResponsiveContainer width="100%" height={500}>
-          <ScatterChart margin={ZOOM_M}>
-            <CartesianGrid strokeDasharray="3 3" stroke={BORDER} />
-            <XAxis dataKey="xwOBA" type="number" name="xwOBA" {...AXIS_PROPS} width={YAXIS_W} domain={zoom.xDomainProps} label={{ value: 'xwOBA', position: 'insideBottom', offset: -14, fill: MUTED_FG, fontSize: 11 }} />
-            <YAxis dataKey="woba"  type="number" name="wOBA"  {...AXIS_PROPS} width={YAXIS_W} domain={zoom.yDomainProps} label={{ value: 'wOBA', angle: -90, position: 'insideLeft', fill: MUTED_FG, fontSize: 11 }} />
-            <ZAxis range={[44, 44]} />
-            <Tooltip cursor={{ strokeDasharray: '3 3', stroke: BORDER }} content={({ active, payload }) => {
-              if (!active || !payload?.length) return null;
-              const p = payload[0].payload;
-              const diff = (p.woba ?? 0) - (p.xwOBA ?? 0);
-              return (
-                <div style={{ background: SIDEBAR_BG, border: `1px solid ${BORDER}`, borderRadius: 6, padding: '10px 14px', fontSize: '0.78rem' }}>
-                  <p style={{ color: 'oklch(98.5% 0 0)', fontWeight: 700, marginBottom: 4 }}>{p.name}</p>
-                  <p style={{ color: MUTED_FG, margin: '2px 0' }}>xwOBA: <strong style={{ color: 'oklch(98.5% 0 0)' }}>{(p.xwOBA ?? 0).toFixed(3)}</strong></p>
-                  <p style={{ color: MUTED_FG, margin: '2px 0' }}>wOBA: <strong style={{ color: 'oklch(98.5% 0 0)' }}>{(p.woba ?? 0).toFixed(3)}</strong></p>
-                  <p style={{ margin: '4px 0 0', fontSize: '0.72rem', color: diff > 0.010 ? BRAND_RED : diff < -0.010 ? EMERALD : MUTED_FG, fontWeight: 700 }}>
-                    {diff > 0.010 ? `+${diff.toFixed(3)} overperforming` : diff < -0.010 ? `${diff.toFixed(3)} buy-low` : 'Near expected'}
-                  </p>
-                </div>
-              );
-            }} />
-            <ReferenceLine segment={[{ x: 0.2, y: 0.2 }, { x: 0.5, y: 0.5 }]} stroke={MUTED_FG} strokeDasharray="5 5" strokeOpacity={0.5} />
-            <Scatter data={pts} shape={(props: any) => {
-              const { cx, cy, payload } = props;
-              const diff = (payload.woba ?? 0) - (payload.xwOBA ?? 0);
-              const fill = diff > 0.010 ? BRAND_RED : diff < -0.010 ? EMERALD : BLUE;
-              const isExtreme = Math.abs(diff) > 0.030;
-              const lname = payload.name?.split(' ').pop() ?? '';
-              return (
-                <g>
-                  <circle cx={cx} cy={cy} r={isExtreme ? 6 : 4} fill={fill} fillOpacity={isExtreme ? 0.9 : 0.65} />
-                  {(showLabels || isExtreme) && (
-                    <text x={cx + 7} y={cy + 4} fontSize={9} fill={fill} fontFamily="Nunito"
-                      fontWeight={isExtreme ? 'bold' : 'normal'} opacity={isExtreme ? 1 : 0.8}>{lname}</text>
-                  )}
-                </g>
-              );
-            }} />
-          </ScatterChart>
-        </ResponsiveContainer>
-        <ZoomOverlay zoom={zoom} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 10, flexWrap: 'wrap' }}>
+        <button className={`filter-pill${showLabels ? ' active' : ''}`} onClick={() => setShowLabels(v => !v)} style={{ fontSize: '0.72rem' }}>
+          {showLabels ? 'Hide All Labels' : 'Label All'}
+        </button>
+        <span style={{ fontSize: '0.72rem', color: EC_MUTED, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          <span><span style={{ color: EC_RED, fontWeight: 700 }}>●</span> wOBA &gt; xwOBA — overperforming (fade)</span>
+          <span><span style={{ color: EC_GREEN, fontWeight: 700 }}>●</span> wOBA &lt; xwOBA — buy-low candidate</span>
+          <span><span style={{ color: EC_BLUE, fontWeight: 700 }}>●</span> Near expected</span>
+        </span>
       </div>
+      <D3Scatter
+        data={pts}
+        x={d => d.xwOBA ?? 0}
+        y={d => d.woba ?? 0}
+        color={d => { const diff = (d.woba ?? 0) - (d.xwOBA ?? 0); return diff > 0.010 ? EC_RED : diff < -0.010 ? EC_GREEN : EC_BLUE; }}
+        radius={d => Math.abs((d.woba ?? 0) - (d.xwOBA ?? 0)) > 0.030 ? 9 : 6}
+        label={d => { const ext = Math.abs((d.woba ?? 0) - (d.xwOBA ?? 0)) > 0.030; return (showLabels || ext) ? lastName(d.name ?? '') : null; }}
+        refLine={[[0.15, 0.15], [0.55, 0.55]]}
+        xLabel="xwOBA (expected)"
+        yLabel="wOBA (actual)"
+        xFormat={v => v.toFixed(3)}
+        yFormat={v => v.toFixed(3)}
+        tooltip={d => {
+          const diff = (d.woba ?? 0) - (d.xwOBA ?? 0);
+          const c = diff > 0.010 ? EC_RED : diff < -0.010 ? EC_GREEN : EC_MUTED;
+          const verdict = diff > 0.010 ? '+' + diff.toFixed(3) + ' overperforming' : diff < -0.010 ? diff.toFixed(3) + ' buy-low' : 'Near expected';
+          return (<div><div style={{ fontWeight: 700, color: '#f3f4f6', marginBottom: 4 }}>{d.name}</div><div>xwOBA: <span style={{ fontFamily: 'monospace' }}>{(d.xwOBA ?? 0).toFixed(3)}</span></div><div>wOBA: <span style={{ fontFamily: 'monospace' }}>{(d.woba ?? 0).toFixed(3)}</span></div><div style={{ color: c, fontWeight: 700, marginTop: 4 }}>{verdict}</div></div>);
+        }}
+        height={520}
+      />
     </>
   );
 }
 
-function EraScatter({ data }: { data: any[] }) {
-  const cRef = useRef<HTMLDivElement>(null);
-  const zoom = useScatterZoom(cRef, data, 'era', 'xERA');
+function EraScatter({ data }: { data: { era?: number; xERA?: number; xERADiff?: number; pa?: number; name?: string }[] }) {
   const [showLabels, setShowLabels] = useState(false);
-  const pts  = data.filter(p => (p.era ?? 0) > 0 && (p.xERA ?? 0) > 0);
+  const pts = data.filter(p => (p.era ?? 0) > 0 && (p.xERA ?? 0) > 0);
+  const lastName = (n: string) => n.split(' ').pop() ?? '';
   return (
     <>
-      <ZoomToolbar zoom={zoom} showLabels={showLabels} onToggleLabels={() => setShowLabels(v => !v)} />
-      <div ref={cRef} style={{ position: 'relative' }}>
-        <ResponsiveContainer width="100%" height={500}>
-          <ScatterChart margin={ZOOM_M}>
-            <CartesianGrid strokeDasharray="3 3" stroke={BORDER} />
-            <XAxis dataKey="era"  type="number" name="ERA"  {...AXIS_PROPS} width={YAXIS_W} domain={zoom.xDomainProps} label={{ value: 'ERA', position: 'insideBottom', offset: -14, fill: MUTED_FG, fontSize: 11 }} />
-            <YAxis dataKey="xERA" type="number" name="xERA" {...AXIS_PROPS} width={YAXIS_W} domain={zoom.yDomainProps} label={{ value: 'xERA', angle: -90, position: 'insideLeft', fill: MUTED_FG, fontSize: 11 }} />
-            <ZAxis range={[44, 44]} />
-            <Tooltip cursor={{ strokeDasharray: '3 3', stroke: BORDER }} content={({ active, payload }) => {
-              if (!active || !payload?.length) return null;
-              const p = payload[0].payload;
-              return (
-                <div style={{ background: SIDEBAR_BG, border: `1px solid ${BORDER}`, borderRadius: 6, padding: '10px 14px', fontSize: '0.78rem' }}>
-                  <p style={{ color: 'oklch(98.5% 0 0)', fontWeight: 700, marginBottom: 4 }}>{p.name}</p>
-                  <p style={{ color: MUTED_FG, margin: '2px 0' }}>ERA: <strong style={{ color: 'oklch(98.5% 0 0)' }}>{(p.era ?? 0).toFixed(2)}</strong></p>
-                  <p style={{ color: MUTED_FG, margin: '2px 0' }}>xERA: <strong style={{ color: 'oklch(98.5% 0 0)' }}>{(p.xERA ?? 0).toFixed(2)}</strong></p>
-                  <p style={{ color: MUTED_FG, margin: '2px 0' }}>BF: <strong style={{ color: 'oklch(98.5% 0 0)' }}>{p.pa}</strong></p>
-                  <p style={{ marginTop: 6, fontSize: '0.72rem', color: (p.xERA ?? 0) < (p.era ?? 0) ? EMERALD : BRAND_RED, fontWeight: 700 }}>
-                    {(p.xERA ?? 0) < (p.era ?? 0) ? 'Buy-low (ERA should drop)' : 'Regression risk'}
-                  </p>
-                </div>
-              );
-            }} />
-            <ReferenceLine segment={[{ x: 0, y: 0 }, { x: 10, y: 10 }]} stroke={MUTED_FG} strokeDasharray="5 5" strokeOpacity={0.5} />
-            <Scatter data={pts} shape={(props: any) => {
-              const { cx, cy, payload } = props;
-              const diff = (payload.xERADiff ?? 0);
-              const fill = (payload.xERA ?? 0) < (payload.era ?? 0) ? EMERALD : BRAND_RED;
-              const isExtreme = Math.abs(diff) > 0.60;
-              const lname = payload.name?.split(' ').pop() ?? '';
-              return (
-                <g>
-                  <circle cx={cx} cy={cy} r={isExtreme ? 6 : 4} fill={fill} fillOpacity={isExtreme ? 0.9 : 0.7} />
-                  {(showLabels || isExtreme) && (
-                    <text x={cx + 7} y={cy + 4} fontSize={9} fill={fill} fontFamily="Nunito"
-                      fontWeight={isExtreme ? 'bold' : 'normal'} opacity={isExtreme ? 1 : 0.8}>{lname}</text>
-                  )}
-                </g>
-              );
-            }} />
-          </ScatterChart>
-        </ResponsiveContainer>
-        <ZoomOverlay zoom={zoom} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 10, flexWrap: 'wrap' }}>
+        <button className={`filter-pill${showLabels ? ' active' : ''}`} onClick={() => setShowLabels(v => !v)} style={{ fontSize: '0.72rem' }}>
+          {showLabels ? 'Hide All Labels' : 'Label All'}
+        </button>
+        <span style={{ fontSize: '0.72rem', color: EC_MUTED, display: 'flex', gap: 12 }}>
+          <span><span style={{ color: EC_GREEN, fontWeight: 700 }}>●</span> ERA &gt; xERA — unlucky, back this pitcher</span>
+          <span><span style={{ color: EC_RED, fontWeight: 700 }}>●</span> ERA &lt; xERA — lucky, ERA should rise</span>
+        </span>
       </div>
+      <D3Scatter
+        data={pts}
+        x={d => d.era ?? 0}
+        y={d => d.xERA ?? 0}
+        color={d => (d.xERA ?? 0) < (d.era ?? 0) ? EC_GREEN : EC_RED}
+        radius={d => Math.abs(d.xERADiff ?? 0) > 0.60 ? 10 : 6}
+        label={d => { const ext = Math.abs(d.xERADiff ?? 0) > 0.60; return (showLabels || ext) ? lastName(d.name ?? '') : null; }}
+        refLine={[[1, 1], [9, 9]]}
+        xLabel="ERA (actual)"
+        yLabel="xERA (expected)"
+        xFormat={v => v.toFixed(2)}
+        yFormat={v => v.toFixed(2)}
+        tooltip={d => {
+          const buyLow = (d.xERA ?? 0) < (d.era ?? 0);
+          const c = buyLow ? EC_GREEN : EC_RED;
+          return (<div><div style={{ fontWeight: 700, color: '#f3f4f6', marginBottom: 4 }}>{d.name}</div><div>ERA: <span style={{ fontFamily: 'monospace' }}>{(d.era ?? 0).toFixed(2)}</span></div><div>xERA: <span style={{ fontFamily: 'monospace' }}>{(d.xERA ?? 0).toFixed(2)}</span></div>{d.pa && <div style={{ color: EC_MUTED }}>BF: {d.pa}</div>}<div style={{ color: c, fontWeight: 700, marginTop: 4 }}>{buyLow ? 'Buy-low — ERA should drop' : 'Regression risk — ERA may rise'}</div></div>);
+        }}
+        height={520}
+      />
     </>
   );
 }
 
-function HardHitScatter({ data }: { data: any[] }) {
-  const cRef = useRef<HTMLDivElement>(null);
-  const zoom = useScatterZoom(cRef, data, 'exitVeloAvg', 'barrelPct');
+function HardHitScatter({ data }: { data: { exitVeloAvg?: number; barrelPct?: number; hardHitPct?: number; name?: string }[] }) {
   const [showLabels, setShowLabels] = useState(false);
   const valid = data.filter(p => (p.exitVeloAvg ?? 0) > 0);
-  const avgEV  = valid.length ? valid.reduce((s, p) => s + (p.exitVeloAvg ?? 0), 0) / valid.length : 88;
-  const avgBrl = valid.length ? valid.reduce((s, p) => s + (p.barrelPct ?? 0), 0) / valid.length : 8;
+  const lastName = (n: string) => n.split(' ').pop() ?? '';
+  const isElite  = (d: { exitVeloAvg?: number; barrelPct?: number }) => (d.exitVeloAvg ?? 0) >= 91 && (d.barrelPct ?? 0) >= 10;
   return (
     <>
-      <ZoomToolbar zoom={zoom} showLabels={showLabels} onToggleLabels={() => setShowLabels(v => !v)} />
-      <div ref={cRef} style={{ position: 'relative' }}>
-        <ResponsiveContainer width="100%" height={500}>
-          <ScatterChart margin={ZOOM_M}>
-            <CartesianGrid strokeDasharray="3 3" stroke={BORDER} />
-            <XAxis dataKey="exitVeloAvg" type="number" name="Exit Velo" {...AXIS_PROPS} width={YAXIS_W} domain={zoom.xDomainProps} unit=" mph" label={{ value: 'Avg Exit Velo (mph)', position: 'insideBottom', offset: -14, fill: MUTED_FG, fontSize: 11 }} />
-            <YAxis dataKey="barrelPct"   type="number" name="Barrel%"   {...AXIS_PROPS} width={YAXIS_W} domain={zoom.yDomainProps} unit="%" label={{ value: 'Barrel%', angle: -90, position: 'insideLeft', fill: MUTED_FG, fontSize: 11 }} />
-            <ZAxis range={[44, 44]} />
-            <Tooltip cursor={{ strokeDasharray: '3 3', stroke: BORDER }} content={({ active, payload }) => {
-              if (!active || !payload?.length) return null;
-              const p = payload[0].payload;
-              return (
-                <div style={{ background: SIDEBAR_BG, border: `1px solid ${BORDER}`, borderRadius: 6, padding: '10px 14px', fontSize: '0.78rem' }}>
-                  <p style={{ color: 'oklch(98.5% 0 0)', fontWeight: 700, marginBottom: 4 }}>{p.name}</p>
-                  <p style={{ color: MUTED_FG, margin: '2px 0' }}>Exit Velo: <strong style={{ color: 'oklch(98.5% 0 0)' }}>{(p.exitVeloAvg ?? 0).toFixed(1)} mph</strong></p>
-                  <p style={{ color: MUTED_FG, margin: '2px 0' }}>Barrel%: <strong style={{ color: 'oklch(98.5% 0 0)' }}>{(p.barrelPct ?? 0).toFixed(1)}%</strong></p>
-                  <p style={{ color: MUTED_FG, margin: '2px 0' }}>Hard Hit%: <strong style={{ color: 'oklch(98.5% 0 0)' }}>{(p.hardHitPct ?? 0).toFixed(1)}%</strong></p>
-                </div>
-              );
-            }} />
-            <ReferenceLine x={avgEV}  stroke={MUTED_FG} strokeDasharray="4 4" strokeOpacity={0.5} label={{ value: 'Avg EV', position: 'top', fill: MUTED_FG, fontSize: 10 }} />
-            <ReferenceLine y={avgBrl} stroke={MUTED_FG} strokeDasharray="4 4" strokeOpacity={0.5} label={{ value: 'Avg Brl%', position: 'right', fill: MUTED_FG, fontSize: 10 }} />
-            <Scatter data={valid} shape={(props: any) => {
-              const { cx, cy, payload } = props;
-              const isElite = (payload.exitVeloAvg ?? 0) >= 91 && (payload.barrelPct ?? 0) >= 10;
-              const fill = isElite ? BRAND_RED : (payload.exitVeloAvg ?? 0) >= 91 ? YELLOW : BLUE;
-              const lname = payload.name?.split(' ').pop() ?? '';
-              return (
-                <g>
-                  <circle cx={cx} cy={cy} r={isElite ? 6 : 4} fill={fill} fillOpacity={0.75} />
-                  {(showLabels || isElite) && (
-                    <text x={cx + 7} y={cy + 4} fontSize={9} fill={fill} fontFamily="Nunito"
-                      fontWeight={isElite ? 'bold' : 'normal'} opacity={isElite ? 1 : 0.8}>{lname}</text>
-                  )}
-                </g>
-              );
-            }} />
-          </ScatterChart>
-        </ResponsiveContainer>
-        <ZoomOverlay zoom={zoom} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 10, flexWrap: 'wrap' }}>
+        <button className={`filter-pill${showLabels ? ' active' : ''}`} onClick={() => setShowLabels(v => !v)} style={{ fontSize: '0.72rem' }}>
+          {showLabels ? 'Hide All Labels' : 'Label All'}
+        </button>
+        <span style={{ fontSize: '0.72rem', color: EC_MUTED, display: 'flex', gap: 12 }}>
+          <span><span style={{ color: EC_RED, fontWeight: 700 }}>●</span> Elite (EV ≥91 + Brl ≥10%)</span>
+          <span><span style={{ color: EC_YELLOW, fontWeight: 700 }}>●</span> High EV only</span>
+          <span><span style={{ color: EC_BLUE, fontWeight: 700 }}>●</span> Below avg EV</span>
+        </span>
       </div>
+      <D3Scatter
+        data={valid}
+        x={d => d.exitVeloAvg ?? 0}
+        y={d => d.barrelPct ?? 0}
+        color={d => isElite(d) ? EC_RED : (d.exitVeloAvg ?? 0) >= 91 ? EC_YELLOW : EC_BLUE}
+        radius={d => isElite(d) ? 10 : 6}
+        label={d => (showLabels || isElite(d)) ? lastName(d.name ?? '') : null}
+        xLabel="Avg Exit Velocity (mph)"
+        yLabel="Barrel%"
+        xFormat={v => v.toFixed(0)}
+        yFormat={v => v.toFixed(0) + '%'}
+        tooltip={d => (
+          <div>
+            <div style={{ fontWeight: 700, color: '#f3f4f6', marginBottom: 4 }}>{d.name}</div>
+            <div>Exit Velo: <span style={{ fontFamily: 'monospace', color: isElite(d) ? EC_RED : EC_YELLOW }}>{(d.exitVeloAvg ?? 0).toFixed(1)} mph</span></div>
+            <div>Barrel%: <span style={{ fontFamily: 'monospace' }}>{(d.barrelPct ?? 0).toFixed(1)}%</span></div>
+            <div>Hard Hit%: <span style={{ fontFamily: 'monospace' }}>{(d.hardHitPct ?? 0).toFixed(1)}%</span></div>
+            {isElite(d) && <div style={{ color: EC_RED, fontWeight: 700, marginTop: 4 }}>Elite contact profile</div>}
+          </div>
+        )}
+        height={520}
+      />
     </>
   );
 }
@@ -1008,9 +733,6 @@ function TeamScoringAnalytics({ sport, divisionLabel = 'Conference' }: { sport: 
   const [view, setView]           = useState<'scatter' | 'diff' | 'scoring' | 'splits' | 'zscore' | 'pace'>('scatter');
   const [divFilter, setDivFilter] = useState('ALL');
 
-  const ppgRef  = useRef<HTMLDivElement>(null);
-  const paceRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     setLoading(true); setError('');
     fetch(getApiUrl(`analytics-data/team-scoring/${sport}`))
@@ -1037,9 +759,6 @@ function TeamScoringAnalytics({ sport, divisionLabel = 'Conference' }: { sport: 
     };
     return { abbr: t.abbr, home: parseRecord(t.homeRecord), road: parseRecord(t.roadRecord) };
   }).sort((a, b) => (b.home + b.road) - (a.home + a.road)).slice(0, 20);
-
-  const zoomPpg  = useScatterZoom(ppgRef,  filtered,  'ppg',  'papg');
-  const zoomPace = useScatterZoom(paceRef, advTeams,  'pace', 'netRtg');
 
   if (loading) return <div className="skeleton" style={{ height: 340, borderRadius: 8 }} />;
   if (error)   return <div className="empty-state"><h3>Unavailable</h3><p>{error}</p></div>;
@@ -1080,53 +799,67 @@ function TeamScoringAnalytics({ sport, divisionLabel = 'Conference' }: { sport: 
       {view === 'scatter' && (() => {
         const avgPPG  = filtered.length ? filtered.reduce((s, t) => s + (t.ppg ?? 0), 0) / filtered.length : 110;
         const avgPAPG = filtered.length ? filtered.reduce((s, t) => s + (t.papg ?? 0), 0) / filtered.length : 110;
+        const scatterData = filtered.map((t) => {
+          const isElite = (t.ppg ?? 0) > avgPPG && (t.papg ?? 0) < avgPAPG;
+          const isPoor  = (t.ppg ?? 0) < avgPPG && (t.papg ?? 0) > avgPAPG;
+          return {
+            value: [t.ppg ?? 0, t.papg ?? 0],
+            name: t.abbr ?? '',
+            team: t.team ?? '',
+            diff: t.diff ?? 0,
+            wins: t.wins ?? 0,
+            losses: t.losses ?? 0,
+            streak: t.streak ?? '',
+            itemStyle: { color: isElite ? EC_GREEN : isPoor ? EC_RED : EC_BLUE, opacity: 0.85 },
+            symbolSize: 9,
+            label: { show: true },
+          };
+        });
         return (
           <div className="data-table-wrap" style={{ padding: '20px 16px' }}>
             <p className="section-title" style={{ marginBottom: 4 }}>Offensive vs Defensive Efficiency</p>
             <p className="data-note" style={{ marginBottom: 8 }}>
               <span style={{ color: EMERALD, fontWeight: 700 }}>Bottom-right</span> = high offense + low points allowed (elite, cover favorites).
               <span style={{ color: BRAND_RED, fontWeight: 700 }}> Top-left</span> = low offense + high allowed (dogs/under territory).
-              Use <strong>Zoom</strong> to separate crowded clusters.
+              Scroll to zoom, drag to pan.
             </p>
-            <ZoomToolbar zoom={zoomPpg} />
-            <div ref={ppgRef} style={{ position: 'relative' }}>
-              <ResponsiveContainer width="100%" height={500}>
-                <ScatterChart margin={ZOOM_M}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={BORDER} />
-                  <XAxis dataKey="ppg"  type="number" name="PPG"  {...AXIS_PROPS} width={YAXIS_W} domain={zoomPpg.xDomainProps} label={{ value: 'Points Scored/G', position: 'insideBottom', offset: -14, fill: MUTED_FG, fontSize: 11 }} />
-                  <YAxis dataKey="papg" type="number" name="PAPG" {...AXIS_PROPS} width={YAXIS_W} domain={zoomPpg.yDomainProps} label={{ value: 'Points Allowed/G', angle: -90, position: 'insideLeft', fill: MUTED_FG, fontSize: 11 }} />
-                  <ZAxis range={[44, 44]} />
-                  <Tooltip cursor={{ strokeDasharray: '3 3', stroke: BORDER }} content={({ active, payload }) => {
-                    if (!active || !payload?.length) return null;
-                    const t = payload[0].payload;
-                    return (
-                      <div style={{ background: SIDEBAR_BG, border: `1px solid ${BORDER}`, borderRadius: 6, padding: '10px 14px', fontSize: '0.78rem' }}>
-                        <p style={{ color: 'oklch(98.5% 0 0)', fontWeight: 700, marginBottom: 4 }}>{t.team}</p>
-                        <p style={{ color: MUTED_FG, margin: '2px 0' }}>PPG: <strong style={{ color: 'oklch(98.5% 0 0)' }}>{t.ppg?.toFixed(1)}</strong></p>
-                        <p style={{ color: MUTED_FG, margin: '2px 0' }}>PAPG: <strong style={{ color: 'oklch(98.5% 0 0)' }}>{t.papg?.toFixed(1)}</strong></p>
-                        <p style={{ color: MUTED_FG, margin: '2px 0' }}>Diff: <strong style={{ color: t.diff > 0 ? EMERALD : BRAND_RED }}>{t.diff > 0 ? '+' : ''}{t.diff?.toFixed(1)}</strong></p>
-                        <p style={{ color: MUTED_FG, margin: '2px 0' }}>{t.wins}–{t.losses} • {t.streak}</p>
-                      </div>
-                    );
-                  }} />
-                  <ReferenceLine x={avgPPG}  stroke={MUTED_FG} strokeDasharray="4 4" strokeOpacity={0.5} label={{ value: 'Avg Off', position: 'top', fill: MUTED_FG, fontSize: 10 }} />
-                  <ReferenceLine y={avgPAPG} stroke={MUTED_FG} strokeDasharray="4 4" strokeOpacity={0.5} label={{ value: 'Avg Def', position: 'right', fill: MUTED_FG, fontSize: 10 }} />
-                  <Scatter data={filtered} shape={(props: any) => {
-                    const { cx, cy, payload } = props;
-                    const isElite = (payload.ppg ?? 0) > avgPPG && (payload.papg ?? 0) < avgPAPG;
-                    const isPoor  = (payload.ppg ?? 0) < avgPPG && (payload.papg ?? 0) > avgPAPG;
-                    const fill = isElite ? EMERALD : isPoor ? BRAND_RED : BLUE;
-                    return (
-                      <g>
-                        <circle cx={cx} cy={cy} r={5} fill={fill} fillOpacity={0.8} />
-                        <text x={cx + 6} y={cy - 4} fontSize={8} fill={fill} fontFamily="Nunito" fontWeight="bold">{payload.abbr}</text>
-                      </g>
-                    );
-                  }} />
-                </ScatterChart>
-              </ResponsiveContainer>
-              <ZoomOverlay zoom={zoomPpg} />
-            </div>
+            <ReactECharts
+              option={{
+                backgroundColor: 'transparent',
+                grid: SCATTER_GRID,
+                tooltip: {
+                  ...SCATTER_TOOLTIP,
+                  trigger: 'item',
+                  formatter: (params: { data: { team: string; value: number[]; diff: number; wins: number; losses: number; streak: string } }) => {
+                    const d = params.data;
+                    const dc = d.diff > 0 ? EC_GREEN : EC_RED;
+                    return `<strong>${d.team}</strong><br/>PPG: ${d.value[0].toFixed(1)}<br/>PAPG: ${d.value[1].toFixed(1)}<br/>Diff: <span style="color:${dc}">${d.diff > 0 ? '+' : ''}${d.diff.toFixed(1)}</span><br/>${d.wins}–${d.losses} • ${d.streak}`;
+                  },
+                },
+                xAxis: { type: 'value', name: 'Points Scored/G', nameLocation: 'middle', nameGap: 30, nameTextStyle: { color: EC_MUTED, fontSize: 11 }, axisLabel: { color: EC_MUTED, fontSize: 10 }, axisLine: { show: false }, axisTick: { show: false }, splitLine: { lineStyle: { color: EC_GRID } } },
+                yAxis: { type: 'value', name: 'Points Allowed/G', nameLocation: 'middle', nameGap: 44, nameRotate: 90, nameTextStyle: { color: EC_MUTED, fontSize: 11 }, axisLabel: { color: EC_MUTED, fontSize: 10 }, axisLine: { show: false }, axisTick: { show: false }, splitLine: { lineStyle: { color: EC_GRID } } },
+                dataZoom: [{ type: 'inside' }],
+                series: [{
+                  type: 'scatter',
+                  data: scatterData as unknown[],
+                  label: {
+                    show: false,
+                    position: 'right',
+                    fontSize: 8,
+                    fontWeight: 'bold',
+                    formatter: (p: { data: { name?: string } }) => p.data.name ?? '',
+                  },
+                  markLine: {
+                    silent: true,
+                    symbol: 'none',
+                    data: [{ xAxis: avgPPG }, { yAxis: avgPAPG }],
+                    lineStyle: { color: EC_MUTED, type: 'dashed', width: 1, opacity: 0.5 },
+                    label: { show: false },
+                  },
+                }],
+              }}
+              style={{ height: 500 }}
+            />
           </div>
         );
       })()}
@@ -1280,54 +1013,65 @@ function TeamScoringAnalytics({ sport, divisionLabel = 'Conference' }: { sport: 
             {(() => {
               const avgPace = advTeams.reduce((s, t) => s + (t.pace??0), 0) / advTeams.length;
               const avgNet  = advTeams.reduce((s, t) => s + (t.netRtg??0), 0) / advTeams.length;
+              const paceData = advTeams.map(t => {
+                const fastGood = (t.pace??0) > avgPace && (t.netRtg??0) > avgNet;
+                const slowBad  = (t.pace??0) < avgPace && (t.netRtg??0) < avgNet;
+                return {
+                  value: [t.pace ?? 0, t.netRtg ?? 0],
+                  name: t.abbr ?? '',
+                  offRtg: t.offRtg ?? 0,
+                  defRtg: t.defRtg ?? 0,
+                  tsPct: t.tsPct ?? 0,
+                  itemStyle: { color: fastGood ? EC_GREEN : slowBad ? EC_BLUE : EC_YELLOW, opacity: 0.85 },
+                  symbolSize: 9,
+                  label: { show: true },
+                };
+              });
               return (
                 <div className="data-table-wrap" style={{ padding: '20px 16px' }}>
                   <p className="section-title" style={{ marginBottom: 4 }}>Pace vs Net Rating — All NBA Teams</p>
                   <p className="data-note" style={{ marginBottom: 8 }}>
                     <span style={{ color: EMERALD, fontWeight: 700 }}>Top-right</span> = fast pace + positive net rating — games go OVER more often.
                     <span style={{ color: BLUE, fontWeight: 700 }}> Bottom-left</span> = slow + bad team — grind-it-out games, lean UNDER.
-                    Use <strong>Zoom</strong> to isolate clusters.
+                    Scroll to zoom, drag to pan.
                   </p>
-                  <ZoomToolbar zoom={zoomPace} />
-                  <div ref={paceRef} style={{ position: 'relative' }}>
-                    <ResponsiveContainer width="100%" height={460}>
-                      <ScatterChart margin={ZOOM_M}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={BORDER} />
-                        <XAxis dataKey="pace"   type="number" name="Pace"   {...AXIS_PROPS} width={YAXIS_W} domain={zoomPace.xDomainProps} label={{ value: 'Pace (possessions/48 min)', position: 'insideBottom', offset: -14, fill: MUTED_FG, fontSize: 11 }} />
-                        <YAxis dataKey="netRtg" type="number" name="NetRtg" {...AXIS_PROPS} width={YAXIS_W} domain={zoomPace.yDomainProps} label={{ value: 'Net Rating', angle: -90, position: 'insideLeft', fill: MUTED_FG, fontSize: 11 }} />
-                        <ZAxis range={[44, 44]} />
-                        <Tooltip cursor={{ strokeDasharray: '3 3', stroke: BORDER }} content={({ active, payload }) => {
-                          if (!active || !payload?.length) return null;
-                          const t = payload[0].payload;
-                          return (
-                            <div style={{ background: SIDEBAR_BG, border: `1px solid ${BORDER}`, borderRadius: 6, padding: '10px 14px', fontSize: '0.78rem' }}>
-                              <p style={{ color: 'oklch(98.5% 0 0)', fontWeight: 700, marginBottom: 4 }}>{t.abbr}</p>
-                              <p style={{ color: MUTED_FG, margin: '2px 0' }}>Pace: <strong style={{ color: 'oklch(98.5% 0 0)' }}>{(t.pace??0).toFixed(1)}</strong></p>
-                              <p style={{ color: MUTED_FG, margin: '2px 0' }}>OffRtg: <strong style={{ color: EMERALD }}>{(t.offRtg??0).toFixed(1)}</strong></p>
-                              <p style={{ color: MUTED_FG, margin: '2px 0' }}>DefRtg: <strong style={{ color: BRAND_RED }}>{(t.defRtg??0).toFixed(1)}</strong></p>
-                              <p style={{ color: MUTED_FG, margin: '2px 0' }}>NetRtg: <strong style={{ color: (t.netRtg??0) > 0 ? EMERALD : BRAND_RED }}>{(t.netRtg??0) > 0 ? '+' : ''}{(t.netRtg??0).toFixed(1)}</strong></p>
-                              <p style={{ color: MUTED_FG, margin: '2px 0' }}>TS%: <strong style={{ color: 'oklch(98.5% 0 0)' }}>{((t.tsPct??0)*100).toFixed(1)}%</strong></p>
-                            </div>
-                          );
-                        }} />
-                        <ReferenceLine x={avgPace} stroke={MUTED_FG} strokeDasharray="4 4" strokeOpacity={0.5} label={{ value: 'Avg Pace', position: 'top', fill: MUTED_FG, fontSize: 10 }} />
-                        <ReferenceLine y={avgNet}  stroke={MUTED_FG} strokeDasharray="4 4" strokeOpacity={0.5} label={{ value: 'Avg Net', position: 'right', fill: MUTED_FG, fontSize: 10 }} />
-                        <Scatter data={advTeams} shape={(props: any) => {
-                          const { cx, cy, payload } = props;
-                          const fastGood = (payload.pace??0) > avgPace && (payload.netRtg??0) > avgNet;
-                          const slowBad  = (payload.pace??0) < avgPace && (payload.netRtg??0) < avgNet;
-                          const fill = fastGood ? EMERALD : slowBad ? BLUE : YELLOW;
-                          return (
-                            <g>
-                              <circle cx={cx} cy={cy} r={5} fill={fill} fillOpacity={0.85} />
-                              <text x={cx + 6} y={cy - 4} fontSize={9} fill={fill} fontFamily="Nunito" fontWeight="bold">{payload.abbr}</text>
-                            </g>
-                          );
-                        }} />
-                      </ScatterChart>
-                    </ResponsiveContainer>
-                    <ZoomOverlay zoom={zoomPace} />
-                  </div>
+                  <ReactECharts
+                    option={{
+                      backgroundColor: 'transparent',
+                      grid: SCATTER_GRID,
+                      tooltip: {
+                        ...SCATTER_TOOLTIP,
+                        trigger: 'item',
+                        formatter: (params: { data: { name: string; value: number[]; offRtg: number; defRtg: number; tsPct: number } }) => {
+                          const d = params.data;
+                          const nc = d.value[1] > 0 ? EC_GREEN : EC_RED;
+                          return `<strong>${d.name}</strong><br/>Pace: ${d.value[0].toFixed(1)}<br/>OffRtg: <span style="color:${EC_GREEN}">${d.offRtg.toFixed(1)}</span><br/>DefRtg: <span style="color:${EC_RED}">${d.defRtg.toFixed(1)}</span><br/>NetRtg: <span style="color:${nc}">${d.value[1] > 0 ? '+' : ''}${d.value[1].toFixed(1)}</span><br/>TS%: ${(d.tsPct * 100).toFixed(1)}%`;
+                        },
+                      },
+                      xAxis: { type: 'value', name: 'Pace (possessions/48 min)', nameLocation: 'middle', nameGap: 30, nameTextStyle: { color: EC_MUTED, fontSize: 11 }, axisLabel: { color: EC_MUTED, fontSize: 10 }, axisLine: { show: false }, axisTick: { show: false }, splitLine: { lineStyle: { color: EC_GRID } } },
+                      yAxis: { type: 'value', name: 'Net Rating', nameLocation: 'middle', nameGap: 44, nameRotate: 90, nameTextStyle: { color: EC_MUTED, fontSize: 11 }, axisLabel: { color: EC_MUTED, fontSize: 10 }, axisLine: { show: false }, axisTick: { show: false }, splitLine: { lineStyle: { color: EC_GRID } } },
+                      dataZoom: [{ type: 'inside' }],
+                      series: [{
+                        type: 'scatter',
+                        data: paceData as unknown[],
+                        label: {
+                          show: false,
+                          position: 'right',
+                          fontSize: 8,
+                          fontWeight: 'bold',
+                          formatter: (p: { data: { name?: string } }) => p.data.name ?? '',
+                        },
+                        markLine: {
+                          silent: true,
+                          symbol: 'none',
+                          data: [{ xAxis: avgPace }, { yAxis: avgNet }],
+                          lineStyle: { color: EC_MUTED, type: 'dashed', width: 1, opacity: 0.5 },
+                          label: { show: false },
+                        },
+                      }],
+                    }}
+                    style={{ height: 460 }}
+                  />
                 </div>
               );
             })()}
@@ -1446,9 +1190,6 @@ function NCAABTRank() {
     [confFilter, teams],
   );
 
-  const effRef = useRef<HTMLDivElement>(null);
-  const zoomEff = useScatterZoom(effRef, filtered, 'adjOE', 'adjDE');
-
   if (loading) return <div className="skeleton" style={{ height: 340, borderRadius: 8 }} />;
   if (error)   return <div className="empty-state"><h3>Unavailable</h3><p>{error}</p></div>;
 
@@ -1491,57 +1232,72 @@ function NCAABTRank() {
       })()}
 
       {/* Efficiency quadrant */}
-      {view === 'eff' && (
-        <div className="data-table-wrap" style={{ padding: '20px 16px' }}>
-          <p className="section-title" style={{ marginBottom: 4 }}>Adjusted Offensive vs Defensive Efficiency</p>
-          <p className="data-note" style={{ marginBottom: 8 }}>
-            <span style={{ color: EMERALD, fontWeight: 700 }}>Top-right</span> = high offense + stingy defense (elite ATS favorites).
-            <span style={{ color: BRAND_RED, fontWeight: 700 }}> Bottom-left</span> = weak offense + porous defense (avoid — unpredictable).
-            Hover for team name. Use <strong>Zoom</strong> to separate the mid-major cluster.
-          </p>
-          <ZoomToolbar zoom={zoomEff} />
-          <div ref={effRef} style={{ position: 'relative' }}>
-            <ResponsiveContainer width="100%" height={520}>
-              <ScatterChart margin={ZOOM_M}>
-                <CartesianGrid strokeDasharray="3 3" stroke={BORDER} />
-                <XAxis dataKey="adjOE" type="number" name="AdjOE" {...AXIS_PROPS} width={YAXIS_W} domain={zoomEff.xDomainProps} label={{ value: 'Adj. Off. Efficiency', position: 'insideBottom', offset: -14, fill: MUTED_FG, fontSize: 11 }} />
-                <YAxis dataKey="adjDE" type="number" name="AdjDE" {...AXIS_PROPS} width={YAXIS_W} domain={zoomEff.yDomainProps} label={{ value: 'Adj. Def. Efficiency (lower = better)', angle: -90, position: 'insideLeft', fill: MUTED_FG, fontSize: 11 }} />
-                <ZAxis range={[38, 38]} />
-                <Tooltip cursor={{ strokeDasharray: '3 3', stroke: BORDER }} content={({ active, payload }) => {
-                  if (!active || !payload?.length) return null;
-                  const t = payload[0].payload;
-                  return (
-                    <div style={{ background: SIDEBAR_BG, border: `1px solid ${BORDER}`, borderRadius: 6, padding: '10px 14px', fontSize: '0.78rem' }}>
-                      <p style={{ color: 'oklch(98.5% 0 0)', fontWeight: 700, marginBottom: 4 }}>#{t.rank} {t.team}</p>
-                      <p style={{ color: MUTED_FG, margin: '2px 0' }}>Conf: <strong style={{ color: 'oklch(98.5% 0 0)' }}>{t.conf}</strong></p>
-                      <p style={{ color: MUTED_FG, margin: '2px 0' }}>AdjOE: <strong style={{ color: EMERALD }}>{(t.adjOE??0).toFixed(1)}</strong></p>
-                      <p style={{ color: MUTED_FG, margin: '2px 0' }}>AdjDE: <strong style={{ color: BRAND_RED }}>{(t.adjDE??0).toFixed(1)}</strong></p>
-                      <p style={{ color: MUTED_FG, margin: '2px 0' }}>Tempo: <strong>{(t.adjTempo??0).toFixed(1)}</strong></p>
-                      <p style={{ color: MUTED_FG, margin: '2px 0' }}>Barthag: <strong style={{ color: (t.barthag??0) > 0.7 ? EMERALD : BRAND_RED }}>{(t.barthag??0).toFixed(3)}</strong></p>
-                    </div>
-                  );
-                }} />
-                <ReferenceLine x={avgOE} stroke={MUTED_FG} strokeDasharray="4 4" strokeOpacity={0.5} label={{ value: 'Avg Off', position: 'top', fill: MUTED_FG, fontSize: 10 }} />
-                <ReferenceLine y={avgDE} stroke={MUTED_FG} strokeDasharray="4 4" strokeOpacity={0.5} label={{ value: 'Avg Def', position: 'right', fill: MUTED_FG, fontSize: 10 }} />
-                <Scatter data={filtered} shape={(props: any) => {
-                  const { cx, cy, payload } = props;
-                  const elite = (payload.adjOE??0) > avgOE && (payload.adjDE??0) < avgDE;
-                  const poor  = (payload.adjOE??0) < avgOE && (payload.adjDE??0) > avgDE;
-                  const fill  = elite ? EMERALD : poor ? BRAND_RED : BLUE;
-                  const isTop = (payload.rank??999) <= 25;
-                  return (
-                    <g>
-                      <circle cx={cx} cy={cy} r={isTop ? 6 : 4} fill={fill} fillOpacity={isTop ? 0.9 : 0.65} />
-                      {isTop && <text x={cx + 6} y={cy - 4} fontSize={8} fill={fill} fontFamily="Nunito" fontWeight="bold">{payload.team?.split(' ').pop()}</text>}
-                    </g>
-                  );
-                }} />
-              </ScatterChart>
-            </ResponsiveContainer>
-            <ZoomOverlay zoom={zoomEff} />
+      {view === 'eff' && (() => {
+        const effData = filtered.map(t => {
+          const elite = (t.adjOE??0) > avgOE && (t.adjDE??0) < avgDE;
+          const poor  = (t.adjOE??0) < avgOE && (t.adjDE??0) > avgDE;
+          const isTop = (t.rank??999) <= 25;
+          return {
+            value: [t.adjOE ?? 0, t.adjDE ?? 0],
+            name: t.team?.split(' ').pop() ?? '',
+            fullTeam: t.team ?? '',
+            conf: t.conf ?? '',
+            rank: t.rank ?? 0,
+            adjTempo: t.adjTempo ?? 0,
+            barthag: t.barthag ?? 0,
+            itemStyle: { color: elite ? EC_GREEN : poor ? EC_RED : EC_BLUE, opacity: isTop ? 0.9 : 0.65 },
+            symbolSize: isTop ? 10 : 6,
+            label: { show: isTop },
+          };
+        });
+        return (
+          <div className="data-table-wrap" style={{ padding: '20px 16px' }}>
+            <p className="section-title" style={{ marginBottom: 4 }}>Adjusted Offensive vs Defensive Efficiency</p>
+            <p className="data-note" style={{ marginBottom: 8 }}>
+              <span style={{ color: EMERALD, fontWeight: 700 }}>Top-right</span> = high offense + stingy defense (elite ATS favorites).
+              <span style={{ color: BRAND_RED, fontWeight: 700 }}> Bottom-left</span> = weak offense + porous defense (avoid — unpredictable).
+              Scroll to zoom, drag to pan.
+            </p>
+            <ReactECharts
+              option={{
+                backgroundColor: 'transparent',
+                grid: SCATTER_GRID,
+                tooltip: {
+                  ...SCATTER_TOOLTIP,
+                  trigger: 'item',
+                  formatter: (params: { data: { fullTeam: string; rank: number; conf: string; value: number[]; adjTempo: number; barthag: number } }) => {
+                    const d = params.data;
+                    const bc = d.barthag > 0.7 ? EC_GREEN : EC_RED;
+                    return `<strong>#${d.rank} ${d.fullTeam}</strong><br/>Conf: ${d.conf}<br/>AdjOE: <span style="color:${EC_GREEN}">${d.value[0].toFixed(1)}</span><br/>AdjDE: <span style="color:${EC_RED}">${d.value[1].toFixed(1)}</span><br/>Tempo: ${d.adjTempo.toFixed(1)}<br/>Barthag: <span style="color:${bc}">${d.barthag.toFixed(3)}</span>`;
+                  },
+                },
+                xAxis: { type: 'value', name: 'Adj. Off. Efficiency', nameLocation: 'middle', nameGap: 30, nameTextStyle: { color: EC_MUTED, fontSize: 11 }, axisLabel: { color: EC_MUTED, fontSize: 10 }, axisLine: { show: false }, axisTick: { show: false }, splitLine: { lineStyle: { color: EC_GRID } } },
+                yAxis: { type: 'value', name: 'Adj. Def. Efficiency (lower = better)', nameLocation: 'middle', nameGap: 54, nameRotate: 90, nameTextStyle: { color: EC_MUTED, fontSize: 11 }, axisLabel: { color: EC_MUTED, fontSize: 10 }, axisLine: { show: false }, axisTick: { show: false }, splitLine: { lineStyle: { color: EC_GRID } } },
+                dataZoom: [{ type: 'inside' }],
+                series: [{
+                  type: 'scatter',
+                  data: effData as unknown[],
+                  label: {
+                    show: false,
+                    position: 'right',
+                    fontSize: 8,
+                    fontWeight: 'bold',
+                    formatter: (p: { data: { name?: string } }) => p.data.name ?? '',
+                  },
+                  markLine: {
+                    silent: true,
+                    symbol: 'none',
+                    data: [{ xAxis: avgOE }, { yAxis: avgDE }],
+                    lineStyle: { color: EC_MUTED, type: 'dashed', width: 1, opacity: 0.5 },
+                    label: { show: false },
+                  },
+                }],
+              }}
+              style={{ height: 520 }}
+            />
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Tempo / totals chart */}
       {view === 'tempo' && (

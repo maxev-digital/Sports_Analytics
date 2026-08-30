@@ -3,7 +3,7 @@ import { addStakeToBet, deleteBet, addManualBet, updateBet, settleBet } from '..
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from './Toast';
 import { formatTeamName } from '../utils/teamNames';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import ReactECharts from 'echarts-for-react';
 import { logger } from '../utils/logger';
 
 interface SportBreakdown {
@@ -294,29 +294,96 @@ export function PersonalBetAnalytics({
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-black border border-white rounded-xl p-6">
             <h3 className="text-lg font-bold text-white mb-4">Cumulative Profit/Loss</h3>
-            <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={performanceData.history}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis dataKey="date" stroke="#9CA3AF" fontSize={10} tickFormatter={(v) => v.slice(5)} />
-                <YAxis stroke="#9CA3AF" fontSize={10} tickFormatter={(v) => `$${v}`} />
-                <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151', borderRadius: '8px' }} labelStyle={{ color: '#9CA3AF' }} formatter={(value: number) => [`$${value.toFixed(2)}`, 'Cumulative P/L']} />
-                <Line type="monotone" dataKey="cumulative_pl" stroke="#10B981" strokeWidth={2} dot={false} />
-              </LineChart>
-            </ResponsiveContainer>
+            <ReactECharts
+              option={{
+                backgroundColor: 'transparent',
+                grid: { top: 8, right: 8, bottom: 32, left: 8, containLabel: true },
+                xAxis: {
+                  type: 'category',
+                  data: (performanceData.history ?? []).map((h: HistoryEntry) => h.date.slice(5)),
+                  boundaryGap: false,
+                  axisLabel: { color: '#9ca3af', fontSize: 10 },
+                  axisLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } },
+                  axisTick: { show: false },
+                },
+                yAxis: {
+                  type: 'value',
+                  axisLabel: { color: '#9ca3af', fontSize: 10, formatter: (v: number) => `$${v}` },
+                  axisLine: { show: false },
+                  axisTick: { show: false },
+                  splitLine: { lineStyle: { color: 'rgba(255,255,255,0.06)' } },
+                },
+                tooltip: {
+                  trigger: 'axis',
+                  backgroundColor: '#1a1a1a',
+                  borderColor: 'rgba(255,255,255,0.12)',
+                  textStyle: { color: '#e5e7eb', fontSize: 12 },
+                  valueFormatter: (v: number) => `$${v.toFixed(2)}`,
+                },
+                series: [{
+                  type: 'line',
+                  data: (performanceData.history ?? []).map((h: HistoryEntry) => h.cumulative_pl),
+                  smooth: true,
+                  symbol: 'none',
+                  lineStyle: { color: '#10b981', width: 2 },
+                  areaStyle: {
+                    color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(16,185,129,0.3)' }, { offset: 1, color: 'rgba(16,185,129,0.02)' }] },
+                  },
+                }],
+              }}
+              style={{ height: 250 }}
+            />
           </div>
           <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-black border border-white rounded-xl p-6">
             <h3 className="text-lg font-bold text-white mb-4">Daily Results</h3>
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={performanceData.history}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis dataKey="date" stroke="#9CA3AF" fontSize={10} tickFormatter={(v) => v.slice(5)} />
-                <YAxis stroke="#9CA3AF" fontSize={10} />
-                <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151', borderRadius: '8px' }} labelStyle={{ color: '#9CA3AF' }} />
-                <Bar dataKey="wins" name="Wins" fill="#10B981" stackId="a" />
-                <Bar dataKey="losses" name="Losses" fill="#EF4444" stackId="a" />
-                <Legend />
-              </BarChart>
-            </ResponsiveContainer>
+            <ReactECharts
+              option={{
+                backgroundColor: 'transparent',
+                grid: { top: 8, right: 8, bottom: 32, left: 8, containLabel: true },
+                xAxis: {
+                  type: 'category',
+                  data: (performanceData.history ?? []).map((h: HistoryEntry) => h.date.slice(5)),
+                  axisLabel: { color: '#9ca3af', fontSize: 10 },
+                  axisLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } },
+                  axisTick: { show: false },
+                },
+                yAxis: {
+                  type: 'value',
+                  axisLabel: { color: '#9ca3af', fontSize: 10 },
+                  axisLine: { show: false },
+                  axisTick: { show: false },
+                  splitLine: { lineStyle: { color: 'rgba(255,255,255,0.06)' } },
+                },
+                tooltip: {
+                  trigger: 'axis',
+                  backgroundColor: '#1a1a1a',
+                  borderColor: 'rgba(255,255,255,0.12)',
+                  textStyle: { color: '#e5e7eb', fontSize: 12 },
+                },
+                legend: {
+                  data: ['Wins', 'Losses'],
+                  textStyle: { color: '#9ca3af', fontSize: 11 },
+                  bottom: 0,
+                },
+                series: [
+                  {
+                    name: 'Wins',
+                    type: 'bar',
+                    stack: 'results',
+                    data: (performanceData.history ?? []).map((h: HistoryEntry) => h.wins),
+                    itemStyle: { color: '#10b981', borderRadius: [2, 2, 0, 0] },
+                  },
+                  {
+                    name: 'Losses',
+                    type: 'bar',
+                    stack: 'results',
+                    data: (performanceData.history ?? []).map((h: HistoryEntry) => h.losses),
+                    itemStyle: { color: '#ef4444' },
+                  },
+                ],
+              }}
+              style={{ height: 250 }}
+            />
           </div>
         </div>
       )}

@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useBetSlip } from '../contexts/BetSlipContext';
 import { useAuth } from '../contexts/AuthContext';
-import { addManualBet } from '../utils/betTracking';
 import { getSportStyle } from '../utils/sportDetection';
+import { getApiUrl } from '../config';
 import { logger } from '../utils/logger';
 
 export function BetSlipToast() {
   const { isOpen, betData, closeBetSlip } = useBetSlip();
-  const { username } = useAuth();
+  const { username, token } = useAuth();
+  const queryClient = useQueryClient();
 
   // Form state
   const [sport, setSport] = useState('');
@@ -47,7 +49,7 @@ export function BetSlipToast() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!username) {
+    if (!token) {
       setError('Please log in to track bets');
       return;
     }
@@ -56,36 +58,44 @@ export function BetSlipToast() {
     setError(null);
 
     // Combine betSide with line for totals/spreads (e.g., "OVER 220.5" or "Lakers -5.5")
-    const formattedBetSide = line && (betType === 'total' || betType === 'spread')
-      ? betSide + ' ' + line
+    const formattedPick = line && (betType === 'total' || betType === 'spread')
+      ? `${betSide} ${line}`
       : betSide;
 
+    const event = homeTeam && awayTeam ? `${awayTeam} @ ${homeTeam}` : (homeTeam || awayTeam || '');
+
     try {
-      const result = await addManualBet({
-        userId: username,
-        sport: sport,
-        homeTeam: homeTeam,
-        awayTeam: awayTeam,
-        commenceTime: betData?.commenceTime || new Date().toISOString(),
-        betType: betType,
-        betSide: formattedBetSide,
-        odds: parseFloat(odds),
-        stake: parseFloat(stake),
-        bookmaker: bookmaker,
-        confidence: confidence,
-        edgePercent: edgePercent ? parseFloat(edgePercent) : undefined,
-        notes: notes || undefined
+      const resp = await fetch(getApiUrl('v1/bets/manual'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          book: bookmaker,
+          bet_type: betType === 'total' ? 'straight' : betType === 'moneyline' ? 'straight' : betType === 'prop' ? 'prop' : 'straight',
+          sport: sport,
+          event: event,
+          market: betType,
+          pick: formattedPick,
+          odds: odds ? parseInt(odds) : null,
+          stake: stake ? parseFloat(stake) : null,
+          to_win: stake && odds ? computeToWin(parseFloat(stake), parseInt(odds)) : null,
+          notes: notes || null,
+        }),
       });
 
-      if (result) {
+      if (resp.ok) {
         setSuccess(true);
-        // Auto-close after 2 seconds
+        // Refresh My Bets everywhere
+        queryClient.invalidateQueries({ queryKey: ['user-bets'] });
         setTimeout(() => {
           closeBetSlip();
           setSuccess(false);
         }, 2000);
       } else {
-        setError('Failed to track bet. Please try again.');
+        const msg = await resp.text();
+        setError(`Failed to track bet: ${msg}`);
       }
     } catch (err) {
       setError('Error tracking bet. Please try again.');
@@ -94,6 +104,11 @@ export function BetSlipToast() {
       setIsSubmitting(false);
     }
   };
+
+  function computeToWin(stake: number, odds: number): number {
+    if (odds > 0) return parseFloat(((stake * odds) / 100).toFixed(2));
+    return parseFloat(((stake * 100) / Math.abs(odds)).toFixed(2));
+  }
 
   const handleClose = () => {
     closeBetSlip();

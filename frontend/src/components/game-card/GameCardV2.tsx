@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { LiveGame, GameOdds } from '../../types';
 import { detectSport, getSportBorderClass } from '../../utils/sportDetection';
 import { formatTeamName } from '../../utils/teamNames';
@@ -42,6 +43,7 @@ export function GameCardV2({ game, isPinned = false, onTogglePin, matchingPicks 
   const { username } = useAuth();
   const { openBetSlip } = useBetSlip();
 
+  const navigate = useNavigate();
   const [selectedMarket, setSelectedMarket] = useState<Market>('totals');
   const [isDetailOpen, setIsDetailOpen] = useState(false);
 
@@ -154,16 +156,24 @@ export function GameCardV2({ game, isPinned = false, onTogglePin, matchingPicks 
       {/* Signal Bar */}
       <SignalBar projection={projection} matchingPicks={matchingPicks} sport={sport} isLive={isLive} />
 
-      {/* Detail toggle */}
-      {hasDetail && (
+      {/* Footer actions */}
+      <div className="mt-2 flex items-center justify-between gap-2">
+        {hasDetail ? (
+          <button
+            onClick={() => setIsDetailOpen(v => !v)}
+            className="text-xs text-slate-500 hover:text-slate-300 transition-colors flex items-center gap-1"
+          >
+            <span>{isDetailOpen ? '▼' : '▶'}</span>
+            <span>{isDetailOpen ? 'Hide details' : 'View details'}</span>
+          </button>
+        ) : <span />}
         <button
-          onClick={() => setIsDetailOpen(v => !v)}
-          className="mt-2 w-full text-xs text-slate-500 hover:text-slate-300 transition-colors text-left flex items-center gap-1"
+          onClick={() => navigate(`/matchup/${state.id}`)}
+          className="text-xs px-2.5 py-1 rounded bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white transition-colors border border-slate-600 font-medium"
         >
-          <span>{isDetailOpen ? '▼' : '▶'}</span>
-          <span>{isDetailOpen ? 'Hide details' : 'View details'}</span>
+          Full Matchup →
         </button>
-      )}
+      </div>
 
       {/* Detail drawer */}
       <GameDetailDrawer game={game} isOpen={isDetailOpen} onClose={() => setIsDetailOpen(false)} />

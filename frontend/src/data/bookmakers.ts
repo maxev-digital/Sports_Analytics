@@ -7,7 +7,8 @@
 export interface Bookmaker {
   key: string;           // The Odds API key
   name: string;          // Display name
-  url: string;           // Sportsbook URL
+  url: string;           // Sportsbook URL (default / home)
+  sportUrls?: Partial<Record<string, string>>; // sport_key → direct URL
   region: string[];      // Regions where available
   logo: string;          // Logo URL (production: local, dev: favicon)
   logoFallback: string;  // Fallback to Google favicon
@@ -56,7 +57,15 @@ export const BOOKMAKERS: Record<string, Bookmaker> = {
   draftkings: {
     key: 'draftkings',
     name: 'DraftKings',
-    url: 'https://sportsbook.draftkings.com/leagues/basketball/nba',
+    url: 'https://sportsbook.draftkings.com',
+    sportUrls: {
+      baseball_mlb:            'https://sportsbook.draftkings.com/leagues/baseball/mlb',
+      americanfootball_nfl:    'https://sportsbook.draftkings.com/leagues/football/nfl',
+      americanfootball_ncaaf:  'https://sportsbook.draftkings.com/leagues/football/ncaaf',
+      basketball_nba:          'https://sportsbook.draftkings.com/leagues/basketball/nba',
+      basketball_ncaab:        'https://sportsbook.draftkings.com/leagues/basketball/ncaab',
+      icehockey_nhl:           'https://sportsbook.draftkings.com/leagues/hockey/nhl',
+    },
     region: ['US'],
     logo: getLogoUrl('draftkings', true),
     logoFallback: getLogoUrl('draftkings', false),
@@ -65,7 +74,15 @@ export const BOOKMAKERS: Record<string, Bookmaker> = {
   fanduel: {
     key: 'fanduel',
     name: 'FanDuel',
-    url: 'https://sportsbook.fanduel.com/navigation/nba',
+    url: 'https://sportsbook.fanduel.com',
+    sportUrls: {
+      baseball_mlb:            'https://sportsbook.fanduel.com/navigation/mlb',
+      americanfootball_nfl:    'https://sportsbook.fanduel.com/navigation/nfl',
+      americanfootball_ncaaf:  'https://sportsbook.fanduel.com/navigation/college-football',
+      basketball_nba:          'https://sportsbook.fanduel.com/navigation/nba',
+      basketball_ncaab:        'https://sportsbook.fanduel.com/navigation/college-basketball',
+      icehockey_nhl:           'https://sportsbook.fanduel.com/navigation/nhl',
+    },
     region: ['US'],
     logo: getLogoUrl('fanduel', true),
     logoFallback: getLogoUrl('fanduel', false),
@@ -74,7 +91,15 @@ export const BOOKMAKERS: Record<string, Bookmaker> = {
   betmgm: {
     key: 'betmgm',
     name: 'BetMGM',
-    url: 'https://sports.betmgm.com/en/sports/basketball-7/betting/usa-9/nba-6004',
+    url: 'https://sports.betmgm.com/en/sports',
+    sportUrls: {
+      baseball_mlb:            'https://sports.betmgm.com/en/sports/baseball-23/betting/usa-9/mlb-75',
+      americanfootball_nfl:    'https://sports.betmgm.com/en/sports/football-11/betting/usa-9/nfl-35',
+      americanfootball_ncaaf:  'https://sports.betmgm.com/en/sports/football-11/betting/usa-9/college-football-11982',
+      basketball_nba:          'https://sports.betmgm.com/en/sports/basketball-7/betting/usa-9/nba-6004',
+      basketball_ncaab:        'https://sports.betmgm.com/en/sports/basketball-7/betting/usa-9/college-basketball-9805',
+      icehockey_nhl:           'https://sports.betmgm.com/en/sports/hockey-17/betting/usa-9/nhl-294',
+    },
     region: ['US'],
     logo: getLogoUrl('betmgm', true),
     logoFallback: getLogoUrl('betmgm', false),
@@ -83,7 +108,15 @@ export const BOOKMAKERS: Record<string, Bookmaker> = {
   caesars: {
     key: 'caesars',
     name: 'Caesars',
-    url: 'https://www.caesars.com/sportsbook-and-casino/basketball/nba',
+    url: 'https://www.caesars.com/sportsbook-and-casino',
+    sportUrls: {
+      baseball_mlb:            'https://www.caesars.com/sportsbook-and-casino/baseball/mlb',
+      americanfootball_nfl:    'https://www.caesars.com/sportsbook-and-casino/football/nfl',
+      americanfootball_ncaaf:  'https://www.caesars.com/sportsbook-and-casino/football/college-football',
+      basketball_nba:          'https://www.caesars.com/sportsbook-and-casino/basketball/nba',
+      basketball_ncaab:        'https://www.caesars.com/sportsbook-and-casino/basketball/college-basketball',
+      icehockey_nhl:           'https://www.caesars.com/sportsbook-and-casino/hockey/nhl',
+    },
     region: ['US'],
     logo: getLogoUrl('caesars', true),
     logoFallback: getLogoUrl('caesars', false),
@@ -92,7 +125,15 @@ export const BOOKMAKERS: Record<string, Bookmaker> = {
   betrivers: {
     key: 'betrivers',
     name: 'BetRivers',
-    url: 'https://www.betrivers.com/?page=sportsbook#basketball',
+    url: 'https://www.betrivers.com/?page=sportsbook',
+    sportUrls: {
+      baseball_mlb:            'https://www.betrivers.com/?page=sportsbook#baseball',
+      americanfootball_nfl:    'https://www.betrivers.com/?page=sportsbook#football',
+      americanfootball_ncaaf:  'https://www.betrivers.com/?page=sportsbook#football',
+      basketball_nba:          'https://www.betrivers.com/?page=sportsbook#basketball',
+      basketball_ncaab:        'https://www.betrivers.com/?page=sportsbook#basketball',
+      icehockey_nhl:           'https://www.betrivers.com/?page=sportsbook#hockey',
+    },
     region: ['US'],
     logo: getLogoUrl('betrivers', true),
     logoFallback: getLogoUrl('betrivers', false),
@@ -128,7 +169,15 @@ export const BOOKMAKERS: Record<string, Bookmaker> = {
   espnbet: {
     key: 'espnbet',
     name: 'ESPN BET',
-    url: 'https://espnbet.com/sport/basketball/usa/nba',
+    url: 'https://espnbet.com',
+    sportUrls: {
+      baseball_mlb:            'https://espnbet.com/sport/baseball/usa/mlb',
+      americanfootball_nfl:    'https://espnbet.com/sport/football/usa/nfl',
+      americanfootball_ncaaf:  'https://espnbet.com/sport/football/usa/college-football',
+      basketball_nba:          'https://espnbet.com/sport/basketball/usa/nba',
+      basketball_ncaab:        'https://espnbet.com/sport/basketball/usa/college-basketball',
+      icehockey_nhl:           'https://espnbet.com/sport/hockey/usa/nhl',
+    },
     region: ['US'],
     logo: getLogoUrl('espnbet', true),
     logoFallback: getLogoUrl('espnbet', false),
@@ -281,7 +330,15 @@ export const BOOKMAKERS: Record<string, Bookmaker> = {
   betonlineag: {
     key: 'betonlineag',
     name: 'BetOnline.ag',
-    url: 'https://www.betonline.ag/sportsbook/basketball/nba',
+    url: 'https://www.betonline.ag/sportsbook',
+    sportUrls: {
+      baseball_mlb:            'https://www.betonline.ag/sportsbook/baseball/major-league-baseball',
+      americanfootball_nfl:    'https://www.betonline.ag/sportsbook/football/nfl',
+      americanfootball_ncaaf:  'https://www.betonline.ag/sportsbook/football/college-football',
+      basketball_nba:          'https://www.betonline.ag/sportsbook/basketball/nba',
+      basketball_ncaab:        'https://www.betonline.ag/sportsbook/basketball/college-basketball',
+      icehockey_nhl:           'https://www.betonline.ag/sportsbook/hockey/nhl',
+    },
     region: ['US', 'Global'],
     logo: getLogoUrl('betonlineag', true),
     logoFallback: getLogoUrl('betonlineag', false),
@@ -290,7 +347,16 @@ export const BOOKMAKERS: Record<string, Bookmaker> = {
   bovada: {
     key: 'bovada',
     name: 'Bovada',
-    url: 'https://www.bovada.lv/sports/basketball',
+    // Bovada blocks referrers — link to sport-specific pages with no-referrer policy
+    url: 'https://www.bovada.lv/sports',
+    sportUrls: {
+      baseball_mlb:            'https://www.bovada.lv/sports/baseball/mlb',
+      americanfootball_nfl:    'https://www.bovada.lv/sports/football/nfl',
+      americanfootball_ncaaf:  'https://www.bovada.lv/sports/football/college-football',
+      basketball_nba:          'https://www.bovada.lv/sports/basketball/nba',
+      basketball_ncaab:        'https://www.bovada.lv/sports/basketball/college-basketball',
+      icehockey_nhl:           'https://www.bovada.lv/sports/hockey/nhl',
+    },
     region: ['US', 'Global'],
     logo: getLogoUrl('bovada', true),
     logoFallback: getLogoUrl('bovada', false),
@@ -315,7 +381,15 @@ export const BOOKMAKERS: Record<string, Bookmaker> = {
   betus: {
     key: 'betus',
     name: 'BetUS',
-    url: 'https://www.betus.com.pa/sportsbook/basketball/',
+    url: 'https://www.betus.com.pa/sportsbook/',
+    sportUrls: {
+      baseball_mlb:            'https://www.betus.com.pa/sportsbook/baseball/',
+      americanfootball_nfl:    'https://www.betus.com.pa/sportsbook/football/nfl/',
+      americanfootball_ncaaf:  'https://www.betus.com.pa/sportsbook/football/ncaa/',
+      basketball_nba:          'https://www.betus.com.pa/sportsbook/basketball/nba/',
+      basketball_ncaab:        'https://www.betus.com.pa/sportsbook/basketball/ncaa/',
+      icehockey_nhl:           'https://www.betus.com.pa/sportsbook/hockey/nhl/',
+    },
     region: ['US', 'Global'],
     logo: getLogoUrl('betus', true),
     logoFallback: getLogoUrl('betus', false),
@@ -647,6 +721,19 @@ export const BOOKMAKERS: Record<string, Bookmaker> = {
  */
 export const getBookmaker = (key: string): Bookmaker | undefined => {
   return BOOKMAKERS[key];
+};
+
+/**
+ * Get the best URL for a bookmaker given a sport key.
+ * Falls back to the bookmaker's default URL if no sport-specific URL exists.
+ */
+export const getBookmakerUrl = (key: string, sportKey?: string): string => {
+  const book = BOOKMAKERS[key];
+  if (!book) return '#';
+  if (sportKey && book.sportUrls?.[sportKey]) {
+    return book.sportUrls[sportKey]!;
+  }
+  return book.url;
 };
 
 /**

@@ -19,6 +19,13 @@ import logging
 from pathlib import Path
 from typing import Optional
 
+from services.mlb_umpire_stats import classify_umpire, get_umpire_stats
+from services.mlb_bullpen import get_bullpen_data
+from services.mlb_platoon_splits import get_platoon_splits_for_matchup
+from services.mlb_lineup import check_lineup_confirmed, get_game_context, get_catcher_framing
+from services.mlb_rolling_stats import get_team_rolling_stats
+from services.mlb_bvp import get_bvp_for_game
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/f5", tags=["f5-live"])
@@ -126,6 +133,14 @@ async def _fetch_mlb_games(scan_date: str) -> list:
                 home_era = home_stats.get("era")
                 era_diff = abs(away_era - home_era) if away_era and home_era else None
 
+                # Umpire: quantitative classification replaces static sets
+                ump_class = classify_umpire(hp_ump) if hp_ump else "NEUTRAL"
+                ump_tag = (
+                    "HIGH_TIE" if ump_class == "PITCHER_FRIENDLY"
+                    else "LOW_TIE" if ump_class == "HITTER_FRIENDLY"
+                    else None
+                )
+
                 games.append({
                     "away_team": away,
                     "home_team": home,
@@ -138,11 +153,8 @@ async def _fetch_mlb_games(scan_date: str) -> list:
                     "away_pitcher_stats": away_stats,
                     "home_pitcher_stats": home_stats,
                     "hp_umpire": hp_ump,
-                    "ump_tag": (
-                        "HIGH_TIE" if hp_ump in HIGH_TIE_UMPS
-                        else "LOW_TIE" if hp_ump in LOW_TIE_UMPS
-                        else None
-                    ),
+                    "ump_class": ump_class,
+                    "ump_tag": ump_tag,
                     "venue_tag": (
                         "UNDER" if venue in UNDER_VENUES
                         else "HIGH_TIE" if venue in HIGH_TIE_VENUES
@@ -890,6 +902,144 @@ async def get_recap(date: Optional[str] = Query(default=None)):
             "win_rate": round(total_wins / total_bets * 100, 1) if total_bets else 0,
             "total_pl": total_pl,
         },
+    }
+
+
+@router.get("/mlb-signals/{game_pk}")
+async def get_mlb_game_signals(game_pk: int):
+    """
+    Full MLB signal enrichment for a single game.
+    Aggregates: umpire tendencies, bullpen state, platoon splits, catcher framing,
+    lineup confirmation, rolling team form, and BvP matchup data.
+    Used by the handicapping agent as evidence layer before Sonnet evaluation.
+    """
+    import asyncio
+
+    # Step 1: basic game context from MLB Stats API
+    context = await get_game_context(game_pk)
+    lineup_data = await check_lineup_confirmed(game_pk)
+
+    home_team = None
+    away_team = None
+    home_pitcher = None
+    away_pitcher = None
+    home_pitcher_id = None
+    away_pitcher_id = None
+    hp_umpire = None
+    home_sp_hand = None
+    away_sp_hand = None
+
+    try:
+        async with httpx.AsyncClient(timeout=12) as client:
+            # Use schedule endpoint — works for Preview AND Live/Final games
+            r = await client.get(
+                f"{MLB_API}/schedule",
+                params={
+                    "gamePks": game_pk,
+                    "hydrate": "probablePitcher,officials,venue,weather",
+                },
+            )
+            dates = r.json().get("dates", [])
+            game_info = None
+            for d in dates:
+                for g in d.get("games", []):
+                    if g.get("gamePk") == game_pk:
+                        game_info = g
+                        break
+
+            if game_info:
+                home_team = game_info["teams"]["home"]["team"]["name"]
+                away_team = game_info["teams"]["away"]["team"]["name"]
+
+                hp = game_info["teams"]["home"].get("probablePitcher", {})
+                ap = game_info["teams"]["away"].get("probablePitcher", {})
+                home_pitcher = hp.get("fullName")
+                away_pitcher = ap.get("fullName")
+                home_pitcher_id = hp.get("id")
+                away_pitcher_id = ap.get("id")
+
+                officials = game_info.get("officials", [])
+                hp_umpire = next(
+                    (o["official"]["fullName"] for o in officials
+                     if o.get("officialType") == "Home Plate"), None
+                )
+
+                # Fetch pitcher handedness from people endpoint
+                if home_pitcher_id:
+                    r2 = await client.get(f"{MLB_API}/people/{home_pitcher_id}")
+                    ph_info = r2.json().get("people", [{}])[0]
+                    home_sp_hand = ph_info.get("pitchHand", {}).get("code", "R")
+                if away_pitcher_id:
+                    r3 = await client.get(f"{MLB_API}/people/{away_pitcher_id}")
+                    ph_info = r3.json().get("people", [{}])[0]
+                    away_sp_hand = ph_info.get("pitchHand", {}).get("code", "R")
+
+    except Exception as exc:
+        logger.error("Game signal fetch failed for game_pk=%s: %s", game_pk, exc)
+
+    if not home_team or not away_team:
+        return {"game_pk": game_pk, "error": "Game data not available"}
+
+    # Step 2: fire all enrichment services in parallel
+    tasks = {
+        "umpire": asyncio.create_task(get_umpire_stats(hp_umpire)) if hp_umpire else None,
+        "home_bullpen": asyncio.create_task(get_bullpen_data(home_team)),
+        "away_bullpen": asyncio.create_task(get_bullpen_data(away_team)),
+        "home_rolling": asyncio.create_task(get_team_rolling_stats(home_team)),
+        "away_rolling": asyncio.create_task(get_team_rolling_stats(away_team)),
+    }
+
+    if home_sp_hand and away_sp_hand:
+        tasks["platoon"] = asyncio.create_task(
+            get_platoon_splits_for_matchup(home_team, away_team, away_sp_hand, home_sp_hand)
+        )
+
+    home_lineup_names = [p["name"] for p in lineup_data.get("home_lineup", []) if p.get("name")]
+    away_lineup_names = [p["name"] for p in lineup_data.get("away_lineup", []) if p.get("name")]
+
+    if home_pitcher and away_pitcher and home_lineup_names and away_lineup_names:
+        tasks["bvp"] = asyncio.create_task(
+            get_bvp_for_game(
+                home_lineup_names, away_lineup_names,
+                home_pitcher, away_pitcher,
+                home_pitcher_id, away_pitcher_id,
+            )
+        )
+
+    results = {}
+    for key, task in tasks.items():
+        if task is not None:
+            try:
+                results[key] = await task
+            except Exception as exc:
+                logger.warning("Signal task %s failed: %s", key, exc)
+                results[key] = {"error": str(exc)}
+
+    # Catcher framing (synchronous)
+    home_catcher = lineup_data.get("home_catcher")
+    away_catcher = lineup_data.get("away_catcher")
+    framing = {
+        "home": get_catcher_framing(home_catcher) if home_catcher else None,
+        "away": get_catcher_framing(away_catcher) if away_catcher else None,
+    }
+
+    return {
+        "game_pk": game_pk,
+        "home_team": home_team,
+        "away_team": away_team,
+        "home_pitcher": home_pitcher,
+        "away_pitcher": away_pitcher,
+        "hp_umpire": hp_umpire,
+        "lineup_confirmed": lineup_data.get("confirmed", False),
+        "game_context": context,
+        "umpire_stats": results.get("umpire"),
+        "home_bullpen": results.get("home_bullpen"),
+        "away_bullpen": results.get("away_bullpen"),
+        "platoon_splits": results.get("platoon"),
+        "home_rolling": results.get("home_rolling"),
+        "away_rolling": results.get("away_rolling"),
+        "bvp": results.get("bvp"),
+        "catcher_framing": framing,
     }
 
 

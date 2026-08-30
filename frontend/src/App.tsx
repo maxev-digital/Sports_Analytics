@@ -8,9 +8,6 @@ import { ToastProvider } from './components/Toast';
 import { BetAlertNotificationProvider } from './contexts/BetAlertNotificationContext';
 import { BetSlipProvider } from './contexts/BetSlipContext';
 import { BetSlipToast } from './components/BetSlipToast';
-import { QuarterStrategyAlertMonitor } from './components/QuarterStrategyAlertMonitor';
-import { GoaliePullMonitor } from './components/GoaliePullMonitor';
-import { HedgeAlertMonitor } from './components/HedgeAlertMonitor';
 import { AgentChatWidget } from './components/agent/AgentChatWidget';
 import { AgentProvider, useAgentContext } from './contexts/AgentContext';
 import { AppRoutes } from './components/AppRoutes';
@@ -28,24 +25,16 @@ import SubscriptionCancel from './pages/SubscriptionCancel';
 const bg = 'min-h-screen flex flex-col';
 const queryClient = new QueryClient();
 
-// Must match AgentChatWidget's w-80 (320px)
-const PANEL_WIDTH_CLASS = 'pr-80' as const;
-
 function AppContent() {
   const location = useLocation();
-  const { isOpen } = useAgentContext();
+  const { isOpen, panelWidth } = useAgentContext();
   const excludedPaths = ['/login', '/signup', '/pricing', '/terms', '/privacy', '/disclaimer'];
-  const needsAlerts = location.pathname !== '/' && !excludedPaths.some(p => location.pathname.startsWith(p));
-
   return (
     <AuthProvider>
       <ToastProvider>
         <BetSlipProvider>
           <BetAlertNotificationProvider>
             <BetSlipToast />
-            <QuarterStrategyAlertMonitor enabled={needsAlerts} />
-            <GoaliePullMonitor enabled={needsAlerts} pollInterval={3000} />
-            <HedgeAlertMonitor enabled={needsAlerts} pollInterval={10000} />
 
             <Routes>
               {/* Public auth */}
@@ -93,7 +82,10 @@ function AppContent() {
                 <div className={bg}>
                   <Navigation />
                   {/* Shift content right when panel is open so it doesn't overlay */}
-                  <div className={`flex flex-col flex-grow transition-[padding-right] duration-300 ease-in-out ${isOpen ? PANEL_WIDTH_CLASS : ''}`}>
+                  <div
+                    className="flex flex-col flex-grow transition-[padding-right] duration-300 ease-in-out"
+                    style={{ paddingRight: isOpen ? panelWidth : 0 }}
+                  >
                     <div className="flex-grow"><AppRoutes /></div>
                     <Footer />
                   </div>

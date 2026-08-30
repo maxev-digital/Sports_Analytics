@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getApiUrl } from '../config';
-import { SurvivorStrategy, computeFutureValue, findHolidayDoubles, getWeekHazard } from './SurvivorStrategy';
+import { SurvivorStrategy, findHolidayDoubles, getWeekHazard } from './SurvivorStrategy';
 
 // ── Semantic color tokens (theme-agnostic) ────────────────────────────────────
-// These resolve to CSS custom properties set on the root wrapper div.
 const BG     = 'var(--c-bg)';
 const PANEL  = 'var(--c-panel)';
 const BORDER = 'var(--c-border)';
@@ -111,6 +111,19 @@ interface OptimalPath {
   picks: Record<number, PathPick>;
 }
 
+interface OddsEntry {
+  event_id: string;
+  away: string;
+  home: string;
+  spread: number | null;
+  details: string;
+  over_under: number | null;
+  away_ml: number;
+  home_ml: number;
+  away_implied: number;
+  home_implied: number;
+}
+
 interface GameTags {
   isTNF: boolean;
   isMNF: boolean;
@@ -135,7 +148,6 @@ function getGameTags(date: string): GameTags {
 }
 
 function computePaths(weeks: Record<number, Game[]>): OptimalPath[] {
-  const weeksByRef = weeks; // captured for FV calc inside contrarian path
   const weekNums = Object.keys(weeks).map(Number).sort((a, b) => a - b);
 
   type Cand = { team: string; wp: number; label: string; opp: string; home: boolean };
@@ -193,26 +205,22 @@ function computePaths(weeks: Record<number, Game[]>): OptimalPath[] {
       }),
     },
     {
-      id: 'conservative',
-      name: 'CONSERVATIVE',
-      desc: 'Avoids burning GREAT matchups early — saves them for tough stretches',
+      id: 'safeearly',
+      name: 'SAFE EARLY',
+      desc: 'Takes the biggest favorites in Wks 1–9 — maximizes early survival, accepts whatever is left for the second half',
       color: YELLOW,
       picks: buildPath((c, wk) => {
-        if (wk <= 7 && c.label === 'GREAT') return c.wp * 0.82;
+        if (wk <= 9 && c.label === 'GREAT') return c.wp + 0.15;
         return c.wp;
       }),
     },
     {
-      id: 'contrarian',
-      name: 'CONTRARIAN',
-      desc: 'Avoids high-future-value teams early — the sharp field will hoard them, so use them later',
+      id: 'riskearly',
+      name: 'RISK EARLY',
+      desc: 'Avoids burning top teams in Wks 1–9 — uses solid GOOD picks early, preserves elite teams for late-season pressure',
       color: ORANGE,
       picks: buildPath((c, wk) => {
-        // Penalize teams with high FV in early weeks — the sharp Circa crowd will be saving them.
-        // Using a high-FV team early burns an asset the field will be hoarding; creates poor leverage.
-        const fv = computeFutureValue(c.team, wk, weeksByRef);
-        if (wk <= 7 && fv >= 6) return c.wp * 0.78;
-        if (wk <= 5 && fv >= 4) return c.wp * 0.86;
+        if (wk <= 9 && c.label === 'GREAT') return 0.595;
         return c.wp;
       }),
     },
@@ -221,6 +229,8 @@ function computePaths(weeks: Record<number, Game[]>): OptimalPath[] {
 
 const STORAGE_KEY  = 'survivor_2026_used';
 const PICK_KEY     = 'survivor_2026_picks';
+const THK_KEY      = 'survivor_2026_thk';
+const XMAS_KEY     = 'survivor_2026_xmas';
 const THEME_KEY    = 'survivor_theme';
 
 function loadUsed(): Set<string> {
@@ -255,7 +265,93 @@ function WpBar({ wp, label }: { wp: number; label: string }) {
   );
 }
 
+// ── Holiday game card used in weekly view ────────────────────────────────────
+function HolidayGameCard({
+  game, currentPick, onPick, used, accentColor,
+}: {
+  game: Game;
+  currentPick: string | null;
+  onPick: (team: string) => void;
+  used: Set<string>;
+  accentColor: string;
+}) {
+  const awayPicked  = currentPick === game.away;
+  const homePicked  = currentPick === game.home;
+  const awayBlocked = used.has(game.away) && !awayPicked;
+  const homeBlocked = used.has(game.home) && !homePicked;
+
+  return (
+    <div style={{
+      background: PANEL,
+      border: `1px solid ${awayPicked || homePicked ? accentColor + '80' : BORDER}`,
+      borderRadius: 10, padding: '12px 16px',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+        {/* Away */}
+        <button
+          onClick={() => !awayBlocked && onPick(game.away)}
+          disabled={awayBlocked}
+          style={{
+            flex: 1, background: awayPicked ? accentColor + '18' : 'transparent',
+            border: `1px solid ${awayPicked ? accentColor : 'transparent'}`,
+            borderRadius: 8, padding: '8px 12px', cursor: awayBlocked ? 'default' : 'pointer',
+            textAlign: 'left',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <img src={getLogo(game.away)} alt={game.away} style={{ width: 28, height: 28, opacity: awayBlocked ? 0.35 : 1 }} onError={e => { (e.target as HTMLImageElement).style.display='none'; }} />
+            <div>
+              <div style={{ fontWeight: 700, fontSize: '0.85rem', color: awayBlocked ? MUTED : FG, fontFamily: 'Nunito' }}>
+                {game.away} {awayBlocked ? <span style={{ fontSize: '0.6rem', color: RED }}>USED</span> : ''}
+                {awayPicked && <span style={{ fontSize: '0.6rem', color: accentColor, marginLeft: 4 }}>✓ PICK</span>}
+              </div>
+              <div style={{ fontSize: '0.65rem', color: MUTED }}>{game.away_name}</div>
+              <WpBar wp={game.away_wp} label={game.away_label} />
+            </div>
+          </div>
+        </button>
+
+        <div style={{ padding: '0 12px', color: MUTED, fontSize: '0.8rem', flexShrink: 0 }}>@</div>
+
+        {/* Home */}
+        <button
+          onClick={() => !homeBlocked && onPick(game.home)}
+          disabled={homeBlocked}
+          style={{
+            flex: 1, background: homePicked ? accentColor + '18' : 'transparent',
+            border: `1px solid ${homePicked ? accentColor : 'transparent'}`,
+            borderRadius: 8, padding: '8px 12px', cursor: homeBlocked ? 'default' : 'pointer',
+            textAlign: 'left',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <img src={getLogo(game.home)} alt={game.home} style={{ width: 28, height: 28, opacity: homeBlocked ? 0.35 : 1 }} onError={e => { (e.target as HTMLImageElement).style.display='none'; }} />
+            <div>
+              <div style={{ fontWeight: 700, fontSize: '0.85rem', color: homeBlocked ? MUTED : FG, fontFamily: 'Nunito' }}>
+                {game.home} {homeBlocked ? <span style={{ fontSize: '0.6rem', color: RED }}>USED</span> : ''}
+                {homePicked && <span style={{ fontSize: '0.6rem', color: accentColor, marginLeft: 4 }}>✓ PICK</span>}
+              </div>
+              <div style={{ fontSize: '0.65rem', color: MUTED }}>{game.home_name}</div>
+              <WpBar wp={game.home_wp} label={game.home_label} />
+            </div>
+          </div>
+        </button>
+
+        <div style={{ flexShrink: 0, padding: '0 8px', textAlign: 'center', minWidth: 64 }}>
+          {(() => {
+            const best = game.home_wp >= game.away_wp
+              ? { label: game.home_label }
+              : { label: game.away_label };
+            return <span style={{ fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.05em', color: LABEL_COLOR[best.label] ?? MUTED }}>{best.label}</span>;
+          })()}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function Survivor() {
+  const navigate = useNavigate();
   const [dark, setDark] = useState(() => localStorage.getItem(THEME_KEY) === 'dark');
   const [teams, setTeams] = useState<Team[]>([]);
   const [weeks, setWeeks] = useState<Record<number, Game[]>>({});
@@ -264,6 +360,10 @@ export function Survivor() {
   const [selectedWeek, setSelectedWeek] = useState(1);
   const [used, setUsed] = useState<Set<string>>(loadUsed);
   const [picks, setPicks] = useState<Record<number, string>>(loadPicks);
+  const [thkPick,  setThkPickState]  = useState<string | null>(() => localStorage.getItem(THK_KEY));
+  const [xmasPick, setXmasPickState] = useState<string | null>(() => localStorage.getItem(XMAS_KEY));
+  const [odds, setOdds] = useState<Record<string, OddsEntry>>({});
+  const fetchedOddsWeeks = useState<Set<number>>(() => new Set())[0];
 
   const toggleTheme = () => {
     setDark(prev => {
@@ -291,12 +391,40 @@ export function Survivor() {
           }
         }
         setLoading(false);
+        // Pre-fetch Week 1 odds on load
+        fetchOddsForWeek(1);
       })
       .catch(() => setLoading(false));
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function fetchOddsForWeek(wk: number) {
+    if (fetchedOddsWeeks.has(wk)) return;
+    fetchedOddsWeeks.add(wk);
+    fetch(getApiUrl(`f5/survivor/odds?week=${wk}`))
+      .then(r => r.json())
+      .then(d => {
+        const entries: Record<string, OddsEntry> = {};
+        for (const g of d.games ?? []) {
+          entries[`${g.away}:${g.home}`] = g;
+        }
+        setOdds(prev => ({ ...prev, ...entries }));
+      })
+      .catch(() => { fetchedOddsWeeks.delete(wk); });
+  }
+
+  useEffect(() => {
+    if (!loading) fetchOddsForWeek(selectedWeek);
+  }, [selectedWeek, loading]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Look up odds for a team in a given week using its schedule entry
+  function getOddsEntry(team: string, opp: string, isHome: boolean): OddsEntry | null {
+    const key = isHome ? `${opp}:${team}` : `${team}:${opp}`;
+    return odds[key] ?? null;
+  }
 
   const paths = useMemo(() => computePaths(weeks), [weeks]);
   const [selectedPathId, setSelectedPathId] = useState<string | null>(null);
+  const [oddsMode, setOddsMode] = useState<boolean>(true);
   const activePath = paths.find(p => p.id === selectedPathId) ?? null;
 
   const toggleUsed = useCallback((team: string) => {
@@ -328,17 +456,75 @@ export function Survivor() {
     });
   }, []);
 
+  const setHolidayPick = useCallback((type: 'thk' | 'xmas', team: string) => {
+    const storeKey = type === 'thk' ? THK_KEY : XMAS_KEY;
+    const setter   = type === 'thk' ? setThkPickState : setXmasPickState;
+    setter(prev => {
+      const next = prev === team ? null : team;
+      if (next) {
+        localStorage.setItem(storeKey, next);
+        setUsed(u => {
+          const nu = new Set(u);
+          nu.add(next);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify([...nu]));
+          return nu;
+        });
+      } else {
+        localStorage.removeItem(storeKey);
+      }
+      return next;
+    });
+  }, []);
+
   const clearAll = () => {
     setUsed(new Set());
     setPicks({});
+    setThkPickState(null);
+    setXmasPickState(null);
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(PICK_KEY);
+    localStorage.removeItem(THK_KEY);
+    localStorage.removeItem(XMAS_KEY);
   };
 
   const weekNums = Object.keys(weeks).map(Number).sort((a, b) => a - b);
   const currentWeekGames: Game[] = weeks[selectedWeek] ?? [];
   const availableTeams = teams.filter(t => !used.has(t.team));
   const usedTeams = teams.filter(t => used.has(t.team));
+
+  // Holiday game slices (derived from week data)
+  const thkGames  = useMemo(() => (weeks[12] ?? []).filter(g => getGameTags(g.date).isThanksgiving), [weeks]);
+  const xmasGames = useMemo(() => (weeks[16] ?? []).filter(g => getGameTags(g.date).isChristmas),    [weeks]);
+  const thkTeams  = useMemo(() => new Set(thkGames.flatMap(g => [g.home, g.away])),  [thkGames]);
+  const xmasTeams = useMemo(() => new Set(xmasGames.flatMap(g => [g.home, g.away])), [xmasGames]);
+
+  // Grid columns: insert THK before W12, XMAS before W16
+  type Column = number | 'thk' | 'xmas';
+  const gridColumns = useMemo<Column[]>(() => {
+    const cols: Column[] = [];
+    for (const wk of weekNums) {
+      if (wk === 12 && thkGames.length > 0)  cols.push('thk');
+      if (wk === 16 && xmasGames.length > 0) cols.push('xmas');
+      cols.push(wk);
+    }
+    return cols;
+  }, [weekNums, thkGames.length, xmasGames.length]);
+
+  // Helper: get a team's entry for a holiday game
+  function getHolidayEntry(team: string, holidayGames: Game[]) {
+    const game = holidayGames.find(g => g.home === team || g.away === team);
+    if (!game) return null;
+    const isHome = game.home === team;
+    return {
+      wp: isHome ? game.home_wp : game.away_wp,
+      label: isHome ? game.home_label : game.away_label,
+      opp: isHome ? game.away : game.home,
+      isHome,
+    };
+  }
+
+  const holidayPickCount = (thkPick ? 1 : 0) + (xmasPick ? 1 : 0);
+  const totalPicks = Object.keys(picks).length + holidayPickCount;
 
   const navBtn = (active: boolean) => ({
     background: active ? PANEL : 'transparent',
@@ -364,8 +550,10 @@ export function Survivor() {
               </p>
             </div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <span style={{ fontSize: '0.72rem', color: MUTED }}>{availableTeams.length} teams remaining · {Object.keys(picks).length} weeks picked</span>
-              {/* Theme toggle */}
+              <span style={{ fontSize: '0.72rem', color: MUTED }}>
+                {availableTeams.length} teams remaining · {totalPicks} picks
+                {holidayPickCount > 0 && <span style={{ color: YELLOW }}> ({holidayPickCount} holiday)</span>}
+              </span>
               <button
                 onClick={toggleTheme}
                 title={dark ? 'Switch to light mode' : 'Switch to dark mode'}
@@ -418,6 +606,8 @@ export function Survivor() {
                 const pick = picks[wk];
                 const games: Game[] = weeks[wk] ?? [];
                 const firstDate = games[0]?.date ?? '';
+                const isThkWeek  = wk === 12 && thkGames.length > 0;
+                const isXmasWeek = wk === 16 && xmasGames.length > 0;
                 return (
                   <button
                     key={wk}
@@ -429,8 +619,15 @@ export function Survivor() {
                       color: FG, fontSize: '0.75rem', marginBottom: 2,
                     }}
                   >
-                    <span style={{ fontWeight: selectedWeek === wk ? 700 : 400 }}>Wk {wk}</span>
+                    <span style={{ fontWeight: selectedWeek === wk ? 700 : 400 }}>
+                      Wk {wk}
+                      {isThkWeek  && <span style={{ color: YELLOW, marginLeft: 3 }}>🦃</span>}
+                      {isXmasWeek && <span style={{ color: RED, marginLeft: 3 }}>🎄</span>}
+                    </span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      {/* Holiday pick badge */}
+                      {isThkWeek  && thkPick  && <img src={getLogo(thkPick)}  alt={thkPick}  style={{ width: 13, height: 13 }} onError={e => { (e.target as HTMLImageElement).style.display='none'; }} />}
+                      {isXmasWeek && xmasPick && <img src={getLogo(xmasPick)} alt={xmasPick} style={{ width: 13, height: 13 }} onError={e => { (e.target as HTMLImageElement).style.display='none'; }} />}
                       {pick && (
                         <img src={getLogo(pick)} alt={pick} style={{ width: 16, height: 16 }} onError={e => { (e.target as HTMLImageElement).style.display='none'; }} />
                       )}
@@ -461,11 +658,94 @@ export function Survivor() {
                 </div>
                 {picks[selectedWeek] && (
                   <div style={{ fontSize: '0.72rem', color: EMERALD, marginTop: 4 }}>
-                    Your pick: <strong>{picks[selectedWeek]}</strong>
+                    Regular pick: <strong>{picks[selectedWeek]}</strong>
+                  </div>
+                )}
+                {selectedWeek === 12 && thkPick && (
+                  <div style={{ fontSize: '0.72rem', color: YELLOW, marginTop: 2 }}>
+                    🦃 Thanksgiving pick: <strong>{thkPick}</strong>
+                  </div>
+                )}
+                {selectedWeek === 16 && xmasPick && (
+                  <div style={{ fontSize: '0.72rem', color: RED, marginTop: 2 }}>
+                    🎄 Christmas pick: <strong>{xmasPick}</strong>
                   </div>
                 )}
               </div>
 
+              {/* Thanksgiving mandatory pick section */}
+              {selectedWeek === 12 && thkGames.length > 0 && (
+                <div style={{ marginBottom: 20 }}>
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10,
+                    padding: '8px 14px', background: YELLOW + '10',
+                    border: `1px solid ${YELLOW}40`, borderRadius: 8,
+                  }}>
+                    <span style={{ fontSize: '1rem' }}>🦃</span>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: '0.8rem', color: YELLOW }}>Thanksgiving Day — Mandatory Pick</div>
+                      <div style={{ fontSize: '0.68rem', color: MUTED }}>Pick one team from the 3 Thursday games. This is a separate pick from your regular Week 12 selection.</div>
+                    </div>
+                    {thkPick && (
+                      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, background: YELLOW + '20', border: `1px solid ${YELLOW}`, borderRadius: 6, padding: '4px 10px' }}>
+                        <img src={getLogo(thkPick)} alt={thkPick} style={{ width: 18, height: 18 }} onError={e => { (e.target as HTMLImageElement).style.display='none'; }} />
+                        <span style={{ fontSize: '0.72rem', fontWeight: 700, color: YELLOW }}>{thkPick}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ display: 'grid', gap: 8 }}>
+                    {thkGames.map((g, i) => (
+                      <HolidayGameCard
+                        key={i} game={g}
+                        currentPick={thkPick} onPick={team => setHolidayPick('thk', team)}
+                        used={used} accentColor={YELLOW}
+                      />
+                    ))}
+                  </div>
+                  <div style={{ height: 1, background: BORDER, margin: '20px 0' }} />
+                  <div style={{ fontSize: '0.65rem', color: MUTED, marginBottom: 10, letterSpacing: '0.06em', fontWeight: 700 }}>
+                    REGULAR WEEK 12 PICK (all games)
+                  </div>
+                </div>
+              )}
+
+              {/* Christmas mandatory pick section */}
+              {selectedWeek === 16 && xmasGames.length > 0 && (
+                <div style={{ marginBottom: 20 }}>
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10,
+                    padding: '8px 14px', background: RED + '10',
+                    border: `1px solid ${RED}40`, borderRadius: 8,
+                  }}>
+                    <span style={{ fontSize: '1rem' }}>🎄</span>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: '0.8rem', color: RED }}>Christmas Day — Mandatory Pick</div>
+                      <div style={{ fontSize: '0.68rem', color: MUTED }}>Pick one team from the 3 Christmas games. This is a separate pick from your regular Week 16 selection.</div>
+                    </div>
+                    {xmasPick && (
+                      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, background: RED + '20', border: `1px solid ${RED}`, borderRadius: 6, padding: '4px 10px' }}>
+                        <img src={getLogo(xmasPick)} alt={xmasPick} style={{ width: 18, height: 18 }} onError={e => { (e.target as HTMLImageElement).style.display='none'; }} />
+                        <span style={{ fontSize: '0.72rem', fontWeight: 700, color: RED }}>{xmasPick}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ display: 'grid', gap: 8 }}>
+                    {xmasGames.map((g, i) => (
+                      <HolidayGameCard
+                        key={i} game={g}
+                        currentPick={xmasPick} onPick={team => setHolidayPick('xmas', team)}
+                        used={used} accentColor={RED}
+                      />
+                    ))}
+                  </div>
+                  <div style={{ height: 1, background: BORDER, margin: '20px 0' }} />
+                  <div style={{ fontSize: '0.65rem', color: MUTED, marginBottom: 10, letterSpacing: '0.06em', fontWeight: 700 }}>
+                    REGULAR WEEK 16 PICK (all games)
+                  </div>
+                </div>
+              )}
+
+              {/* Regular week games */}
               <div style={{ display: 'grid', gap: 8 }}>
                 {currentWeekGames.map((g, i) => {
                   const awayUsed = used.has(g.away) && picks[selectedWeek] !== g.away;
@@ -484,6 +764,28 @@ export function Survivor() {
                         opacity: (awayUsed && homeUsed) ? 0.4 : 1,
                       }}
                     >
+                      {/* Market odds line */}
+                      {(() => {
+                        const o = odds[`${g.away}:${g.home}`];
+                        if (!o) return null;
+                        return (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, fontSize: '0.62rem', color: MUTED }}>
+                            <span style={{ fontWeight: 700, color: BLUE }}>{o.details}</span>
+                            <span>O/U {o.over_under ?? '—'}</span>
+                            <span>|</span>
+                            <span>Away ML <span style={{ fontWeight: 700, color: o.away_ml > 0 ? EMERALD : FG }}>{o.away_ml > 0 ? '+' : ''}{o.away_ml}</span></span>
+                            <span>Home ML <span style={{ fontWeight: 700, color: o.home_ml > 0 ? EMERALD : FG }}>{o.home_ml > 0 ? '+' : ''}{o.home_ml}</span></span>
+                            {o.event_id && (
+                              <button
+                                onClick={() => navigate(`/matchup/${o.event_id}`)}
+                                style={{ marginLeft: 'auto', background: BLUE + '18', border: `1px solid ${BLUE}55`, color: BLUE, borderRadius: 4, padding: '2px 8px', cursor: 'pointer', fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.05em' }}
+                              >
+                                VIEW MATCHUP →
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })()}
                       {/* Special game tags */}
                       {(tags.isThanksgiving || tags.isChristmas || tags.isTNF || tags.isMNF || tags.isOpener) && (
                         <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
@@ -575,7 +877,8 @@ export function Survivor() {
         {!loading && view === 'grid' && (
           <div>
             <div style={{ fontSize: '0.65rem', color: MUTED, marginBottom: 10 }}>
-              Click a team to toggle used/available. Each cell shows win probability for that week. Green = GREAT, Yellow = LEAN, Red = TRAP.
+              Click a team to toggle used/available. Each cell shows win probability for that week.{' '}
+              <span style={{ color: YELLOW }}>🦃 THK</span> and <span style={{ color: RED }}>🎄 XMAS</span> are mandatory holiday picks — separate from the regular weekly pick.
             </div>
 
             {/* Path overlay selector */}
@@ -604,6 +907,24 @@ export function Survivor() {
               ))}
             </div>
 
+            {/* Odds toggle */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+              <button
+                onClick={() => setOddsMode(o => !o)}
+                title="Toggle odds glow overlay"
+                style={{
+                  fontSize: '0.65rem', fontWeight: 700, padding: '4px 10px', borderRadius: 6, cursor: 'pointer',
+                  background: oddsMode ? BLUE + '22' : 'transparent',
+                  border: `1px solid ${oddsMode ? BLUE : MUTED + '66'}`,
+                  color: oddsMode ? BLUE : MUTED,
+                }}
+              >ODDS</button>
+              {oddsMode && Object.keys(odds).length === 0 && (
+                <span style={{ fontSize: '0.6rem', color: YELLOW }}>⚡ Loading odds...</span>
+              )}
+              {oddsMode && <span style={{ fontSize: '0.58rem', color: MUTED }}>Green glow = model edge · Red glow = market edge</span>}
+            </div>
+
             {/* Available teams */}
             <div style={{ marginBottom: 24 }}>
               <div style={{ fontSize: '0.65rem', color: EMERALD, letterSpacing: '0.1em', fontWeight: 700, marginBottom: 10 }}>
@@ -614,20 +935,27 @@ export function Survivor() {
                   <thead>
                     <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
                       <th style={{ padding: '6px 10px', textAlign: 'left', color: MUTED, fontWeight: 600, fontSize: '0.6rem', position: 'sticky', left: 0, background: BG, minWidth: 140, borderRight: `1px solid ${BORDER}` }}>TEAM</th>
-                      <th style={{ padding: '6px 8px', color: MUTED, fontWeight: 600, fontSize: '0.6rem', minWidth: 52, borderRight: `1px solid ${BORDER}` }}>RTG</th>
-                      <th style={{ padding: '6px 8px', color: BLUE, fontWeight: 700, fontSize: '0.6rem', minWidth: 44, borderRight: `1px solid ${BORDER}` }} title="Future Value Score">FV</th>
-                      {weekNums.map(wk => {
+                      {gridColumns.map(col => {
+                        if (col === 'thk') return (
+                          <th key="thk" style={{ padding: '6px 4px', fontWeight: 800, fontSize: '0.55rem', minWidth: 44, textAlign: 'center', borderRight: `1px solid ${BORDER}`, background: YELLOW + '12', color: YELLOW, letterSpacing: '0.04em' }}>
+                            🦃<br/>THK
+                          </th>
+                        );
+                        if (col === 'xmas') return (
+                          <th key="xmas" style={{ padding: '6px 4px', fontWeight: 800, fontSize: '0.55rem', minWidth: 44, textAlign: 'center', borderRight: `1px solid ${BORDER}`, background: RED + '10', color: RED, letterSpacing: '0.04em' }}>
+                            🎄<br/>XMAS
+                          </th>
+                        );
+                        const wk = col as number;
                         const tags = (weeks[wk] ?? []).map(g => getGameTags(g.date));
-                        const hasThanksgiving = tags.some(t => t.isThanksgiving);
-                        const hasChristmas    = tags.some(t => t.isChristmas);
-                        const hasTNF          = tags.some(t => t.isTNF);
+                        const hasTNF = tags.some(t => t.isTNF);
                         return (
                           <th
                             key={wk}
                             style={{ padding: '6px 6px', color: selectedWeek === wk ? FG : MUTED, fontWeight: selectedWeek === wk ? 700 : 600, fontSize: '0.55rem', minWidth: 42, cursor: 'pointer', textAlign: 'center', borderRight: `1px solid ${BORDER}` }}
                             onClick={() => { setSelectedWeek(wk); setView('weekly'); }}
                           >
-                            W{wk}{hasThanksgiving ? '🦃' : hasChristmas ? '🎄' : hasTNF ? '🏈' : ''}
+                            W{wk}{hasTNF ? '🏈' : ''}
                           </th>
                         );
                       })}
@@ -638,8 +966,18 @@ export function Survivor() {
                         <td style={{ padding: '4px 10px', position: 'sticky', left: 0, background: activePath.color + '15', fontSize: '0.55rem', fontWeight: 800, color: activePath.color, letterSpacing: '0.06em', whiteSpace: 'nowrap', borderRight: `1px solid ${BORDER}` }}>
                           ── {activePath.name}
                         </td>
-                        <td style={{ padding: '4px 8px', textAlign: 'center', fontSize: '0.55rem', color: MUTED, borderRight: `1px solid ${BORDER}` }}>PATH</td>
-                        {weekNums.map(wk => {
+                        {gridColumns.map(col => {
+                          if (col === 'thk') return (
+                            <td key="thk" style={{ padding: '3px 2px', textAlign: 'center', borderRight: `1px solid ${BORDER}`, background: YELLOW + '08' }}>
+                              <span style={{ fontSize: '0.5rem', color: MUTED }}>sep.</span>
+                            </td>
+                          );
+                          if (col === 'xmas') return (
+                            <td key="xmas" style={{ padding: '3px 2px', textAlign: 'center', borderRight: `1px solid ${BORDER}`, background: RED + '06' }}>
+                              <span style={{ fontSize: '0.5rem', color: MUTED }}>sep.</span>
+                            </td>
+                          );
+                          const wk = col as number;
                           const pick = activePath.picks[wk];
                           const pathColor = activePath.color;
                           return (
@@ -674,21 +1012,51 @@ export function Survivor() {
                             </div>
                           </button>
                         </td>
-                        <td style={{ padding: '7px 8px', fontWeight: 700, color: t.rating >= 4 ? EMERALD : t.rating >= 0 ? YELLOW : RED, textAlign: 'center', borderRight: `1px solid ${BORDER}` }}>
-                          {t.rating >= 0 ? '+' : ''}{t.rating.toFixed(1)}
-                        </td>
-                        <td style={{ padding: '7px 8px', textAlign: 'center', borderRight: `1px solid ${BORDER}` }}>
-                          {(() => {
-                            const fv = computeFutureValue(t.team, 0, weeks);
-                            return (
-                              <span style={{ fontSize: '0.7rem', fontWeight: 800, fontFamily: 'monospace',
-                                color: fv >= 8 ? EMERALD : fv >= 4 ? BLUE : MUTED }}>
-                                {fv}
-                              </span>
+                        {gridColumns.map(col => {
+                          // ── Thanksgiving column ──────────────────────────────
+                          if (col === 'thk') {
+                            const entry = getHolidayEntry(t.team, thkGames);
+                            if (!entry) return (
+                              <td key="thk" style={{ padding: '7px 4px', textAlign: 'center', borderRight: `1px solid ${BORDER}`, background: YELLOW + '06', color: MUTED, fontSize: '0.55rem' }}>—</td>
                             );
-                          })()}
-                        </td>
-                        {weekNums.map(wk => {
+                            const isPick = thkPick === t.team;
+                            const isBlocked = used.has(t.team) && !isPick;
+                            const color = LABEL_COLOR[entry.label] ?? MUTED;
+                            return (
+                              <td key="thk" style={{ padding: '4px 3px', textAlign: 'center', borderRight: `1px solid ${BORDER}`, background: YELLOW + '08', outline: isPick ? `2px solid ${YELLOW}` : 'none', outlineOffset: -2 }}>
+                                <button
+                                  onClick={() => !isBlocked && setHolidayPick('thk', t.team)}
+                                  style={{ background: isPick ? YELLOW + '22' : 'transparent', border: `1px solid ${isPick ? YELLOW : 'transparent'}`, borderRadius: 4, padding: '3px 4px', cursor: isBlocked ? 'default' : 'pointer', width: '100%', opacity: isBlocked ? 0.3 : 1 }}
+                                >
+                                  <div style={{ fontSize: '0.65rem', fontWeight: 700, color }}>{Math.round(entry.wp * 100)}%</div>
+                                  <div style={{ fontSize: '0.55rem', color: MUTED }}>{entry.isHome ? '' : '@'}{entry.opp}</div>
+                                </button>
+                              </td>
+                            );
+                          }
+                          // ── Christmas column ─────────────────────────────────
+                          if (col === 'xmas') {
+                            const entry = getHolidayEntry(t.team, xmasGames);
+                            if (!entry) return (
+                              <td key="xmas" style={{ padding: '7px 4px', textAlign: 'center', borderRight: `1px solid ${BORDER}`, background: RED + '04', color: MUTED, fontSize: '0.55rem' }}>—</td>
+                            );
+                            const isPick = xmasPick === t.team;
+                            const isBlocked = used.has(t.team) && !isPick;
+                            const color = LABEL_COLOR[entry.label] ?? MUTED;
+                            return (
+                              <td key="xmas" style={{ padding: '4px 3px', textAlign: 'center', borderRight: `1px solid ${BORDER}`, background: RED + '06', outline: isPick ? `2px solid ${RED}` : 'none', outlineOffset: -2 }}>
+                                <button
+                                  onClick={() => !isBlocked && setHolidayPick('xmas', t.team)}
+                                  style={{ background: isPick ? RED + '22' : 'transparent', border: `1px solid ${isPick ? RED : 'transparent'}`, borderRadius: 4, padding: '3px 4px', cursor: isBlocked ? 'default' : 'pointer', width: '100%', opacity: isBlocked ? 0.3 : 1 }}
+                                >
+                                  <div style={{ fontSize: '0.65rem', fontWeight: 700, color }}>{Math.round(entry.wp * 100)}%</div>
+                                  <div style={{ fontSize: '0.55rem', color: MUTED }}>{entry.isHome ? '' : '@'}{entry.opp}</div>
+                                </button>
+                              </td>
+                            );
+                          }
+                          // ── Regular week column ──────────────────────────────
+                          const wk = col as number;
                           const entry = t.schedule.find(s => s.week === wk);
                           const isPick = picks[wk] === t.team;
                           const isPathPick = activePath?.picks[wk]?.team === t.team;
@@ -696,8 +1064,26 @@ export function Survivor() {
                             return <td key={wk} style={{ padding: '7px 6px', textAlign: 'center', color: MUTED, fontSize: '0.6rem', borderRight: `1px solid ${BORDER}` }}>BYE</td>;
                           }
                           const color = LABEL_COLOR[entry.label] ?? MUTED;
+                          const oddsEntry = getOddsEntry(t.team, entry.opp, entry.home);
+                          const mktWp    = oddsEntry ? (entry.home ? oddsEntry.home_implied : oddsEntry.away_implied) : null;
+                          const edge     = mktWp !== null ? Math.round((entry.wp - mktWp) * 100) : null;
+                          const edgeColor = edge === null ? MUTED : edge >= 3 ? EMERALD : edge <= -3 ? RED : MUTED;
+
+                          // Mode A: market label color
+                          const mktLabel = mktWp !== null
+                            ? mktWp >= 0.72 ? 'GREAT' : mktWp >= 0.60 ? 'GOOD' : mktWp >= 0.50 ? 'LEAN' : mktWp >= 0.40 ? 'TOUGH' : 'TRAP'
+                            : null;
+                          const mktColor = mktLabel ? (LABEL_COLOR[mktLabel] ?? MUTED) : MUTED;
+
+                          // Odds glow background
+                          const glowBg = (oddsMode && edge !== null && edge !== 0)
+                            ? edge > 0
+                              ? `oklch(69.6% .17 162.48 / ${Math.min(Math.abs(edge) / 22, 0.45).toFixed(2)})`
+                              : `oklch(63.2% .204 25.331 / ${Math.min(Math.abs(edge) / 22, 0.45).toFixed(2)})`
+                            : undefined;
+
                           return (
-                            <td key={wk} style={{ padding: '4px 3px', textAlign: 'center', borderRight: `1px solid ${BORDER}`, outline: isPathPick ? `2px solid ${activePath!.color}` : 'none', outlineOffset: -2 }}>
+                            <td key={wk} style={{ padding: '4px 3px', textAlign: 'center', borderRight: `1px solid ${BORDER}`, outline: isPathPick ? `2px solid ${activePath!.color}` : 'none', outlineOffset: -2, background: glowBg }}>
                               <button
                                 onClick={() => setPick(wk, t.team)}
                                 style={{
@@ -706,8 +1092,13 @@ export function Survivor() {
                                   borderRadius: 4, padding: '3px 4px', cursor: 'pointer', width: '100%',
                                 }}
                               >
-                                <div style={{ fontSize: '0.65rem', fontWeight: 700, color }}>{Math.round(entry.wp * 100)}%</div>
-                                <div style={{ fontSize: '0.55rem', color: MUTED }}>{entry.home ? '' : '@'}{entry.opp}</div>
+                                <>
+                                  <div style={{ fontSize: '0.65rem', fontWeight: 700, color }}>{Math.round(entry.wp * 100)}%</div>
+                                  <div style={{ fontSize: '0.55rem', color: MUTED }}>{entry.home ? '' : '@'}{entry.opp}</div>
+                                  {oddsMode && edge !== null && (
+                                    <div style={{ fontSize: '0.5rem', fontWeight: 700, color: edgeColor }}>{edge >= 0 ? '+' : ''}{edge}</div>
+                                  )}
+                                </>
                               </button>
                             </td>
                           );
@@ -744,7 +1135,10 @@ export function Survivor() {
 
         {/* PATHS VIEW */}
         {!loading && view === 'paths' && (
-          <PathsView paths={paths} weeks={weeks} picks={picks} setPick={setPick} used={used} />
+          <PathsView paths={paths} weeks={weeks} picks={picks} setPick={setPick} used={used}
+            thkPick={thkPick} xmasPick={xmasPick} thkGames={thkGames} xmasGames={xmasGames}
+            setHolidayPick={setHolidayPick}
+          />
         )}
 
         {/* STRATEGY VIEW */}
@@ -767,14 +1161,29 @@ export function Survivor() {
 
 function PathsView({
   paths, weeks, picks, setPick, used,
+  thkPick, xmasPick, thkGames, xmasGames, setHolidayPick,
 }: {
   paths: OptimalPath[];
   weeks: Record<number, Game[]>;
   picks: Record<number, string>;
   setPick: (week: number, team: string) => void;
   used: Set<string>;
+  thkPick: string | null;
+  xmasPick: string | null;
+  thkGames: Game[];
+  xmasGames: Game[];
+  setHolidayPick: (type: 'thk' | 'xmas', team: string) => void;
 }) {
   const weekNums = Object.keys(weeks).map(Number).sort((a, b) => a - b);
+
+  // Build path timeline columns including holiday slots
+  type PCol = number | 'thk' | 'xmas';
+  const pathCols: PCol[] = [];
+  for (const wk of weekNums) {
+    if (wk === 12 && thkGames.length > 0)  pathCols.push('thk');
+    if (wk === 16 && xmasGames.length > 0) pathCols.push('xmas');
+    pathCols.push(wk);
+  }
 
   const weekTags: Record<number, GameTags[]> = {};
   for (const wk of weekNums) {
@@ -788,12 +1197,90 @@ function PathsView({
     return vals.reduce((acc, v) => acc * v, 1);
   };
 
+  // Best holiday pick suggestion (highest WP among non-used teams)
+  function bestHolidayPick(games: Game[], usedSet: Set<string>, currentPick: string | null) {
+    let best: { team: string; wp: number; label: string } | null = null;
+    for (const g of games) {
+      for (const [team, wp, label] of [[g.home, g.home_wp, g.home_label], [g.away, g.away_wp, g.away_label]] as [string, number, string][]) {
+        if (!usedSet.has(team) || team === currentPick) {
+          if (!best || wp > best.wp) best = { team, wp, label };
+        }
+      }
+    }
+    return best;
+  }
+
   return (
     <div>
       <div style={{ fontSize: '0.65rem', color: MUTED, marginBottom: 16, lineHeight: 1.6 }}>
         Four algorithmic paths through the 2026 season. Each path picks one team per week without repeating.
-        Click any pick to set it as your actual pick for that week. <span style={{ color: YELLOW }}>🦃 = Thanksgiving · 🎄 = Christmas · 🏈 = TNF</span>
+        Click any pick to set it as your actual pick for that week.{' '}
+        <span style={{ color: YELLOW }}>🦃 THK</span> and <span style={{ color: RED }}>🎄 XMAS</span> are mandatory holiday picks tracked separately.
       </div>
+
+      {/* Holiday pick summary bar */}
+      {(thkGames.length > 0 || xmasGames.length > 0) && (
+        <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
+          {thkGames.length > 0 && (() => {
+            const sugg = bestHolidayPick(thkGames, used, thkPick);
+            return (
+              <div style={{ background: YELLOW + '10', border: `1px solid ${YELLOW}40`, borderRadius: 10, padding: '10px 14px', flex: 1, minWidth: 220 }}>
+                <div style={{ fontSize: '0.6rem', fontWeight: 800, color: YELLOW, letterSpacing: '0.08em', marginBottom: 6 }}>🦃 THANKSGIVING PICK (MANDATORY)</div>
+                {thkPick ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <img src={getLogo(thkPick)} alt={thkPick} style={{ width: 24, height: 24 }} onError={e => { (e.target as HTMLImageElement).style.display='none'; }} />
+                    <span style={{ fontWeight: 700, color: YELLOW }}>{thkPick}</span>
+                    <span style={{ fontSize: '0.6rem', color: MUTED }}>selected</span>
+                  </div>
+                ) : sugg ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: '0.68rem', color: MUTED }}>Suggested:</span>
+                    <button
+                      onClick={() => setHolidayPick('thk', sugg.team)}
+                      style={{ display: 'flex', alignItems: 'center', gap: 6, background: YELLOW + '20', border: `1px solid ${YELLOW}`, borderRadius: 6, padding: '3px 8px', cursor: 'pointer' }}
+                    >
+                      <img src={getLogo(sugg.team)} alt={sugg.team} style={{ width: 16, height: 16 }} onError={e => { (e.target as HTMLImageElement).style.display='none'; }} />
+                      <span style={{ fontSize: '0.7rem', fontWeight: 700, color: YELLOW }}>{sugg.team}</span>
+                      <span style={{ fontSize: '0.6rem', color: LABEL_COLOR[sugg.label] ?? MUTED }}>{Math.round(sugg.wp * 100)}%</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ fontSize: '0.68rem', color: MUTED }}>No teams available — all Thanksgiving teams used</div>
+                )}
+              </div>
+            );
+          })()}
+          {xmasGames.length > 0 && (() => {
+            const sugg = bestHolidayPick(xmasGames, used, xmasPick);
+            return (
+              <div style={{ background: RED + '08', border: `1px solid ${RED}35`, borderRadius: 10, padding: '10px 14px', flex: 1, minWidth: 220 }}>
+                <div style={{ fontSize: '0.6rem', fontWeight: 800, color: RED, letterSpacing: '0.08em', marginBottom: 6 }}>🎄 CHRISTMAS PICK (MANDATORY)</div>
+                {xmasPick ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <img src={getLogo(xmasPick)} alt={xmasPick} style={{ width: 24, height: 24 }} onError={e => { (e.target as HTMLImageElement).style.display='none'; }} />
+                    <span style={{ fontWeight: 700, color: RED }}>{xmasPick}</span>
+                    <span style={{ fontSize: '0.6rem', color: MUTED }}>selected</span>
+                  </div>
+                ) : sugg ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: '0.68rem', color: MUTED }}>Suggested:</span>
+                    <button
+                      onClick={() => setHolidayPick('xmas', sugg.team)}
+                      style={{ display: 'flex', alignItems: 'center', gap: 6, background: RED + '20', border: `1px solid ${RED}`, borderRadius: 6, padding: '3px 8px', cursor: 'pointer' }}
+                    >
+                      <img src={getLogo(sugg.team)} alt={sugg.team} style={{ width: 16, height: 16 }} onError={e => { (e.target as HTMLImageElement).style.display='none'; }} />
+                      <span style={{ fontSize: '0.7rem', fontWeight: 700, color: RED }}>{sugg.team}</span>
+                      <span style={{ fontSize: '0.6rem', color: LABEL_COLOR[sugg.label] ?? MUTED }}>{Math.round(sugg.wp * 100)}%</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ fontSize: '0.68rem', color: MUTED }}>No teams available — all Christmas teams used</div>
+                )}
+              </div>
+            );
+          })()}
+        </div>
+      )}
 
       {paths.map(path => {
         const survP = survivalProb(path);
@@ -822,37 +1309,78 @@ function PathsView({
 
             {/* Scrollable pick timeline */}
             <div style={{ overflowX: 'auto', background: 'var(--c-pathbg)', border: `1px solid ${path.color}25`, borderTop: 'none', borderRadius: '0 0 8px 8px' }}>
-              <div style={{ display: 'flex', minWidth: weekNums.length * 72 + 'px' }}>
-                {weekNums.map((wk, idx) => {
+              <div style={{ display: 'flex', minWidth: pathCols.length * 72 + 'px' }}>
+                {pathCols.map((col, idx) => {
+                  const isLast = idx === pathCols.length - 1;
+
+                  // ── Thanksgiving column in path timeline ─────────────────
+                  if (col === 'thk') {
+                    const isPick = !!thkPick;
+                    return (
+                      <div key="thk" style={{ flex: '0 0 72px', minWidth: 72, borderRight: isLast ? 'none' : `1px solid ${BORDER}` }}>
+                        <div style={{ textAlign: 'center', padding: '6px 4px 4px', borderBottom: `1px solid ${BORDER}`, background: YELLOW + '15' }}>
+                          <div style={{ fontSize: '0.55rem', fontWeight: 700, color: YELLOW }}>🦃 THK</div>
+                        </div>
+                        <div style={{ position: 'relative', height: 2, background: YELLOW + '25' }} />
+                        <div style={{ padding: '8px 4px', textAlign: 'center' }}>
+                          {thkPick ? (
+                            <>
+                              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>
+                                <img src={getLogo(thkPick)} alt={thkPick} style={{ width: 24, height: 24 }} onError={e => { (e.target as HTMLImageElement).style.display='none'; }} />
+                              </div>
+                              <div style={{ fontSize: '0.6rem', fontWeight: 700, color: YELLOW }}>{thkPick}</div>
+                              <div style={{ fontSize: '0.5rem', color: EMERALD, fontWeight: 700 }}>✓ SET</div>
+                            </>
+                          ) : (
+                            <div style={{ fontSize: '0.55rem', color: YELLOW, opacity: 0.6, padding: '6px 0' }}>needed</div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // ── Christmas column in path timeline ────────────────────
+                  if (col === 'xmas') {
+                    return (
+                      <div key="xmas" style={{ flex: '0 0 72px', minWidth: 72, borderRight: isLast ? 'none' : `1px solid ${BORDER}` }}>
+                        <div style={{ textAlign: 'center', padding: '6px 4px 4px', borderBottom: `1px solid ${BORDER}`, background: RED + '12' }}>
+                          <div style={{ fontSize: '0.55rem', fontWeight: 700, color: RED }}>🎄 XMAS</div>
+                        </div>
+                        <div style={{ position: 'relative', height: 2, background: RED + '20' }} />
+                        <div style={{ padding: '8px 4px', textAlign: 'center' }}>
+                          {xmasPick ? (
+                            <>
+                              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>
+                                <img src={getLogo(xmasPick)} alt={xmasPick} style={{ width: 24, height: 24 }} onError={e => { (e.target as HTMLImageElement).style.display='none'; }} />
+                              </div>
+                              <div style={{ fontSize: '0.6rem', fontWeight: 700, color: RED }}>{xmasPick}</div>
+                              <div style={{ fontSize: '0.5rem', color: EMERALD, fontWeight: 700 }}>✓ SET</div>
+                            </>
+                          ) : (
+                            <div style={{ fontSize: '0.55rem', color: RED, opacity: 0.6, padding: '6px 0' }}>needed</div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // ── Regular week column in path timeline ─────────────────
+                  const wk = col as number;
                   const pick = path.picks[wk];
                   const isMyPick = picks[wk] === pick?.team;
                   const isUsed = pick && used.has(pick.team) && !isMyPick;
                   const color = pick ? (LABEL_COLOR[pick.label] ?? MUTED) : MUTED;
                   const hasTNF = weekHasTag(wk, 'isTNF');
-                  const hasThanksgiving = weekHasTag(wk, 'isThanksgiving');
-                  const hasChristmas = weekHasTag(wk, 'isChristmas');
-                  const isLast = idx === weekNums.length - 1;
 
                   return (
                     <div
                       key={wk}
-                      style={{
-                        flex: '0 0 72px', minWidth: 72,
-                        borderRight: isLast ? 'none' : `1px solid ${BORDER}`,
-                        padding: '0',
-                      }}
+                      style={{ flex: '0 0 72px', minWidth: 72, borderRight: isLast ? 'none' : `1px solid ${BORDER}` }}
                     >
                       {/* Week label */}
-                      <div style={{
-                        textAlign: 'center', padding: '6px 4px 4px',
-                        borderBottom: `1px solid ${BORDER}`,
-                        background: hasThanksgiving ? YELLOW + '15' : hasChristmas ? RED + '12' : 'transparent',
-                      }}>
+                      <div style={{ textAlign: 'center', padding: '6px 4px 4px', borderBottom: `1px solid ${BORDER}` }}>
                         <div style={{ fontSize: '0.55rem', fontWeight: 700, color: MUTED }}>
-                          WK{wk}
-                          {hasThanksgiving && ' 🦃'}
-                          {hasChristmas && ' 🎄'}
-                          {hasTNF && !hasThanksgiving && !hasChristmas && ' 🏈'}
+                          WK{wk}{hasTNF ? ' 🏈' : ''}
                         </div>
                       </div>
 
@@ -903,7 +1431,7 @@ function PathsView({
 
       <div style={{ marginTop: 8, fontSize: '0.65rem', color: MUTED, lineHeight: 1.6 }}>
         Survival probability = product of all weekly win probabilities. Path algorithms are greedy — not globally optimal.
-        FUTURE VALUE and CONSERVATIVE paths will diverge most from the public in weeks 1–7.
+        Holiday picks (THK/XMAS) are mandatory separate picks not included in path survival probability.
       </div>
     </div>
   );

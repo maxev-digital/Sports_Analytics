@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getApiUrl } from '../config';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import ReactECharts from 'echarts-for-react';
 import { sportEmojis, uiEmojis } from '../utils/sportDetection';
 import { logger } from '../utils/logger';
 
@@ -647,69 +647,181 @@ export function ModelPerformance() {
             {/* Win Rate Over Time */}
             <div className="bg-gradient-to-br from-black via-gray-900 to-slate-900 border border-white rounded-xl p-6">
               <h3 className="text-xl font-bold text-slate-100 mb-4">Win Rate Over Time</h3>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={history}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                  <XAxis dataKey="period" stroke="#94a3b8" />
-                  <YAxis stroke="#94a3b8" tickFormatter={(value) => `${(value * 100).toFixed(0)}%`} />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569' }}
-                    formatter={(value: any) => `${(value * 100).toFixed(1)}%`}
-                  />
-                  <Line type="monotone" dataKey="win_rate" stroke="#3b82f6" strokeWidth={2} dot={{ r: 4 }} />
-                </LineChart>
-              </ResponsiveContainer>
+              <ReactECharts
+                option={{
+                  backgroundColor: 'transparent',
+                  grid: { top: 8, right: 8, bottom: 32, left: 8, containLabel: true },
+                  xAxis: {
+                    type: 'category',
+                    data: history.map((h: HistoryPeriod) => h.period),
+                    axisLabel: { color: '#94a3b8', fontSize: 11 },
+                    axisLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } },
+                    axisTick: { show: false },
+                  },
+                  yAxis: {
+                    type: 'value',
+                    axisLabel: { color: '#94a3b8', fontSize: 11, formatter: (v: number) => `${(v * 100).toFixed(0)}%` },
+                    axisLine: { show: false },
+                    axisTick: { show: false },
+                    splitLine: { lineStyle: { color: 'rgba(255,255,255,0.07)' } },
+                  },
+                  tooltip: {
+                    trigger: 'axis',
+                    backgroundColor: '#1e293b',
+                    borderColor: '#475569',
+                    textStyle: { color: '#e2e8f0', fontSize: 12 },
+                    valueFormatter: (v: number) => `${(v * 100).toFixed(1)}%`,
+                  },
+                  series: [{
+                    type: 'line',
+                    data: history.map((h: HistoryPeriod) => h.win_rate),
+                    smooth: true,
+                    symbol: 'circle',
+                    symbolSize: 6,
+                    lineStyle: { color: '#3b82f6', width: 2 },
+                    itemStyle: { color: '#3b82f6' },
+                    areaStyle: {
+                      color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(59,130,246,0.25)' }, { offset: 1, color: 'rgba(59,130,246,0.02)' }] },
+                    },
+                  }],
+                }}
+                style={{ height: 300 }}
+              />
             </div>
 
             {/* ROI Over Time */}
             <div className="bg-gradient-to-br from-black via-gray-900 to-slate-900 border border-white rounded-xl p-6">
               <h3 className="text-xl font-bold text-slate-100 mb-4">ROI Over Time</h3>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={history}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                  <XAxis dataKey="period" stroke="#94a3b8" />
-                  <YAxis stroke="#94a3b8" tickFormatter={(value) => `${value.toFixed(0)}%`} />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569' }}
-                    formatter={(value: any) => `${value.toFixed(1)}%`}
-                  />
-                  <Line type="monotone" dataKey="roi" stroke="#10b981" strokeWidth={2} dot={{ r: 4 }} />
-                </LineChart>
-              </ResponsiveContainer>
+              <ReactECharts
+                option={{
+                  backgroundColor: 'transparent',
+                  grid: { top: 8, right: 8, bottom: 32, left: 8, containLabel: true },
+                  xAxis: {
+                    type: 'category',
+                    data: history.map((h: HistoryPeriod) => h.period),
+                    axisLabel: { color: '#94a3b8', fontSize: 11 },
+                    axisLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } },
+                    axisTick: { show: false },
+                  },
+                  yAxis: {
+                    type: 'value',
+                    axisLabel: { color: '#94a3b8', fontSize: 11, formatter: (v: number) => `${v.toFixed(0)}%` },
+                    axisLine: { show: false },
+                    axisTick: { show: false },
+                    splitLine: { lineStyle: { color: 'rgba(255,255,255,0.07)' } },
+                  },
+                  tooltip: {
+                    trigger: 'axis',
+                    backgroundColor: '#1e293b',
+                    borderColor: '#475569',
+                    textStyle: { color: '#e2e8f0', fontSize: 12 },
+                    valueFormatter: (v: number) => `${v.toFixed(1)}%`,
+                  },
+                  series: [{
+                    type: 'line',
+                    data: history.map((h: HistoryPeriod) => h.roi),
+                    smooth: true,
+                    symbol: 'circle',
+                    symbolSize: 6,
+                    lineStyle: { color: '#10b981', width: 2 },
+                    itemStyle: { color: '#10b981' },
+                    areaStyle: {
+                      color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(16,185,129,0.25)' }, { offset: 1, color: 'rgba(16,185,129,0.02)' }] },
+                    },
+                  }],
+                }}
+                style={{ height: 300 }}
+              />
             </div>
 
             {/* Profit/Loss Over Time */}
             <div className="bg-gradient-to-br from-black via-gray-900 to-slate-900 border border-white rounded-xl p-6">
               <h3 className="text-xl font-bold text-slate-100 mb-4">Profit/Loss (${unitSize.toLocaleString()} Bets)</h3>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={history.map(h => ({ ...h, profit_dollars: h.units_won * unitSize }))}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                  <XAxis dataKey="period" stroke="#94a3b8" />
-                  <YAxis stroke="#94a3b8" tickFormatter={(value) => `$${value.toFixed(0)}`} />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569' }}
-                    formatter={(value: any) => `$${value.toFixed(2)}`}
-                  />
-                  <Line type="monotone" dataKey="profit_dollars" stroke="#10b981" strokeWidth={2} dot={{ r: 4 }} />
-                </LineChart>
-              </ResponsiveContainer>
+              <ReactECharts
+                option={{
+                  backgroundColor: 'transparent',
+                  grid: { top: 8, right: 8, bottom: 32, left: 8, containLabel: true },
+                  xAxis: {
+                    type: 'category',
+                    data: history.map((h: HistoryPeriod) => h.period),
+                    axisLabel: { color: '#94a3b8', fontSize: 11 },
+                    axisLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } },
+                    axisTick: { show: false },
+                  },
+                  yAxis: {
+                    type: 'value',
+                    axisLabel: { color: '#94a3b8', fontSize: 11, formatter: (v: number) => `$${v.toFixed(0)}` },
+                    axisLine: { show: false },
+                    axisTick: { show: false },
+                    splitLine: { lineStyle: { color: 'rgba(255,255,255,0.07)' } },
+                  },
+                  tooltip: {
+                    trigger: 'axis',
+                    backgroundColor: '#1e293b',
+                    borderColor: '#475569',
+                    textStyle: { color: '#e2e8f0', fontSize: 12 },
+                    valueFormatter: (v: number) => `$${v.toFixed(2)}`,
+                  },
+                  series: [{
+                    type: 'line',
+                    data: history.map((h: HistoryPeriod) => h.units_won * unitSize),
+                    smooth: true,
+                    symbol: 'circle',
+                    symbolSize: 6,
+                    lineStyle: { color: '#10b981', width: 2 },
+                    itemStyle: { color: '#10b981' },
+                    areaStyle: {
+                      color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(16,185,129,0.25)' }, { offset: 1, color: 'rgba(16,185,129,0.02)' }] },
+                    },
+                  }],
+                }}
+                style={{ height: 300 }}
+              />
             </div>
 
             {/* Units Won Over Time */}
             <div className="bg-gradient-to-br from-black via-gray-900 to-slate-900 border border-white rounded-xl p-6">
               <h3 className="text-xl font-bold text-slate-100 mb-4">Units Won Over Time</h3>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={history}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                  <XAxis dataKey="period" stroke="#94a3b8" />
-                  <YAxis stroke="#94a3b8" tickFormatter={(value) => `${value.toFixed(1)}u`} />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569' }}
-                    formatter={(value: any) => `${value.toFixed(2)} units`}
-                  />
-                  <Line type="monotone" dataKey="units_won" stroke="#f59e0b" strokeWidth={2} dot={{ r: 4 }} />
-                </LineChart>
-              </ResponsiveContainer>
+              <ReactECharts
+                option={{
+                  backgroundColor: 'transparent',
+                  grid: { top: 8, right: 8, bottom: 32, left: 8, containLabel: true },
+                  xAxis: {
+                    type: 'category',
+                    data: history.map((h: HistoryPeriod) => h.period),
+                    axisLabel: { color: '#94a3b8', fontSize: 11 },
+                    axisLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } },
+                    axisTick: { show: false },
+                  },
+                  yAxis: {
+                    type: 'value',
+                    axisLabel: { color: '#94a3b8', fontSize: 11, formatter: (v: number) => `${v.toFixed(1)}u` },
+                    axisLine: { show: false },
+                    axisTick: { show: false },
+                    splitLine: { lineStyle: { color: 'rgba(255,255,255,0.07)' } },
+                  },
+                  tooltip: {
+                    trigger: 'axis',
+                    backgroundColor: '#1e293b',
+                    borderColor: '#475569',
+                    textStyle: { color: '#e2e8f0', fontSize: 12 },
+                    valueFormatter: (v: number) => `${v.toFixed(2)} units`,
+                  },
+                  series: [{
+                    type: 'line',
+                    data: history.map((h: HistoryPeriod) => h.units_won),
+                    smooth: true,
+                    symbol: 'circle',
+                    symbolSize: 6,
+                    lineStyle: { color: '#f59e0b', width: 2 },
+                    itemStyle: { color: '#f59e0b' },
+                    areaStyle: {
+                      color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(245,158,11,0.25)' }, { offset: 1, color: 'rgba(245,158,11,0.02)' }] },
+                    },
+                  }],
+                }}
+                style={{ height: 300 }}
+              />
             </div>
           </div>
         )}
