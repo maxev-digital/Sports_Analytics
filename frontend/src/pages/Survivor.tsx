@@ -2,6 +2,10 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getApiUrl } from '../config';
 import { SurvivorStrategy, findHolidayDoubles, getWeekHazard } from './SurvivorStrategy';
+import { SurvivorPathBuilder } from './SurvivorPathBuilder';
+import { SurvivorSimulator } from './SurvivorSimulator';
+import { SurvivorMultiEntry } from './SurvivorMultiEntry';
+import { type CustomPath } from './survivorAlgo';
 
 // ── Semantic color tokens (theme-agnostic) ────────────────────────────────────
 const BG     = 'var(--c-bg)';
@@ -57,7 +61,7 @@ const TIER_COLOR: Record<string, string> = {
   BOTTOM:    RED,
 };
 
-type View = 'grid' | 'weekly' | 'paths' | 'strategy';
+type View = 'grid' | 'weekly' | 'paths' | 'strategy' | 'my-paths' | 'simulator' | 'multi-entry';
 
 interface TeamWeek {
   week: number;
@@ -227,11 +231,12 @@ function computePaths(weeks: Record<number, Game[]>): OptimalPath[] {
   ];
 }
 
-const STORAGE_KEY  = 'survivor_2026_used';
-const PICK_KEY     = 'survivor_2026_picks';
-const THK_KEY      = 'survivor_2026_thk';
-const XMAS_KEY     = 'survivor_2026_xmas';
-const THEME_KEY    = 'survivor_theme';
+const STORAGE_KEY      = 'survivor_2026_used';
+const PICK_KEY         = 'survivor_2026_picks';
+const THK_KEY          = 'survivor_2026_thk';
+const XMAS_KEY         = 'survivor_2026_xmas';
+const THEME_KEY        = 'survivor_theme';
+const CUSTOM_PATHS_KEY = 'survivor_2026_custom_paths';
 
 function loadUsed(): Set<string> {
   try { return new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]')); }
@@ -364,6 +369,15 @@ export function Survivor() {
   const [xmasPick, setXmasPickState] = useState<string | null>(() => localStorage.getItem(XMAS_KEY));
   const [odds, setOdds] = useState<Record<string, OddsEntry>>({});
   const fetchedOddsWeeks = useState<Set<number>>(() => new Set())[0];
+  const [customPaths, setCustomPaths] = useState<CustomPath[]>(() => {
+    try { return JSON.parse(localStorage.getItem(CUSTOM_PATHS_KEY) ?? '[]'); }
+    catch { return []; }
+  });
+
+  const handleCustomPathsChange = useCallback((next: CustomPath[]) => {
+    setCustomPaths(next);
+    localStorage.setItem(CUSTOM_PATHS_KEY, JSON.stringify(next));
+  }, []);
 
   const toggleTheme = () => {
     setDark(prev => {
@@ -586,11 +600,15 @@ export function Survivor() {
         </div>
 
         {/* View toggle */}
-        <div style={{ display: 'flex', gap: 6, marginBottom: 20 }}>
+        <div style={{ display: 'flex', gap: 6, marginBottom: 20, flexWrap: 'wrap' }}>
           <button style={navBtn(view === 'weekly')} onClick={() => setView('weekly')}>WEEKLY PICKS</button>
           <button style={navBtn(view === 'grid')} onClick={() => setView('grid')}>TEAM GRID</button>
           <button style={navBtn(view === 'paths')} onClick={() => setView('paths')}>OPTIMAL PATHS</button>
           <button style={navBtn(view === 'strategy')} onClick={() => setView('strategy')}>STRATEGY</button>
+          <div style={{ width: 1, background: BORDER, margin: '0 4px', alignSelf: 'stretch' }} />
+          <button style={navBtn(view === 'my-paths')} onClick={() => setView('my-paths')}>MY PATHS</button>
+          <button style={navBtn(view === 'simulator')} onClick={() => setView('simulator')}>SIMULATOR</button>
+          <button style={navBtn(view === 'multi-entry')} onClick={() => setView('multi-entry')}>MULTI-ENTRY</button>
         </div>
 
         {loading && <div style={{ textAlign: 'center', padding: 60, color: MUTED }}>Loading schedule...</div>}
@@ -1144,6 +1162,32 @@ export function Survivor() {
         {/* STRATEGY VIEW */}
         {!loading && view === 'strategy' && (
           <SurvivorStrategy teams={teams} weeks={weeks} used={used} />
+        )}
+
+        {/* MY PATHS VIEW */}
+        {!loading && view === 'my-paths' && (
+          <SurvivorPathBuilder
+            weeks={weeks}
+            customPaths={customPaths}
+            onPathsChange={handleCustomPathsChange}
+            thkGames={thkGames}
+            xmasGames={xmasGames}
+          />
+        )}
+
+        {/* SIMULATOR VIEW */}
+        {!loading && view === 'simulator' && (
+          <SurvivorSimulator
+            weeks={weeks}
+            userPicks={picks}
+            algorithmicPaths={paths}
+            customPaths={customPaths}
+          />
+        )}
+
+        {/* MULTI-ENTRY VIEW */}
+        {!loading && view === 'multi-entry' && (
+          <SurvivorMultiEntry weeks={weeks} />
         )}
 
         {/* Disclaimer */}

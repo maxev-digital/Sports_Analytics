@@ -27,7 +27,6 @@ export function Navigation() {
   const [edgesDropdownOpen,    setEdgesDropdownOpen]      = useState(false);
   const [dataLabDropdownOpen,  setDataLabDropdownOpen]    = useState(false);
   const [toolsDropdownOpen,    setToolsDropdownOpen]      = useState(false);
-  const [marketsDropdownOpen,  setMarketsDropdownOpen]    = useState(false);
   const [userDropdownOpen,     setUserDropdownOpen]       = useState(false);
   const [upgradeModal,         setUpgradeModal]           = useState<UpgradeTarget | null>(null);
 
@@ -35,7 +34,6 @@ export function Navigation() {
   const edgesRef    = useRef<HTMLDivElement>(null);
   const dataLabRef  = useRef<HTMLDivElement>(null);
   const toolsRef    = useRef<HTMLDivElement>(null);
-  const marketsRef  = useRef<HTMLDivElement>(null);
   const userRef     = useRef<HTMLDivElement>(null);
 
   const isActive = (path: string) =>
@@ -55,36 +53,26 @@ export function Navigation() {
   ];
 
   const rankingsItems: NavItem[] = [
-    { path: '/power-rankings',   label: 'POWER RANKINGS'    },
-    { path: '/team-rankings',    label: 'STANDINGS'         },
-    { path: '/advanced-metrics', label: 'ADVANCED METRICS'  },
-    { path: '/player-leaders',   label: 'PLAYER LEADERS'    },
-    { path: '/statcast',         label: 'STATCAST'          },
-    { path: '/madden-ratings',   label: 'MADDEN 26 RATINGS' },
+    { path: '/power-rankings', label: 'POWER RANKINGS' },
+    { path: '/statcast',       label: 'STATCAST'        },
   ];
 
   const edgesItems: NavItem[] = [
-    { path: '/todays-plays',         label: "TODAY'S PLAYS"    },
-    { path: '/accuracy',             label: 'PICKS RECORD'     },
-    { path: '/picks',                label: 'PICKS'            },
-    { path: '/model-projections',    label: 'MODEL PROJECTIONS'},
-    { path: '/model-research',       label: 'MODEL RESEARCH'   },
-    { path: '/f5-edge',              label: 'F5 EDGE ENGINE'   },
-    { path: '/betting-rankings',     label: 'BETTING RANKINGS' },
-    { path: '/max-ev-edges',         label: 'ML EDGES'         },
-    { path: '/model-performance',    label: 'MODEL PERFORMANCE'},
-    { path: '/predictions-database', label: 'PREDICTIONS DB'   },
+    { path: '/todays-plays',         label: "TODAY'S PLAYS"     },
+    { path: '/picks',                label: 'PICKS'             },
+    { path: '/model-projections',    label: 'MODEL PROJECTIONS' },
+    { path: '/f5-edge',              label: 'F5 EDGE ENGINE'    },
+    { path: '/betting-rankings',     label: 'BETTING RANKINGS'  },
+    { path: '/max-ev-edges',         label: 'ML EDGES'          },
+    { path: '/model-performance',    label: 'MODEL PERFORMANCE' },
+    { path: '/predictions-database', label: 'PREDICTIONS DB'    },
   ];
 
   const dataLabItems: NavItem[] = [
-    { path: '/nfl-schedule',    label: 'NFL SCHEDULE'     },
-    { path: '/matchup-lab',     label: 'MATCHUP LAB'      },
-    { path: '/trends',          label: 'TEAM TRENDS'      },
-    { path: '/nfl-trends',      label: 'NFL ATS & TRENDS' },
-    { path: '/cfb-ratings',     label: 'CFB TEAM RATINGS' },
-    { path: '/mlb-team-stats',  label: 'MLB TEAM STATS'   },
-    { path: '/nfl-team-stats',  label: 'NFL TEAM STATS'   },
-    { path: '/referee-trends',  label: 'REFEREE TRACKER'  },
+    { path: '/referee-trends',  label: 'REFEREE TRACKER' },
+    { path: '/trends',          label: 'TRENDS DASHBOARD' },
+    { path: '/nfl-trends',      label: 'NFL TRENDS'       },
+    { path: '/cfb-ratings',     label: 'CFB RATINGS'      },
     { path: '/line-movement',   label: 'LINE MOVEMENT'    },
     { path: '/track-record',    label: 'TRACK RECORD'     },
     { path: '/recap',           label: 'DAILY RECAP'      },
@@ -92,20 +80,17 @@ export function Navigation() {
     { path: '/confidence-pool', label: 'CONFIDENCE POOL'  },
   ];
 
-  const marketsItems: NavItem[] = [
-    { path: '/kalshi', label: 'KALSHI' },
-  ];
-
   const toolsItems: NavItem[] = [
-    { path: '/injury-impact',   label: 'INJURY IMPACT ENGINE'    },
-    { path: '/injury-heatmap',  label: 'INJURY HEAT MAP'         },
-    { path: '/open-bets',       label: 'MY BETS'                 },
-    { path: '/tools',           label: 'BETTING TOOLS'           },
-    { path: '/settings',        label: 'BOOKMAKER SETTINGS'      },
-    { path: '/system-overview', label: 'HOW WE PICK: ALL SPORTS' },
-    { path: '/system-nfl',      label: 'HOW WE PICK: NFL'        },
-    { path: '/data-points',     label: 'DATA POINTS'             },
-    { path: '/system-health',   label: 'SYSTEM HEALTH'           },
+    { path: '/injury-impact',  label: 'INJURY IMPACT ENGINE' },
+    { path: '/injury-heatmap', label: 'INJURY HEATMAP'       },
+    { path: '/data-points',    label: 'DATA POINTS'          },
+    { path: '/model-research', label: 'MODEL RESEARCH'       },
+    { path: '/open-bets',      label: 'MY BETS'              },
+    { path: '/analytics',     label: 'MY ANALYTICS'         },
+    { path: '/props',         label: 'PLAYER PROPS'         },
+    { path: '/tools',         label: 'BETTING TOOLS'        },
+    { path: '/settings',      label: 'BOOKMAKER SETTINGS'   },
+    { path: '/system-health', label: 'SYSTEM HEALTH'        },
     ...(role === 'admin' ? [{ path: '/admin-dashboard', label: 'ADMIN DASHBOARD' }] : []),
   ];
 
@@ -116,7 +101,6 @@ export function Navigation() {
       if (edgesRef.current    && !edgesRef.current.contains(e.target as Node))    setEdgesDropdownOpen(false);
       if (dataLabRef.current  && !dataLabRef.current.contains(e.target as Node))  setDataLabDropdownOpen(false);
       if (toolsRef.current    && !toolsRef.current.contains(e.target as Node))    setToolsDropdownOpen(false);
-      if (marketsRef.current  && !marketsRef.current.contains(e.target as Node))  setMarketsDropdownOpen(false);
       if (userRef.current     && !userRef.current.contains(e.target as Node))     setUserDropdownOpen(false);
     }
     document.addEventListener('mousedown', handleClick);
@@ -287,16 +271,6 @@ export function Navigation() {
                 )}
               </div>
 
-              {/* PREDICTION MARKETS dropdown */}
-              <div className="relative" ref={marketsRef}>
-                <button onClick={() => setMarketsDropdownOpen(o => !o)} className={navBtn(isDropdownActive(marketsItems))}>
-                  PREDICTION MARKETS {chevron(marketsDropdownOpen)}
-                </button>
-                {marketsDropdownOpen && dropdownPanel(
-                  marketsItems.map(item => renderDropdownItem(item, () => setMarketsDropdownOpen(false)))
-                )}
-              </div>
-
             </div>
 
             {/* User menu */}
@@ -367,7 +341,7 @@ export function Navigation() {
 
           {/* Mobile nav — horizontal scroll */}
           <div className="md:hidden flex gap-1 pb-2 overflow-x-auto scrollbar-hide">
-            {[...mainNavItems, ...rankingsItems, ...edgesItems, ...dataLabItems, ...toolsItems, ...marketsItems].map(item => {
+            {[...mainNavItems, ...rankingsItems, ...edgesItems, ...dataLabItems, ...toolsItems].map(item => {
               const routeTier = getRouteTier(item.path);
               const accessible = canAccessRoute(userTier, routeTier);
               if (accessible) {

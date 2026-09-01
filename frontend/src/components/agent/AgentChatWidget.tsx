@@ -5,7 +5,7 @@ import { useAgentChat } from '../../hooks/useAgentChat';
 import { ChatPanel } from './ChatPanel';
 
 // Width of the always-visible blue divider strip
-const DIVIDER_W = 28;
+const DIVIDER_W = 22;
 
 export function AgentChatWidget() {
   const { isOpen, openWidget, closeWidget, panelWidth, setPanelWidth } = useAgentContext();
@@ -68,21 +68,13 @@ export function AgentChatWidget() {
         role="button"
         aria-label={isOpen ? 'Resize analyst panel' : 'Open analyst panel'}
       >
-        {/* Robot / bot icon */}
-        <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <rect x="3" y="7" width="18" height="13" rx="2" strokeWidth="1.5" />
-          <circle cx="9" cy="13" r="1.5" fill="white" stroke="none" />
-          <circle cx="15" cy="13" r="1.5" fill="white" stroke="none" />
-          <path strokeLinecap="round" strokeWidth="1.5" d="M9 17h6" />
-          <path strokeLinecap="round" strokeWidth="1.5" d="M12 7V4" />
-          <circle cx="12" cy="3" r="1" fill="white" stroke="none" />
-        </svg>
-
-        {/* Horizontal grip lines */}
-        <div className="flex flex-col gap-1">
-          <div className="h-px w-4 bg-white/70 rounded-full" />
-          <div className="h-px w-4 bg-white/70 rounded-full" />
-          <div className="h-px w-4 bg-white/70 rounded-full" />
+        {/* MAX AI label — rotated to read top-to-bottom in the vertical bar */}
+        <div
+          style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', userSelect: 'none' }}
+          className="flex flex-col items-center leading-none"
+        >
+          <span className="text-white font-black tracking-widest" style={{ fontSize: '0.6rem', letterSpacing: '0.18em' }}>MAX</span>
+          <span className="text-blue-200 font-black tracking-widest" style={{ fontSize: '0.6rem', letterSpacing: '0.18em' }}>AI</span>
         </div>
 
         {/* Chevron — points left (open) / right (closed) */}
