@@ -5,32 +5,9 @@
  */
 import { useState, useMemo } from 'react';
 import { CUSTOM_PATH_COLORS, type SurvivorGame, type SurvivorPick, type CustomPath } from './survivorAlgo';
+import { logo, wpColor, COLORS, WP_LABEL_COLOR, withAlpha } from './survivorUtils';
 
-const EMERALD = 'oklch(69.6% .17 162.48)';
-const RED     = 'oklch(63.2% .204 25.331)';
-const YELLOW  = 'oklch(79.5% .184 86.047)';
-const BLUE    = 'oklch(62.3% .214 259.815)';
-const MUTED   = 'var(--c-muted)';
-const PANEL   = 'var(--c-panel)';
-const BORDER  = 'var(--c-border)';
-const FG      = 'var(--c-fg)';
-
-const LABEL_COLOR: Record<string, string> = {
-  GREAT: EMERALD, GOOD: 'oklch(70% .15 150)',
-  LEAN: YELLOW, TOUGH: 'oklch(70% .15 30)', TRAP: RED,
-};
-
-const LOGO_MAP: Record<string, string> = {
-  ARI:'ari',ATL:'atl',BAL:'bal',BUF:'buf',CAR:'car',CHI:'chi',CIN:'cin',CLE:'cle',
-  DAL:'dal',DEN:'den',DET:'det',GB:'gb',HOU:'hou',IND:'ind',JAX:'jax',KC:'kc',
-  LAC:'lac',LAR:'lar',LV:'lv',MIA:'mia',MIN:'min',NE:'ne',NO:'no',NYG:'nyg',
-  NYJ:'nyj',PHI:'phi',PIT:'pit',SEA:'sea',SF:'sf',TB:'tb',TEN:'ten',WSH:'wsh',
-};
-const logo = (abbr: string) =>
-  `https://a.espncdn.com/i/teamlogos/nfl/500/${LOGO_MAP[abbr] ?? abbr.toLowerCase()}.png`;
-
-const wpColor = (wp: number) =>
-  wp >= 0.73 ? EMERALD : wp >= 0.58 ? BLUE : wp >= 0.45 ? YELLOW : RED;
+const { EMERALD, RED, YELLOW, BLUE } = COLORS;
 
 type HolidaySlot = 'thk' | 'xmas';
 type GridCol = number | HolidaySlot;
@@ -64,7 +41,6 @@ export function SurvivorPathBuilder({ weeks, customPaths, onPathsChange, thkGame
     [weeks],
   );
 
-  // Grid columns: insert THK before WK12, XMAS before WK16
   const gridCols = useMemo<GridCol[]>(() => {
     const cols: GridCol[] = [];
     for (const wk of weekNums) {
@@ -75,7 +51,6 @@ export function SurvivorPathBuilder({ weeks, customPaths, onPathsChange, thkGame
     return cols;
   }, [weekNums, thkGames.length, xmasGames.length]);
 
-  // Build team → week lookup
   const teamWeekMap = useMemo(() => {
     const map: Record<string, Record<number, { wp: number; opp: string; home: boolean; label: string }>> = {};
     for (const [wkStr, games] of Object.entries(weeks)) {
@@ -90,7 +65,6 @@ export function SurvivorPathBuilder({ weeks, customPaths, onPathsChange, thkGame
     return map;
   }, [weeks]);
 
-  // Build team → holiday game lookup
   const thkMap = useMemo(() => {
     const m: Record<string, { wp: number; opp: string; home: boolean; label: string }> = {};
     for (const g of thkGames) {
@@ -109,10 +83,8 @@ export function SurvivorPathBuilder({ weeks, customPaths, onPathsChange, thkGame
     return m;
   }, [xmasGames]);
 
-  // All teams sorted alphabetically (base order)
   const allTeams = useMemo(() => Object.keys(teamWeekMap).sort(), [teamWeekMap]);
 
-  // Apply column sort
   const sortedTeams = useMemo(() => {
     if (!sortState) return allTeams;
     return [...allTeams].sort((a, b) => {
@@ -139,7 +111,6 @@ export function SurvivorPathBuilder({ weeks, customPaths, onPathsChange, thkGame
     });
   };
 
-  // Teams used anywhere in the current path (regular + holiday)
   const usedInPath = useMemo(() => {
     if (!building) return new Set<string>();
     const s = new Set(Object.values(building.picks).map(p => p.team));
@@ -225,65 +196,72 @@ export function SurvivorPathBuilder({ weeks, customPaths, onPathsChange, thkGame
   if (!building) {
     return (
       <div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+        <div className="flex items-center justify-between mb-4">
           <div>
-            <div style={{ fontSize: '0.7rem', fontWeight: 800, color: FG, letterSpacing: '0.06em' }}>MY CUSTOM PATHS</div>
-            <div style={{ fontSize: '0.62rem', color: MUTED, marginTop: 2 }}>
+            <div className="text-[0.7rem] font-extrabold text-fg tracking-[0.06em]">MY CUSTOM PATHS</div>
+            <div className="text-[0.62rem] text-muted mt-0.5">
               Build season-long pick sequences including Thanksgiving and Christmas picks.
             </div>
           </div>
-          <button onClick={startNew} style={{
-            fontSize: '0.7rem', fontWeight: 800, padding: '8px 16px', borderRadius: 6,
-            cursor: 'pointer', background: BLUE + '22', border: `1px solid ${BLUE}`, color: BLUE, flexShrink: 0,
-          }}>
+          <button
+            onClick={startNew}
+            className="text-[0.7rem] font-extrabold py-2 px-4 rounded-md cursor-pointer shrink-0"
+            style={{ background: withAlpha(BLUE, 0.13), border: `1px solid ${BLUE}`, color: BLUE }}
+          >
             + NEW PATH
           </button>
         </div>
 
         {customPaths.length === 0 && (
-          <div style={{
-            textAlign: 'center', padding: '48px 24px',
-            background: PANEL, border: `1px dashed ${BORDER}`, borderRadius: 10,
-            fontSize: '0.72rem', color: MUTED,
-          }}>
-            No custom paths yet. Click <strong style={{ color: FG }}>+ NEW PATH</strong> to build your first season-long pick sequence.
+          <div className="text-center py-12 px-6 bg-panel border border-ev-border border-dashed rounded-[10px] text-[0.72rem] text-muted">
+            No custom paths yet. Click <strong className="text-fg">+ NEW PATH</strong> to build your first season-long pick sequence.
           </div>
         )}
 
-        <div style={{ display: 'grid', gap: 12 }}>
+        <div className="grid gap-3">
           {customPaths.map(path => {
             const sp = survivalProbPath(path);
             const pickCount = Object.keys(path.picks).length
               + (path.thkPick ? 1 : 0) + (path.xmasPick ? 1 : 0);
             return (
-              <div key={path.id} style={{
-                background: PANEL, border: `1px solid ${path.color}40`,
-                borderLeft: `3px solid ${path.color}`, borderRadius: 8, padding: '14px 16px',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 10 }}>
+              <div
+                key={path.id}
+                className="rounded-lg py-[14px] px-4"
+                style={{
+                  background: 'var(--c-panel)',
+                  border: `1px solid ${withAlpha(path.color, 0.25)}`,
+                  borderLeft: `3px solid ${path.color}`,
+                }}
+              >
+                <div className="flex items-start justify-between mb-[10px]">
                   <div>
-                    <div style={{ fontWeight: 800, fontSize: '0.85rem', color: path.color, fontFamily: 'Nunito' }}>
+                    <div className="font-extrabold text-[0.85rem] font-[Nunito]" style={{ color: path.color }}>
                       {path.name}
                     </div>
-                    <div style={{ fontSize: '0.62rem', color: MUTED, marginTop: 2 }}>
+                    <div className="text-[0.62rem] text-muted mt-0.5">
                       {pickCount} / {totalSlots} slots picked · joint survival {(sp * 100).toFixed(2)}%
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: 6, flexShrink: 0, marginLeft: 12 }}>
-                    <button onClick={() => startEdit(path)} style={{
-                      fontSize: '0.62rem', fontWeight: 700, padding: '4px 10px', borderRadius: 5,
-                      cursor: 'pointer', background: 'transparent', border: `1px solid ${BORDER}`, color: MUTED,
-                    }}>Edit</button>
-                    <button onClick={() => deletePath(path.id)} style={{
-                      fontSize: '0.62rem', fontWeight: 700, padding: '4px 10px', borderRadius: 5,
-                      cursor: 'pointer', background: 'transparent', border: `1px solid ${RED}50`, color: RED,
-                    }}>Delete</button>
+                  <div className="flex gap-1.5 shrink-0 ml-3">
+                    <button
+                      onClick={() => startEdit(path)}
+                      className="text-[0.62rem] font-bold py-1 px-[10px] rounded-[5px] cursor-pointer bg-transparent text-muted border border-ev-border"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => deletePath(path.id)}
+                      className="text-[0.62rem] font-bold py-1 px-[10px] rounded-[5px] cursor-pointer bg-transparent"
+                      style={{ border: `1px solid ${withAlpha(RED, 0.31)}`, color: RED }}
+                    >
+                      Delete
+                    </button>
                   </div>
                 </div>
 
                 {/* Pick timeline — bordered table */}
-                <div style={{ overflowX: 'auto', marginTop: 4 }}>
-                  <table style={{ borderCollapse: 'collapse', minWidth: 'max-content' }}>
+                <div className="overflow-x-auto mt-1">
+                  <table className="border-collapse" style={{ minWidth: 'max-content' }}>
                     <thead>
                       <tr>
                         {weekNums.map(wk => {
@@ -292,28 +270,34 @@ export function SurvivorPathBuilder({ weeks, customPaths, onPathsChange, thkGame
                           return (
                             <>
                               {isThkWk && (
-                                <th key="thk-h" style={{
-                                  padding: '5px 6px', textAlign: 'center', minWidth: 64,
-                                  border: `1px solid ${YELLOW}50`,
-                                  background: YELLOW + '18',
-                                  fontSize: '0.6rem', fontWeight: 800, color: YELLOW,
-                                }}>🦃 THK</th>
+                                <th
+                                  key="thk-h"
+                                  className="py-[5px] px-1.5 text-center min-w-[64px] text-[0.6rem] font-extrabold"
+                                  style={{ border: `1px solid ${withAlpha(YELLOW, 0.31)}`, background: withAlpha(YELLOW, 0.09), color: YELLOW }}
+                                >
+                                  🦃 THK
+                                </th>
                               )}
                               {isXmasWk && (
-                                <th key="xmas-h" style={{
-                                  padding: '5px 6px', textAlign: 'center', minWidth: 64,
-                                  border: `1px solid ${RED}40`,
-                                  background: RED + '12',
-                                  fontSize: '0.6rem', fontWeight: 800, color: RED,
-                                }}>🎄 XMS</th>
+                                <th
+                                  key="xmas-h"
+                                  className="py-[5px] px-1.5 text-center min-w-[64px] text-[0.6rem] font-extrabold"
+                                  style={{ border: `1px solid ${withAlpha(RED, 0.25)}`, background: withAlpha(RED, 0.07), color: RED }}
+                                >
+                                  🎄 XMS
+                                </th>
                               )}
-                              <th key={wk} style={{
-                                padding: '5px 8px', textAlign: 'center', minWidth: 64,
-                                border: `1px solid ${BORDER}`,
-                                background: path.picks[wk] ? path.color + '14' : 'transparent',
-                                fontSize: '0.6rem', fontWeight: 700,
-                                color: path.picks[wk] ? path.color : MUTED,
-                              }}>WK{wk}</th>
+                              <th
+                                key={wk}
+                                className="py-[5px] px-2 text-center min-w-[64px] text-[0.6rem] font-bold"
+                                style={{
+                                  border: '1px solid var(--c-border)',
+                                  background: path.picks[wk] ? withAlpha(path.color, 0.08) : 'transparent',
+                                  color: path.picks[wk] ? path.color : 'var(--c-muted)',
+                                }}
+                              >
+                                WK{wk}
+                              </th>
                             </>
                           );
                         })}
@@ -329,20 +313,22 @@ export function SurvivorPathBuilder({ weeks, customPaths, onPathsChange, thkGame
                               {isThkWk && (() => {
                                 const p = path.thkPick;
                                 return (
-                                  <td key="thk-b" style={{
-                                    padding: '8px 6px', textAlign: 'center',
-                                    border: `1px solid ${YELLOW}50`,
-                                    background: p ? YELLOW + '10' : 'transparent',
-                                    verticalAlign: 'middle',
-                                  }}>
+                                  <td
+                                    key="thk-b"
+                                    className="py-2 px-1.5 text-center align-middle"
+                                    style={{
+                                      border: `1px solid ${withAlpha(YELLOW, 0.31)}`,
+                                      background: p ? withAlpha(YELLOW, 0.06) : 'transparent',
+                                    }}
+                                  >
                                     {p ? (
                                       <>
-                                        <img src={logo(p.team)} alt={p.team} style={{ width: 30, height: 30, display: 'block', margin: '0 auto 4px' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                                        <div style={{ fontSize: '0.65rem', fontWeight: 800, color: YELLOW }}>{p.team}</div>
-                                        <div style={{ fontSize: '0.6rem', color: MUTED }}>{Math.round(p.wp * 100)}%</div>
+                                        <img src={logo(p.team)} alt={p.team} className="w-[30px] h-[30px] block mx-auto mb-1" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                                        <div className="text-[0.65rem] font-extrabold" style={{ color: YELLOW }}>{p.team}</div>
+                                        <div className="text-[0.6rem] text-muted">{Math.round(p.wp * 100)}%</div>
                                       </>
                                     ) : (
-                                      <span style={{ fontSize: '0.6rem', color: MUTED }}>—</span>
+                                      <span className="text-[0.6rem] text-muted">—</span>
                                     )}
                                   </td>
                                 );
@@ -350,20 +336,22 @@ export function SurvivorPathBuilder({ weeks, customPaths, onPathsChange, thkGame
                               {isXmasWk && (() => {
                                 const p = path.xmasPick;
                                 return (
-                                  <td key="xmas-b" style={{
-                                    padding: '8px 6px', textAlign: 'center',
-                                    border: `1px solid ${RED}40`,
-                                    background: p ? RED + '08' : 'transparent',
-                                    verticalAlign: 'middle',
-                                  }}>
+                                  <td
+                                    key="xmas-b"
+                                    className="py-2 px-1.5 text-center align-middle"
+                                    style={{
+                                      border: `1px solid ${withAlpha(RED, 0.25)}`,
+                                      background: p ? withAlpha(RED, 0.05) : 'transparent',
+                                    }}
+                                  >
                                     {p ? (
                                       <>
-                                        <img src={logo(p.team)} alt={p.team} style={{ width: 30, height: 30, display: 'block', margin: '0 auto 4px' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                                        <div style={{ fontSize: '0.65rem', fontWeight: 800, color: RED }}>{p.team}</div>
-                                        <div style={{ fontSize: '0.6rem', color: MUTED }}>{Math.round(p.wp * 100)}%</div>
+                                        <img src={logo(p.team)} alt={p.team} className="w-[30px] h-[30px] block mx-auto mb-1" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                                        <div className="text-[0.65rem] font-extrabold" style={{ color: RED }}>{p.team}</div>
+                                        <div className="text-[0.6rem] text-muted">{Math.round(p.wp * 100)}%</div>
                                       </>
                                     ) : (
-                                      <span style={{ fontSize: '0.6rem', color: MUTED }}>—</span>
+                                      <span className="text-[0.6rem] text-muted">—</span>
                                     )}
                                   </td>
                                 );
@@ -371,20 +359,24 @@ export function SurvivorPathBuilder({ weeks, customPaths, onPathsChange, thkGame
                               {(() => {
                                 const p = path.picks[wk];
                                 return (
-                                  <td key={wk} style={{
-                                    padding: '8px 6px', textAlign: 'center',
-                                    border: `1px solid ${BORDER}`,
-                                    background: p ? path.color + '10' : 'transparent',
-                                    verticalAlign: 'middle',
-                                  }}>
+                                  <td
+                                    key={wk}
+                                    className="py-2 px-1.5 text-center align-middle"
+                                    style={{
+                                      border: '1px solid var(--c-border)',
+                                      background: p ? withAlpha(path.color, 0.06) : 'transparent',
+                                    }}
+                                  >
                                     {p ? (
                                       <>
-                                        <img src={logo(p.team)} alt={p.team} style={{ width: 30, height: 30, display: 'block', margin: '0 auto 4px' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                                        <div style={{ fontSize: '0.65rem', fontWeight: 800, color: FG }}>{p.team}</div>
-                                        <div style={{ fontSize: '0.6rem', color: LABEL_COLOR[p.label] ?? MUTED, fontWeight: 700 }}>{Math.round(p.wp * 100)}%</div>
+                                        <img src={logo(p.team)} alt={p.team} className="w-[30px] h-[30px] block mx-auto mb-1" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                                        <div className="text-[0.65rem] font-extrabold text-fg">{p.team}</div>
+                                        <div className="text-[0.6rem] font-bold" style={{ color: WP_LABEL_COLOR[p.label] ?? 'var(--c-muted)' }}>
+                                          {Math.round(p.wp * 100)}%
+                                        </div>
                                       </>
                                     ) : (
-                                      <span style={{ fontSize: '0.6rem', color: MUTED }}>—</span>
+                                      <span className="text-[0.6rem] text-muted">—</span>
                                     )}
                                   </td>
                                 );
@@ -406,56 +398,61 @@ export function SurvivorPathBuilder({ weeks, customPaths, onPathsChange, thkGame
 
   // ── Builder shared elements ────────────────────────────────────────────────
   const BuilderHeader = (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+    <div className="flex flex-col gap-[10px] mb-4">
+      <div className="flex items-center gap-[10px] flex-wrap">
         <input
           value={nameInput}
           onChange={e => setNameInput(e.target.value)}
           placeholder="Path name (e.g. My Circa Entry)"
-          style={{
-            flex: 1, minWidth: 200, padding: '8px 12px', borderRadius: 6,
-            background: PANEL, border: `1px solid ${BORDER}`, color: FG,
-            fontSize: '0.82rem', fontWeight: 700, fontFamily: 'Nunito',
-          }}
+          className="flex-1 min-w-[200px] py-2 px-3 rounded-md text-[0.82rem] font-bold font-[Nunito] bg-panel border border-ev-border text-fg"
         />
-        <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
+        <div className="flex gap-[5px] items-center">
           {CUSTOM_PATH_COLORS.map((c, i) => (
-            <button key={i} onClick={() => setBuilding(b => b ? { ...b, color: c } : b)} style={{
-              width: 20, height: 20, borderRadius: '50%', background: c, cursor: 'pointer',
-              border: building.color === c ? `3px solid ${FG}` : '2px solid transparent',
-            }} />
+            <button
+              key={i}
+              onClick={() => setBuilding(b => b ? { ...b, color: c } : b)}
+              className="w-5 h-5 rounded-full cursor-pointer"
+              style={{
+                background: c,
+                border: building.color === c ? '3px solid var(--c-fg)' : '2px solid transparent',
+              }}
+            />
           ))}
         </div>
-        <div style={{ display: 'flex', background: 'var(--c-track)', borderRadius: 6, padding: 2 }}>
+        <div className="flex bg-track rounded-md p-[2px]">
           {(['grid', 'sidebar'] as const).map(mode => (
-            <button key={mode} onClick={() => setBuilderMode(mode)} style={{
-              padding: '5px 11px', borderRadius: 5, cursor: 'pointer', fontSize: '0.65rem', fontWeight: 700,
-              background: builderMode === mode ? PANEL : 'transparent',
-              border: builderMode === mode ? `1px solid ${BORDER}` : '1px solid transparent',
-              color: builderMode === mode ? FG : MUTED,
-            }}>
+            <button
+              key={mode}
+              onClick={() => setBuilderMode(mode)}
+              className="py-[5px] px-[11px] rounded-[5px] cursor-pointer text-[0.65rem] font-bold"
+              style={{
+                background: builderMode === mode ? 'var(--c-panel)' : 'transparent',
+                border: builderMode === mode ? '1px solid var(--c-border)' : '1px solid transparent',
+                color: builderMode === mode ? 'var(--c-fg)' : 'var(--c-muted)',
+              }}
+            >
               {mode === 'grid' ? 'GRID' : 'SIDEBAR'}
             </button>
           ))}
         </div>
-        <button onClick={cancelBuild} style={{
-          fontSize: '0.68rem', fontWeight: 700, padding: '7px 12px', borderRadius: 6,
-          cursor: 'pointer', background: 'transparent', border: `1px solid ${BORDER}`, color: MUTED,
-        }}>Cancel</button>
+        <button
+          onClick={cancelBuild}
+          className="text-[0.68rem] font-bold py-[7px] px-3 rounded-md cursor-pointer bg-transparent border border-ev-border text-muted"
+        >
+          Cancel
+        </button>
       </div>
 
-      {/* Progress bar */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <div style={{ flex: 1, height: 4, background: 'var(--c-track)', borderRadius: 2, overflow: 'hidden' }}>
-          <div style={{
-            height: '100%', borderRadius: 2, background: building.color,
-            width: `${(totalPicked / totalSlots) * 100}%`,
-            transition: 'width 0.2s ease',
-          }} />
+      <div className="flex items-center gap-3">
+        <div className="flex-1 h-1 bg-track rounded-sm overflow-hidden">
+          <div
+            className="h-full rounded-sm transition-[width] duration-200 ease-in-out"
+            style={{ background: building.color, width: `${(totalPicked / totalSlots) * 100}%` }}
+          />
         </div>
-        <div style={{ fontSize: '0.62rem', color: MUTED, whiteSpace: 'nowrap' }}>
+        <div className="text-[0.62rem] text-muted whitespace-nowrap">
           {totalPicked}/{totalSlots} slots · joint survival{' '}
-          <span style={{ color: building.color, fontWeight: 700 }}>
+          <span className="font-bold" style={{ color: building.color }}>
             {(survivalProb(building) * 100).toFixed(2)}%
           </span>
         </div>
@@ -464,27 +461,35 @@ export function SurvivorPathBuilder({ weeks, customPaths, onPathsChange, thkGame
   );
 
   const SaveBanner = allFilled ? (
-    <div style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12,
-      background: building.color + '18', border: `1.5px solid ${building.color}`,
-      borderRadius: 10, padding: '14px 20px', marginBottom: 16,
-    }}>
+    <div
+      className="flex items-center justify-between flex-wrap gap-3 rounded-[10px] py-[14px] px-5 mb-4"
+      style={{
+        background: withAlpha(building.color, 0.09),
+        border: `1.5px solid ${building.color}`,
+      }}
+    >
       <div>
-        <div style={{ fontWeight: 800, fontSize: '0.85rem', color: building.color, fontFamily: 'Nunito' }}>
+        <div className="font-extrabold text-[0.85rem] font-[Nunito]" style={{ color: building.color }}>
           ✓ All {totalSlots} slots picked
         </div>
-        <div style={{ fontSize: '0.62rem', color: MUTED, marginTop: 2 }}>
+        <div className="text-[0.62rem] text-muted mt-0.5">
           Joint survival: <strong style={{ color: building.color }}>{(survivalProb(building) * 100).toFixed(2)}%</strong>
-          {!nameInput.trim() && <span style={{ color: YELLOW, marginLeft: 8 }}>← enter a name to save</span>}
+          {!nameInput.trim() && <span className="ml-2" style={{ color: YELLOW }}>← enter a name to save</span>}
         </div>
       </div>
-      <button onClick={savePath} disabled={!canSave} style={{
-        fontSize: '0.78rem', fontWeight: 800, padding: '10px 24px', borderRadius: 8,
-        cursor: canSave ? 'pointer' : 'default',
-        background: canSave ? building.color : MUTED + '22',
-        border: `1px solid ${canSave ? building.color : MUTED + '44'}`,
-        color: canSave ? 'oklch(98% 0 0)' : MUTED,
-      }}>Save Path</button>
+      <button
+        onClick={savePath}
+        disabled={!canSave}
+        className="text-[0.78rem] font-extrabold py-[10px] px-6 rounded-lg"
+        style={{
+          cursor: canSave ? 'pointer' : 'default',
+          background: canSave ? building.color : 'var(--c-muted)',
+          border: `1px solid ${canSave ? building.color : 'var(--c-muted)'}`,
+          color: canSave ? 'oklch(98% 0 0)' : 'var(--c-muted)',
+        }}
+      >
+        Save Path
+      </button>
     </div>
   ) : null;
 
@@ -495,60 +500,51 @@ export function SurvivorPathBuilder({ weeks, customPaths, onPathsChange, thkGame
         {BuilderHeader}
         {SaveBanner}
 
-        <div style={{ background: PANEL, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden' }}>
-          <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: '70vh' }}>
-            <table style={{ borderCollapse: 'collapse', fontSize: '0.68rem', minWidth: 'max-content' }}>
+        <div className="bg-panel border border-ev-border rounded-[10px] overflow-hidden">
+          <div className="overflow-x-auto overflow-y-auto max-h-[70vh]">
+            <table className="border-collapse text-[0.68rem]" style={{ minWidth: 'max-content' }}>
               <thead>
                 <tr>
-                  {/* Team header — sticky left + top */}
-                  <th style={{
-                    position: 'sticky', left: 0, top: 0, zIndex: 4,
-                    background: PANEL, borderRight: `1px solid ${BORDER}`,
-                    borderBottom: `1px solid ${BORDER}`,
-                    padding: '8px 12px', textAlign: 'left',
-                    fontSize: '0.58rem', color: MUTED, fontWeight: 700, letterSpacing: '0.06em',
-                    minWidth: 90,
-                  }}>TEAM</th>
+                  <th
+                    className="sticky left-0 top-0 z-[4] bg-panel border-r border-ev-border border-b border-ev-border py-2 px-3 text-left text-[0.58rem] text-muted font-bold tracking-[0.06em] min-w-[90px]"
+                  >
+                    TEAM
+                  </th>
 
                   {gridCols.map(col => {
-                    const isHoliday = col === 'thk' || col === 'xmas';
-                    const isTHK     = col === 'thk';
-                    const isXMAS    = col === 'xmas';
+                    const isTHK    = col === 'thk';
+                    const isXMAS   = col === 'xmas';
+                    const isHoliday = isTHK || isXMAS;
                     const isActive  = sortState?.col === col;
                     const indicator = isActive ? (sortState!.dir === 'desc' ? ' ▼' : ' ▲') : '';
-                    const accentCol = isTHK ? YELLOW : isXMAS ? RED : undefined;
+                    const accent    = isTHK ? YELLOW : isXMAS ? RED : undefined;
 
-                    // Current pick for this column
                     let colPick: SurvivorPick | null = null;
-                    if (isTHK)        colPick = building.thkPick;
-                    else if (isXMAS)  colPick = building.xmasPick;
-                    else              colPick = building.picks[col as number] ?? null;
+                    if (isTHK)       colPick = building.thkPick;
+                    else if (isXMAS) colPick = building.xmasPick;
+                    else             colPick = building.picks[col as number] ?? null;
 
                     return (
-                      <th key={String(col)}
+                      <th
+                        key={String(col)}
                         onClick={() => cycleSort(col)}
+                        className="sticky top-0 z-[3] py-1.5 px-1 text-center text-[0.58rem] font-bold tracking-[0.04em] min-w-[58px] cursor-pointer select-none"
                         style={{
-                          position: 'sticky', top: 0, zIndex: 3,
                           background: colPick
-                            ? (isHoliday ? (isTHK ? YELLOW : RED) + '25' : building.color + '22')
-                            : isActive ? 'var(--c-rowsel)' : PANEL,
-                          borderBottom: `2px solid ${colPick ? (accentCol ?? building.color) : isActive ? FG : BORDER}`,
-                          borderRight: `1px solid ${isHoliday ? (accentCol + '50') : BORDER}`,
-                          padding: '6px 4px', textAlign: 'center',
-                          fontSize: '0.58rem',
-                          color: colPick ? (accentCol ?? building.color) : isActive ? FG : MUTED,
-                          fontWeight: 700, letterSpacing: '0.04em', minWidth: 58,
-                          cursor: 'pointer', userSelect: 'none',
-                          ...(isHoliday ? { background: colPick ? (isTHK ? YELLOW + '25' : RED + '20') : (isTHK ? YELLOW + '10' : RED + '08') } : {}),
+                            ? (isHoliday ? withAlpha(accent ?? YELLOW, 0.14) : withAlpha(building.color, 0.13))
+                            : isActive ? 'var(--c-rowsel)' : isHoliday ? withAlpha(accent ?? YELLOW, 0.06) : 'var(--c-panel)',
+                          borderBottom: `2px solid ${colPick ? (accent ?? building.color) : isActive ? 'var(--c-fg)' : 'var(--c-border)'}`,
+                          borderRight: `1px solid ${isHoliday ? withAlpha(accent ?? YELLOW, 0.31) : 'var(--c-border)'}`,
+                          color: colPick ? (accent ?? building.color) : isActive ? 'var(--c-fg)' : 'var(--c-muted)',
                         }}
                       >
-                        <div>
-                          {isTHK ? `🦃THK${indicator}` : isXMAS ? `🎄XMS${indicator}` : `WK${col}${indicator}`}
-                        </div>
+                        <div>{isTHK ? `🦃THK${indicator}` : isXMAS ? `🎄XMS${indicator}` : `WK${col}${indicator}`}</div>
                         {colPick && (
-                          <img src={logo(colPick.team)} alt={colPick.team}
-                            style={{ width: 18, height: 18, margin: '2px auto 0', display: 'block' }}
-                            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                          <img
+                            src={logo(colPick.team)} alt={colPick.team}
+                            className="w-[18px] h-[18px] mx-auto mt-0.5 block"
+                            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                          />
                         )}
                       </th>
                     );
@@ -559,27 +555,33 @@ export function SurvivorPathBuilder({ weeks, customPaths, onPathsChange, thkGame
               <tbody>
                 {sortedTeams.map((team, rowIdx) => {
                   const isUsed = usedInPath.has(team);
-                  // Which slot is this team picked in?
                   const pickedSlot = building.thkPick?.team === team ? 'THK'
                     : building.xmasPick?.team === team ? 'XMAS'
                     : Object.entries(building.picks).find(([, p]) => p.team === team)?.[0];
 
                   return (
-                    <tr key={team} style={{ background: rowIdx % 2 === 0 ? 'transparent' : 'var(--c-rowsel)', opacity: isUsed ? 0.5 : 1 }}>
-                      {/* Team label — sticky left */}
-                      <td style={{
-                        position: 'sticky', left: 0, zIndex: 2,
-                        background: rowIdx % 2 === 0 ? PANEL : 'var(--c-pathbg, var(--c-panel))',
-                        borderRight: `1px solid ${BORDER}`, padding: '4px 10px', whiteSpace: 'nowrap',
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                          <img src={logo(team)} alt={team}
-                            style={{ width: 22, height: 22, flexShrink: 0, filter: isUsed ? 'grayscale(80%)' : 'none' }}
-                            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                    <tr
+                      key={team}
+                      className={isUsed ? 'opacity-50' : ''}
+                      style={{ background: rowIdx % 2 === 0 ? 'transparent' : 'var(--c-rowsel)' }}
+                    >
+                      <td
+                        className="sticky left-0 z-[2] border-r border-ev-border py-1 px-[10px] whitespace-nowrap"
+                        style={{ background: rowIdx % 2 === 0 ? 'var(--c-panel)' : 'var(--c-pathbg, var(--c-panel))' }}
+                      >
+                        <div className="flex items-center gap-[7px]">
+                          <img
+                            src={logo(team)} alt={team}
+                            className="w-[22px] h-[22px] shrink-0"
+                            style={{ filter: isUsed ? 'grayscale(80%)' : 'none' }}
+                            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                          />
                           <div>
-                            <div style={{ fontWeight: 700, fontSize: '0.72rem', color: isUsed ? MUTED : FG }}>{team}</div>
+                            <div className="font-bold text-[0.72rem]" style={{ color: isUsed ? 'var(--c-muted)' : 'var(--c-fg)' }}>
+                              {team}
+                            </div>
                             {isUsed && pickedSlot && (
-                              <div style={{ fontSize: '0.5rem', color: building.color, fontWeight: 700 }}>
+                              <div className="text-[0.5rem] font-bold" style={{ color: building.color }}>
                                 {pickedSlot} ✓
                               </div>
                             )}
@@ -587,71 +589,72 @@ export function SurvivorPathBuilder({ weeks, customPaths, onPathsChange, thkGame
                         </div>
                       </td>
 
-                      {/* Column cells */}
                       {gridCols.map(col => {
                         const isTHK  = col === 'thk';
                         const isXMAS = col === 'xmas';
-                        const accentCol = isTHK ? YELLOW : isXMAS ? RED : undefined;
+                        const accent = isTHK ? YELLOW : isXMAS ? RED : undefined;
 
                         let game: { wp: number; opp: string; home: boolean; label: string } | undefined;
                         let isPicked = false;
-                        let isBlockedElsewhere = false;
+                        let isBlocked = false;
 
                         if (isTHK) {
                           game = thkMap[team];
                           isPicked = building.thkPick?.team === team;
-                          isBlockedElsewhere = isUsed && !isPicked;
+                          isBlocked = isUsed && !isPicked;
                         } else if (isXMAS) {
                           game = xmasMap[team];
                           isPicked = building.xmasPick?.team === team;
-                          isBlockedElsewhere = isUsed && !isPicked;
+                          isBlocked = isUsed && !isPicked;
                         } else {
-                          const wk = col as number;
-                          game = teamWeekMap[team]?.[wk];
-                          isPicked = building.picks[wk]?.team === team;
-                          isBlockedElsewhere = isUsed && !isPicked;
+                          game = teamWeekMap[team]?.[col as number];
+                          isPicked = building.picks[col as number]?.team === team;
+                          isBlocked = isUsed && !isPicked;
                         }
 
-                        const activeAccent = accentCol ?? building.color;
+                        const activeAccent = accent ?? building.color;
 
                         if (!game) {
                           return (
-                            <td key={String(col)} style={{ padding: 0, textAlign: 'center', borderRight: `1px solid ${BORDER}` }}>
-                              <div style={{ padding: '10px 4px', fontSize: '0.5rem', color: MUTED + '60' }}>—</div>
+                            <td key={String(col)} className="p-0 text-center border-r border-ev-border">
+                              <div className="py-[10px] px-1 text-[0.5rem] text-muted">—</div>
                             </td>
                           );
                         }
 
-                        const col2 = wpColor(game.wp);
+                        const wpCol = wpColor(game.wp);
 
                         return (
-                          <td key={String(col)} style={{
-                            padding: 0, textAlign: 'center',
-                            borderRight: `1px solid ${(isTHK || isXMAS) ? accentCol + '40' : BORDER}`,
-                            background: isPicked ? activeAccent + '25' : (isTHK ? YELLOW + '06' : isXMAS ? RED + '05' : 'transparent'),
-                            borderBottom: isPicked ? `2px solid ${activeAccent}` : '2px solid transparent',
-                          }}>
+                          <td
+                            key={String(col)}
+                            className="p-0 text-center"
+                            style={{
+                              borderRight: `1px solid ${(isTHK || isXMAS) ? withAlpha(accent ?? YELLOW, 0.25) : 'var(--c-border)'}`,
+                              background: isPicked ? withAlpha(activeAccent, 0.14) : isTHK ? withAlpha(YELLOW, 0.04) : isXMAS ? withAlpha(RED, 0.03) : 'transparent',
+                              borderBottom: isPicked ? `2px solid ${activeAccent}` : '2px solid transparent',
+                            }}
+                          >
                             <button
                               onClick={() => {
-                                if (isBlockedElsewhere) return;
+                                if (isBlocked) return;
                                 if (isTHK)       pickHoliday('thk',  team, game!.wp, game!.opp, game!.home, game!.label);
                                 else if (isXMAS) pickHoliday('xmas', team, game!.wp, game!.opp, game!.home, game!.label);
                                 else             pickTeam(col as number, team, game!.wp, game!.opp, game!.home, game!.label);
                               }}
-                              disabled={isBlockedElsewhere}
+                              disabled={isBlocked}
                               title={`${team} vs ${game.opp} · ${Math.round(game.wp * 100)}% · ${game.label}`}
+                              className="w-full h-full py-1.5 px-1 flex flex-col items-center gap-0.5"
                               style={{
-                                width: '100%', height: '100%', padding: '6px 4px',
-                                background: 'transparent', border: 'none',
-                                cursor: isBlockedElsewhere ? 'default' : 'pointer',
-                                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+                                background: 'transparent',
+                                border: 'none',
+                                cursor: isBlocked ? 'default' : 'pointer',
                               }}
                             >
-                              {isPicked && <div style={{ fontSize: '0.45rem', color: activeAccent, fontWeight: 800, lineHeight: 1 }}>✓</div>}
-                              <div style={{ fontSize: '0.65rem', fontWeight: 700, color: isPicked ? activeAccent : col2 }}>
+                              {isPicked && <div className="text-[0.45rem] font-extrabold leading-none" style={{ color: activeAccent }}>✓</div>}
+                              <div className="text-[0.65rem] font-bold" style={{ color: isPicked ? activeAccent : wpCol }}>
                                 {Math.round(game.wp * 100)}%
                               </div>
-                              <div style={{ fontSize: '0.45rem', color: MUTED }}>
+                              <div className="text-[0.45rem] text-muted">
                                 {game.home ? 'vs' : '@'}{game.opp}
                               </div>
                             </button>
@@ -666,14 +669,14 @@ export function SurvivorPathBuilder({ weeks, customPaths, onPathsChange, thkGame
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 16, marginTop: 10, flexWrap: 'wrap', fontSize: '0.6rem', color: MUTED }}>
+        <div className="flex gap-4 mt-[10px] flex-wrap text-[0.6rem] text-muted">
           {[['73%+', EMERALD, 'GREAT'], ['58–72%', BLUE, 'GOOD'], ['45–57%', YELLOW, 'LEAN'], ['<45%', RED, 'TOUGH']].map(([range, color, label]) => (
-            <div key={String(label)} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <div style={{ width: 8, height: 8, borderRadius: 2, background: color as string }} />
+            <div key={String(label)} className="flex items-center gap-1">
+              <div className="w-2 h-2 rounded-[2px]" style={{ background: color as string }} />
               <span>{range} — {label}</span>
             </div>
           ))}
-          <span style={{ marginLeft: 8 }}>· Click to pick · Click again to deselect · Click week header to sort</span>
+          <span className="ml-2">· Click to pick · Click again to deselect · Click week header to sort</span>
         </div>
       </div>
     );
@@ -705,13 +708,13 @@ export function SurvivorPathBuilder({ weeks, customPaths, onPathsChange, thkGame
       {BuilderHeader}
       {SaveBanner}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', gap: 16 }}>
+      <div className="grid gap-4" style={{ gridTemplateColumns: '160px 1fr' }}>
         {/* Week sidebar */}
-        <div style={{ background: PANEL, border: `1px solid ${BORDER}`, borderRadius: 10, padding: 10, alignSelf: 'start' }}>
-          <div style={{ fontSize: '0.58rem', color: MUTED, letterSpacing: '0.08em', marginBottom: 8 }}>SELECT WEEK</div>
+        <div className="bg-panel border border-ev-border rounded-[10px] p-[10px] self-start">
+          <div className="text-[0.58rem] text-muted tracking-[0.08em] mb-2">SELECT WEEK</div>
           {allSidebarWeeks.map(slot => {
-            const isTHK  = slot === 'thk';
-            const isXMAS = slot === 'xmas';
+            const isTHK    = slot === 'thk';
+            const isXMAS   = slot === 'xmas';
             const slotAccent = isTHK ? YELLOW : isXMAS ? RED : building.color;
             const slotPick: SurvivorPick | null =
               isTHK  ? building.thkPick  :
@@ -719,20 +722,29 @@ export function SurvivorPathBuilder({ weeks, customPaths, onPathsChange, thkGame
               building.picks[slot as number] ?? null;
             const isActive = activeWeek === slot;
             return (
-              <button key={String(slot)} onClick={() => setActiveWeek(slot)} style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                width: '100%', background: isActive ? slotAccent + '18' : 'transparent',
-                border: `1px solid ${isActive ? slotAccent : 'transparent'}`,
-                borderRadius: 5, padding: '5px 7px', cursor: 'pointer', color: FG,
-                fontSize: '0.7rem', marginBottom: 2,
-              }}>
-                <span style={{ fontWeight: isActive ? 700 : 400, color: isTHK ? YELLOW : isXMAS ? RED : FG }}>
+              <button
+                key={String(slot)}
+                onClick={() => setActiveWeek(slot)}
+                className="flex items-center justify-between w-full rounded-[5px] py-[5px] px-[7px] cursor-pointer text-fg text-[0.7rem] mb-0.5"
+                style={{
+                  background: isActive ? withAlpha(slotAccent, 0.09) : 'transparent',
+                  border: `1px solid ${isActive ? slotAccent : 'transparent'}`,
+                }}
+              >
+                <span
+                  style={{
+                    fontWeight: isActive ? 700 : 400,
+                    color: isTHK ? YELLOW : isXMAS ? RED : 'var(--c-fg)',
+                  }}
+                >
                   {isTHK ? '🦃 THK' : isXMAS ? '🎄 XMS' : `Wk ${slot}`}
                 </span>
                 {slotPick && (
-                  <img src={logo(slotPick.team)} alt={slotPick.team}
-                    style={{ width: 16, height: 16 }}
-                    onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                  <img
+                    src={logo(slotPick.team)} alt={slotPick.team}
+                    className="w-4 h-4"
+                    onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                  />
                 )}
               </button>
             );
@@ -741,36 +753,39 @@ export function SurvivorPathBuilder({ weeks, customPaths, onPathsChange, thkGame
 
         {/* Game picker */}
         <div>
-          <div style={{ fontWeight: 700, fontFamily: 'Nunito', fontSize: '0.95rem', marginBottom: 12 }}>
+          <div className="font-bold font-[Nunito] text-[0.95rem] text-fg mb-3">
             {activeWeek === 'thk' ? '🦃 Thanksgiving Pick' : activeWeek === 'xmas' ? '🎄 Christmas Pick' : `Week ${activeWeek}`}
             {isHolidayActive && (
-              <span style={{ fontSize: '0.65rem', color: activeAccent, fontWeight: 400, marginLeft: 8 }}>mandatory separate pick</span>
+              <span className="text-[0.65rem] font-normal ml-2" style={{ color: activeAccent }}>mandatory separate pick</span>
             )}
             {currentPick && (
-              <span style={{ fontSize: '0.68rem', color: activeAccent, fontWeight: 400, marginLeft: 10 }}>
+              <span className="text-[0.68rem] font-normal ml-[10px]" style={{ color: activeAccent }}>
                 ✓ {currentPick.team} selected
               </span>
             )}
           </div>
-          <div style={{ display: 'grid', gap: 8 }}>
+          <div className="grid gap-2">
             {currentGames.map((g, i) => {
               const sides = [
                 { team: g.home, wp: g.home_wp, opp: g.away, home: true,  label: g.home_label },
                 { team: g.away, wp: g.away_wp, opp: g.home, home: false, label: g.away_label },
               ];
               return (
-                <div key={i} style={{
-                  background: PANEL,
-                  border: `1px solid ${(currentPick?.team === g.home || currentPick?.team === g.away) ? activeAccent + '70' : BORDER}`,
-                  borderRadius: 8, padding: '10px 14px',
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                <div
+                  key={i}
+                  className="bg-panel rounded-lg py-[10px] px-[14px]"
+                  style={{
+                    border: `1px solid ${(currentPick?.team === g.home || currentPick?.team === g.away) ? withAlpha(activeAccent, 0.44) : 'var(--c-border)'}`,
+                  }}
+                >
+                  <div className="flex items-center">
                     {sides.map((side, si) => {
                       const isPick = currentPick?.team === side.team;
                       const isUsed = usedInPath.has(side.team) && !isPick;
-                      const col    = LABEL_COLOR[side.label] ?? MUTED;
+                      const col    = WP_LABEL_COLOR[side.label] ?? 'var(--c-muted)';
                       return (
-                        <button key={si}
+                        <button
+                          key={si}
                           onClick={() => {
                             if (isUsed) return;
                             if (activeWeek === 'thk')       pickHoliday('thk',  side.team, side.wp, side.opp, side.home, side.label);
@@ -778,23 +793,31 @@ export function SurvivorPathBuilder({ weeks, customPaths, onPathsChange, thkGame
                             else                            pickTeam(activeWeek as number, side.team, side.wp, side.opp, side.home, side.label);
                           }}
                           disabled={isUsed}
+                          className="flex-1 rounded-md py-2 px-[10px]"
                           style={{
-                            flex: 1, background: isPick ? activeAccent + '18' : 'transparent',
+                            background: isPick ? withAlpha(activeAccent, 0.09) : 'transparent',
                             border: `1px solid ${isPick ? activeAccent : 'transparent'}`,
-                            borderRadius: 6, padding: '8px 10px',
                             cursor: isUsed ? 'default' : 'pointer',
-                            textAlign: si === 0 ? 'left' : 'right', opacity: isUsed ? 0.35 : 1,
+                            textAlign: si === 0 ? 'left' : 'right',
+                            opacity: isUsed ? 0.35 : 1,
                           }}
                         >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexDirection: si === 0 ? 'row' : 'row-reverse' }}>
-                            <img src={logo(side.team)} alt={side.team} style={{ width: 28, height: 28, flexShrink: 0 }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                          <div
+                            className="flex items-center gap-2"
+                            style={{ flexDirection: si === 0 ? 'row' : 'row-reverse' }}
+                          >
+                            <img
+                              src={logo(side.team)} alt={side.team}
+                              className="w-7 h-7 shrink-0"
+                              onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                            />
                             <div>
-                              <div style={{ fontWeight: 700, fontSize: '0.82rem', color: FG, fontFamily: 'Nunito' }}>
+                              <div className="font-bold text-[0.82rem] text-fg font-[Nunito]">
                                 {side.team}
-                                {isPick && <span style={{ fontSize: '0.55rem', color: activeAccent, marginLeft: 4 }}>✓</span>}
-                                {isUsed && <span style={{ fontSize: '0.52rem', color: RED, marginLeft: 4 }}>USED</span>}
+                                {isPick && <span className="text-[0.55rem] ml-1" style={{ color: activeAccent }}>✓</span>}
+                                {isUsed && <span className="text-[0.52rem] ml-1" style={{ color: RED }}>USED</span>}
                               </div>
-                              <div style={{ fontSize: '0.6rem', fontWeight: 700, color: col }}>
+                              <div className="text-[0.6rem] font-bold" style={{ color: col }}>
                                 {Math.round(side.wp * 100)}% · {side.label}
                               </div>
                             </div>
@@ -802,7 +825,7 @@ export function SurvivorPathBuilder({ weeks, customPaths, onPathsChange, thkGame
                         </button>
                       );
                     })}
-                    <div style={{ padding: '0 8px', color: MUTED, fontSize: '0.75rem', flexShrink: 0 }}>@</div>
+                    <div className="px-2 text-muted text-[0.75rem] shrink-0">@</div>
                   </div>
                 </div>
               );

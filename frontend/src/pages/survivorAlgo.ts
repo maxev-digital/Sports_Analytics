@@ -3,6 +3,15 @@
  * Used by SurvivorSimulator, SurvivorPathBuilder, SurvivorMultiEntry.
  */
 
+// ── Named constants ────────────────────────────────────────────────────────────
+/** Beam-search beam width. K=300 reliably finds the globally-optimal path. */
+export const BEAM_WIDTH = 300;
+/** Diversity penalty multiplier applied when a pick overlaps prior entries. */
+export const DIVERSITY_PENALTY_FACTOR = 0.25;
+/** Floor for log-probability scoring to avoid log(0) over 18 weeks. */
+export const LOG_SCORE_FLOOR = 1e-9;
+
+// ── Domain types ───────────────────────────────────────────────────────────────
 export interface SurvivorGame {
   home: string;
   away: string;
@@ -21,16 +30,48 @@ export interface SurvivorPick {
   home: boolean;
 }
 
-export interface CustomPath {
+/**
+ * Base path shape consumed by the simulator and comparison table.
+ * Structurally compatible with OptimalPath in Survivor.tsx.
+ */
+export interface AlgoPath {
   id: string;
   name: string;
   color: string;
-  createdAt: number;
   picks: Record<number, SurvivorPick>;
+}
+
+/** User-built path with optional holiday picks. Extends AlgoPath. */
+export interface CustomPath extends AlgoPath {
+  createdAt: number;
   thkPick?: SurvivorPick;
   xmasPick?: SurvivorPick;
 }
 
+// ── Worker message types ────────────────────────────────────────────────────────
+export interface SimResult {
+  survivalByWeek: number[];
+  expectedElim: number;
+}
+
+export type WorkerMsg =
+  | {
+      type: 'monteCarlo';
+      paths: { id: string; picks: Record<number, { wp: number }> }[];
+      iters: number;
+    }
+  | {
+      type: 'portfolio';
+      entries: Record<number, SurvivorPick>[];
+      weeks: Record<number, SurvivorGame[]>;
+      iters: number;
+    };
+
+export type WorkerResult =
+  | { type: 'monteCarlo'; results: Record<string, SimResult> }
+  | { type: 'portfolio'; atLeastOne: number[]; perEntry: number[][] };
+
+// ── Color palette ──────────────────────────────────────────────────────────────
 export const CUSTOM_PATH_COLORS = [
   'oklch(70% .18 290)',  // purple
   'oklch(72% .19 50)',   // orange
@@ -39,9 +80,10 @@ export const CUSTOM_PATH_COLORS = [
   'oklch(65% .22 20)',   // coral
 ];
 
+// ── Algorithms ─────────────────────────────────────────────────────────────────
 /**
  * Beam search — near-optimal survivor season path.
- * K=300 reliably finds the globally optimal path across all NFL 18-week schedules.
+ * K=BEAM_WIDTH reliably finds the globally optimal path across all NFL schedules.
  * Log-probability scoring avoids floating-point underflow over 18 weeks.
  *
  * @param diversityPenalty  Per-week set of teams already claimed by prior entries.
@@ -49,7 +91,7 @@ export const CUSTOM_PATH_COLORS = [
  */
 export function beamSearch(
   weeks: Record<number, SurvivorGame[]>,
-  k = 300,
+  k = BEAM_WIDTH,
   diversityPenalty?: Record<number, Set<string>>,
 ): Record<number, SurvivorPick> {
   const weekNums = Object.keys(weeks).map(Number).sort((a, b) => a - b);
@@ -77,20 +119,20 @@ export function beamSearch(
         for (const [team, wp, opp, home, label] of sides) {
           if (usedSet.has(team)) continue;
           expanded = true;
-          // Diversity penalty: sharply discourage overlap with prior entries
-          const diversity = diversityPenalty?.[wk]?.has(team) ? 0.25 : 1.0;
+          const penalty = diversityPenalty?.[wk]?.has(team)
+            ? DIVERSITY_PENALTY_FACTOR
+            : 1.0;
           next.push({
             used: [...state.used, team],
             picks: {
               ...state.picks,
               [wk]: { week: wk, team, wp, opp: opp as string, home: home as boolean, label: label as string },
             },
-            logScore: state.logScore + Math.log(Math.max(wp * diversity, 1e-9)),
+            logScore: state.logScore + Math.log(Math.max(wp * penalty, LOG_SCORE_FLOOR)),
           });
         }
       }
 
-      // No valid pick this week — carry state forward (bye / no available team)
       if (!expanded) next.push(state);
     }
 
@@ -104,18 +146,18 @@ export function beamSearch(
 /**
  * Monte Carlo survivor simulation.
  * Each iteration steps through every week; the pick wins with probability wp.
- * Returns per-week survival probability (0-indexed: index 0 = P(survived wk1)).
+ * Returns per-week survival probability (index 0 = P(survived wk1)).
  */
 export function monteCarlo(
   picks: Record<number, { wp: number }>,
   iters = 50_000,
-): { survivalByWeek: number[]; expectedElim: number } {
+): SimResult {
   const wks = Object.keys(picks).map(Number).sort((a, b) => a - b);
   const maxWk = wks[wks.length - 1] ?? 18;
   const elimAt = new Array(maxWk + 2).fill(0);
 
   for (let i = 0; i < iters; i++) {
-    let elim = maxWk + 1; // survived all
+    let elim = maxWk + 1;
     for (const wk of wks) {
       if (Math.random() > picks[wk].wp) { elim = wk; break; }
     }
@@ -138,7 +180,7 @@ export function monteCarlo(
 }
 
 /**
- * Portfolio Monte Carlo — N entries simulated simultaneously with correlated game outcomes.
+ * Portfolio Monte Carlo — N entries simulated simultaneously with correlated outcomes.
  * When two entries pick teams from the same game only one side can win.
  * This properly captures correlation risk that independent simulations miss.
  */
@@ -155,8 +197,7 @@ export function portfolioMonteCarlo(
   );
 
   for (let i = 0; i < iters; i++) {
-    // Resolve all games once — creates correlation across entries
-    const wins = new Map<string, boolean>(); // `${wk}:${team}` → won
+    const wins = new Map<string, boolean>();
     for (const wk of weekNums) {
       for (const g of weeks[wk] ?? []) {
         const homeWins = Math.random() < g.home_wp;
