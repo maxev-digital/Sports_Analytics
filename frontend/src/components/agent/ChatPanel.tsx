@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { AgentMode, useAgentChat } from '../../hooks/useAgentChat';
+import { AgentMode, useAgentChat, SPORT_FILTERS, SportFilter } from '../../hooks/useAgentChat';
 import { ChatMessage, TypingIndicator } from './ChatMessage';
 import { ProactivePicks } from './ProactivePicks';
 import { BetTracker } from './BetTracker';
@@ -23,7 +23,7 @@ export function ChatPanel({ mode, onModeChange, chatState, token }: ChatPanelPro
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const { messages, picks, loadingChat, loadingPicks, error, sendMessage, fetchPicks, clearHistory, picksFetched } = chatState;
+  const { messages, picks, loadingChat, loadingPicks, error, sendMessage, fetchPicks, clearHistory, picksFetched, sportFilter, setSportFilter } = chatState;
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -63,6 +63,23 @@ export function ChatPanel({ mode, onModeChange, chatState, token }: ChatPanelPro
             }`}
           >
             {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Sport Filter */}
+      <div className="flex gap-1 px-2 py-1.5 border-b border-slate-700/50 bg-slate-900/50 overflow-x-auto scrollbar-hide">
+        {SPORT_FILTERS.map(s => (
+          <button
+            key={s.key ?? 'all'}
+            onClick={() => setSportFilter(s.key)}
+            className={`px-2.5 py-1 rounded text-[10px] font-bold whitespace-nowrap transition-all ${
+              sportFilter === s.key
+                ? 'bg-blue-600 text-white'
+                : 'bg-slate-800 text-slate-500 hover:text-slate-300'
+            }`}
+          >
+            {s.label}
           </button>
         ))}
       </div>

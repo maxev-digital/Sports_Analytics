@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import '../styles/analytics.css';
+import type { GameResult } from './LiveGames';
 
 const API_BASE = import.meta.env.DEV ? 'http://localhost:8889/api/f5' : '/api/f5';
 
@@ -270,23 +271,44 @@ function StatBar({ label, homeVal, awayVal, higher = 'home' }:
 export function MatchupDetail() {
   const { eventId } = useParams<{ eventId: string }>();
   const navigate    = useNavigate();
+  const [searchParams] = useSearchParams();
+  const sportParam = searchParams.get('sport') || 'nfl';
 
-  const [matchup, setMatchup]   = useState<MatchupData | null>(null);
-  const [analysis, setAnalysis] = useState<AnalysisData | null>(null);
-  const [loadingM, setLoadingM] = useState(true);
-  const [loadingA, setLoadingA] = useState(false);
-  const [errorM, setErrorM]     = useState<string | null>(null);
-  const [scriptOpen, setScriptOpen] = useState(false);
+  const [matchup, setMatchup]         = useState<MatchupData | null>(null);
+  const [analysis, setAnalysis]       = useState<AnalysisData | null>(null);
+  const [gameResult, setGameResult]   = useState<GameResult | null>(null);
+  const [loadingM, setLoadingM]       = useState(true);
+  const [loadingA, setLoadingA]       = useState(false);
+  const [errorM, setErrorM]           = useState<string | null>(null);
+  const [scriptOpen, setScriptOpen]   = useState(false);
+  const [evalScriptOpen, setEvalScriptOpen] = useState(true);
 
   useEffect(() => {
     if (!eventId) return;
     setLoadingM(true);
-    fetch(`${API_BASE}/matchup/${eventId}`)
+    fetch(`${API_BASE}/matchup/${eventId}?sport=${sportParam}`)
       .then(r => r.ok ? r.json() : Promise.reject(r.status))
       .then(d => { setMatchup(d); setErrorM(null); })
       .catch(() => setErrorM('Could not load matchup data.'))
       .finally(() => setLoadingM(false));
-  }, [eventId]);
+  }, [eventId, sportParam]);
+
+  // Fetch game results for completed games
+  useEffect(() => {
+    if (!matchup) return;
+    const sportKey = sportParam === 'ncaaf' ? 'americanfootball_ncaaf' : 'americanfootball_nfl';
+    fetch(`${API_BASE}/game-results?sport=${sportKey}&days=3`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (!d?.games) return;
+        const key = `${matchup.away.full_name}|${matchup.home.full_name}`.toLowerCase();
+        const found = d.games.find((g: GameResult) =>
+          `${g.away_team}|${g.home_team}`.toLowerCase() === key
+        );
+        if (found) setGameResult(found);
+      })
+      .catch(() => {});
+  }, [matchup, sportParam]);
 
   function loadAnalysis() {
     if (!eventId || loadingA || analysis) return;
@@ -299,8 +321,15 @@ export function MatchupDetail() {
   }
 
   if (loadingM) return (
-    <div className="analytics-page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh', color: MUTED_FG, fontSize: 14 }}>
-      Loading matchup…
+    <div className="analytics-page" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '60vh', gap: 16 }}>
+      <div style={{
+        width: 32, height: 32, borderRadius: '50%',
+        border: '3px solid rgba(59,130,246,0.3)', borderTopColor: '#3B82F6',
+        animation: 'spin 0.8s linear infinite',
+      }} />
+      <div style={{ color: MUTED_FG, fontSize: 14 }}>Loading matchup data from ESPN…</div>
+      <div style={{ color: 'rgba(148,163,184,0.5)', fontSize: 11 }}>First load may take a few seconds</div>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 
@@ -364,10 +393,21 @@ export function MatchupDetail() {
             </div>
           </div>
 
-          {/* Game info */}
+          {/* Game info / Score */}
           <div style={{ textAlign: 'center', flex: '0 0 auto' }}>
-            {matchup.week && <div style={{ color: MUTED_FG, fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', marginBottom: 4 }}>NFL WEEK {matchup.week}</div>}
-            <div style={{ color: BLUE, fontSize: 20, fontWeight: 800, letterSpacing: '0.06em' }}>@</div>
+            {matchup.week && <div style={{ color: MUTED_FG, fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', marginBottom: 4 }}>{sportParam === 'ncaaf' ? 'CFB' : 'NFL'} WEEK {matchup.week}</div>}
+            {gameResult ? (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'center' }}>
+                  <span style={{ color: gameResult.away_score > gameResult.home_score ? FG : MUTED_FG, fontSize: 28, fontWeight: 900 }}>{gameResult.away_score}</span>
+                  <span style={{ color: MUTED_FG, fontSize: 12 }}>—</span>
+                  <span style={{ color: gameResult.home_score > gameResult.away_score ? FG : MUTED_FG, fontSize: 28, fontWeight: 900 }}>{gameResult.home_score}</span>
+                </div>
+                <div style={{ background: 'oklch(35% 0 0)', color: MUTED_FG, fontSize: 10, fontWeight: 800, padding: '3px 12px', borderRadius: 3, display: 'inline-block', marginTop: 4, letterSpacing: '0.1em' }}>FINAL</div>
+              </>
+            ) : (
+              <div style={{ color: BLUE, fontSize: 20, fontWeight: 800, letterSpacing: '0.06em' }}>@</div>
+            )}
             <div style={{ color: MUTED_FG, fontSize: 11, fontWeight: 600, marginTop: 4 }}>{gameDate}</div>
             {matchup.tv && <div style={{ color: MUTED_FG, fontSize: 10, marginTop: 2 }}>📺 {matchup.tv}</div>}
             <div style={{ color: MUTED_FG, fontSize: 10, marginTop: 3, opacity: 0.7 }}>
@@ -589,6 +629,108 @@ export function MatchupDetail() {
             )}
           </div>
         </div>
+
+        {/* ── Post-Game Results ── */}
+        {gameResult && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginTop: 14 }}>
+
+            {/* Betting Results */}
+            <div className="data-table-wrap" style={{ padding: '14px 16px' }}>
+              <div className="section-title" style={{ marginBottom: 12 }}>Betting Results</div>
+              <Row label="Final Score" value={`${away.abbr} ${gameResult.away_score} — ${home.abbr} ${gameResult.home_score}`} />
+              <Row label="Spread" value={gameResult.betting.spread_result} />
+              <Row label="Total" value={gameResult.betting.total_result} />
+              <Row label="Winner" value={gameResult.winner} valueColor={EMERALD} />
+            </div>
+
+            {/* Our Evaluation + External Picks */}
+            <div className="data-table-wrap" style={{ padding: '14px 16px' }}>
+              <div className="section-title" style={{ marginBottom: 12 }}>Pre-Game Evaluation</div>
+              {gameResult.our_evaluation ? (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
+                    <span style={{
+                      background: (gameResult.our_evaluation.lean_level === 'strong_lean' ? EMERALD :
+                        gameResult.our_evaluation.lean_level === 'favorable_lean' ? BLUE :
+                        gameResult.our_evaluation.lean_level === 'slight_lean' ? YELLOW : MUTED_FG) + '22',
+                      color: gameResult.our_evaluation.lean_level === 'strong_lean' ? EMERALD :
+                        gameResult.our_evaluation.lean_level === 'favorable_lean' ? BLUE :
+                        gameResult.our_evaluation.lean_level === 'slight_lean' ? YELLOW : MUTED_FG,
+                      fontSize: 10, fontWeight: 800, padding: '3px 10px', borderRadius: 3, letterSpacing: '0.05em',
+                    }}>
+                      {gameResult.our_evaluation.lean_level.replace(/_/g, ' ').toUpperCase()}
+                    </span>
+                    {gameResult.our_evaluation.lean_side && (
+                      <span style={{ color: FG, fontSize: 12, fontWeight: 700 }}>
+                        {gameResult.our_evaluation.lean_side} ({gameResult.our_evaluation.lean_market})
+                      </span>
+                    )}
+                    {gameResult.our_evaluation.eval_result && (
+                      <span style={{
+                        background: (gameResult.our_evaluation.eval_result === 'win' ? EMERALD : gameResult.our_evaluation.eval_result === 'loss' ? RED_ACC : YELLOW) + '22',
+                        color: gameResult.our_evaluation.eval_result === 'win' ? EMERALD : gameResult.our_evaluation.eval_result === 'loss' ? RED_ACC : YELLOW,
+                        fontSize: 10, fontWeight: 800, padding: '3px 10px', borderRadius: 3,
+                      }}>
+                        {gameResult.our_evaluation.eval_result.toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                  {gameResult.our_evaluation.unit_rec > 0 && (
+                    <Row label="Unit Recommendation" value={`${gameResult.our_evaluation.unit_rec}u`} valueColor={EMERALD} />
+                  )}
+                </>
+              ) : (
+                <div style={{ color: MUTED_FG, fontSize: 12, opacity: 0.6 }}>No pre-game evaluation for this matchup</div>
+              )}
+
+              {gameResult.external_picks.length > 0 && (
+                <div style={{ marginTop: 14, borderTop: `1px solid ${BORDER}`, paddingTop: 12 }}>
+                  <div style={{ color: MUTED_FG, fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>External Picks</div>
+                  {gameResult.external_picks.map((pick, i) => (
+                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: `1px solid ${BORDER}` }}>
+                      <div>
+                        <span style={{ color: 'oklch(70% .15 310)', fontSize: 11, fontWeight: 700 }}>{pick.source}</span>
+                        <span style={{ color: FG, fontSize: 12, fontWeight: 600, marginLeft: 8 }}>{pick.pick_side}</span>
+                        {pick.units > 0 && <span style={{ color: MUTED_FG, fontSize: 10, marginLeft: 4 }}>({pick.units}u)</span>}
+                      </div>
+                      <span style={{
+                        background: (pick.pick_result === 'win' ? EMERALD : pick.pick_result === 'loss' ? RED_ACC : YELLOW) + '22',
+                        color: pick.pick_result === 'win' ? EMERALD : pick.pick_result === 'loss' ? RED_ACC : pick.pick_result === 'pending' ? MUTED_FG : YELLOW,
+                        fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 3,
+                      }}>
+                        {(pick.pick_result ?? 'PENDING').toUpperCase()}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Evaluator Game Script (from DB, separate from real-time analysis) */}
+        {gameResult?.our_evaluation?.game_script && (
+          <div className="data-table-wrap" style={{ marginTop: 14, overflow: 'hidden' }}>
+            <button
+              onClick={() => setEvalScriptOpen(o => !o)}
+              style={{ width: '100%', padding: '16px 18px', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontFamily: 'inherit' }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span className="section-title" style={{ marginBottom: 0 }}>Pre-Game Script</span>
+                <span style={{ background: BLUE + '22', color: BLUE, fontSize: 10, padding: '2px 7px', borderRadius: 3, fontWeight: 800 }}>AI</span>
+                <span style={{ color: MUTED_FG, fontSize: 11 }}>5-Persona Evaluator</span>
+              </div>
+              <span style={{ color: MUTED_FG, fontSize: 14 }}>{evalScriptOpen ? '▲' : '▼'}</span>
+            </button>
+            {evalScriptOpen && (
+              <div style={{ padding: '0 18px 20px', borderTop: `1px solid ${BORDER}` }}>
+                <div style={{ paddingTop: 16, color: MUTED_FG, fontSize: 13, lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>
+                  {gameResult.our_evaluation.game_script}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Game Script — full width */}
         {analysis?.verdict?.game_script && (

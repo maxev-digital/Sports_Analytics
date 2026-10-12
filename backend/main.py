@@ -290,6 +290,9 @@ app.include_router(ensemble_router)
 from routes.misc import router as misc_router
 app.include_router(misc_router)
 
+from routes.streaks import router as streaks_router
+app.include_router(streaks_router)
+
 # Props cache lives in app_state so both background tasks (here) and routes/misc.py share it.
 props_cache = _app_state.props_cache
 

@@ -8,8 +8,10 @@ import { DerivativeMarketsCalculator } from '../components/tools/DerivativeMarke
 import { MarketConsensusLine } from '../components/tools/MarketConsensusLine';
 import { ClosingLineValueTracker } from '../components/tools/ClosingLineValueTracker';
 import { WeatherImpactTool } from '../components/tools/WeatherImpactTool';
+import { WinStreakCalculator } from '../components/tools/WinStreakCalculator';
+import { MetaTags } from '../components/MetaTags';
 
-type ToolId = 'novig' | 'ev' | 'kelly' | 'parlay' | 'hedge' | 'derivative' | 'consensus' | 'clv' | 'weather' | null;
+type ToolId = 'novig' | 'ev' | 'kelly' | 'parlay' | 'hedge' | 'derivative' | 'consensus' | 'clv' | 'weather' | 'streak' | null;
 
 export function Tools() {
   const [activeTool, setActiveTool] = useState<ToolId>(null);
@@ -87,6 +89,14 @@ export function Tools() {
       category: 'Game Analysis',
       component: WeatherImpactTool
     },
+    {
+      id: 'streak' as ToolId,
+      name: 'Win Streak Calculator',
+      description: 'Positive progression strategy — press wins, flat on losses. Ladder up with short streaks before big runs.',
+      status: 'Active',
+      category: 'Bankroll',
+      component: WinStreakCalculator
+    },
   ];
 
   const categories = [...new Set(tools.map(t => t.category))];
@@ -95,6 +105,7 @@ export function Tools() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-slate-900 to-black py-12 px-4">
+      <MetaTags title="Betting Tools" description="9 professional betting calculators: no-vig, EV, parlay, hedge, Kelly criterion, CLV tracker, and more." />
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-12">

@@ -1,54 +1,55 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { MetaTags } from '../components/MetaTags';
 
 const ACCESS_CODE = 'MAXEV2026';
 
 const FEATURES = [
   {
     icon: '📊',
-    title: 'Live Game Cards',
-    description: 'Real-time odds, scores, and betting lines across MLB, WNBA, ATP, WTA, MMA, and more. Updated every 15 seconds with the latest movement from 6+ bookmakers.',
+    title: 'Live Matchup Cards',
+    description: 'Real-time odds, power ratings, injury reports, and ATS records across NFL, CFB, MLB, NBA, and NHL — all on one card, updated every 5 minutes.',
     badge: 'Live',
     badgeBg: 'rgba(34,197,94,0.15)',
     badgeColor: '#4ADE80',
   },
   {
     icon: '📈',
-    title: 'Odds Board',
-    description: 'Full market odds comparison across all major sportsbooks for moneyline, spread, and totals. Pinpoint the best line before you place.',
+    title: 'Multi-Book Odds Comparison',
+    description: 'Compare lines across 15+ sportsbooks instantly. Spreads, totals, and moneylines side by side — find the best number in seconds.',
     badge: 'Live',
     badgeBg: 'rgba(34,197,94,0.15)',
     badgeColor: '#4ADE80',
   },
   {
     icon: '🤖',
-    title: 'ML Edge Scanner',
-    description: 'Machine learning models surface live betting edges in real time. See the predicted probabilities, the implied market probability, and the gap — your edge.',
-    badge: 'Elite',
+    title: 'AI-Powered Analysis',
+    description: 'Ask our AI analyst any sports question — game breakdowns, injury updates, Circa Survivor strategy. Powered by Claude with live web search and 7 data tools.',
+    badge: 'AI',
+    badgeBg: 'rgba(139,92,246,0.15)',
+    badgeColor: '#A78BFA',
+  },
+  {
+    icon: '🔬',
+    title: 'SP+ & FPI Power Ratings',
+    description: 'NFL and CFB power ratings from ESPN FPI and CFBD SP+ with offense, defense, and tier classifications. Edge detection when the market disagrees.',
+    badge: 'Data',
     badgeBg: 'rgba(59,130,246,0.15)',
     badgeColor: '#60A5FA',
   },
   {
-    icon: '🔔',
-    title: 'Live Alert System',
-    description: 'Audio and on-screen alerts fire the moment the scanner detects a high-confidence edge. Quarter reversal, hedge opportunities, and goalie pull alerts built in.',
-    badge: 'Elite',
-    badgeBg: 'rgba(59,130,246,0.15)',
-    badgeColor: '#60A5FA',
-  },
-  {
-    icon: '⛳',
-    title: 'Golf Futures Board',
-    description: 'Full PGA futures odds board showing outright winner markets across all major sportsbooks — Masters, US Open, The Open, PGA Championship.',
+    icon: '🏥',
+    title: 'Injury Intelligence',
+    description: 'NFL injury heatmaps by position group, severity scoring, and head-to-head comparison. See which team is healthier before the market adjusts.',
     badge: 'Live',
     badgeBg: 'rgba(34,197,94,0.15)',
     badgeColor: '#4ADE80',
   },
   {
-    icon: '📋',
-    title: 'Strategy Tracker',
-    description: 'Live and pre-game strategy backtesting against current market data. See which systems are beating the closing line across all active sports.',
-    badge: 'Beta',
+    icon: '🏆',
+    title: 'Contest Tools',
+    description: 'NFL Survivor pool optimizer with path builder, Monte Carlo simulation, and multi-entry strategy. Plus confidence pool rankings powered by power ratings.',
+    badge: 'Pro',
     badgeBg: 'rgba(234,179,8,0.15)',
     badgeColor: '#FACC15',
   },
@@ -56,9 +57,9 @@ const FEATURES = [
 
 const STATS = [
   { val: '6+', lbl: 'Sports' },
-  { val: 'ML', lbl: 'Edge Scanner' },
-  { val: 'Live', lbl: 'Alerts' },
-  { val: 'Sharp', lbl: 'Tools' },
+  { val: '15+', lbl: 'Sportsbooks' },
+  { val: 'AI', lbl: 'Analyst' },
+  { val: '60', lbl: 'ML Models' },
 ];
 
 export function LandingPage() {
@@ -78,6 +79,7 @@ export function LandingPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#000', color: '#fff' }}>
+      <MetaTags title="Max EV Sports — AI-Powered Sports Analytics Platform" description="Real-time odds comparison, AI matchup analysis, power ratings, injury intelligence, and contest tools across NFL, CFB, MLB, NBA, and NHL." />
 
       {/* Hero — Split Layout */}
       <section style={{
@@ -125,8 +127,8 @@ export function LandingPage() {
             marginBottom: 20,
             fontWeight: 700,
           }}>
-            The Sports Bettor&apos;s<br />
-            <span style={{ color: '#EF4444' }}>Edge Platform.</span>
+            Sports Intelligence<br />
+            <span style={{ color: '#EF4444' }}>Powered by AI.</span>
           </h1>
 
           {/* Subtitle */}
@@ -137,8 +139,8 @@ export function LandingPage() {
             maxWidth: 460,
             marginBottom: 36,
           }}>
-            Live game cards with ML-powered edge detection, real-time odds across 6+ bookmakers,
-            automated alert systems, and multi-sport coverage — all in one platform built for serious bettors.
+            Real-time odds from 15+ sportsbooks, AI-powered matchup analysis, power ratings,
+            injury intelligence, and 60 ML models — all in one platform built for the analytical sports fan.
           </p>
 
           {/* Access Code Form */}
@@ -270,7 +272,7 @@ export function LandingPage() {
             textAlign: 'center' as const,
             marginBottom: 12,
           }}>
-            Everything a sharp bettor needs.
+            Data-driven sports analysis. Every angle covered.
           </h2>
           <p style={{
             color: '#666',
@@ -278,7 +280,7 @@ export function LandingPage() {
             fontSize: '0.95rem',
             marginBottom: 56,
           }}>
-            Built for bettors who want data — not guesswork.
+            Built for the analytical sports fan — data over guesswork.
           </p>
           <div style={{
             display: 'grid',
@@ -385,8 +387,8 @@ export function LandingPage() {
               marginBottom: 20,
               fontWeight: 700,
             }}>
-              Not just betting lines.<br />
-              <span style={{ color: '#EF4444' }}>A data analytics platform.</span>
+              Not just odds.<br />
+              <span style={{ color: '#EF4444' }}>A sports analytics engine.</span>
             </h2>
 
             <p style={{

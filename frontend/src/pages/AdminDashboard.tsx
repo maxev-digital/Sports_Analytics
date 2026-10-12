@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { getApiUrl } from '../config';
 import { logger } from '../utils/logger';
+import { AdminUsers } from '../components/admin/AdminUsers';
+import { AdminAnalytics } from '../components/admin/AdminAnalytics';
+import { AdminEmail } from '../components/admin/AdminEmail';
 
 interface FeedbackEntry {
   id: string;
@@ -48,7 +51,7 @@ interface Influencer {
 }
 
 export function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<'feedback' | 'chats' | 'influencers'>('feedback');
+  const [activeTab, setActiveTab] = useState<'feedback' | 'chats' | 'influencers' | 'users' | 'analytics' | 'email'>('users');
   const [feedback, setFeedback] = useState<FeedbackEntry[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
@@ -200,53 +203,44 @@ export function AdminDashboard() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-white mb-2">Admin Dashboard</h1>
-          <p className="text-slate-400">Monitor feedback, live chats, and manage influencers</p>
+          <p className="text-slate-400">Users, analytics, email, feedback, and system management</p>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-6">
-          <button
-            onClick={() => setActiveTab('chats')}
-            className={`px-6 py-3 rounded-lg font-semibold transition-all ${
-              activeTab === 'chats'
-                ? 'bg-blue-600 text-white shadow-lg'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-            }`}
-          >
-            Live Chats {conversations.filter(c => c.unread_count > 0).length > 0 && (
-              <span className="ml-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-                {conversations.filter(c => c.unread_count > 0).length}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab('feedback')}
-            className={`px-6 py-3 rounded-lg font-semibold transition-all ${
-              activeTab === 'feedback'
-                ? 'bg-blue-600 text-white shadow-lg'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-            }`}
-          >
-            Feedback
-          </button>
-          <button
-            onClick={() => setActiveTab('influencers')}
-            className={`px-6 py-3 rounded-lg font-semibold transition-all ${
-              activeTab === 'influencers'
-                ? 'bg-blue-600 text-white shadow-lg'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-            }`}
-          >
-            Influencers {influencers.length > 0 && (
-              <span className="ml-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
-                {influencers.length}
-              </span>
-            )}
-          </button>
+        <div className="flex flex-wrap gap-2 mb-6">
+          {([
+            { key: 'users' as const, label: 'Users' },
+            { key: 'analytics' as const, label: 'Analytics' },
+            { key: 'email' as const, label: 'Email' },
+            { key: 'chats' as const, label: 'Live Chats', badge: conversations.filter(c => c.unread_count > 0).length },
+            { key: 'feedback' as const, label: 'Feedback' },
+            { key: 'influencers' as const, label: 'Influencers', badge: influencers.length },
+          ] as const).map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`px-5 py-2.5 rounded-lg font-semibold text-sm transition-all ${
+                activeTab === tab.key
+                  ? 'bg-blue-600 text-white shadow-lg'
+                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+              }`}
+            >
+              {tab.label}
+              {'badge' in tab && tab.badge > 0 && (
+                <span className="ml-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">{tab.badge}</span>
+              )}
+            </button>
+          ))}
         </div>
 
         {/* Content */}
-        {activeTab === 'influencers' ? (
+        {activeTab === 'users' ? (
+          <AdminUsers token={adminToken} />
+        ) : activeTab === 'analytics' ? (
+          <AdminAnalytics token={adminToken} />
+        ) : activeTab === 'email' ? (
+          <AdminEmail token={adminToken} />
+        ) : activeTab === 'influencers' ? (
           /* Influencers List */
           <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
             <h2 className="text-2xl font-bold text-white mb-6">Influencer Management</h2>

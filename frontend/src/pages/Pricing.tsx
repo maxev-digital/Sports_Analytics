@@ -6,6 +6,7 @@ import { ImageSlider } from '../components/ImageSlider';
 import { DesktopClientSlider } from '../components/DesktopClientSlider';
 import { PricingToastSequence } from '../components/PricingToastSequence';
 import { logger } from '../utils/logger';
+import { MetaTags } from '../components/MetaTags';
 
 interface SubscriptionStatus {
   tier: string;
@@ -412,6 +413,7 @@ export function Pricing() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-slate-900 to-black py-12 px-4">
+      <MetaTags title="Pricing" description="Choose your Max EV Sports plan. Free access to live odds and matchups. Pro plans unlock AI analysis, model projections, and edge detection tools." />
       {/* Pricing Page Toast Sequence - Psychological triggers for conversion */}
       <PricingToastSequence
         enabled={!isAuthenticated} // Only show for non-authenticated users

@@ -1,9 +1,11 @@
 import { Navigation } from '../components/Navigation';
 import { Footer } from '../components/Footer';
+import { MetaTags } from '../components/MetaTags';
 
 export function Disclaimer() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white flex flex-col">
+      <MetaTags title="Disclaimer" description="Max EV Sports betting disclaimer and risk disclosures." noindex />
       <Navigation />
 
       <main className="flex-1 container mx-auto px-4 py-12 max-w-5xl">

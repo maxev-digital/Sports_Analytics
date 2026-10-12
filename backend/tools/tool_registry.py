@@ -178,6 +178,40 @@ TOOLS: list[dict[str, Any]] = [
             "required": ["sport", "home_team", "away_team"],
         },
     },
+    {
+        "name": "web_search",
+        "description": (
+            "Search the web for ANY real-time information not already in platform data. "
+            "ALWAYS use this tool when the user asks about something you don't have data for. "
+            "Use cases include: contest details (Circa Survivor, DraftKings, etc.), "
+            "registration deadlines, entry fees, prize pools, entrant counts, "
+            "beat reporter injury updates, breaking roster moves, coaching decisions, "
+            "suspension news, trade rumors, schedule changes, venue updates, "
+            "rule changes, or ANY question you cannot answer from platform data alone. "
+            "When in doubt, search. Returns AI-summarized answer plus source articles. "
+            "Do NOT use this for data already available via other tools (odds, "
+            "lineups, official injury reports)."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": (
+                        "Natural language search query. Be specific — include "
+                        "player name, team, and what you're looking for. "
+                        "Example: 'Patrick Mahomes ankle injury status September 2026'"
+                    ),
+                },
+                "max_results": {
+                    "type": "integer",
+                    "default": 5,
+                    "description": "Number of results to return (1-10).",
+                },
+            },
+            "required": ["query"],
+        },
+    },
 ]
 
 
@@ -236,6 +270,13 @@ def execute_tool(name: str, tool_input: dict[str, Any]) -> dict[str, Any]:
             from tools.referee_tool import get_referee_analysis
             return get_referee_analysis(
                 referee_name=tool_input["referee_name"],
+            )
+
+        if name == "web_search":
+            from tools.web_search_tool import web_search
+            return web_search(
+                query=tool_input["query"],
+                max_results=tool_input.get("max_results", 5),
             )
 
         logger.warning("execute_tool: unknown tool %r", name)

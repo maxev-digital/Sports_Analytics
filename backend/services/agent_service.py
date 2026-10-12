@@ -79,7 +79,9 @@ def classify_intent(message: str) -> dict[str, Any]:
             system=(
                 "Classify a sports betting platform user message. "
                 "sport: the sport mentioned or the string null. "
-                "needs_live_data: true if asking about injuries, lineups, weather, or breaking news. "
+                "needs_live_data: true if asking about injuries, lineups, weather, breaking news, "
+                "contests, events, registration, schedules, roster moves, trades, suspensions, "
+                "or ANY question that would benefit from searching the web for current information. "
                 "is_bet_question: true if asking for a recommendation or analysis. "
                 "is_game_analysis: true if the user wants a full game breakdown, write-up, handicap, "
                 "or analysis of a specific matchup (e.g. 'break down Chiefs vs Eagles', "
@@ -116,7 +118,7 @@ def _db_write(sql: str, params: tuple = ()) -> int:
     return execute_write(sql, params)
 
 
-def assemble_rag_context(sport: str | None = None, game_id: str | None = None) -> str:
+def assemble_rag_context(sport: str | None = None, game_id: str | None = None, username: str | None = None) -> str:
     """
     Pull relevant context from the platform DB for the agent response.
 
@@ -258,10 +260,62 @@ def _run_tool_loop(
     return text.strip(), tool_names_called
 
 
+def chat_stream_with_tools(
+    message: str,
+    history: list[dict[str, str]],
+    game_id: str | None = None,
+    username: str | None = None,
+) -> tuple[list[dict[str, Any]], str]:
+    """
+    Prepare messages for streaming by running the tool loop first.
+    Returns (messages_with_tool_context, system_prompt) ready for streaming.
+    """
+    intent = classify_intent(message)
+    rag = assemble_rag_context(sport=intent.get("sport"), game_id=game_id, username=username)
+
+    system_prompt = AGENT_SYSTEM_PROMPT
+    if intent.get("sport") == "nfl" and intent.get("is_game_analysis"):
+        try:
+            from services.referee_context_provider import get_referee_context_block
+            ref_ctx = get_referee_context_block(message)
+            if ref_ctx:
+                system_prompt = f"{AGENT_SYSTEM_PROMPT}\n\n## Assigned Referee\n{ref_ctx}"
+        except Exception:
+            pass
+
+    user_content = f"PLATFORM CONTEXT:\n{rag}\n\nUSER QUESTION:\n{message}"
+
+    messages: list[dict[str, Any]] = []
+    for h in history[-8:]:
+        role = h.get("role", "")
+        content = h.get("content", "")
+        if role in ("user", "assistant") and content:
+            messages.append({"role": role, "content": content})
+    messages.append({"role": "user", "content": user_content})
+
+    if intent.get("needs_live_data"):
+        from tools.tool_registry import TOOLS
+        # Run tool loop synchronously — collect all tool results
+        response_text, tool_names = _run_tool_loop(messages, TOOLS, system=system_prompt)
+        # Return enriched messages: original context + tool results summary
+        enriched_content = f"{user_content}\n\nTOOL RESULTS ALREADY GATHERED:\n{response_text}"
+        stream_messages: list[dict[str, Any]] = []
+        for h in history[-8:]:
+            role = h.get("role", "")
+            content = h.get("content", "")
+            if role in ("user", "assistant") and content:
+                stream_messages.append({"role": role, "content": content})
+        stream_messages.append({"role": "user", "content": enriched_content})
+        return stream_messages, system_prompt
+    else:
+        return messages, system_prompt
+
+
 def chat(
     message: str,
     history: list[dict[str, str]],
     game_id: str | None = None,
+    username: str | None = None,
 ) -> dict[str, Any]:
     """
     Main agent chat handler.

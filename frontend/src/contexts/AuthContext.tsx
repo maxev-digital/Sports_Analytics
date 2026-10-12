@@ -24,7 +24,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [email, setEmail] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null);
-  const [subscriptionTier, setSubscriptionTier] = useState<string>('elite');
+  const [subscriptionTier, setSubscriptionTier] = useState<string>('free');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -76,7 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setToken(storedToken);
         setEmail(localStorage.getItem('auth_email'));
         setRole(localStorage.getItem('auth_role'));
-        setSubscriptionTier(localStorage.getItem('subscription_tier') || 'elite');
+        setSubscriptionTier(localStorage.getItem('subscription_tier') || 'free');
         setLoading(false);
         return;
       }
@@ -123,7 +123,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const storedUsername = localStorage.getItem('auth_username');
     const storedEmail = localStorage.getItem('auth_email');
     const storedRole = localStorage.getItem('auth_role');
-    const storedTier = localStorage.getItem('subscription_tier') || 'elite';
+    const storedTier = localStorage.getItem('subscription_tier') || 'free';
 
     if (storedToken && storedUsername) {
       setEmail(storedEmail);

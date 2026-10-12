@@ -300,9 +300,22 @@ export function OpenBets() {
                  : '';
   const dateTo   = datePreset === 'custom' ? customTo : isoToday();
 
+  // Normalize sport keys for consistent display and filtering
+  const normSport = (s: string | undefined | null): string => {
+    if (!s) return '';
+    const up = s.toUpperCase();
+    if (up.includes('NCAAF') || up === 'CFB') return 'CFB';
+    if (up.includes('NFL')) return 'NFL';
+    if (up.includes('NCAAB') || up === 'CBB') return 'NCAAB';
+    if (up.includes('NBA')) return 'NBA';
+    if (up.includes('MLB') || up === 'BASEBALL') return 'MLB';
+    if (up.includes('NHL') || up === 'HOCKEY') return 'NHL';
+    return up;
+  };
+
   // Derived filter values
   const presentBooks  = Array.from(new Set(bets.map(b => b.book).filter(Boolean))) as string[];
-  const presentSports = Array.from(new Set(bets.flatMap(b => b.legs.map(l => l.sport)).filter(Boolean))) as string[];
+  const presentSports = Array.from(new Set(bets.flatMap(b => b.legs.map(l => normSport(l.sport))).filter(Boolean)));
 
   const afterFilters = bets.filter(b => {
     const d = betDate(b);
@@ -310,7 +323,7 @@ export function OpenBets() {
     return inDateRange &&
       (statusFilter === 'all' || b.status === statusFilter) &&
       (bookFilter   === 'all' || (b.book ?? '').toLowerCase() === bookFilter) &&
-      (sportFilter  === 'all' || b.legs.some(l => (l.sport ?? '').toUpperCase() === sportFilter.toUpperCase()));
+      (sportFilter  === 'all' || b.legs.some(l => normSport(l.sport) === sportFilter));
   });
 
   const filtered = [...afterFilters].sort((a, b) => {

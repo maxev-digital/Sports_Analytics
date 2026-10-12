@@ -208,21 +208,7 @@ export function Analytics() {
       }
 
       try {
-        const [perfResponse, alertsResponse] = await Promise.all([
-          fetch(getApiUrl('/alerts/performance')),
-          fetch(getApiUrl('/alerts/arbitrage'))
-        ]);
-
-        if (perfResponse.ok) {
-          const perfData = await perfResponse.json();
-          setPerformanceData(perfData);
-        }
-
-        if (alertsResponse.ok) {
-          const alertsData = await alertsResponse.json();
-          setRecentAlerts(alertsData.alerts.slice(0, 5));
-        }
-
+        // Alerts endpoints not yet implemented — skip to avoid 404 spam
         setLoading(false);
       } catch (error) {
         logger.error('Error fetching analytics data:', error);
@@ -231,7 +217,7 @@ export function Analytics() {
     };
 
     fetchData();
-    const interval = setInterval(fetchData, 30000); // Refresh every 30 seconds
+    const interval = setInterval(fetchData, 300000); // Refresh every 5 minutes
 
     return () => clearInterval(interval);
   }, [isDemoMode]);

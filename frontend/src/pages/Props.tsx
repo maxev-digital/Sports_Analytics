@@ -101,7 +101,7 @@ interface CombosResponse {
 
 export function Props() {
   const [viewMode, setViewMode] = useState<'all' | 'edges' | 'crusher'>('all');
-  const [selectedSport, setSelectedSport] = useState<string>('nba');
+  const [selectedSport, setSelectedSport] = useState<string>('mlb');
   const [props, setProps] = useState<PlayerProp[]>([]);
   const [groupedProps, setGroupedProps] = useState<GroupedProp[]>([]);
   const [edgeProps, setEdgeProps] = useState<MLPropsResponse | null>(null);
@@ -110,6 +110,7 @@ export function Props() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPropType, setSelectedPropType] = useState<string>('all');
   const [minEdge, setMinEdge] = useState<number>(5.0);
+  const [isLiveMode, setIsLiveMode] = useState(false);
   const [minLegs, setMinLegs] = useState<number>(2);
   const [maxLegs, setMaxLegs] = useState<number>(6);
   const [demonModeOnly, setDemonModeOnly] = useState<boolean>(false);
@@ -136,18 +137,61 @@ export function Props() {
         });
 
         const response = await fetch(getApiUrl(`ui/props-edges?${params.toString()}`));
+        let edgeData: MLPropsResponse | null = null;
         if (response.ok) {
           const rawData = await response.json();
-          // Handle both old format {props: []} and new format {edges: []}
-          const data: MLPropsResponse = {
-            date: rawData.date || rawData.generated_at,
-            time_generated: rawData.generated_at || new Date().toISOString(),
-            total_props_analyzed: rawData.total || 0,
-            props_with_edge: rawData.total || 0,
-            min_edge_pct: rawData.filters?.min_edge || minEdge,
-            props: rawData.edges || rawData.props || []
+          const props = rawData.edges || rawData.props || [];
+          if (props.length > 0) {
+            edgeData = {
+              date: rawData.date || rawData.generated_at,
+              time_generated: rawData.generated_at || new Date().toISOString(),
+              total_props_analyzed: rawData.total || 0,
+              props_with_edge: rawData.total || 0,
+              min_edge_pct: rawData.filters?.min_edge || minEdge,
+              props,
+            };
+          }
+        }
+
+        // Fallback: fetch live props from Odds API if no ML predictions available
+        if (!edgeData) {
+          const sportMap: Record<string, string> = {
+            nba: 'basketball_nba', nfl: 'americanfootball_nfl', mlb: 'baseball_mlb',
+            nhl: 'icehockey_nhl', ncaab: 'basketball_ncaab', ncaaf: 'americanfootball_ncaaf',
           };
-          setEdgeProps(data);
+          const oddsApiSport = sportMap[selectedSport] || selectedSport;
+          const liveResp = await fetch(getApiUrl(`f5/live-props?sport=${oddsApiSport}`));
+          if (liveResp.ok) {
+            const liveData = await liveResp.json();
+            const liveProps = (liveData.props || []).map((p: Record<string, unknown>) => ({
+              player_name: p.player,
+              prop_type: p.market,
+              market_line: p.line,
+              team: p.away_team,
+              opponent: p.home_team,
+              sportsbook: Object.keys(p.books || {}).join(', '),
+              edge: null,
+              confidence: null,
+              recommendation: null,
+              best_over: p.best_over,
+              best_under: p.best_under,
+              book_count: p.book_count,
+              books: p.books,
+            }));
+            edgeData = {
+              date: new Date().toISOString(),
+              time_generated: new Date().toISOString(),
+              total_props_analyzed: liveProps.length,
+              props_with_edge: 0,
+              min_edge_pct: 0,
+              props: liveProps,
+            };
+          }
+        }
+
+        if (edgeData) {
+          setEdgeProps(edgeData);
+          setIsLiveMode(!edgeData.props_with_edge && edgeData.props.length > 0);
         }
       } catch (error) {
         logger.error('Error fetching edge props:', error);
@@ -728,9 +772,80 @@ export function Props() {
                   Try lowering the minimum edge threshold or check back later
                 </div>
               </div>
+            ) : isLiveMode ? (
+              <>
+                {/* Live Props Mode — raw odds data, no ML predictions */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-black border border-slate-700 rounded-xl p-4">
+                    <div className="text-blue-400 text-sm font-medium mb-1">Total Props</div>
+                    <div className="text-white text-3xl font-bold">{edgeProps.total_props_analyzed}</div>
+                  </div>
+                  <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-black border border-slate-700 rounded-xl p-4">
+                    <div className="text-purple-400 text-sm font-medium mb-1">Unique Players</div>
+                    <div className="text-white text-3xl font-bold">{new Set(edgeProps.props.map(p => p.player_name)).size}</div>
+                  </div>
+                  <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-black border border-slate-700 rounded-xl p-4">
+                    <div className="text-emerald-400 text-sm font-medium mb-1">Markets</div>
+                    <div className="text-white text-3xl font-bold">{new Set(edgeProps.props.map(p => p.prop_type)).size}</div>
+                  </div>
+                </div>
+
+                {/* Live Props Table */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b-2 border-slate-600">
+                        <th className="py-2 px-3 text-left text-slate-400 text-xs font-bold uppercase tracking-wider">Player</th>
+                        <th className="py-2 px-3 text-left text-slate-400 text-xs font-bold uppercase tracking-wider">Matchup</th>
+                        <th className="py-2 px-3 text-left text-slate-400 text-xs font-bold uppercase tracking-wider">Market</th>
+                        <th className="py-2 px-3 text-center text-slate-400 text-xs font-bold uppercase tracking-wider">Line</th>
+                        <th className="py-2 px-3 text-center text-slate-400 text-xs font-bold uppercase tracking-wider">Best Over</th>
+                        <th className="py-2 px-3 text-center text-slate-400 text-xs font-bold uppercase tracking-wider">Best Under</th>
+                        <th className="py-2 px-3 text-center text-slate-400 text-xs font-bold uppercase tracking-wider">Books</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {edgeProps.props
+                        .filter(p => selectedPropType === 'all' || p.prop_type === selectedPropType)
+                        .filter(p => !searchQuery || p.player_name.toLowerCase().includes(searchQuery.toLowerCase()))
+                        .map((prop, idx) => {
+                          const fmtPrice = (n: number | null | undefined) => {
+                            if (n == null) return '—';
+                            return n > 0 ? `+${n}` : String(n);
+                          };
+                          return (
+                            <tr key={`${prop.player_name}-${prop.prop_type}-${prop.market_line}-${idx}`} className="border-b border-slate-700/50 hover:bg-slate-800/50">
+                              <td className="py-2.5 px-3">
+                                <div className="text-white font-semibold text-sm">{prop.player_name}</div>
+                                <div className="text-slate-500 text-xs">{prop.team}</div>
+                              </td>
+                              <td className="py-2.5 px-3 text-slate-400 text-xs">vs {prop.opponent}</td>
+                              <td className="py-2.5 px-3">
+                                <span className="text-slate-300 text-xs font-medium">{(prop.prop_type || '').replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}</span>
+                              </td>
+                              <td className="py-2.5 px-3 text-center">
+                                <span className="text-white font-bold">{prop.market_line}</span>
+                              </td>
+                              <td className="py-2.5 px-3 text-center">
+                                <span className="text-emerald-400 font-bold">{fmtPrice((prop as Record<string, unknown>).best_over as number)}</span>
+                              </td>
+                              <td className="py-2.5 px-3 text-center">
+                                <span className="text-blue-400 font-bold">{fmtPrice((prop as Record<string, unknown>).best_under as number)}</span>
+                              </td>
+                              <td className="py-2.5 px-3 text-center text-slate-500 text-xs">{(prop as Record<string, unknown>).book_count as number}</td>
+                            </tr>
+                          );
+                        })}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="text-center text-slate-600 text-xs mt-4">
+                  Live odds from The Odds API · Cached 10 min · No ML predictions — raw sportsbook lines
+                </div>
+              </>
             ) : (
               <>
-                {/* Stats Summary */}
+                {/* ML Edge Mode — original stats + table */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                   <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-black border border-white rounded-xl p-4">
                     <div className="text-blue-400 text-lg font-medium mb-1">Total Props Analyzed</div>

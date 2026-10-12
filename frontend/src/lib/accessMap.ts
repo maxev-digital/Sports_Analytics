@@ -36,19 +36,30 @@ export function canAccessRoute(userTier: AccessTier, requiredTier: AccessTier): 
 
 // Route → minimum tier required
 export const ROUTE_TIERS: Record<string, AccessTier> = {
-  // ── Free ──────────────────────────────────────────────────────────────
+  // ── Free (no account needed) ──────────────────────────────────────────
   '/':                'free',
-  '/live-games':      'free',
-  '/odds':            'free',
-  '/alerts':          'free',
-  '/todays-plays':    'free',
-  '/picks':           'free',
-  '/accuracy':        'free',
-  '/power-rankings':  'free',
-  '/team-rankings':   'free',
-  '/track-record':    'free',
-  '/system-overview': 'free',
-  '/system-nfl':      'free',
+  '/family':          'free',
+  '/login':           'free',
+  '/signup':          'free',
+  '/pricing':         'free',
+  '/terms':           'free',
+  '/privacy':         'free',
+  '/disclaimer':      'free',
+  '/forgot-password': 'free',
+  '/reset-password':  'free',
+
+  // ── Member (free signup required) ────────────────────────────────────
+  '/live-games':      'member',
+  '/odds':            'member',
+  '/alerts':          'member',
+  '/todays-plays':    'member',
+  '/picks':           'pro',
+  '/accuracy':        'member',
+  '/power-rankings':  'member',
+  '/team-rankings':   'member',
+  '/track-record':    'member',
+  '/system-overview': 'member',
+  '/system-nfl':      'member',
 
   // ── Member (free signup) ───────────────────────────────────────────────
   '/survivor':          'member',

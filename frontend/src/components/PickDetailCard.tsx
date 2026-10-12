@@ -821,14 +821,7 @@ export function PickDetailCard({ pick }: { pick: EnrichedPick }) {
         )}
       </AccordionSection>
 
-      {/* Coaching Matchup — Phase 5 placeholder */}
-      <AccordionSection
-        title="COACHING MATCHUP"
-        disabled={true}
-        disabledLabel="Phase 5 — Expert Agent (coming soon)"
-      >
-        <div />
-      </AccordionSection>
+      {/* Coaching Matchup — wired when coaching data available in pick */}
 
     </div>
   );

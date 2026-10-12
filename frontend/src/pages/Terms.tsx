@@ -1,9 +1,11 @@
 import { Navigation } from '../components/Navigation';
 import { Footer } from '../components/Footer';
+import { MetaTags } from '../components/MetaTags';
 
 export function Terms() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white flex flex-col">
+      <MetaTags title="Terms of Service" description="Max EV Sports terms of service and user agreement." noindex />
       <Navigation />
 
       <main className="flex-1 container mx-auto px-4 py-12 max-w-5xl">

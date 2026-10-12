@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { logger } from '../utils/logger';
+import { MetaTags } from '../components/MetaTags';
 
 export function Login() {
   const [username, setUsername] = useState('');
@@ -35,6 +36,7 @@ export function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-900 px-4 relative overflow-hidden">
+      <MetaTags title="Login" description="Sign in to your Max EV Sports account for AI-powered betting analytics." noindex />
       {/* Hidden audio elements for sound effects */}
       <audio
         ref={audioRef}
@@ -192,7 +194,7 @@ export function Login() {
         </div>
 
         <div className="text-center text-xs text-slate-500 mt-4">
-          <p>© 2025 Max EV Holdings, LLC. All rights reserved.</p>
+          <p>© 2026 Max EV Holdings, LLC. All rights reserved.</p>
         </div>
       </div>
     </div>

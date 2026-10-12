@@ -14,7 +14,7 @@ export interface GameState {
   home_team: Team;
   away_team: Team;
   commence_time: string;
-  status: 'upcoming' | 'live' | 'completed';
+  status: 'upcoming' | 'live' | 'completed' | 'final' | 'in_progress' | 'scheduled';
   is_live?: boolean;  // For NCAAB baseline comparison
   quarter: number | null;
   time_remaining: string | null;

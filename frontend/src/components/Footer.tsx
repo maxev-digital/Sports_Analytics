@@ -58,7 +58,7 @@ export const Footer = () => {
 
       <div className="text-center">
       <p className="mb-2">
-        © 2025 <strong>Max EV Holdings, LLC</strong>. All rights reserved.
+        © 2026 <strong>Max EV Holdings, LLC</strong>. All rights reserved.
       </p>
 
       {/* Bookmaker Logo Disclaimer */}

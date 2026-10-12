@@ -3,6 +3,7 @@ import { TrendingUp, Target, Clock, BarChart3, RefreshCw, ChevronDown, Info } fr
 import '../styles/analytics.css';
 import { getApiUrl } from '../config';
 import { PickDetailCard, EnrichedPick } from '../components/PickDetailCard';
+import { MetaTags } from '../components/MetaTags';
 
 // ── Design tokens ────────────────────────────────────────────────────────────
 const EMERALD    = 'oklch(69.6% .17 162.48)';
@@ -164,6 +165,7 @@ function StatCard({
 }) {
   return (
     <div className="stat-card" style={{ minWidth: 0 }}>
+      <MetaTags title="Picks" description="Expert AI picks with edge percentages, confidence tiers, and full game scripts. Backed by 60 ML models and multi-angle convergence." />
       <div style={{
         fontSize: '0.65rem',
         fontWeight: 700,
@@ -457,6 +459,7 @@ export function Picks() {
   const [stats, setStats]           = useState<Stats | null>(null);
   const [pending, setPending]       = useState<EnrichedPick[]>([]);
   const [graded, setGraded]         = useState<Prediction[]>([]);
+  const [evaluations, setEvaluations] = useState<any[]>([]);
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState('');
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -468,10 +471,11 @@ export function Picks() {
     setLoading(true);
     setError('');
     try {
-      const [statsRes, enrichedRes, gradedRes] = await Promise.all([
+      const [statsRes, enrichedRes, gradedRes, evalsRes] = await Promise.all([
         fetch(getApiUrl('predictions/stats')),
         fetch(getApiUrl('predictions/enriched?status=pending')),
         fetch(getApiUrl('predictions/graded?days=7')),
+        fetch(getApiUrl('v1/evaluations/today')).catch(() => null),
       ]);
 
       if (statsRes.ok) {
@@ -494,6 +498,13 @@ export function Picks() {
           new Date(b.created_at_cst).getTime() - new Date(a.created_at_cst).getTime()
         );
         setGraded(sorted.slice(0, 30));
+      }
+      if (evalsRes && evalsRes.ok) {
+        const d = await evalsRes.json();
+        const evals = (d.evaluations ?? [])
+          .filter((e: any) => e.lean_level === 'favorable_lean' || e.lean_level === 'strong_lean')
+          .sort((a: any, b: any) => (b.unit_rec ?? 0) - (a.unit_rec ?? 0));
+        setEvaluations(evals);
       }
       setLastUpdated(new Date());
     } catch (e: any) {
@@ -596,9 +607,9 @@ export function Picks() {
             label="30-Day Win Rate"
             value={loading ? '—' : winRate != null ? `${winRate.toFixed(1)}%` : '—'}
             sub={
-              stats?.graded_30d
-                ? `${stats.graded_30d.wins}W ${stats.graded_30d.losses}L ${stats.graded_30d.pushes}P`
-                : 'graded picks'
+              stats?.graded_30d && stats.graded_30d.wins != null
+                ? `${stats.graded_30d.wins ?? 0}W ${stats.graded_30d.losses ?? 0}L ${stats.graded_30d.pushes ?? 0}P`
+                : 'no graded picks yet'
             }
             color={wrColor}
           />
@@ -650,9 +661,12 @@ export function Picks() {
           </div>
 
           {/* Filter bar — shown once data is loaded */}
-          {!loading && pending.length > 0 && (
+          {!loading && (pending.length > 0 || evaluations.length > 0) && (
             <FilterBar
-              picks={pending}
+              picks={[
+                ...pending,
+                ...evaluations.map((e: any) => ({ sport: (e.sport ?? '').toLowerCase(), pick_type: String(e.lean_market ?? ''), confidence_tier: e.lean_level === 'strong_lean' ? 'high' : 'medium' })),
+              ]}
               sport={filterSport} setSport={setFilterSport}
               type={filterType}   setType={setFilterType}
               conf={filterConf}   setConf={setFilterConf}
@@ -689,6 +703,74 @@ export function Picks() {
             </div>
           )}
         </div>
+
+        {/* ── 2b. Expert Evaluations (5-Persona System) ──────────────── */}
+        {evaluations.length > 0 && (
+          <div>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              marginBottom: 16, paddingBottom: 12,
+              borderBottom: `1px solid ${BORDER}`,
+            }}>
+              <Target size={18} style={{ color: YELLOW }} />
+              <h2 style={{
+                fontSize: '1.1rem', fontWeight: 700, color: '#fff', margin: 0,
+                fontFamily: 'var(--d3-font)',
+              }}>
+                Expert Evaluations
+              </h2>
+              <Badge color={YELLOW} label="5-PERSONA AI" />
+              <span style={{ fontSize: '0.72rem', color: MUTED_FG, marginLeft: 'auto' }}>
+                {evaluations.length} actionable plays
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gap: 12 }}>
+              {evaluations
+                .filter((e: any) => filterSport === 'all' || e.sport?.toLowerCase() === filterSport)
+                .map((ev: any, i: number) => {
+                  const leanColor = ev.lean_level === 'strong_lean' ? EMERALD : YELLOW;
+                  const sportLabel = getSportLabel(ev.sport?.toLowerCase() ?? '');
+                  const sportColor = getSportColor(ev.sport?.toLowerCase() ?? '');
+                  return (
+                    <div key={ev.id ?? i} style={{
+                      background: 'var(--card-bg, rgba(255,255,255,0.025))',
+                      border: `1px solid ${BORDER_STR}`,
+                      borderRadius: 12,
+                      padding: '16px 20px',
+                      borderLeft: `3px solid ${leanColor}`,
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+                        <Badge color={sportColor} label={sportLabel} />
+                        <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fff' }}>
+                          {ev.away_team} @ {ev.home_team}
+                        </span>
+                        <Badge color={leanColor} label={ev.lean_level?.replace('_', ' ').toUpperCase()} />
+                        {ev.unit_rec > 0 && (
+                          <span style={{ fontSize: '0.72rem', fontWeight: 700, color: leanColor, marginLeft: 'auto' }}>
+                            {ev.unit_rec}u
+                          </span>
+                        )}
+                      </div>
+                      {ev.lean_side && (
+                        <div style={{ fontSize: '0.78rem', color: leanColor, fontWeight: 700, marginBottom: 6 }}>
+                          {ev.lean_side} {ev.lean_market}
+                        </div>
+                      )}
+                      {ev.game_script && (
+                        <p style={{
+                          fontSize: '0.78rem', color: MUTED_FG, lineHeight: 1.6, margin: 0,
+                          display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden',
+                        }}>
+                          {ev.game_script}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+        )}
 
         {/* ── 3. Recent Results ───────────────────────────────────────── */}
         <div>

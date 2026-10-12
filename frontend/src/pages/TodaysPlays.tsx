@@ -11,6 +11,7 @@ import { RefreshCw, Star, Trophy, TrendingUp, BookOpen, Zap } from 'lucide-react
 import { fetchTodayEvaluations, fetchEvaluationRecord, fetchPersonaLeans } from '../api/evaluations';
 import type { Evaluation, AtsRecord, PersonaLean } from '../api/evaluations';
 import '../styles/analytics.css';
+import { MetaTags } from '../components/MetaTags';
 
 const F5_BASE = import.meta.env.DEV ? 'http://localhost:8889/api/f5' : '/api/f5';
 
@@ -86,6 +87,7 @@ function PersonaBar({ lean }: { lean: PersonaLean }) {
 
   return (
     <div style={{ marginTop: 14 }}>
+      <MetaTags title="Today's Plays" description="Daily pregame evaluations with AI-powered handicapping across NFL, CFB, MLB, NBA, and NHL. Favorable and strong lean picks updated daily." />
       <div style={{
         fontSize: '0.62rem', fontWeight: 800, letterSpacing: '0.08em',
         color: MUTED, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6,

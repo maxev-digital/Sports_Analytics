@@ -10,6 +10,7 @@ import { useBetSlip } from '../contexts/BetSlipContext';
 import { openSportsbook } from '../utils/deepLinking';
 import { useSettings } from '../hooks/useSettings';
 import { logger } from '../utils/logger';
+import { MetaTags } from '../components/MetaTags';
 
 interface WeatherInfo {
   temp_high?: number;
@@ -256,6 +257,7 @@ export function Odds() {
   if (loading) {
     return (
       <div className="analytics-page flex items-center justify-center">
+      <MetaTags title="Live Odds" description="Compare real-time odds across 15+ sportsbooks. Spreads, totals, and moneylines for NFL, CFB, MLB, NBA, and NHL." />
         <div className="text-slate-400 text-lg">Loading odds...</div>
       </div>
     );

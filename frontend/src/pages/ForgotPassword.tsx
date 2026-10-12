@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
+import { MetaTags } from '../components/MetaTags';
 
 export function ForgotPassword() {
   const [email, setEmail]       = useState('');
@@ -25,6 +26,7 @@ export function ForgotPassword() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-900 px-4">
+      <MetaTags title="Forgot Password" description="Reset your Max EV Sports account password." noindex />
       <div className="max-w-md w-full space-y-6">
         <div className="text-center">
           <img src="/3DMaxLogo.png" alt="Max EV Sports" className="mx-auto h-32 w-auto mb-4 mix-blend-screen" />

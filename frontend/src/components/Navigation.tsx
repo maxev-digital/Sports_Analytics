@@ -25,6 +25,7 @@ export function Navigation() {
 
   const [rankingsDropdownOpen, setRankingsDropdownOpen]   = useState(false);
   const [edgesDropdownOpen,    setEdgesDropdownOpen]      = useState(false);
+  const [contestDropdownOpen,  setContestDropdownOpen]    = useState(false);
   const [dataLabDropdownOpen,  setDataLabDropdownOpen]    = useState(false);
   const [toolsDropdownOpen,    setToolsDropdownOpen]      = useState(false);
   const [userDropdownOpen,     setUserDropdownOpen]       = useState(false);
@@ -32,6 +33,7 @@ export function Navigation() {
 
   const rankingsRef = useRef<HTMLDivElement>(null);
   const edgesRef    = useRef<HTMLDivElement>(null);
+  const contestRef  = useRef<HTMLDivElement>(null);
   const dataLabRef  = useRef<HTMLDivElement>(null);
   const toolsRef    = useRef<HTMLDivElement>(null);
   const userRef     = useRef<HTMLDivElement>(null);
@@ -47,50 +49,53 @@ export function Navigation() {
 
   // ── Nav item lists ─────────────────────────────────────────────────────
   const mainNavItems: NavItem[] = [
-    { path: '/live-games', label: 'GAME CARDS' },
-    { path: '/odds',       label: 'ODDS'        },
-    { path: '/alerts',     label: 'ALERTS'      },
+    { path: '/live-games', label: 'MATCHUPS' },
+    { path: '/odds',       label: 'ODDS'     },
   ];
 
   const rankingsItems: NavItem[] = [
-    { path: '/power-rankings', label: 'POWER RANKINGS' },
-    { path: '/statcast',       label: 'STATCAST'        },
+    { path: '/power-rankings',   label: 'POWER RANKINGS'   },
+    { path: '/betting-rankings', label: 'BETTING RANKINGS'  },
+    { path: '/cfb-ratings',      label: 'CFB RATINGS'       },
+    { path: '/cfb-trends',      label: 'CFB EDGE FINDER'   },
+    { path: '/nfl-trends',       label: 'NFL TRENDS'        },
+    { path: '/statcast',         label: 'STATCAST'          },
+    { path: '/track-record',     label: 'TRACK RECORD'      },
   ];
 
   const edgesItems: NavItem[] = [
     { path: '/todays-plays',         label: "TODAY'S PLAYS"     },
     { path: '/picks',                label: 'PICKS'             },
-    { path: '/model-projections',    label: 'MODEL PROJECTIONS' },
     { path: '/f5-edge',              label: 'F5 EDGE ENGINE'    },
-    { path: '/betting-rankings',     label: 'BETTING RANKINGS'  },
     { path: '/max-ev-edges',         label: 'ML EDGES'          },
     { path: '/model-performance',    label: 'MODEL PERFORMANCE' },
     { path: '/predictions-database', label: 'PREDICTIONS DB'    },
+    { path: '/line-movement',        label: 'LINE MOVEMENT'     },
+    { path: '/recap',                label: 'DAILY RECAP'       },
   ];
 
-  const dataLabItems: NavItem[] = [
-    { path: '/referee-trends',  label: 'REFEREE TRACKER' },
-    { path: '/trends',          label: 'TRENDS DASHBOARD' },
-    { path: '/nfl-trends',      label: 'NFL TRENDS'       },
-    { path: '/cfb-ratings',     label: 'CFB RATINGS'      },
-    { path: '/line-movement',   label: 'LINE MOVEMENT'    },
-    { path: '/track-record',    label: 'TRACK RECORD'     },
-    { path: '/recap',           label: 'DAILY RECAP'      },
+  const contestItems: NavItem[] = [
+    { path: '/contests',        label: 'CONTEST TRACKER'  },
     { path: '/survivor',        label: 'SURVIVOR HELPER'  },
     { path: '/confidence-pool', label: 'CONFIDENCE POOL'  },
   ];
 
+  const dataLabItems: NavItem[] = [
+    { path: '/referee-trends',  label: 'REFEREE TRACKER'      },
+    { path: '/trends',          label: 'TRENDS DASHBOARD'     },
+    { path: '/injury-impact',   label: 'INJURY IMPACT ENGINE' },
+    { path: '/injury-heatmap',  label: 'INJURY HEATMAP'       },
+    { path: '/props',           label: 'PLAYER PROPS'         },
+    { path: '/data-points',     label: 'DATA POINTS'          },
+    { path: '/model-research',  label: 'MODEL RESEARCH'       },
+  ];
+
   const toolsItems: NavItem[] = [
-    { path: '/injury-impact',  label: 'INJURY IMPACT ENGINE' },
-    { path: '/injury-heatmap', label: 'INJURY HEATMAP'       },
-    { path: '/data-points',    label: 'DATA POINTS'          },
-    { path: '/model-research', label: 'MODEL RESEARCH'       },
-    { path: '/open-bets',      label: 'MY BETS'              },
-    { path: '/analytics',     label: 'MY ANALYTICS'         },
-    { path: '/props',         label: 'PLAYER PROPS'         },
-    { path: '/tools',         label: 'BETTING TOOLS'        },
-    { path: '/settings',      label: 'BOOKMAKER SETTINGS'   },
-    { path: '/system-health', label: 'SYSTEM HEALTH'        },
+    { path: '/tools',         label: 'BETTING TOOLS'       },
+    { path: '/open-bets',     label: 'MY BETS'             },
+    { path: '/analytics',     label: 'MY ANALYTICS'        },
+    { path: '/settings',      label: 'BOOKMAKER SETTINGS'  },
+    { path: '/system-health', label: 'SYSTEM HEALTH'       },
     ...(role === 'admin' ? [{ path: '/admin-dashboard', label: 'ADMIN DASHBOARD' }] : []),
   ];
 
@@ -99,6 +104,7 @@ export function Navigation() {
     function handleClick(e: MouseEvent) {
       if (rankingsRef.current && !rankingsRef.current.contains(e.target as Node)) setRankingsDropdownOpen(false);
       if (edgesRef.current    && !edgesRef.current.contains(e.target as Node))    setEdgesDropdownOpen(false);
+      if (contestRef.current  && !contestRef.current.contains(e.target as Node))  setContestDropdownOpen(false);
       if (dataLabRef.current  && !dataLabRef.current.contains(e.target as Node))  setDataLabDropdownOpen(false);
       if (toolsRef.current    && !toolsRef.current.contains(e.target as Node))    setToolsDropdownOpen(false);
       if (userRef.current     && !userRef.current.contains(e.target as Node))     setUserDropdownOpen(false);
@@ -226,9 +232,8 @@ export function Navigation() {
 
               {/* Main flat items */}
               {[
-                { path: '/live-games', label: 'GAME CARDS' },
+                { path: '/live-games', label: 'MATCHUPS' },
                 { path: '/odds',       label: 'ODDS'        },
-                { path: '/alerts',     label: 'ALERTS', live: true },
               ].map(item => renderFlatNavItem(item))}
 
               {/* RANKINGS dropdown */}
@@ -248,6 +253,16 @@ export function Navigation() {
                 </button>
                 {edgesDropdownOpen && dropdownPanel(
                   edgesItems.map(item => renderDropdownItem(item, () => setEdgesDropdownOpen(false)))
+                )}
+              </div>
+
+              {/* CONTESTS dropdown */}
+              <div className="relative" ref={contestRef}>
+                <button onClick={() => setContestDropdownOpen(o => !o)} className={navBtn(isDropdownActive(contestItems))}>
+                  CONTESTS {chevron(contestDropdownOpen)}
+                </button>
+                {contestDropdownOpen && dropdownPanel(
+                  contestItems.map(item => renderDropdownItem(item, () => setContestDropdownOpen(false)))
                 )}
               </div>
 
@@ -341,7 +356,7 @@ export function Navigation() {
 
           {/* Mobile nav — horizontal scroll */}
           <div className="md:hidden flex gap-1 pb-2 overflow-x-auto scrollbar-hide">
-            {[...mainNavItems, ...rankingsItems, ...edgesItems, ...dataLabItems, ...toolsItems].map(item => {
+            {[...mainNavItems, ...rankingsItems, ...edgesItems, ...contestItems, ...dataLabItems, ...toolsItems].map(item => {
               const routeTier = getRouteTier(item.path);
               const accessible = canAccessRoute(userTier, routeTier);
               if (accessible) {

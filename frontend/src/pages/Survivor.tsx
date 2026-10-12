@@ -6,6 +6,7 @@ import { SurvivorPathBuilder } from './SurvivorPathBuilder';
 import { SurvivorSimulator } from './SurvivorSimulator';
 import { SurvivorMultiEntry } from './SurvivorMultiEntry';
 import { type CustomPath } from './survivorAlgo';
+import { MetaTags } from '../components/MetaTags';
 
 // ── Semantic color tokens (theme-agnostic) ────────────────────────────────────
 const BG     = 'var(--c-bg)';
@@ -262,6 +263,7 @@ function WpBar({ wp, label }: { wp: number; label: string }) {
   const color = LABEL_COLOR[label] ?? MUTED;
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <MetaTags title="Survivor Pool" description="NFL survivor pool path builder with optimal picks, Monte Carlo simulation, and multi-entry strategy tools." />
       <div style={{ width: 48, height: 4, background: 'var(--c-track)', borderRadius: 2, overflow: 'hidden' }}>
         <div style={{ width: `${wp * 100}%`, height: '100%', background: color, borderRadius: 2 }} />
       </div>
@@ -925,8 +927,24 @@ export function Survivor() {
               ))}
             </div>
 
-            {/* Odds toggle */}
+            {/* Odds toggle + Reset */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+              <button
+                onClick={() => {
+                  [STORAGE_KEY, PICK_KEY, THK_KEY, XMAS_KEY].forEach(k => localStorage.removeItem(k));
+                  setUsed(new Set());
+                  setPicks({});
+                  setThkPickState(null);
+                  setXmasPickState(null);
+                }}
+                title="Clear all picks and used teams"
+                style={{
+                  fontSize: '0.65rem', fontWeight: 700, padding: '4px 10px', borderRadius: 6, cursor: 'pointer',
+                  background: 'transparent',
+                  border: `1px solid ${RED}66`,
+                  color: RED,
+                }}
+              >RESET</button>
               <button
                 onClick={() => setOddsMode(o => !o)}
                 title="Toggle odds glow overlay"
@@ -940,7 +958,7 @@ export function Survivor() {
               {oddsMode && Object.keys(odds).length === 0 && (
                 <span style={{ fontSize: '0.6rem', color: YELLOW }}>⚡ Loading odds...</span>
               )}
-              {oddsMode && <span style={{ fontSize: '0.58rem', color: MUTED }}>Green glow = model edge · Red glow = market edge</span>}
+              {oddsMode && <span style={{ fontSize: '0.58rem', color: MUTED }}>Number = spread · Green glow = model favors team · Red glow = market favors opponent</span>}
             </div>
 
             {/* Available teams */}
@@ -1086,6 +1104,10 @@ export function Survivor() {
                           const mktWp    = oddsEntry ? (entry.home ? oddsEntry.home_implied : oddsEntry.away_implied) : null;
                           const edge     = mktWp !== null ? Math.round((entry.wp - mktWp) * 100) : null;
                           const edgeColor = edge === null ? MUTED : edge >= 3 ? EMERALD : edge <= -3 ? RED : MUTED;
+                          // Signed spread from this team's perspective (home spread is negative when favored)
+                          const teamSpread = oddsEntry?.spread != null
+                            ? (entry.home ? oddsEntry.spread : -oddsEntry.spread)
+                            : null;
 
                           // Mode A: market label color
                           const mktLabel = mktWp !== null
@@ -1113,8 +1135,8 @@ export function Survivor() {
                                 <>
                                   <div style={{ fontSize: '0.65rem', fontWeight: 700, color }}>{Math.round(entry.wp * 100)}%</div>
                                   <div style={{ fontSize: '0.55rem', color: MUTED }}>{entry.home ? '' : '@'}{entry.opp}</div>
-                                  {oddsMode && edge !== null && (
-                                    <div style={{ fontSize: '0.5rem', fontWeight: 700, color: edgeColor }}>{edge >= 0 ? '+' : ''}{edge}</div>
+                                  {oddsMode && teamSpread !== null && (
+                                    <div style={{ fontSize: '0.5rem', fontWeight: 700, color: edgeColor }}>{teamSpread > 0 ? '+' : ''}{teamSpread}</div>
                                   )}
                                 </>
                               </button>

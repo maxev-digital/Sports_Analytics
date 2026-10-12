@@ -4,6 +4,7 @@ import {
   ResponsiveContainer, ReferenceLine, Cell,
 } from 'recharts';
 import { getApiUrl } from '../config';
+import { MetaTags } from '../components/MetaTags';
 
 const BG       = 'oklch(14.5% 0 0)';
 const PANEL    = 'oklch(18% 0 0)';
@@ -146,6 +147,7 @@ export function TrackRecord() {
 
   return (
     <div style={{ background: BG, minHeight: '100vh', padding: '32px 24px', color: FG }}>
+      <MetaTags title="Track Record" description="Verified pick history with ATS records, ROI, and performance metrics across all sports and markets." />
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
 
         {/* Header */}

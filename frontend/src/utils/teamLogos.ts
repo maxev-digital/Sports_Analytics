@@ -85,10 +85,11 @@ const SPORT_MAP: Record<string, { espnSport: string; lookup: Record<string, stri
   nhl:  { espnSport: 'nhl',  lookup: NHL_LOGOS },
 };
 
-export function getTeamLogoUrl(teamName: string, sportKey: string, size = 50): string | null {
+// ESPN CDN only serves 500px for team logos — other sizes 404
+export function getTeamLogoUrl(teamName: string, sportKey: string): string | null {
   const config = SPORT_MAP[sportKey];
   if (!config) return null;
   const abbr = config.lookup[teamName];
   if (!abbr) return null;
-  return `https://a.espncdn.com/i/teamlogos/${config.espnSport}/${size}/${abbr}.png`;
+  return `https://a.espncdn.com/i/teamlogos/${config.espnSport}/500/${abbr}.png`;
 }

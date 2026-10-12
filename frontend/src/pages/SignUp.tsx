@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getApiUrl } from '../config';
 import { logger } from '../utils/logger';
+import { MetaTags } from '../components/MetaTags';
 
 export function SignUp() {
   const [formData, setFormData] = useState({
@@ -29,14 +30,21 @@ export function SignUp() {
   useEffect(() => {
     const email = searchParams.get('email');
     const code = searchParams.get('code');
+    const promo = searchParams.get('promo');
     const isPartner = searchParams.get('partner') === 'true';
 
-    if (email || code) {
+    if (email || code || promo) {
       setFormData(prev => ({
         ...prev,
         email: email || prev.email,
         referralCode: code || prev.referralCode,
+        promoCode: promo || prev.promoCode,
       }));
+
+      // Auto-skip access code gate for promo links
+      if (promo) {
+        localStorage.setItem('mes_access_granted', 'true');
+      }
 
       // Validate referral code if provided
       if (code && code.length >= 3) {
@@ -179,6 +187,7 @@ export function SignUp() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-black px-4 relative overflow-hidden py-12">
+      <MetaTags title="Sign Up" description="Create your Max EV Sports account. Free access to live odds, matchups, and betting tools." noindex />
       {/* Hidden audio element for bull snort sound */}
       <audio
         ref={audioRef}
@@ -483,7 +492,7 @@ export function SignUp() {
         </div>
 
         <div className="text-center text-xs text-slate-600 mt-4">
-          <p>© 2025 Max EV Holdings, LLC. All rights reserved.</p>
+          <p>© 2026 Max EV Holdings, LLC. All rights reserved.</p>
         </div>
       </div>
     </div>

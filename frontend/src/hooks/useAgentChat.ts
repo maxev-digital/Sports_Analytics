@@ -64,11 +64,24 @@ function buildHeaders(token: string | null): Record<string, string> {
   return headers;
 }
 
+export const SPORT_FILTERS = [
+  { key: null, label: 'ALL' },
+  { key: 'nfl', label: 'NFL' },
+  { key: 'mlb', label: 'MLB' },
+  { key: 'nba', label: 'NBA' },
+  { key: 'nhl', label: 'NHL' },
+  { key: 'ncaab', label: 'NCAAB' },
+  { key: 'ncaaf', label: 'CFB' },
+] as const;
+
+export type SportFilter = typeof SPORT_FILTERS[number]['key'];
+
 export function useAgentChat(isOpen: boolean = true, token: string | null = null) {
   const [mode, setMode] = useState<AgentMode>('picks');
   const [messages, setMessages] = useState<AgentMessage[]>(() => loadHistory());
   const [loadingChat, setLoadingChat] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
+  const [sportFilter, setSportFilter] = useState<SportFilter>(null);
 
   // React Query for picks — polls in background when panel is collapsed
   const {
@@ -78,12 +91,12 @@ export function useAgentChat(isOpen: boolean = true, token: string | null = null
     refetch: refetchPicks,
     error: picksQueryError,
   } = useQuery({
-    queryKey: ['agent-picks', token] as const,
+    queryKey: ['agent-picks', token, sportFilter] as const,
     queryFn: async () => {
       const resp = await fetch(getApiUrl('v1/agent/picks'), {
         method: 'POST',
         headers: buildHeaders(token),
-        body: JSON.stringify({ sport: null, limit: 5 }),
+        body: JSON.stringify({ sport: sportFilter, limit: 5 }),
       });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data = await resp.json() as { picks: PickCard[]; count: number };
@@ -114,7 +127,7 @@ export function useAgentChat(isOpen: boolean = true, token: string | null = null
       const resp = await fetch(getApiUrl('v1/agent/chat/stream'), {
         method: 'POST',
         headers: buildHeaders(token),
-        body: JSON.stringify({ message: text, history }),
+        body: JSON.stringify({ message: text, history, sport: sportFilter }),
       });
 
       if (!resp.ok || !resp.body) {
@@ -192,5 +205,6 @@ export function useAgentChat(isOpen: boolean = true, token: string | null = null
     sendMessage,
     clearHistory,
     picksFetched,
+    sportFilter, setSportFilter,
   };
 }

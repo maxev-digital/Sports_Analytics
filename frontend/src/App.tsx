@@ -12,15 +12,17 @@ import { AgentChatWidget } from './components/agent/AgentChatWidget';
 import { AgentProvider, useAgentContext } from './contexts/AgentContext';
 import { AppRoutes } from './components/AppRoutes';
 
-import { LandingPage } from './pages/LandingPage';
-import { Login } from './pages/Login';
-import { SignUp } from './pages/SignUp';
-import { Pricing } from './pages/Pricing';
-import { Terms } from './pages/Terms';
-import { Privacy } from './pages/Privacy';
-import { Disclaimer } from './pages/Disclaimer';
-import SubscriptionSuccess from './pages/SubscriptionSuccess';
-import SubscriptionCancel from './pages/SubscriptionCancel';
+import { lazy, Suspense } from 'react';
+
+const LandingPage         = lazy(() => import('./pages/LandingPage').then(m => ({ default: m.LandingPage })));
+const Login               = lazy(() => import('./pages/Login').then(m => ({ default: m.Login })));
+const SignUp              = lazy(() => import('./pages/SignUp').then(m => ({ default: m.SignUp })));
+const Pricing             = lazy(() => import('./pages/Pricing').then(m => ({ default: m.Pricing })));
+const Terms               = lazy(() => import('./pages/Terms').then(m => ({ default: m.Terms })));
+const Privacy             = lazy(() => import('./pages/Privacy').then(m => ({ default: m.Privacy })));
+const Disclaimer          = lazy(() => import('./pages/Disclaimer').then(m => ({ default: m.Disclaimer })));
+const SubscriptionSuccess = lazy(() => import('./pages/SubscriptionSuccess'));
+const SubscriptionCancel  = lazy(() => import('./pages/SubscriptionCancel'));
 
 const bg = 'min-h-screen flex flex-col';
 const queryClient = new QueryClient();
@@ -36,6 +38,7 @@ function AppContent() {
           <BetAlertNotificationProvider>
             <BetSlipToast />
 
+            <Suspense fallback={null}>
             <Routes>
               {/* Public auth */}
               <Route path="/login" element={<><Login /><Footer /></>} />
@@ -93,6 +96,7 @@ function AppContent() {
                 </div>
               } />
             </Routes>
+            </Suspense>
           </BetAlertNotificationProvider>
         </BetSlipProvider>
       </ToastProvider>

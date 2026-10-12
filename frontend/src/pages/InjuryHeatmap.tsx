@@ -85,9 +85,18 @@ function StatusBadge({ status }: { status: string }) {
 export function InjuryHeatmap() {
   const [data, setData]             = useState<HeatmapData | null>(null);
   const [loading, setLoading]       = useState(true);
-  const [expanding, setExpanding]   = useState<string | null>(null);
+  const [expanding, setExpanding]   = useState<Set<string>>(new Set());
   const [sortBy, setSortBy]         = useState<Col | 'off' | 'def' | 'total'>('total');
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
+
+  const toggleTeam = (abbr: string) => {
+    setSelectedTeams(prev => {
+      if (prev.includes(abbr)) return prev.filter(t => t !== abbr);
+      if (prev.length >= 2) return [prev[1], abbr]; // Replace oldest
+      return [...prev, abbr];
+    });
+  };
 
   const fetchData = (refresh = false) => {
     setLoading(true);
@@ -213,6 +222,40 @@ export function InjuryHeatmap() {
         ))}
       </div>
 
+      {/* Team selector — pick up to 2 teams to compare */}
+      {!loading && sorted.length > 0 && (
+        <div style={{ padding: '10px 24px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '0.65rem', fontWeight: 700, color: MUTED_FG, letterSpacing: '0.08em', textTransform: 'uppercase', flexShrink: 0 }}>
+            COMPARE:
+          </span>
+          {sorted.map(t => (
+            <button
+              key={t.team}
+              onClick={() => toggleTeam(t.team)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 4,
+                padding: '3px 8px', borderRadius: 4, fontSize: '0.65rem', fontWeight: 700,
+                border: selectedTeams.includes(t.team) ? '1px solid rgba(59,130,246,0.6)' : `1px solid ${BORDER}`,
+                background: selectedTeams.includes(t.team) ? 'rgba(59,130,246,0.15)' : 'transparent',
+                color: selectedTeams.includes(t.team) ? BLUE : MUTED_FG,
+                cursor: 'pointer', transition: 'all 0.15s',
+              }}
+            >
+              <img src={getLogo(t.team)} alt="" style={{ width: 12, height: 12, objectFit: 'contain' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+              {t.team}
+            </button>
+          ))}
+          {selectedTeams.length > 0 && (
+            <button
+              onClick={() => setSelectedTeams([])}
+              style={{ padding: '3px 8px', borderRadius: 4, fontSize: '0.65rem', fontWeight: 700, border: `1px solid ${BORDER}`, background: 'transparent', color: MUTED_FG, cursor: 'pointer', marginLeft: 4 }}
+            >
+              CLEAR
+            </button>
+          )}
+        </div>
+      )}
+
       <div style={{ padding: '16px 24px 24px' }}>
         {loading ? (
           <div className="data-table-wrap" style={{ padding: 56, textAlign: 'center' }}>
@@ -254,15 +297,20 @@ export function InjuryHeatmap() {
                 </tr>
               </thead>
               <tbody>
-                {sorted.map((team, idx) => {
-                  const isOpen = expanding === team.team;
+                {(selectedTeams.length > 0 ? sorted.filter(t => selectedTeams.includes(t.team)) : sorted).map((team, idx) => {
+                  const isOpen = expanding.has(team.team);
                   const evenBg = idx % 2 === 0 ? 'transparent' : 'oklch(100% 0 0 / .02)';
                   const rowBg  = isOpen ? 'var(--muted)' : evenBg;
                   return (
                     <>
                       <tr
                         key={team.team}
-                        onClick={() => setExpanding(isOpen ? null : team.team)}
+                        onClick={() => setExpanding(prev => {
+                          const next = new Set(prev);
+                          if (next.has(team.team)) next.delete(team.team);
+                          else next.add(team.team);
+                          return next;
+                        })}
                         style={{ borderBottom: `1px solid ${BORDER}`, cursor: 'pointer', background: rowBg, transition: 'background 0.15s' }}
                         onMouseEnter={e => { e.currentTarget.style.background = 'var(--muted)'; }}
                         onMouseLeave={e => { e.currentTarget.style.background = rowBg; }}

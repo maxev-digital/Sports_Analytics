@@ -109,7 +109,7 @@ export function ModelPerformance() {
   const [selectedSport, setSelectedSport] = useState('all');
   const [selectedModel, setSelectedModel] = useState('all');
   const [selectedBetType, setSelectedBetType] = useState('all');
-  const [days, setDays] = useState(30);
+  const [days, setDays] = useState(365);
   const [unitSize, setUnitSize] = useState(100);
   const [startingBankroll, setStartingBankroll] = useState(10000);
 

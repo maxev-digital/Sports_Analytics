@@ -9,6 +9,7 @@ import {
 } from 'recharts';
 import '../styles/analytics.css';
 import { getApiUrl } from '../config';
+import { MetaTags } from '../components/MetaTags';
 
 const EMERALD   = 'oklch(69.6% .17 162.48)';
 const BRAND_RED = 'oklch(63.7% .237 25.331)';
@@ -79,6 +80,7 @@ function DarkTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
     <div style={{ background: SIDEBAR_BG, border: `1px solid ${BORDER}`, borderRadius: 6, padding: '10px 14px', fontSize: '0.78rem' }}>
+      <MetaTags title="Power Rankings" description="NFL and CFB power ratings with tier classifications. Updated weekly with model-driven rankings." />
       {label && <p style={{ color: 'oklch(98.5% 0 0)', fontWeight: 700, marginBottom: 4 }}>{label}</p>}
       {payload.map((p: any) => (
         <p key={p.dataKey} style={{ color: p.color || MUTED_FG, margin: '2px 0' }}>
@@ -232,7 +234,6 @@ export function PowerRankings() {
 
   useEffect(() => {
     setLoading(true);
-    setNflView('composite');
     const fetches: Promise<unknown>[] = [
       fetch(getApiUrl(`analytics-data/team-scoring/${sport}`)).then(r => r.json()),
     ];
@@ -243,15 +244,23 @@ export function PowerRankings() {
       );
     }
     Promise.all(fetches).then(([main, walters, engine]) => {
-      setRankings(computeRankings((main as { teams?: unknown[] }).teams ?? []));
+      const teams = (main as { teams?: unknown[] }).teams ?? [];
+      const computed = computeRankings(teams);
+      setRankings(computed);
       if (walters) {
         const w = walters as { teams?: unknown[]; seasons?: unknown[] };
         setWaltersTeams(w.teams ?? []);
         setWaltersSeasons(w.seasons ?? []);
         setWaltersSeason('current');
       }
-      if (engine) {
+      if (engine && (engine as any)?.week_changes) {
         setWaltersEngine(engine as WaltersEngineData);
+      }
+      // Always default to Walters/FPI tab for NFL — composite is preseason junk until regular season
+      if (sport === 'nfl') {
+        setNflView('walters');
+      } else {
+        setNflView('composite');
       }
     }).catch(() => setRankings([])).finally(() => setLoading(false));
   }, [sport]);
