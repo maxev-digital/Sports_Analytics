@@ -38,6 +38,7 @@ const TrendsDashboard  = lazy(() => import('../pages/TrendsDashboard').then(m =>
 const NFLTrends        = lazy(() => import('../pages/NFLTrends').then(m => ({ default: m.NFLTrends })));
 const CFBRatings       = lazy(() => import('../pages/CFBRatings').then(m => ({ default: m.CFBRatings })));
 const CFBTrends        = lazy(() => import('../pages/CFBTrends'));
+const NFLTeamStats     = lazy(() => import('../pages/NFLTeamStats').then(m => ({ default: m.NFLTeamStats })));
 const ForgotPassword   = lazy(() => import('../pages/ForgotPassword').then(m => ({ default: m.ForgotPassword })));
 const ResetPassword    = lazy(() => import('../pages/ResetPassword').then(m => ({ default: m.ResetPassword })));
 const LiveGames        = lazy(() => import('../pages/LiveGames').then(m => ({ default: m.LiveGames })));
@@ -89,6 +90,8 @@ export function AppRoutes() {
         <Route path="/nfl-trends"       element={<M><NFLTrends /></M>} />
         <Route path="/cfb-ratings"      element={<M><CFBRatings /></M>} />
         <Route path="/cfb-trends"      element={<M><CFBTrends /></M>} />
+        <Route path="/nfl-team-stats"  element={<M><NFLTeamStats /></M>} />
+        <Route path="/rankings"        element={<Navigate to="/power-rankings" replace />} />
 
         {/* ── Pro — $99/year ────────────────────────────────────────────── */}
         <Route path="/model-projections"    element={<P><ModelProjections /></P>} />

@@ -91,7 +91,9 @@ export function LineMovement() {
   }, []);
 
   const sports = [...new Set(games.map(g => g.sport))].sort();
-  const filtered = sportFilter === 'all' ? games : games.filter(g => g.sport === sportFilter);
+  const filtered = (sportFilter === 'all' ? games : games.filter(g => g.sport === sportFilter))
+    .slice()
+    .sort((a, b) => new Date(a.game_time).getTime() - new Date(b.game_time).getTime());
 
   return (
     <div className="analytics-page">

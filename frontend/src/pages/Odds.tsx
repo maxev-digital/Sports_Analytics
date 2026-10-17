@@ -55,32 +55,50 @@ type BetType = 'moneyline' | 'spread' | 'total';
 type OddsRow = GameOdds['odds'][number];
 type BestOddsResult = { away: OddsRow; home: OddsRow } | { over: OddsRow; under: OddsRow } | null;
 
+interface OpeningLine {
+  open_home_spread: number | null;
+  open_away_spread: number | null;
+  open_home_spread_price: number | null;
+  open_away_spread_price: number | null;
+  open_total: number | null;
+  open_over_price: number | null;
+  open_under_price: number | null;
+  open_home_ml: number | null;
+  open_away_ml: number | null;
+}
+
 export function Odds() {
   const { username } = useAuth();
   const { openBetSlip } = useBetSlip();
   const { settings } = useSettings('default');
   const [activeSport, setActiveSport] = useState<SportKey>('americanfootball_nfl');
   const [activeBetType, setActiveBetType] = useState<BetType>('moneyline');
+  const [allGames, setAllGames] = useState<GameOdds[]>([]);
   const [games, setGames] = useState<GameOdds[]>([]);
+  const [openingLines, setOpeningLines] = useState<Record<string, OpeningLine>>({});
   const [loading, setLoading] = useState(true);
   const [modalInfo, setModalInfo] = useState<{type: 'tv' | 'weather', game: GameOdds} | null>(null);
 
+  // Fetch all games once
   useEffect(() => {
-    fetchGames();
-  }, [activeSport, username]);
+    fetchAllGames();
+  }, [username]);
 
-  const fetchGames = async () => {
+  // Filter by active sport
+  useEffect(() => {
+    const filtered = allGames.filter(g => g.sport_key === activeSport);
+    filtered.sort((a, b) => new Date(a.commence_time).getTime() - new Date(b.commence_time).getTime());
+    setGames(filtered);
+  }, [activeSport, allGames]);
+
+  const fetchAllGames = async () => {
     setLoading(true);
-    logger.info('🎮 Loading games for sport:', activeSport);
-
     try {
-      const response = await fetch(getApiUrl(`games?user_id=default&sport_key=${activeSport}`));
+      const response = await fetch(getApiUrl('games?user_id=default'));
       if (!response.ok) throw new Error('API not available');
 
       const apiGames = await response.json();
-      logger.info('📊 API returned:', apiGames.length, 'games for', activeSport);
-
-      const transformedGames: GameOdds[] = apiGames.map((game: any) => ({
+      const transformedGames: GameOdds[] = apiGames.map((game: Record<string, any>) => ({
         id: game.state.id,
         sport_key: game.state.sport_key,
         home_team: game.state.home_team.name,
@@ -94,14 +112,51 @@ export function Odds() {
         odds: game.odds
       }));
 
-      transformedGames.sort((a, b) => new Date(a.commence_time).getTime() - new Date(b.commence_time).getTime());
-      logger.info('✅ Showing', transformedGames.length, 'games for', activeSport);
-      setGames(transformedGames);
+      setAllGames(transformedGames);
+
+      // Fetch stored opening lines
+      fetchOpeningLines();
+
+      // Capture any new games in background (fire-and-forget)
+      captureNewOpeningLines(transformedGames);
     } catch (error) {
-      logger.error('❌ API error:', error);
-      setGames([]);
+      logger.error('API error:', error);
+      setAllGames([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchOpeningLines = async () => {
+    try {
+      const res = await fetch(getApiUrl('f5/opening-lines'));
+      if (res.ok) {
+        const data = await res.json();
+        setOpeningLines(data);
+      }
+    } catch {
+      // Opening lines are supplementary
+    }
+  };
+
+  const captureNewOpeningLines = async (gamesToCapture: GameOdds[]) => {
+    try {
+      await fetch(getApiUrl('f5/opening-lines'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          games: gamesToCapture.map(g => ({
+            id: g.id,
+            sport_key: g.sport_key,
+            home_team: g.home_team,
+            away_team: g.away_team,
+            commence_time: g.commence_time,
+            odds: g.odds,
+          }))
+        })
+      });
+    } catch {
+      // Background capture — don't block
     }
   };
 
@@ -363,9 +418,14 @@ export function Odds() {
                       {getSportDisplayName(activeSport)} Games
                     </div>
                   </th>
+                  <th className="py-2 px-3 text-center min-w-[100px] border-r border-b-2 border-slate-600 bg-slate-800">
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="text-slate-300 font-bold text-xs uppercase tracking-wider">OPEN</span>
+                    </div>
+                  </th>
                   <th className="py-2 px-3 text-center min-w-[120px] border-r border-b-2 border-slate-600 bg-slate-800">
                     <div className="flex flex-col items-center gap-1">
-                      <span className="text-slate-300 font-bold text-xs uppercase tracking-wider">⭐ Best Line</span>
+                      <span className="text-slate-300 font-bold text-xs uppercase tracking-wider">BEST LINE</span>
                     </div>
                   </th>
                   {bookmakers.map((bookmaker, index) => {
@@ -462,6 +522,65 @@ export function Odds() {
                           </div>
                         </div>
                       </div>
+                    </td>
+
+                    {/* Opening Line Column */}
+                    <td className="py-2 px-2 border-r border-slate-600 bg-gradient-to-r from-amber-900/10 to-slate-900/50">
+                      {(() => {
+                        const opener = openingLines[game.id];
+                        if (!opener) return <div className="text-slate-600 text-xs text-center">--</div>;
+
+                        return (
+                          <div>
+                            {activeBetType === 'moneyline' && (
+                              <div className="space-y-0.5">
+                                <div className="bg-slate-800/50 rounded px-3 py-0.5 text-center">
+                                  <div className="text-base font-medium text-amber-300/80 leading-tight">
+                                    {opener.open_away_ml != null ? formatOdds(opener.open_away_ml) : '--'}
+                                  </div>
+                                </div>
+                                <div className="bg-slate-800/50 rounded px-3 py-0.5 text-center">
+                                  <div className="text-base font-medium text-amber-300/80 leading-tight">
+                                    {opener.open_home_ml != null ? formatOdds(opener.open_home_ml) : '--'}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {activeBetType === 'spread' && (
+                              <div className="space-y-0.5">
+                                <div className="bg-slate-800/50 rounded px-3 py-0.5 text-center">
+                                  <div className="text-base font-medium text-amber-200/80 leading-tight">
+                                    {opener.open_away_spread != null ? `${opener.open_away_spread > 0 ? '+' : ''}${opener.open_away_spread}` : '--'}
+                                  </div>
+                                </div>
+                                <div className="bg-slate-800/50 rounded px-3 py-0.5 text-center">
+                                  <div className="text-base font-medium text-amber-200/80 leading-tight">
+                                    {opener.open_home_spread != null ? `${opener.open_home_spread > 0 ? '+' : ''}${opener.open_home_spread}` : '--'}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {activeBetType === 'total' && (
+                              <div className="space-y-0.5">
+                                <div className="flex items-center gap-1 bg-slate-800/50 rounded px-3 py-0.5">
+                                  <span className="text-base font-medium text-amber-300/80 leading-tight w-4">O</span>
+                                  <span className="text-base font-medium text-amber-200/80 leading-tight flex-1">
+                                    {opener.open_total ?? '--'}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1 bg-slate-800/50 rounded px-3 py-0.5">
+                                  <span className="text-base font-medium text-amber-300/80 leading-tight w-4">U</span>
+                                  <span className="text-base font-medium text-amber-200/80 leading-tight flex-1">
+                                    {opener.open_total ?? '--'}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </td>
 
                     {/* Best Line Column */}
