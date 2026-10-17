@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { BookmakerLogo } from '../components/BookmakerLogo';
 import { getBookmaker, getBookmakerUrl } from '../data/bookmakers';
 import { OddsMetricsDashboard } from '../components/OddsMetricsDashboard';
@@ -67,83 +68,85 @@ interface OpeningLine {
   open_away_ml: number | null;
 }
 
+interface ApiTeam {
+  name: string;
+  score?: number;
+}
+
+interface ApiGameState {
+  id: string;
+  sport_key: string;
+  home_team: ApiTeam;
+  away_team: ApiTeam;
+  commence_time: string;
+  status: string;
+}
+
+interface ApiGameResponse {
+  state: ApiGameState;
+  channel?: string;
+  weather?: WeatherInfo;
+  odds: GameOdds['odds'];
+}
+
+async function fetchGamesFromApi(): Promise<GameOdds[]> {
+  const response = await fetch(getApiUrl('games?user_id=default'));
+  if (!response.ok) throw new Error('API not available');
+  const apiGames: ApiGameResponse[] = await response.json();
+  return apiGames.map((game) => ({
+    id: game.state.id,
+    sport_key: game.state.sport_key,
+    home_team: game.state.home_team.name,
+    away_team: game.state.away_team.name,
+    home_score: game.state.home_team.score,
+    away_score: game.state.away_team.score,
+    commence_time: game.state.commence_time,
+    status: game.state.status,
+    channel: game.channel,
+    weather: game.weather,
+    odds: game.odds,
+  }));
+}
+
+async function fetchOpeningLinesFromApi(): Promise<Record<string, OpeningLine>> {
+  const res = await fetch(getApiUrl('f5/opening-lines'));
+  if (!res.ok) return {};
+  const data: Record<string, OpeningLine> = await res.json();
+  return data;
+}
+
 export function Odds() {
-  const { username } = useAuth();
+  const { username, token } = useAuth();
   const { openBetSlip } = useBetSlip();
   const { settings } = useSettings('default');
   const [activeSport, setActiveSport] = useState<SportKey>('americanfootball_nfl');
   const [activeBetType, setActiveBetType] = useState<BetType>('moneyline');
-  const [allGames, setAllGames] = useState<GameOdds[]>([]);
-  const [games, setGames] = useState<GameOdds[]>([]);
-  const [openingLines, setOpeningLines] = useState<Record<string, OpeningLine>>({});
-  const [loading, setLoading] = useState(true);
   const [modalInfo, setModalInfo] = useState<{type: 'tv' | 'weather', game: GameOdds} | null>(null);
 
-  // Fetch all games once
-  useEffect(() => {
-    fetchAllGames();
-  }, [username]);
+  const { data: allGames = [], isLoading: loading } = useQuery<GameOdds[]>({
+    queryKey: ['odds-games', username],
+    queryFn: fetchGamesFromApi,
+    staleTime: 60_000,
+  });
 
-  // Filter by active sport
-  useEffect(() => {
-    const filtered = allGames.filter(g => g.sport_key === activeSport);
-    filtered.sort((a, b) => new Date(a.commence_time).getTime() - new Date(b.commence_time).getTime());
-    setGames(filtered);
-  }, [activeSport, allGames]);
+  const { data: openingLines = {} } = useQuery<Record<string, OpeningLine>>({
+    queryKey: ['opening-lines'],
+    queryFn: fetchOpeningLinesFromApi,
+    staleTime: 300_000,
+  });
 
-  const fetchAllGames = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch(getApiUrl('games?user_id=default'));
-      if (!response.ok) throw new Error('API not available');
+  const games = allGames
+    .filter(g => g.sport_key === activeSport)
+    .sort((a, b) => new Date(a.commence_time).getTime() - new Date(b.commence_time).getTime());
 
-      const apiGames = await response.json();
-      const transformedGames: GameOdds[] = apiGames.map((game: Record<string, any>) => ({
-        id: game.state.id,
-        sport_key: game.state.sport_key,
-        home_team: game.state.home_team.name,
-        away_team: game.state.away_team.name,
-        home_score: game.state.home_team.score,
-        away_score: game.state.away_team.score,
-        commence_time: game.state.commence_time,
-        status: game.state.status,
-        channel: game.channel,
-        weather: game.weather,
-        odds: game.odds
-      }));
-
-      setAllGames(transformedGames);
-
-      // Fetch stored opening lines
-      fetchOpeningLines();
-
-      // Capture any new games in background (fire-and-forget)
-      captureNewOpeningLines(transformedGames);
-    } catch (error) {
-      logger.error('API error:', error);
-      setAllGames([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchOpeningLines = async () => {
-    try {
-      const res = await fetch(getApiUrl('f5/opening-lines'));
-      if (res.ok) {
-        const data = await res.json();
-        setOpeningLines(data);
-      }
-    } catch {
-      // Opening lines are supplementary
-    }
-  };
-
-  const captureNewOpeningLines = async (gamesToCapture: GameOdds[]) => {
+  // Capture opening lines for new games (background, fire-and-forget)
+  const captureNewOpeningLines = useCallback(async (gamesToCapture: GameOdds[]) => {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
     try {
       await fetch(getApiUrl('f5/opening-lines'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           games: gamesToCapture.map(g => ({
             id: g.id,
@@ -156,9 +159,13 @@ export function Odds() {
         })
       });
     } catch {
-      // Background capture — don't block
+      // Background capture — supplementary, don't block UI
     }
-  };
+  }, [token]);
+
+  useEffect(() => {
+    if (allGames.length > 0) captureNewOpeningLines(allGames);
+  }, [allGames, captureNewOpeningLines]);
 
   const getSportDisplayName = (sport: SportKey): string => {
     const sportNames: Record<SportKey, string> = {
